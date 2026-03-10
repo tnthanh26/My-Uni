@@ -82,7 +82,9 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 40),
             ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, '/otp');
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF6797E1),
                 foregroundColor: Colors.white,

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:my_uni/features/login_page.dart';
 import 'package:my_uni/features/signup_page.dart';
+import 'package:my_uni/features/otp_page.dart';
+import 'package:my_uni/features/forgot_password_page.dart';
 
 void main() {
   runApp(const MyUniApp());
@@ -26,6 +28,8 @@ class MyUniApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
+        '/otp': (context) => const OtpPage(),
+        '/forgot_password': (context) => const ForgotPasswordFlow(),
       },
     );
   }
