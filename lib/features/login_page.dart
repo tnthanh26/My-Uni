@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -8,15 +9,70 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  // Variable to track password visibility
   bool _isObscured = true;
+  bool _isLoading = false; // Trạng thái chờ khi đang xác thực
+
+  // Khai báo Controller để lấy Email và Password
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  // Hàm xử lý Đăng nhập
+  Future<void> _handleLogin() async {
+    if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập đầy đủ email và mật khẩu')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      // Gọi lệnh đăng nhập của Firebase
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      // Nếu thành công, chuyển thẳng vào trang Home
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = 'Đã có lỗi xảy ra';
+      if (e.code == 'user-not-found') {
+        message = 'Không tìm thấy tài khoản với email này.';
+      } else if (e.code == 'wrong-password') {
+        message = 'Mật khẩu không chính xác.';
+      } else if (e.code == 'invalid-email') {
+        message = 'Email không hợp lệ.';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
-        child: SingleChildScrollView( // Added to prevent overflow on small screens
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -29,6 +85,8 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 50),
               TextFormField(
+                controller: _emailController, // Gán controller
+                keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
                   labelText: 'Email',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -36,6 +94,7 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _passwordController, // Gán controller
                 obscureText: _isObscured,
                 decoration: InputDecoration(
                   labelText: 'Mật khẩu',
@@ -43,11 +102,7 @@ class _LoginPageState extends State<LoginPage> {
                     icon: Icon(
                       _isObscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
                     ),
-                    onPressed: () {
-                      setState(() {
-                        _isObscured = !_isObscured;
-                      });
-                    },
+                    onPressed: () => setState(() => _isObscured = !_isObscured),
                   ),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 ),
@@ -61,14 +116,16 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: _isLoading ? null : _handleLogin, // Disable khi đang load
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6797E1),
                   foregroundColor: Colors.white,
                   minimumSize: const Size(double.infinity, 50),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
-                child: const Text('Đăng nhập', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: _isLoading
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Đăng nhập', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
               const SizedBox(height: 30),
               Row(
@@ -83,7 +140,10 @@ class _LoginPageState extends State<LoginPage> {
               ),
               const SizedBox(height: 50),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  // Chức năng khách thường không cần Auth, chuyển thẳng vào Home
+                  Navigator.pushReplacementNamed(context, '/home');
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey[700],
                   foregroundColor: Colors.white,

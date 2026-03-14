@@ -3,8 +3,17 @@ import 'package:my_uni/features/login_page.dart';
 import 'package:my_uni/features/signup_page.dart';
 import 'package:my_uni/features/otp_page.dart';
 import 'package:my_uni/features/forgot_password_page.dart';
+import 'package:my_uni/features/home_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MyUniApp());
 }
 
@@ -30,6 +39,7 @@ class MyUniApp extends StatelessWidget {
         '/signup': (context) => const SignUpPage(),
         '/otp': (context) => const OtpPage(),
         '/forgot_password': (context) => const ForgotPasswordFlow(),
+        '/home': (context) => const HomePage(),
       },
     );
   }
