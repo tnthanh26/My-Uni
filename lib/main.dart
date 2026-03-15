@@ -38,7 +38,7 @@ class MyUniApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
         '/otp': (context) => const OtpPage(),
-        '/forgot_password': (context) => const ForgotPasswordFlow(),
+        '/forgot_password': (context) => const ForgotPasswordPage(),
         '/home': (context) => const HomePage(),
       },
     );
