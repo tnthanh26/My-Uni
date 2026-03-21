@@ -1,12 +1,63 @@
 import 'package:flutter/material.dart';
-import 'package:my_uni/features/login_page.dart';
-import 'package:my_uni/features/signup_page.dart';
-import 'package:my_uni/features/otp_page.dart';
-import 'package:my_uni/features/forgot_password_page.dart';
-import 'package:my_uni/features/home_page.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Import các trang của bạn
+import 'package:my_uni/features/credential/login_page.dart';
+import 'package:my_uni/features/credential/signup_page.dart';
+import 'package:my_uni/features/credential/otp_page.dart';
+import 'package:my_uni/features/credential/forgot_password_page.dart';
+import 'package:my_uni/features/home_page.dart';
 import 'firebase_options.dart';
 
+// --- PHẦN 1: QUẢN LÝ TRẠNG THÁI (APP PROVIDER) ---
+class AppProvider extends ChangeNotifier {
+  ThemeMode _themeMode = ThemeMode.system;
+  Locale _locale = const Locale('vi'); // Mặc định Tiếng Việt
+
+  ThemeMode get themeMode => _themeMode;
+  Locale get locale => _locale;
+
+  AppProvider() {
+    _loadSettings();
+  }
+
+  // Load cài đặt đã lưu từ bộ nhớ máy
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Load Theme
+    String? theme = prefs.getString('theme');
+    if (theme == 'dark') _themeMode = ThemeMode.dark;
+    else if (theme == 'light') _themeMode = ThemeMode.light;
+    else _themeMode = ThemeMode.system;
+
+    // Load Ngôn ngữ
+    String? lang = prefs.getString('lang');
+    if (lang != null) _locale = Locale(lang);
+
+    notifyListeners();
+  }
+
+  // Hàm thay đổi Theme
+  void setTheme(ThemeMode mode) async {
+    _themeMode = mode;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('theme', mode.toString().split('.').last);
+  }
+
+  // Hàm thay đổi Ngôn ngữ
+  void setLocale(String langCode) async {
+    _locale = Locale(langCode);
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setString('lang', langCode);
+  }
+}
+
+// --- PHẦN 2: HÀM MAIN ---
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -14,26 +65,58 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  runApp(const MyUniApp());
+  runApp(
+    // Bao bọc App bằng Provider để quản lý Dark Mode & Ngôn ngữ
+    ChangeNotifierProvider(
+      create: (_) => AppProvider(),
+      child: const MyUniApp(),
+    ),
+  );
 }
 
+// --- PHẦN 3: CẤU HÌNH APP ---
 class MyUniApp extends StatelessWidget {
   const MyUniApp({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Lắng nghe sự thay đổi từ AppProvider
+    final appProvider = Provider.of<AppProvider>(context);
+
     return MaterialApp(
       title: 'MyUni',
       debugShowCheckedModeBanner: false,
+
+      // Cấu hình Ngôn ngữ
+      locale: appProvider.locale,
+
+      // Cấu hình Dark Mode / Light Mode
+      themeMode: appProvider.themeMode,
+
+      // Theme Sáng
       theme: ThemeData(
-        // Matching the blue shade from your provided design
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6797E1)),
         useMaterial3: true,
+        brightness: Brightness.light,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6797E1),
+          brightness: Brightness.light,
+        ),
+        scaffoldBackgroundColor: Colors.white,
       ),
-      // The initial screen that loads
+
+      // Theme Tối
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        brightness: Brightness.dark,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6797E1),
+          brightness: Brightness.dark,
+        ),
+        // Bạn có thể tùy chỉnh màu nền Dark Mode ở đây
+      ),
+
       home: const MyUniHomePage(),
 
-      // The "Map" that tells Flutter where to go when you call pushNamed
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
@@ -45,11 +128,15 @@ class MyUniApp extends StatelessWidget {
   }
 }
 
+// --- PHẦN 4: TRANG WELCOME ---
 class MyUniHomePage extends StatelessWidget {
   const MyUniHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Lấy màu primary từ Theme để dùng đồng nhất
+    final primaryColor = Theme.of(context).colorScheme.primary;
+
     return Scaffold(
       body: Container(
         width: double.infinity,
@@ -57,77 +144,54 @@ class MyUniHomePage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Branding Icon
-            const Icon(
+            Icon(
               Icons.school_rounded,
               size: 100,
-              color: Color(0xFF6797E1),
+              color: primaryColor,
             ),
             const SizedBox(height: 30),
-
-            // Welcome Text
             const Text(
-              'Welcome to MyUni!',
+              'Chào mừng bạn đến với MyUni!',
               style: TextStyle(
-                fontSize: 28,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
               ),
             ),
             const SizedBox(height: 12),
             const Text(
-              'Connecting students within your campus.',
+              'Kết nối với các bạn cừng trường',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
             const SizedBox(height: 50),
 
-            // Navigation Button: Login
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 55,
               child: ElevatedButton(
-                onPressed: () {
-                  // This matches the key in the 'routes' map above
-                  Navigator.pushNamed(context, '/login');
-                },
+                onPressed: () => Navigator.pushNamed(context, '/login'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF6797E1),
+                  backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 ),
-                child: const Text(
-                  'Login',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+                child: const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 16),
 
-            // Navigation Button: Sign Up
             SizedBox(
               width: double.infinity,
-              height: 50,
+              height: 55,
               child: OutlinedButton(
-                onPressed: () {
-                  // This matches the key in the 'routes' map above
-                  Navigator.pushNamed(context, '/signup');
-                },
+                onPressed: () => Navigator.pushNamed(context, '/signup'),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF6797E1), width: 2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+                  side: BorderSide(color: primaryColor, width: 2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                 ),
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF6797E1),
-                  ),
+                child: Text(
+                  'Đăng ký tài khoản',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
                 ),
               ),
             ),
