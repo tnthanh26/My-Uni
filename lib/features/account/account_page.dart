@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
+import 'utilities_page.dart';
 import 'setting_page.dart';
 
 class AccountPage extends StatelessWidget {
@@ -121,7 +122,9 @@ class AccountPage extends StatelessWidget {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const ChangePasswordPage()));
                   }),
                   Divider(indent: 70, color: Theme.of(context).dividerColor),
-                  _buildAccountItem(context, Icons.grid_view_outlined, 'Tiện ích', () {}),
+                  _buildAccountItem(context, Icons.grid_view_outlined, 'Tiện ích', () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const UtilitiesPage()),);
+                  }),
                   Divider(indent: 70, color: Theme.of(context).dividerColor),
                   _buildAccountItem(context, Icons.article_outlined, 'Bài đăng của tôi', () {}),
                   Divider(indent: 70, color: Theme.of(context).dividerColor),
