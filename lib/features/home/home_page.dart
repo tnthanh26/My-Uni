@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:my_uni/features/home/forum_page.dart';
+import 'package:my_uni/features/home/forum_tab.dart';
 import 'package:my_uni/features/home/official_tab.dart';
+import 'package:my_uni/features/home/review_tab.dart';
+import 'package:my_uni/features/home/material_tab.dart';
 import 'package:my_uni/features/account/account_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -120,8 +122,8 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         OfficialTab(),
                         ForumTab(),
-                        Center(child: Text('Review')),
-                        Center(child: Text('Tài liệu')),
+                        ReviewTab(),
+                        MaterialTab(),
                       ],
                     ),
                   ),
