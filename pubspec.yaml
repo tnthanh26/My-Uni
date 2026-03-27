@@ -36,7 +36,7 @@ dependencies:
   cloud_firestore: ^6.1.3
   image_picker: ^1.2.1
   flutter_image_compress: ^2.4.0
-  http: ^1.1.0
+  http: ^1.2.0
   provider: ^6.1.5+1
   shared_preferences: ^2.5.4
   url_launcher: ^6.3.2
@@ -45,6 +45,7 @@ dependencies:
   file_picker: ^10.3.10
   path_provider: ^2.1.5
   open_filex: ^4.7.0
+  google_generative_ai: ^0.4.7
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -76,6 +77,7 @@ flutter:
   assets:
   - assets/images/cat_avatar.jpg
   - assets/images/news.png
+  - assets/images/chatbot_avt.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
