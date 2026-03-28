@@ -20,6 +20,7 @@ class AccountPage extends StatelessWidget {
       // Tự động đổi màu nền theo Theme (Trắng hoặc Đen xám)
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: Text(
             'Tài khoản',
             style: TextStyle(
