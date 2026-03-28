@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -34,29 +36,61 @@ class _ChatbotPageState extends State<ChatbotPage> {
   ];
 
   // 2. Put the logic function right here
-  void _handleSendMessage() {
+  Future<void> _handleSendMessage() async { // Thêm async ở đây
     if (_messageController.text.trim().isEmpty) return;
 
+    final String userText = _messageController.text;
+
     setState(() {
-      _messages.add(ChatMessage(text: _messageController.text, isUser: true));
+      _messages.add(ChatMessage(text: userText, isUser: true));
       _isTyping = true;
     });
 
     _messageController.clear();
     _scrollToBottom();
 
-    // Mock bot response
-    Future.delayed(const Duration(milliseconds: 800), () {
+    try {
+      // URL của Render bạn vừa deploy
+      final url = Uri.parse('https://hcmus-chatbot.onrender.com/chat');
+
+      // Gửi request POST đến FastAPI
+      final response = await http.post(
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"query": userText}),
+      ).timeout(const Duration(seconds: 60)); // Render free tier có thể mất 50s để tỉnh dậy
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        // Decode dữ liệu tiếng Việt (utf8)
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        String botAnswer = data['answer'];
+        List<dynamic> sources = data['sources'] ?? [];
+
+        // Hiển thị thêm nguồn nếu có
+        if (sources.isNotEmpty) {
+          botAnswer += "\n\n(Nguồn: Trang ${sources.join(', ')})";
+        }
+
+        setState(() {
+          _isTyping = false;
+          _messages.add(ChatMessage(text: botAnswer, isUser: false));
+        });
+      } else {
+        throw Exception("Lỗi server: ${response.statusCode}");
+      }
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isTyping = false;
         _messages.add(ChatMessage(
-          text: "Đợi Ú một xíu nhé, mình đang tìm hiểu...",
+          text: "Ú Em đang bận hoặc server đang khởi động. Hoshi đợi xíu rồi thử lại nhé!",
           isUser: false,
         ));
       });
-      _scrollToBottom();
-    });
+    }
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
