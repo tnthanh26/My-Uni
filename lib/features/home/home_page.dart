@@ -6,6 +6,7 @@ import 'package:my_uni/features/home/review_tab.dart';
 import 'package:my_uni/features/home/material_tab.dart';
 import 'package:my_uni/features/account/account_page.dart';
 import 'package:my_uni/features/chatbot/chatbot_page.dart';
+import 'package:my_uni/features/event/event_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -143,12 +144,14 @@ class _HomePageState extends State<HomePage> {
     final user = FirebaseAuth.instance.currentUser;
     final bool isGuest = user == null;
 
+    final guestScreen = _buildGuestAccountScreen(context);
+
     final List<Widget> pages = [
-      _buildMainHomeContent(),
-      Center(child: Text('Sự kiện', style: TextStyle(fontSize: 24, color: isDarkMode ? Colors.white : Colors.black87))),
-      isGuest ? _buildGuestAccountScreen(context) : const ChatbotPage(),
+      isGuest ? guestScreen : _buildMainHomeContent(),
+      isGuest ? guestScreen : const EventPage(),
+      isGuest ? guestScreen : const ChatbotPage(),
       Center(child: Text('Góc Nhỏ', style: TextStyle(fontSize: 24, color: isDarkMode ? Colors.white : Colors.black87))),
-      isGuest ? _buildGuestAccountScreen(context) : const AccountPage(),
+      isGuest ? guestScreen : const AccountPage(),
     ];
 
     return Scaffold(
