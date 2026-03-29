@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 import 'package:my_uni/features/home/forum_tab.dart';
 import 'package:my_uni/features/home/official_tab.dart';
 import 'package:my_uni/features/home/review_tab.dart';
@@ -76,7 +77,32 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   actions: [
-                    IconButton(icon: const Icon(Icons.search, color: Colors.white), onPressed: () {}),
+                    Builder( // Cần Builder để lấy context của Scaffold
+                        builder: (context) {
+                          return IconButton(
+                            icon: const Icon(Icons.search, color: Colors.white),
+                            onPressed: () {
+                              // Lấy TabIndex hiện tại từ DefaultTabController
+                              final tabIndex = DefaultTabController.of(context).index;
+
+                              // Map TabIndex sang SearchScope (Tạo Map này ở đầu class hoặc local)
+                              final Map<int, SearchScope> tabScopeMap = {
+                                0: SearchScope.official,
+                                1: SearchScope.forum,
+                                2: SearchScope.review,
+                                3: SearchScope.material,
+                              };
+                              final currentScope = tabScopeMap[tabIndex] ?? SearchScope.forum; // Mặc định là forum nếu lỗi
+
+                              // GỌI SEARCH DELEGATE MỚI
+                              showSearch(
+                                context: context,
+                                delegate: MyUniSearchDelegate(currentScope: currentScope),
+                              );
+                            },
+                          );
+                        }
+                    ),
                     IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Colors.white), onPressed: () {}),
                     const SizedBox(width: 8),
                   ],
