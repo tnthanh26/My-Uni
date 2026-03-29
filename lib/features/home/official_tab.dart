@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -10,9 +11,54 @@ class OfficialTab extends StatelessWidget {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) return;
   }
 
+  // Logic nhận diện sự kiện (tương đồng với DiscoverTab)
+  bool _checkIsEvent(String title, String summary) {
+    List<String> keywords = [
+      'seminar', 'talkshow', 'hội thảo', 'cuộc thi', 'chào tân sinh viên',
+      'ngày hội', 'lễ tốt nghiệp', 'workshop', 'sự kiện', 'mời tham gia', 'đăng ký tham gia'
+    ];
+    String content = "${title.toString()} ${summary.toString()}".toLowerCase();
+    return keywords.any((k) => content.contains(k));
+  }
+
+  // Logic xử lý Quan tâm
+  Future<void> _toggleInterest(BuildContext context, String docId, Map<String, dynamic> data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng đăng nhập để lưu sự kiện")),
+      );
+      return;
+    }
+
+    final docRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('interested_events')
+        .doc(docId);
+
+    final docSnapshot = await docRef.get();
+
+    if (docSnapshot.exists) {
+      await docRef.delete();
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã bỏ quan tâm")));
+    } else {
+      await docRef.set({
+        'title': data['title'] ?? '',
+        'date': data['date'] ?? '',
+        'department': data['department'] ?? '',
+        'summary': data['summary'] ?? '',
+        'link': data['link'] ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã thêm vào mục Đã quan tâm")));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final user = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -28,12 +74,16 @@ class OfficialTab extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           itemCount: snapshot.data!.docs.length,
           itemBuilder: (context, index) {
-            var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+            var doc = snapshot.data!.docs[index];
+            var data = doc.data() as Map<String, dynamic>;
+            String docId = doc.id;
+            String title = data['title']?.toString() ?? '';
+            String summary = data['summary']?.toString() ?? '';
+            bool isEvent = _checkIsEvent(title, summary);
 
             return Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                // Sử dụng cardColor của Theme để tự đổi màu Trắng <-> Xám đen
                 color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(15),
                 boxShadow: [
@@ -47,19 +97,27 @@ class OfficialTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header
+                  // --- Header ---
                   ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: Color(0xFF6797E1),
                       child: Icon(Icons.school, color: Colors.white, size: 20),
                     ),
-                    title: Text(
-                      data['department'] ?? 'Thông báo',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
+                    title: Row(
+                      children: [
+                        Text(
+                          data['department'] ?? 'Thông báo',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                          ),
+                        ),
+                        if (isEvent) ...[
+                          const SizedBox(width: 6),
+                          const Icon(Icons.check_circle, color: Colors.blue, size: 14),
+                        ]
+                      ],
                     ),
                     subtitle: Text(
                         data['date'] ?? '',
@@ -68,14 +126,63 @@ class OfficialTab extends StatelessWidget {
                     trailing: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white54 : Colors.grey),
                   ),
 
-                  // Nội dung bài đăng
+                  // --- Row Hashtag & Quan Tâm (Có logic xử lý) ---
+                  if (isEvent)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6797E1).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(15),
+                            ),
+                            child: const Text(
+                              "# Sự kiện",
+                              style: TextStyle(color: Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                          // Nút Quan tâm với StreamBuilder để check trạng thái
+                          StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(user?.uid ?? 'guest')
+                                  .collection('interested_events')
+                                  .doc(docId)
+                                  .snapshots(),
+                              builder: (context, favSnapshot) {
+                                bool isInterested = favSnapshot.hasData && favSnapshot.data!.exists;
+
+                                return ElevatedButton(
+                                  onPressed: () => _toggleInterest(context, docId, data),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isInterested ? Colors.grey : const Color(0xFF6797E1),
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    minimumSize: const Size(90, 30),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                  child: Text(
+                                      isInterested ? 'Đã quan tâm' : 'Quan tâm',
+                                      style: const TextStyle(fontSize: 12)
+                                  ),
+                                );
+                              }
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // --- Nội dung bài đăng ---
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data['title'] ?? '',
+                          title,
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -84,7 +191,7 @@ class OfficialTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          data['summary'] ?? '',
+                          summary,
                           maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -92,14 +199,13 @@ class OfficialTab extends StatelessWidget {
                               height: 1.4
                           ),
                         ),
-                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
 
-                  // Ảnh minh họa
+                  // --- Ảnh minh họa ---
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(10),
                       child: Image.asset(
@@ -111,7 +217,7 @@ class OfficialTab extends StatelessWidget {
                     ),
                   ),
 
-                  // Thanh tương tác
+                  // --- Thanh tương tác ---
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
@@ -124,7 +230,7 @@ class OfficialTab extends StatelessWidget {
                     ),
                   ),
 
-                  // Nút xem chi tiết
+                  // --- Nút xem chi tiết ---
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     child: SizedBox(
