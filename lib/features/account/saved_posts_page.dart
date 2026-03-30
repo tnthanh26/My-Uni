@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:my_uni/features/home/post_detail_page.dart';
 
 class SavedPostsPage extends StatefulWidget {
   const SavedPostsPage({super.key});
@@ -25,7 +26,6 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
-  // --- REUSE LOGIC FROM YOUR TABS ---
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) return;
@@ -51,6 +51,18 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
         .collection('saved_posts').doc(docId).delete();
   }
 
+  // --- HELPER ĐIỀU HƯỚNG CHUNG ---
+  void _navigateToDetail(Map<String, dynamic> data, String docId) {
+    // Lấy originalDocId đã lưu trong HomePage
+    String originalId = data['originalDocId'] ?? docId;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostDetailPage(docId: originalId, initialPostData: data),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -61,7 +73,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text("Bài đã lưu", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        title: Text("Bài đã lưu", style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -123,11 +135,19 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
             var data = docs[index].data() as Map<String, dynamic>;
             String docId = docs[index].id;
 
-            // PHÂN LOẠI ĐÚNG UI THEO NGUỒN GỐC
-            if (data.containsKey('department')) return _buildOfficialCard(data, docId, isDarkMode);
-            if (data.containsKey('authorName')) return _buildForumCard(data, docId, isDarkMode);
-            if (data.containsKey('rating')) return _buildReviewCard(data, docId, isDarkMode);
-            if (data.containsKey('fileData')) return _buildMaterialCard(data, docId, isDarkMode);
+            // MỖI CARD ĐƯỢC BỌC GESTUREDETECTOR ĐỂ VÀO DETAIL
+            if (data.containsKey('department')) {
+              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildOfficialCard(data, docId, isDarkMode));
+            }
+            if (data.containsKey('authorName')) {
+              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildForumCard(data, docId, isDarkMode));
+            }
+            if (data.containsKey('rating')) {
+              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildReviewCard(data, docId, isDarkMode));
+            }
+            if (data.containsKey('fileData')) {
+              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildMaterialCard(data, docId, isDarkMode));
+            }
 
             return const SizedBox();
           },
@@ -136,15 +156,11 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  // --- 1. OFFICIAL CARD ---
+  // --- CÁC CARD UI (GIỮ NGUYÊN LOGIC CỦA BẠN) ---
   Widget _buildOfficialCard(Map<String, dynamic> data, String docId, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)],
-      ),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         ListTile(
           leading: const CircleAvatar(backgroundColor: Color(0xFF6797E1), child: Icon(Icons.school, color: Colors.white, size: 20)),
@@ -179,7 +195,6 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  // --- 2. FORUM CARD ---
   Widget _buildForumCard(Map<String, dynamic> data, String docId, bool isDark) {
     String? avatarData = data['authorAvatar'];
     return Container(
@@ -213,7 +228,6 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  // --- 3. REVIEW CARD ---
   Widget _buildReviewCard(Map<String, dynamic> data, String docId, bool isDark) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -233,12 +247,11 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
         const SizedBox(height: 12),
         Text(data['content'] ?? '', style: const TextStyle(height: 1.4)),
         const Divider(),
-        const Row(children: [Icon(Icons.favorite_border, color: Colors.grey, size: 20), SizedBox(width: 4), Text("96", style: TextStyle(color: Colors.grey))]),
+        Row(children: [const Icon(Icons.favorite_border, color: Colors.grey, size: 20), const SizedBox(width: 4), Text("${data['likeCount'] ?? 0}", style: const TextStyle(color: Colors.grey))]),
       ]),
     );
   }
 
-  // --- 4. MATERIAL CARD ---
   Widget _buildMaterialCard(Map<String, dynamic> data, String docId, bool isDark) {
     String? fileData = data['fileData'];
     String? fileName = data['fileName'];
@@ -275,30 +288,26 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           ),
         ),
         const Divider(),
-        const Row(children: [Icon(Icons.favorite_border, color: Colors.grey, size: 20), SizedBox(width: 4), Text("96", style: TextStyle(color: Colors.grey))]),
+        Row(children: [const Icon(Icons.favorite_border, color: Colors.grey, size: 20), const SizedBox(width: 4), Text("${data['likeCount'] ?? 0}", style: const TextStyle(color: Colors.grey))]),
       ]),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.bookmark_border, size: 100, color: Colors.grey),
-            const SizedBox(height: 20),
-            const Text("Danh sách lưu trống!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6797E1), minimumSize: const Size(200, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
-              child: const Text("Về trang chủ", style: TextStyle(color: Colors.white)),
-            )
-          ],
-        ),
-      ),
+      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.bookmark_border, size: 100, color: Colors.grey),
+        const SizedBox(height: 20),
+        const Text("Danh sách lưu trống!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 30),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6797E1), minimumSize: const Size(200, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
+          child: const Text("Về trang chủ", style: TextStyle(color: Colors.white)),
+        )
+      ]),
     );
   }
 }

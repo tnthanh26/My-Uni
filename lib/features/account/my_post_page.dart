@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:my_uni/features/home/create_post_page.dart';
+import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class MyPostsPage extends StatelessWidget {
@@ -22,7 +23,6 @@ class MyPostsPage extends StatelessWidget {
         backgroundColor: Colors.transparent,
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // Sắp xếp bài mới nhất lên đầu cho dễ quản lý
         stream: FirebaseFirestore.instance
             .collection('forum_posts')
             .where('authorId', isEqualTo: user?.uid)
@@ -43,103 +43,122 @@ class MyPostsPage extends StatelessWidget {
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
               var data = doc.data() as Map<String, dynamic>;
+              String docId = doc.id;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(15),
                   boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: CircleAvatar(
-                        backgroundImage: (data['authorAvatar'] != null && data['authorAvatar'].isNotEmpty)
-                            ? MemoryImage(base64Decode(data['authorAvatar']))
-                            : null,
-                        child: (data['authorAvatar'] == null || data['authorAvatar'].isEmpty)
-                            ? const Icon(Icons.person) : null,
-                      ),
-                      title: const Text("Bạn", style: TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text(
-                        data['timestamp'] != null
-                            ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
-                            : 'Vừa xong',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ),
-
-                    // --- PHẦN HASHTAG ĐÃ ĐƯỢC THÊM Ở ĐÂY ---
-                    if (data['hashtags'] != null && (data['hashtags'] as List).isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 8, left: 4),
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: (data['hashtags'] as List).map((tag) => Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6797E1).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '#$tag',
-                              style: const TextStyle(
-                                  color: Color(0xFF6797E1),
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w600
-                              ),
-                            ),
-                          )).toList(),
+                // BỌC GESTUREDETECTOR LỚN ĐỂ VÀO DETAIL GIỐNG FACEBOOK
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailPage(
+                          docId: docId,
+                          initialPostData: data,
                         ),
                       ),
-                    // --------------------------------------
-
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        data['content'] ?? '',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(height: 1.4),
-                      ),
-                    ),
-                    const Divider(height: 24),
-                    Row(
+                    );
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.arrow_upward, size: 18, color: Color(0xFF6797E1)),
-                        const SizedBox(width: 4),
-                        Text("${data['likes'] ?? 0}"),
-                        const SizedBox(width: 15),
-                        const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text("${data['comments'] ?? 0}"),
-                        const Spacer(),
-                        IconButton(
-                          icon: const Icon(Icons.edit_note, color: Colors.blueGrey),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => CreatePostPage(
-                                  docId: doc.id,
-                                  existingData: data,
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: CircleAvatar(
+                            backgroundImage: (data['authorAvatar'] != null && data['authorAvatar'].isNotEmpty)
+                                ? MemoryImage(base64Decode(data['authorAvatar']))
+                                : null,
+                            child: (data['authorAvatar'] == null || data['authorAvatar'].isEmpty)
+                                ? const Icon(Icons.person) : null,
+                          ),
+                          title: const Text("Bạn", style: TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text(
+                            data['timestamp'] != null
+                                ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
+                                : 'Vừa xong',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+
+                        if (data['hashtags'] != null && (data['hashtags'] as List).isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 8, left: 4),
+                            child: Wrap(
+                              spacing: 8,
+                              runSpacing: 4,
+                              children: (data['hashtags'] as List).map((tag) => Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF6797E1).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
                                 ),
-                              ),
-                            );
-                          },
+                                child: Text(
+                                  '#$tag',
+                                  style: const TextStyle(
+                                      color: Color(0xFF6797E1),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600
+                                  ),
+                                ),
+                              )).toList(),
+                            ),
+                          ),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            data['content'] ?? '',
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(height: 1.4),
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () => _confirmDelete(context, doc.reference),
-                        ),
+                        const Divider(height: 24),
+                        Row(
+                          children: [
+                            const Icon(Icons.favorite_border, size: 18, color: Color(0xFF6797E1)), // Đổi icon cho khớp bộ UI
+                            const SizedBox(width: 4),
+                            Text("${data['likeCount'] ?? 0}"), // Dùng likeCount thật
+                            const SizedBox(width: 15),
+                            const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey),
+                            const SizedBox(width: 4),
+                            Text("${data['commentCount'] ?? 0}"), // Dùng commentCount thật
+                            const Spacer(),
+
+                            // GIỮ NGUYÊN LOGIC NÚT SỬA
+                            IconButton(
+                              icon: const Icon(Icons.edit_note, color: Colors.blueGrey),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CreatePostPage(
+                                      docId: doc.id,
+                                      existingData: data,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            // GIỮ NGUYÊN LOGIC NÚT XÓA
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                              onPressed: () => _confirmDelete(context, doc.reference),
+                            ),
+                          ],
+                        )
                       ],
-                    )
-                  ],
+                    ),
+                  ),
                 ),
               );
             },
@@ -149,6 +168,7 @@ class MyPostsPage extends StatelessWidget {
     );
   }
 
+  // --- CÁC HÀM HELPER GIỮ NGUYÊN LOGIC ---
   Widget _buildEmptyState(BuildContext context, String message) {
     return Center(
       child: Column(

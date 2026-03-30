@@ -83,8 +83,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         'fileName': _fileName,
         'isImage': _isImage,
         'timestamp': FieldValue.serverTimestamp(),
-        'likes': 0,
-        'comments': 0,
+        'likeCount': 0,
+        'commentCount': 0,
       });
       if (mounted) Navigator.pop(context);
     } catch (e) {

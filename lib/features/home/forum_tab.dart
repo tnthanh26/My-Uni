@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'create_post_page.dart';
+import 'post_action_row.dart';
+import 'post_detail_page.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -31,9 +32,7 @@ class _ForumTabState extends State<ForumTab> {
       await OpenFilex.open(filePath);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không thể mở ảnh / file")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Không thể mở ảnh / file")));
       }
     }
   }
@@ -46,11 +45,7 @@ class _ForumTabState extends State<ForumTab> {
     try {
       return GestureDetector(
         onTap: () => _viewImage(context, imgData),
-        child: Image.memory(
-          base64Decode(imgData),
-          width: double.infinity,
-          fit: BoxFit.cover,
-        ),
+        child: Image.memory(base64Decode(imgData), width: double.infinity, fit: BoxFit.cover),
       );
     } catch (e) {
       return const SizedBox();
@@ -60,7 +55,6 @@ class _ForumTabState extends State<ForumTab> {
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -79,52 +73,65 @@ class _ForumTabState extends State<ForumTab> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))]),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.orangeAccent.withOpacity(isDarkMode ? 0.3 : 0.2),
-                      backgroundImage: (avatarData != null && avatarData.isNotEmpty) ? MemoryImage(base64Decode(avatarData)) : null,
-                      child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.orange) : null,
-                    ),
-                    title: Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87)),
-                    subtitle: Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                    trailing: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white54 : Colors.grey),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [BoxShadow(color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                // BỌC GESTUREDETECTOR LỚN ĐỂ VÀO DETAIL
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PostDetailPage(docId: docId, initialPostData: data),
+                      ),
+                    );
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.orangeAccent.withOpacity(isDarkMode ? 0.3 : 0.2),
+                          backgroundImage: (avatarData != null && avatarData.isNotEmpty) ? MemoryImage(base64Decode(avatarData)) : null,
+                          child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.orange) : null,
+                        ),
+                        title: Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87)),
+                        subtitle: Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        trailing: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white54 : Colors.grey),
+                      ),
+                      if (data['hashtags'] != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: Wrap(
+                            spacing: 8, runSpacing: 4,
+                            children: (data['hashtags'] as List).map((tag) => Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.15 : 0.1), borderRadius: BorderRadius.circular(12)),
+                              child: Text('#$tag', style: TextStyle(color: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.w600)),
+                            )).toList(),
+                          ),
+                        ),
+                      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Text(data['content'] ?? '', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white70 : Colors.black87, height: 1.5))),
+                      const SizedBox(height: 12),
+                      Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildSafeImage(context, data['imageUrl']))),
+                      Divider(height: 24, thickness: 0.5, indent: 16, endIndent: 16, color: isDarkMode ? Colors.white10 : Colors.black12),
+
+                      // CHẶN CHẠM Ở THANH ACTION
+                      GestureDetector(
+                        onTap: () {},
+                        behavior: HitTestBehavior.opaque,
+                        child: PostActionRow(
+                          docId: docId,
+                          data: data,
+                          onSave: widget.onSave,
+                          collectionPath: 'forum_posts',
+                        ),
+                      ),
+                    ],
                   ),
-                  if (data['hashtags'] != null) Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    child: Wrap(spacing: 8, runSpacing: 4, children: (data['hashtags'] as List).map((tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.15 : 0.1), borderRadius: BorderRadius.circular(12)),
-                      child: Text('#$tag', style: TextStyle(color: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.w600)),
-                    )).toList()),
-                  ),
-                  Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Text(data['content'] ?? '', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white70 : Colors.black87, height: 1.5))),
-                  const SizedBox(height: 12),
-                  Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildSafeImage(context, data['imageUrl']))),
-                  Divider(height: 24, thickness: 0.5, indent: 16, endIndent: 16, color: isDarkMode ? Colors.white10 : Colors.black12),
-                  Padding(padding: const EdgeInsets.only(bottom: 8, left: 8, right: 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                    _buildPostAction(Icons.favorite_border, 'Thích', isDarkMode),
-                    _buildPostAction(Icons.chat_bubble_outline, 'Bình luận', isDarkMode),
-                    StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('users').doc(user?.uid ?? 'guest')
-                            .collection('saved_posts').doc(docId).snapshots(),
-                        builder: (context, saveSnapshot) {
-                          bool isSaved = saveSnapshot.hasData && saveSnapshot.data!.exists;
-                          return GestureDetector(
-                            onTap: () => widget.onSave(docId, data),
-                            child: _buildPostAction(
-                                isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
-                                color: isSaved ? Colors.amber : Colors.grey,
-                                'Lưu',
-                                isDarkMode,
-                            ),
-                          );
-                        }
-                    ),
-                  ])),
-                ]),
+                ),
               );
             },
           );
@@ -137,9 +144,5 @@ class _ForumTabState extends State<ForumTab> {
         child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
       ),
     );
-  }
-
-  Widget _buildPostAction(IconData icon, String label, bool isDarkMode, {Color? color}) {
-    return Row(children: [Icon(icon, size: 20, color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600])), const SizedBox(width: 6), Text(label, style: TextStyle(color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600]), fontSize: 13, fontWeight: FontWeight.w500))]);
   }
 }
