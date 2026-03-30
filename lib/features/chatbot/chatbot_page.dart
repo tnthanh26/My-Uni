@@ -307,16 +307,20 @@ class _ChatbotPageState extends State<ChatbotPage> {
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
               child: TextField(
                 controller: _messageController,
-                onSubmitted: (_) => _handleSendMessage(),
+                minLines: 1,
+                maxLines: 5,
+                keyboardType: TextInputType.multiline,
                 style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
                 decoration: const InputDecoration(
                   hintText: "Nhập tin nhắn ở đây",
                   hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
                   border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
