@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class OfficialTab extends StatelessWidget {
-  const OfficialTab({super.key});
+  final Function(String, Map<String, dynamic>) onSave;
+  const OfficialTab({super.key, required this.onSave});
 
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) return;
   }
 
-  // Logic nhận diện sự kiện (tương đồng với DiscoverTab)
   bool _checkIsEvent(String title, String summary) {
     List<String> keywords = [
       'seminar', 'talkshow', 'hội thảo', 'cuộc thi', 'chào tân sinh viên',
@@ -21,7 +21,6 @@ class OfficialTab extends StatelessWidget {
     return keywords.any((k) => content.contains(k));
   }
 
-  // Logic xử lý Quan tâm
   Future<void> _toggleInterest(BuildContext context, String docId, Map<String, dynamic> data) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -97,7 +96,6 @@ class OfficialTab extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Header ---
                   ListTile(
                     leading: const CircleAvatar(
                       backgroundColor: Color(0xFF6797E1),
@@ -126,7 +124,6 @@ class OfficialTab extends StatelessWidget {
                     trailing: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white54 : Colors.grey),
                   ),
 
-                  // --- Row Hashtag & Quan Tâm (Có logic xử lý) ---
                   if (isEvent)
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -144,7 +141,6 @@ class OfficialTab extends StatelessWidget {
                               style: TextStyle(color: Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.bold),
                             ),
                           ),
-                          // Nút Quan tâm với StreamBuilder để check trạng thái
                           StreamBuilder<DocumentSnapshot>(
                               stream: FirebaseFirestore.instance
                                   .collection('users')
@@ -175,7 +171,6 @@ class OfficialTab extends StatelessWidget {
                       ),
                     ),
 
-                  // --- Nội dung bài đăng ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Column(
@@ -203,7 +198,6 @@ class OfficialTab extends StatelessWidget {
                     ),
                   ),
 
-                  // --- Ảnh minh họa ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     child: ClipRRect(
@@ -217,7 +211,6 @@ class OfficialTab extends StatelessWidget {
                     ),
                   ),
 
-                  // --- Thanh tương tác ---
                   Padding(
                     padding: const EdgeInsets.all(8.0),
                     child: Row(
@@ -225,12 +218,31 @@ class OfficialTab extends StatelessWidget {
                       children: [
                         _buildPostAction(Icons.favorite_border, 'Thích', isDarkMode),
                         _buildPostAction(Icons.chat_bubble_outline, 'Bình luận', isDarkMode),
-                        _buildPostAction(Icons.bookmark_add_outlined, 'Lưu', isDarkMode),
+                        // Nút Lưu cập nhật logic StreamBuilder để đổi màu
+                        StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(user?.uid ?? 'guest')
+                                .collection('saved_posts')
+                                .doc(docId)
+                                .snapshots(),
+                            builder: (context, saveSnapshot) {
+                              bool isSaved = saveSnapshot.hasData && saveSnapshot.data!.exists;
+                              return GestureDetector(
+                                onTap: () => onSave(docId, data),
+                                child: _buildPostAction(
+                                  isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                                  color: isSaved ? Colors.amber : Colors.grey,
+                                  'Lưu',
+                                  isDarkMode,
+                                ),
+                              );
+                            }
+                        ),
                       ],
                     ),
                   ),
 
-                  // --- Nút xem chi tiết ---
                   Padding(
                     padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
                     child: SizedBox(
@@ -262,15 +274,15 @@ class OfficialTab extends StatelessWidget {
     );
   }
 
-  Widget _buildPostAction(IconData icon, String label, bool isDarkMode) {
+  Widget _buildPostAction(IconData icon, String label, bool isDarkMode, {Color? color}) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: isDarkMode ? Colors.white60 : Colors.grey[600]),
+        Icon(icon, size: 20, color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600])),
         const SizedBox(width: 4),
         Text(
             label,
             style: TextStyle(
-                color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600]),
                 fontSize: 12
             )
         ),

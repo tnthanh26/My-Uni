@@ -19,7 +19,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   DateTime? _selectedDay = DateTime.now();
   String _listFilter = 'Gần nhất';
 
-  // Màu nâu theo ảnh thiết kế của Thanh
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color primaryBrown = Color(0xFF47352E);
   Color lightUiBg(bool isDark) => isDark ? Colors.white10 : const Color(0xFFF1F1F1);
@@ -39,19 +38,25 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // CẬP NHẬT: Thêm logic lọc thời gian ở đây
   Stream<List<EventModel>> _getEventsStream() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
+
+    // Lấy thời điểm hiện tại
+    final now = DateTime.now();
+
     return FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('personal_events')
+    // Lọc: Chỉ lấy những sự kiện có thời gian lớn hơn hoặc bằng "bây giờ"
+        .where('dateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(now))
         .orderBy('dateTime', descending: _listFilter == 'Xa nhất')
         .snapshots()
         .map((snapshot) => snapshot.docs.map((doc) => EventModel.fromFirestore(doc)).toList());
   }
 
-  // Popup Lịch Tháng
   void _showFullCalendarPopup(bool isDarkMode) {
     showDialog(
       context: context,
@@ -90,7 +95,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     );
   }
 
-  // --- HÀM HIỂN THỊ CHI TIẾT (Details) ---
   void _showEventDetailsBottomSheet(BuildContext context, EventModel ev, bool isDark) {
     showModalBottomSheet(
       context: context,
@@ -143,7 +147,13 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        // CẬP NHẬT: Thêm điều hướng tới trang tạo sự kiện
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreatePersonalEventPage()),
+          );
+        },
         backgroundColor: primaryBrown,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: const Icon(Icons.add_rounded, color: Colors.white, size: 30),
@@ -153,7 +163,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
           builder: (context, snapshot) {
             final List<EventModel> allEvents = snapshot.data ?? [];
 
-            // Logic đếm số lượng sự kiện
             int count = _viewTabController!.index == 0
                 ? allEvents.length
                 : allEvents.where((e) => isSameDay(e.dateTime, _selectedDay)).length;
@@ -163,8 +172,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                 SliverOverlapInjector(
                   handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
                 ),
-
-                // 1. THANH CÔNG CỤ
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -177,8 +184,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-
-                // 2. DÒNG TEXT ĐẾM SỰ KIỆN
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 16),
@@ -190,8 +195,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                     ),
                   ),
                 ),
-
-                // 3. NỘI DUNG
                 SliverFillRemaining(
                   child: TabBarView(
                     controller: _viewTabController,
@@ -212,14 +215,13 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     return Container(
       height: 42,
       width: 96,
-      padding: const EdgeInsets.all(4), // Padding đều 4 cạnh
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: isDarkMode ? Colors.white10 : const Color(0xFFF1F1F1),
         borderRadius: BorderRadius.circular(25),
       ),
       child: Stack(
         children: [
-          // Box màu nâu chạy qua lại
           AnimatedAlign(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
@@ -228,14 +230,13 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                 : Alignment.centerRight,
             child: Container(
               width: 44,
-              height: 34, // Chiều cao cố định để fit với padding ngoài
+              height: 34,
               decoration: BoxDecoration(
                 color: primaryBrown,
                 borderRadius: BorderRadius.circular(20),
               ),
             ),
           ),
-          // Icon đè lên trên và dùng Center để căn giữa icon vào box
           Row(
             children: [
               Expanded(
@@ -276,7 +277,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
       icon: Icon(Icons.more_vert, color: _viewTabController!.index == 0 ? Colors.white : Colors.black54),
       onSelected: (value) {
         if (value == 'edit') {
-          // 1. Chuyển sang trang tạo với dữ liệu có sẵn (Cần chỉnh lại constructor bên CreatePersonalEventPage)
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -284,7 +284,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
             ),
           );
         } else if (value == 'delete') {
-          // 2. Hiện confirm xóa
           _confirmDelete(ev);
         }
       },
@@ -295,7 +294,6 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     );
   }
 
-// Hàm xác nhận xóa
   void _confirmDelete(EventModel ev) {
     showDialog(
       context: context,
@@ -310,7 +308,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
               if (user != null) {
                 await FirebaseFirestore.instance
                     .collection('users').doc(user.uid)
-                    .collection('personal_events').doc(ev.id) // ev.id lấy từ doc.id trong model
+                    .collection('personal_events').doc(ev.id)
                     .delete();
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã xóa sự kiện")));
@@ -324,7 +322,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   }
 
   Widget _buildListView(List<EventModel> events, bool isDarkMode) {
-    if (events.isEmpty) return const Center(child: Text("Không có sự kiện."));
+    if (events.isEmpty) return const Center(child: Text("Không có sự kiện sắp tới."));
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: events.length,
@@ -364,6 +362,17 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
 
   Widget _buildLargeEventCard(EventModel ev, bool isDarkMode) {
     final diff = ev.dateTime.difference(DateTime.now());
+
+    // Xử lý hiển thị text thời gian linh hoạt
+    String timeText = "";
+    if (diff.inDays > 0) {
+      timeText = "${diff.inDays} days left";
+    } else if (diff.inHours > 0) {
+      timeText = "${diff.inHours} hours left";
+    } else {
+      timeText = "${diff.inMinutes} mins left";
+    }
+
     return Container(
       height: 150, margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -371,7 +380,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
         image: const DecorationImage(
             image: NetworkImage('https://student.hcmus.edu.vn/_next/image?url=%2Fbackground.jpg&w=3840&q=75'),
             fit: BoxFit.cover,
-            opacity: 0.6, // Tăng opacity lên để ảnh sáng rõ hơn
+            opacity: 0.6,
             colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken)
         ),
       ),
@@ -383,11 +392,10 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
             _buildMoreMenu(ev, isDarkMode),
           ]),
           const Spacer(),
-          Text("${diff.inHours} hours left", style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+          Text(timeText, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
           const Spacer(),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(DateFormat('MMM d, yyyy').format(ev.dateTime), style: const TextStyle(color: Colors.white70)),
-            // Bấm vào Details này sẽ hiện BottomSheet
             InkWell(
                 onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
                 child: Container(
