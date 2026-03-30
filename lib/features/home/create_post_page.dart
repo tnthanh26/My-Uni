@@ -104,6 +104,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
         // CHẾ ĐỘ TẠO MỚI
         postData['authorId'] = uid;
         postData['timestamp'] = FieldValue.serverTimestamp();
+        postData['likeCount'] = 0;
+        postData['commentCount'] = 0;
         await FirebaseFirestore.instance.collection('forum_posts').add(postData);
       }
 

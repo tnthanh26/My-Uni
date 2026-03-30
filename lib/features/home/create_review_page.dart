@@ -73,8 +73,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       } else {
         // CHẾ ĐỘ TẠO MỚI: Thêm các trường khởi tạo mặc định
         reviewData['timestamp'] = FieldValue.serverTimestamp();
-        reviewData['likes'] = 0;
-        reviewData['comments'] = 0;
+        reviewData['likeCount'] = 0;
+        reviewData['commentCount'] = 0;
         await FirebaseFirestore.instance
             .collection('course_reviews')
             .add(reviewData);
