@@ -7,28 +7,38 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class CreatePostPage extends StatefulWidget {
-  const CreatePostPage({super.key});
+  final String? docId; // Thêm ID để update
+  final Map<String, dynamic>? existingData; // Dữ liệu cũ để đổ vào form
+
+  const CreatePostPage({super.key, this.docId, this.existingData});
 
   @override
   State<CreatePostPage> createState() => _CreatePostPageState();
 }
 
 class _CreatePostPageState extends State<CreatePostPage> {
-  bool _isAnonymous = false;
-  final TextEditingController _contentController = TextEditingController();
+  late bool _isAnonymous;
+  late TextEditingController _contentController;
+  late List<String> _selectedHashtags;
 
   String _realUserName = "Đang tải...";
   String? _userPhotoBase64;
   bool _isLoadingUser = true;
 
   final List<String> _suggestedHashtags = ["Hỏi đáp", "Quân sự", "Học phí", "Tìm đồ", "Chia sẻ"];
-  final List<String> _selectedHashtags = [];
-  File? _imageFile;
+  File? _newImageFile; // Ảnh mới chọn từ máy
+  String? _existingImageUrl; // Ảnh cũ từ Firestore (Base64)
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    // Khởi tạo dữ liệu: Nếu có existingData thì lấy, không thì để mặc định
+    _isAnonymous = widget.existingData?['isAnonymous'] ?? false;
+    _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
+    _selectedHashtags = List<String>.from(widget.existingData?['hashtags'] ?? []);
+    _existingImageUrl = widget.existingData?['imageUrl'];
+
     _loadUserData();
   }
 
@@ -51,7 +61,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   Future<void> _pickImage() async {
     final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) setState(() => _imageFile = File(pickedFile.path));
+    if (pickedFile != null) setState(() => _newImageFile = File(pickedFile.path));
   }
 
   Future<String?> _processImageToBase64(File file) async {
@@ -70,19 +80,33 @@ class _CreatePostPageState extends State<CreatePostPage> {
     setState(() => _isSubmitting = true);
     try {
       String uid = FirebaseAuth.instance.currentUser!.uid;
-      String? postImageBase64;
-      if (_imageFile != null) postImageBase64 = await _processImageToBase64(_imageFile!);
 
-      await FirebaseFirestore.instance.collection('forum_posts').add({
-        'authorId': uid,
+      // Xử lý ảnh: Ưu tiên ảnh mới chọn, nếu không thì giữ ảnh cũ
+      String? finalImageBase64 = _existingImageUrl;
+      if (_newImageFile != null) {
+        finalImageBase64 = await _processImageToBase64(_newImageFile!);
+      }
+
+      final postData = {
         'authorName': _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
         'authorAvatar': _isAnonymous ? null : _userPhotoBase64,
         'content': _contentController.text.trim(),
         'hashtags': _selectedHashtags,
-        'imageUrl': postImageBase64,
-        'timestamp': FieldValue.serverTimestamp(),
+        'imageUrl': finalImageBase64,
         'isAnonymous': _isAnonymous,
-      });
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+
+      if (widget.docId != null) {
+        // CHẾ ĐỘ CHỈNH SỬA
+        await FirebaseFirestore.instance.collection('forum_posts').doc(widget.docId).update(postData);
+      } else {
+        // CHẾ ĐỘ TẠO MỚI
+        postData['authorId'] = uid;
+        postData['timestamp'] = FieldValue.serverTimestamp();
+        await FirebaseFirestore.instance.collection('forum_posts').add(postData);
+      }
+
       if (mounted) Navigator.pop(context);
     } catch (e) {
       if (mounted) setState(() => _isSubmitting = false);
@@ -103,7 +127,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           onPressed: () => Navigator.pop(context),
           child: const Text("Hủy", style: TextStyle(color: Colors.white, fontSize: 16)),
         ),
-        title: const Text("Diễn Đàn", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: Text(widget.docId == null ? "Diễn Đàn" : "Sửa Bài Đăng", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           TextButton(
@@ -195,19 +219,23 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
             const Text("Ảnh bài đăng", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 10),
-            _imageFile != null
+            (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
                 ? Stack(
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
-                  child: Image.file(_imageFile!, width: 120, height: 120, fit: BoxFit.cover),
+                  child: _newImageFile != null
+                      ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
+                      : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
                 ),
-                // NÚT XÓA ẢNH
                 Positioned(
                   top: 5,
                   right: 5,
                   child: GestureDetector(
-                    onTap: () => setState(() => _imageFile = null),
+                    onTap: () => setState(() {
+                      _newImageFile = null;
+                      _existingImageUrl = null;
+                    }),
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),

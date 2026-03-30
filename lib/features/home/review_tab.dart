@@ -1,13 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'create_review_page.dart';
 
 class ReviewTab extends StatelessWidget {
-  const ReviewTab({super.key});
+  final Function(String, Map<String, dynamic>) onSave;
+  const ReviewTab({super.key, required this.onSave});
 
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -23,7 +26,9 @@ class ReviewTab extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
-              var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+              var doc = snapshot.data!.docs[index];
+              var data = doc.data() as Map<String, dynamic>;
+              String docId = doc.id;
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 16),
@@ -62,7 +67,7 @@ class ReviewTab extends StatelessWidget {
                     const SizedBox(height: 8),
                     const Text("Xem thêm", style: TextStyle(color: Colors.grey, fontSize: 12)),
                     const Divider(),
-                    _buildActionRow(),
+                    _buildActionRow(user?.uid, docId, data),
                   ],
                 ),
               );
@@ -70,8 +75,8 @@ class ReviewTab extends StatelessWidget {
           );
         },
       ),
-      // THÊM CÂY BÚT CHO REVIEW
       floatingActionButton: FloatingActionButton(
+        heroTag: "fab_review_tab",
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateReviewPage())),
         backgroundColor: const Color(0xFF6797E1),
         elevation: 6,
@@ -81,17 +86,32 @@ class ReviewTab extends StatelessWidget {
     );
   }
 
-  Widget _buildActionRow() {
-    return const Row(
-      children: [
-        Icon(Icons.favorite_border, color: Colors.grey, size: 20),
-        SizedBox(width: 4), Text("96", style: TextStyle(color: Colors.grey)),
-        SizedBox(width: 20),
-        Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
-        SizedBox(width: 4), Text("40", style: TextStyle(color: Colors.grey)),
-        Spacer(),
-        Icon(Icons.bookmark_outline, color: Colors.grey, size: 20),
-      ],
+  Widget _buildActionRow(String? uid, String docId, Map<String, dynamic> data) {
+    return StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('users').doc(uid ?? 'guest')
+            .collection('saved_posts').doc(docId).snapshots(),
+        builder: (context, saveSnapshot) {
+          bool isSaved = saveSnapshot.hasData && saveSnapshot.data!.exists;
+          return Row(
+            children: [
+              const Icon(Icons.favorite_border, color: Colors.grey, size: 20),
+              const SizedBox(width: 4), const Text("96", style: TextStyle(color: Colors.grey)),
+              const SizedBox(width: 20),
+              const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
+              const SizedBox(width: 4), const Text("40", style: TextStyle(color: Colors.grey)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => onSave(docId, data),
+                child: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    color: isSaved ? Colors.amber : Colors.grey,
+                    size: 20
+                ),
+              ),
+            ],
+          );
+        }
     );
   }
 }

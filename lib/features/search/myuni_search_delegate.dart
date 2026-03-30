@@ -84,11 +84,10 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   }
 
   // ==============================
-  // 2. LOGIC GỌI API BACKEND
+  // 2. LOGIC GỌI API BACKEND (ĐÃ UPDATE ĐÚNG DATA)
   // ==============================
   Future<List<dynamic>> _performSemanticSearch(String query, SearchScope scope) async {
     final String scopeString = scope.toString().split('.').last;
-    // Lưu ý: 10.0.2.2 cho Emulator, dùng IP thật nếu chạy máy thật
     final url = Uri.parse('http://10.0.2.2:8000/search?query=$query&scope=$scopeString');
 
     try {
@@ -96,15 +95,17 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       if (response.statusCode == 200) {
         List<dynamic> apiData = jsonDecode(utf8.decode(response.bodyBytes));
         return apiData.map((item) {
-          final meta = item['metadata'];
+          final meta = item['metadata'] ?? {};
           return {
             'type': scopeString,
             'id': item['id'],
             'title': item['title'] ?? '',
             'content': item['content'] ?? '',
             'author': item['author'] ?? '',
-            'sub_info': meta['sub_info'] ?? '',
-            'metadata': meta,
+            'sub_info': item['sub_info'] ?? '',
+            'likes': meta['likes'] ?? 0,
+            'comments': meta['comments'] ?? 0,
+            'rating': (meta['rating'] ?? 5).toDouble(),
           };
         }).toList();
       }
@@ -138,7 +139,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     );
   }
 
-  // --- A. GIAO DIỆN FORUM (POST) ---
+  // --- A. GIAO DIỆN FORUM ---
   Widget _buildPostItem(BuildContext context, Map<String, dynamic> data) {
     return Card(
       elevation: 0,
@@ -159,7 +160,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
               const SizedBox(width: 10),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(data['author'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                const Text('Vừa xong', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                Text(data['sub_info'], style: const TextStyle(color: Colors.grey, fontSize: 11)),
               ]),
               const Spacer(),
               const Icon(Icons.more_horiz, color: Colors.grey),
@@ -173,14 +174,15 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
             Text(data['content'],
                 style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4)),
             const SizedBox(height: 16),
-            _buildPostActions(0, 0, false),
+            // UPDATE: Truyền likes/comments thật từ Firebase
+            _buildPostActions(data['likes'], data['comments'], false),
           ],
         ),
       ),
     );
   }
 
-  // --- B. GIAO DIỆN REVIEW (COURSE) ---
+  // --- B. GIAO DIỆN REVIEW (LẤY DATA THẬT) ---
   Widget _buildCourseReviewItem(BuildContext context, Map<String, dynamic> data) {
     return Card(
       elevation: 0,
@@ -203,7 +205,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
             Text('${data['sub_info']} • GV: ${data['author']}',
                 style: const TextStyle(color: Colors.grey, fontSize: 12)),
             const SizedBox(height: 10),
-            _buildRatingStars(5),
+            _buildRatingStars(data['rating']),
             const SizedBox(height: 12),
             Text(data['content'],
                 style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.4)),
@@ -214,14 +216,15 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                   child: const Text('Xem thêm', style: TextStyle(color: Color(0xFF6797E1)))),
             ),
             const Divider(),
-            _buildPostActions(12, 4, false),
+            // UPDATE: Truyền likes/comments thật
+            _buildPostActions(data['likes'], data['comments'], false),
           ],
         ),
       ),
     );
   }
 
-  // --- C. GIAO DIỆN OFFICIAL (THÔNG BÁO) ---
+  // --- C. GIAO DIỆN OFFICIAL (LẤY DATA THẬT) ---
   Widget _buildOfficialItem(BuildContext context, Map<String, dynamic> data) {
     return Container(
       decoration: BoxDecoration(
@@ -243,7 +246,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     );
   }
 
-  // --- D. GIAO DIỆN MATERIAL (TÀI LIỆU) ---
+  // --- D. GIAO DIỆN MATERIAL (LẤY DATA THẬT) ---
   Widget _buildMaterialItem(BuildContext context, Map<String, dynamic> data) {
     return Card(
       elevation: 0,
@@ -257,7 +260,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
           child: const Icon(Icons.picture_as_pdf, color: Colors.redAccent, size: 30),
         ),
         title: Text(data['title'], style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text('Môn: ${data['title']}\n${data['content']}',
+        subtitle: Text('GV hướng dẫn: ${data['author']}\n${data['content']}',
             maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
         trailing: const Icon(Icons.download_for_offline, color: Color(0xFF6797E1), size: 28),
         onTap: () {},
