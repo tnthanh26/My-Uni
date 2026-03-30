@@ -1,33 +1,26 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'create_material_page.dart';
 
 class MaterialTab extends StatelessWidget {
-  const MaterialTab({super.key});
+  final Function(String, Map<String, dynamic>) onSave;
+  const MaterialTab({super.key, required this.onSave});
 
   Future<void> _handleOpenFile(BuildContext context, String base64Data, String fileName) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Đang chuẩn bị tài liệu..."), duration: Duration(seconds: 1)),
       );
-
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/$fileName';
       final file = File(filePath);
-
-      // Ghi byte
       await file.writeAsBytes(base64Decode(base64Data));
-      debugPrint("Đã lưu file tạm tại: $filePath");
-
-      // Mở file và lấy kết quả trả về
       final result = await OpenFilex.open(filePath);
-
-      debugPrint("Kết quả mở file: ${result.message}");
-
       if (result.type != ResultType.done) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -36,11 +29,8 @@ class MaterialTab extends StatelessWidget {
         }
       }
     } catch (e) {
-      debugPrint("Lỗi hệ thống: $e");
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: $e")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     }
   }
@@ -48,6 +38,7 @@ class MaterialTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -58,17 +49,15 @@ class MaterialTab extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF6797E1)));
-
-          if (snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("Chưa có tài liệu nào."));
-          }
+          if (snapshot.data!.docs.isEmpty) return const Center(child: Text("Chưa có tài liệu nào."));
 
           return ListView.builder(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
-              var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
-
+              var doc = snapshot.data!.docs[index];
+              var data = doc.data() as Map<String, dynamic>;
+              String docId = doc.id;
               String? fileData = data['fileData'];
               String? fileName = data['fileName'];
               bool isImage = data['isImage'] ?? false;
@@ -79,13 +68,7 @@ class MaterialTab extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                        color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4)
-                    )
-                  ],
+                  boxShadow: [BoxShadow(color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -109,23 +92,17 @@ class MaterialTab extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(data['content'] ?? '', style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black87, height: 1.4)),
                     const SizedBox(height: 12),
-
-                    // PHẦN HIỂN THỊ FILE/ẢNH CÓ THỂ BẤM
                     if (fileData != null && fileData.isNotEmpty)
                       GestureDetector(
                         onTap: () => _handleOpenFile(context, fileData, fileName ?? 'document'),
                         child: isImage
-                            ? ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.memory(base64Decode(fileData), width: double.infinity, fit: BoxFit.cover),
-                        )
+                            ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(base64Decode(fileData), width: double.infinity, fit: BoxFit.cover))
                             : _buildFileDisplay(fileName, isDarkMode),
                       ),
-
                     const SizedBox(height: 8),
                     const Text("Xem thêm", style: TextStyle(color: Colors.grey, fontSize: 12)),
                     const Divider(),
-                    _buildActionRow(),
+                    _buildActionRow(user?.uid, docId, data),
                   ],
                 ),
               );
@@ -146,40 +123,40 @@ class MaterialTab extends StatelessWidget {
   Widget _buildFileDisplay(String? name, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white10 : Colors.grey[100],
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.insert_drive_file, color: Color(0xFF6797E1), size: 28),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              name ?? 'Tài liệu đính kèm',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
-            ),
-          ),
-          const Icon(Icons.file_download_outlined, color: Colors.grey, size: 20),
-        ],
-      ),
+      decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey[100], borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.2))),
+      child: Row(children: [
+        const Icon(Icons.insert_drive_file, color: Color(0xFF6797E1), size: 28),
+        const SizedBox(width: 12),
+        Expanded(child: Text(name ?? 'Tài liệu đính kèm', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
+        const Icon(Icons.file_download_outlined, color: Colors.grey, size: 20),
+      ]),
     );
   }
 
-  Widget _buildActionRow() {
-    return const Row(
-      children: [
-        Icon(Icons.favorite_border, color: Colors.grey, size: 20),
-        SizedBox(width: 4), Text("96", style: TextStyle(color: Colors.grey)),
-        SizedBox(width: 20),
-        Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
-        SizedBox(width: 4), Text("40", style: TextStyle(color: Colors.grey)),
-        Spacer(),
-        Icon(Icons.bookmark_outline, color: Colors.grey, size: 20),
-      ],
+  Widget _buildActionRow(String? uid, String docId, Map<String, dynamic> data) {
+    return StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').doc(uid ?? 'guest').collection('saved_posts').doc(docId).snapshots(),
+        builder: (context, saveSnapshot) {
+          bool isSaved = saveSnapshot.hasData && saveSnapshot.data!.exists;
+          return Row(
+            children: [
+              const Icon(Icons.favorite_border, color: Colors.grey, size: 20),
+              const SizedBox(width: 4), const Text("96", style: TextStyle(color: Colors.grey)),
+              const SizedBox(width: 20),
+              const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 20),
+              const SizedBox(width: 4), const Text("40", style: TextStyle(color: Colors.grey)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => onSave(docId, data),
+                child: Icon(
+                    isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                    color: isSaved ? Colors.amber : Colors.grey,
+                    size: 20
+                ),
+              ),
+            ],
+          );
+        }
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
@@ -8,7 +9,8 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'create_post_page.dart';
 
 class ForumTab extends StatefulWidget {
-  const ForumTab({super.key});
+  final Function(String, Map<String, dynamic>) onSave;
+  const ForumTab({super.key, required this.onSave});
   @override
   State<ForumTab> createState() => _ForumTabState();
 }
@@ -20,17 +22,12 @@ class _ForumTabState extends State<ForumTab> {
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
-  // Logic: Giải mã Base64 -> Lưu file tạm -> Mở trình xem ảnh mặc định
   Future<void> _viewImage(BuildContext context, String base64Data) async {
     try {
       final tempDir = await getTemporaryDirectory();
-      // Tạo tên file ngẫu nhiên để không bị ghi đè
       final filePath = '${tempDir.path}/img_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final file = File(filePath);
-
       await file.writeAsBytes(base64Decode(base64Data));
-
-      // Mở ảnh (người dùng có thể zoom, chia sẻ hoặc lưu từ trình xem này)
       await OpenFilex.open(filePath);
     } catch (e) {
       if (mounted) {
@@ -41,16 +38,11 @@ class _ForumTabState extends State<ForumTab> {
     }
   }
 
-  // Cập nhật hàm nhận context để xử lý sự kiện nhấn
   Widget _buildSafeImage(BuildContext context, String? imgData) {
     if (imgData == null || imgData.isEmpty) return const SizedBox();
-
-    // Nếu là URL cũ
     if (imgData.startsWith('http')) {
       return Image.network(imgData, width: double.infinity, fit: BoxFit.cover);
     }
-
-    // Nếu là Base64 mới
     try {
       return GestureDetector(
         onTap: () => _viewImage(context, imgData),
@@ -68,6 +60,7 @@ class _ForumTabState extends State<ForumTab> {
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -79,7 +72,9 @@ class _ForumTabState extends State<ForumTab> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
-              var data = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+              var doc = snapshot.data!.docs[index];
+              var data = doc.data() as Map<String, dynamic>;
+              String docId = doc.id;
               String? avatarData = data['authorAvatar'];
 
               return Container(
@@ -106,13 +101,28 @@ class _ForumTabState extends State<ForumTab> {
                   ),
                   Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Text(data['content'] ?? '', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white70 : Colors.black87, height: 1.5))),
                   const SizedBox(height: 12),
-                  // TRUYỀN THÊM CONTEXT VÀO ĐÂY
                   Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildSafeImage(context, data['imageUrl']))),
                   Divider(height: 24, thickness: 0.5, indent: 16, endIndent: 16, color: isDarkMode ? Colors.white10 : Colors.black12),
                   Padding(padding: const EdgeInsets.only(bottom: 8, left: 8, right: 8), child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
                     _buildPostAction(Icons.favorite_border, 'Thích', isDarkMode),
                     _buildPostAction(Icons.chat_bubble_outline, 'Bình luận', isDarkMode),
-                    _buildPostAction(Icons.bookmark_add_outlined, 'Lưu', isDarkMode),
+                    StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users').doc(user?.uid ?? 'guest')
+                            .collection('saved_posts').doc(docId).snapshots(),
+                        builder: (context, saveSnapshot) {
+                          bool isSaved = saveSnapshot.hasData && saveSnapshot.data!.exists;
+                          return GestureDetector(
+                            onTap: () => widget.onSave(docId, data),
+                            child: _buildPostAction(
+                                isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
+                                color: isSaved ? Colors.amber : Colors.grey,
+                                'Lưu',
+                                isDarkMode,
+                            ),
+                          );
+                        }
+                    ),
                   ])),
                 ]),
               );
@@ -121,6 +131,7 @@ class _ForumTabState extends State<ForumTab> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: "fab_forum_tab",
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostPage())),
         backgroundColor: const Color(0xFF6797E1), elevation: 6, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
         child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
@@ -128,7 +139,7 @@ class _ForumTabState extends State<ForumTab> {
     );
   }
 
-  Widget _buildPostAction(IconData icon, String label, bool isDarkMode) {
-    return Row(children: [Icon(icon, size: 20, color: isDarkMode ? Colors.white60 : Colors.grey[600]), const SizedBox(width: 6), Text(label, style: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey[600], fontSize: 13, fontWeight: FontWeight.w500))]);
+  Widget _buildPostAction(IconData icon, String label, bool isDarkMode, {Color? color}) {
+    return Row(children: [Icon(icon, size: 20, color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600])), const SizedBox(width: 6), Text(label, style: TextStyle(color: color ?? (isDarkMode ? Colors.white60 : Colors.grey[600]), fontSize: 13, fontWeight: FontWeight.w500))]);
   }
 }

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
@@ -19,6 +20,59 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
+  Future<void> _toggleSavePost({
+    required BuildContext context,
+    required String docId,
+    required Map<String, dynamic> data,
+    required String saveType, // 'general' hoặc 'course'
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng đăng nhập để lưu bài viết")),
+      );
+      return;
+    }
+
+    final docRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('saved_posts')
+        .doc(docId);
+
+    try {
+      final docSnapshot = await docRef.get();
+
+      if (docSnapshot.exists) {
+        await docRef.delete();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Đã bỏ lưu bài viết")),
+          );
+        }
+      } else {
+        // Clone data và thêm flag phân loại
+        final Map<String, dynamic> saveData = Map.from(data);
+        saveData['saveType'] = saveType;
+        saveData['savedAt'] = FieldValue.serverTimestamp();
+        saveData['originalDocId'] = docId;
+
+        await docRef.set(saveData);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi: ${e.toString()}")),
+        );
+      }
+    }
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -31,7 +85,6 @@ class _HomePageState extends State<HomePage> {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        // Màu nền tự động thích ứng
         backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
@@ -77,24 +130,20 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   actions: [
-                    Builder( // Cần Builder để lấy context của Scaffold
+                    Builder(
                         builder: (context) {
                           return IconButton(
                             icon: const Icon(Icons.search, color: Colors.white),
                             onPressed: () {
-                              // Lấy TabIndex hiện tại từ DefaultTabController
                               final tabIndex = DefaultTabController.of(context).index;
-
-                              // Map TabIndex sang SearchScope (Tạo Map này ở đầu class hoặc local)
                               final Map<int, SearchScope> tabScopeMap = {
                                 0: SearchScope.official,
                                 1: SearchScope.forum,
                                 2: SearchScope.review,
                                 3: SearchScope.material,
                               };
-                              final currentScope = tabScopeMap[tabIndex] ?? SearchScope.forum; // Mặc định là forum nếu lỗi
+                              final currentScope = tabScopeMap[tabIndex] ?? SearchScope.forum;
 
-                              // GỌI SEARCH DELEGATE MỚI
                               showSearch(
                                 context: context,
                                 delegate: MyUniSearchDelegate(currentScope: currentScope),
@@ -109,7 +158,6 @@ class _HomePageState extends State<HomePage> {
                   bottom: PreferredSize(
                     preferredSize: const Size.fromHeight(52),
                     child: Container(
-                      // Màu nền TabBar thích ứng
                       color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                       child: TabBar(
                         isScrollable: true,
@@ -120,7 +168,6 @@ class _HomePageState extends State<HomePage> {
                           borderRadius: BorderRadius.circular(30),
                           color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.3 : 0.2),
                         ),
-                        // Màu chữ khi chọn: Xanh nhạt hơn trong Dark Mode để nổi bật
                         labelColor: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF003366),
                         unselectedLabelColor: isDarkMode ? Colors.white38 : Colors.grey,
                         labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
@@ -145,13 +192,14 @@ class _HomePageState extends State<HomePage> {
                   SliverOverlapInjector(
                     handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
                   ),
-                  const SliverFillRemaining(
+                  SliverFillRemaining(
                     child: TabBarView(
                       children: [
-                        OfficialTab(),
-                        ForumTab(),
-                        ReviewTab(),
-                        MaterialTab(),
+                        // TRUYỀN HÀM XUỐNG CÁC TAB
+                        OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+                        ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+                        ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+                        MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
                       ],
                     ),
                   ),
