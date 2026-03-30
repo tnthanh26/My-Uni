@@ -9,6 +9,7 @@ import 'package:my_uni/features/credential/signup_page.dart';
 import 'package:my_uni/features/credential/otp_page.dart';
 import 'package:my_uni/features/credential/forgot_password_page.dart';
 import 'package:my_uni/features/home/home_page.dart';
+import 'package:my_uni/features/myspace/myspace_screen.dart'; // Import MySpaceScreen
 import 'firebase_options.dart';
 
 // --- PHẦN 1: QUẢN LÝ TRẠNG THÁI (APP PROVIDER) ---

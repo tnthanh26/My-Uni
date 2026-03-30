@@ -8,6 +8,7 @@ import 'package:my_uni/features/home/material_tab.dart';
 import 'package:my_uni/features/account/account_page.dart';
 import 'package:my_uni/features/chatbot/chatbot_page.dart';
 import 'package:my_uni/features/event/event_page.dart';
+import 'package:my_uni/features/myspace/myspace_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -176,7 +177,7 @@ class _HomePageState extends State<HomePage> {
       isGuest ? guestScreen : _buildMainHomeContent(),
       isGuest ? guestScreen : const EventPage(),
       isGuest ? guestScreen : const ChatbotPage(),
-      Center(child: Text('Góc Nhỏ', style: TextStyle(fontSize: 24, color: isDarkMode ? Colors.white : Colors.black87))),
+      isGuest ? guestScreen : const MySpaceScreen(),
       isGuest ? guestScreen : const AccountPage(),
     ];
 
