@@ -45,7 +45,7 @@ class LocalStorageHelper {
       start: "09:30",
       end: "11:10",
       room: "C31",
-      weekday: 2,
+      weekday: 3,
       color: Colors.blueAccent,
     ),
     StudyClass(
@@ -54,7 +54,7 @@ class LocalStorageHelper {
       start: "07:30",
       end: "09:10",
       room: "B22",
-      weekday: 3,
+      weekday: 4,
       color: Colors.greenAccent,
     ),
   ];

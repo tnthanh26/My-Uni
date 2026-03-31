@@ -1,0 +1,141 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'myspace_models.dart';
+
+class MySpaceFirebaseService {
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final String? userId = FirebaseAuth.instance.currentUser?.uid;
+
+  // Collection reference dành riêng cho từng User
+  CollectionReference get _deadlineRef =>
+      _db.collection('users').doc(userId).collection('deadlines');
+
+  CollectionReference get _scheduleRef =>
+      _db.collection('users').doc(userId).collection('schedule');
+
+  // --- DEADLINES ---
+  Future<void> saveDeadline(Deadline d) async {
+    if (userId == null) return;
+    await _deadlineRef.doc(d.id).set({
+      'title': d.title,
+      'description': d.description,
+      'dueDate': d.dueDate.toIso8601String(),
+      'dueTimeHour': d.dueTime.hour,
+      'dueTimeMinute': d.dueTime.minute,
+      'isCompleted': d.isCompleted,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<List<Deadline>> getDeadlines() async {
+    if (userId == null) return [];
+    try {
+      final snapshot = await _deadlineRef.get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Deadline(
+          id: doc.id,
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          dueDate: DateTime.parse(data['dueDate']),
+          dueTime: TimeOfDay(
+            hour: data['dueTimeHour'] ?? 0,
+            minute: data['dueTimeMinute'] ?? 0,
+          ),
+          isCompleted: data['isCompleted'] ?? false,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint("Error fetching deadlines: $e");
+      return [];
+    }
+  }
+
+  Future<void> deleteDeadline(String id) async {
+    await _deadlineRef.doc(id).delete();
+  }
+
+  // --- SCHEDULE ---
+  Future<void> saveSchedule(StudyClass s) async {
+    if (userId == null) return;
+    await _scheduleRef.doc(s.id).set({
+      'name': s.name,
+      'start': s.start,
+      'end': s.end,
+      'room': s.room,
+      'weekday': s.weekday,
+      'colorValue': s.color.value,
+    });
+  }
+
+  Future<List<StudyClass>> getSchedule() async {
+    if (userId == null) return [];
+    try {
+      final snapshot = await _scheduleRef.get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return StudyClass(
+          id: doc.id,
+          name: data['name'] ?? '',
+          start: data['start'] ?? '',
+          end: data['end'] ?? '',
+          room: data['room'] ?? '',
+          weekday: data['weekday'] ?? 2,
+          color: Color(data['colorValue'] ?? 0xFF5893D8),
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint("Error fetching schedule: $e");
+      return [];
+    }
+  }
+
+  Future<void> deleteSchedule(String id) async {
+    await _scheduleRef.doc(id).delete();
+  }
+
+  // Hàm này giúp đẩy toàn bộ danh sách cục bộ lên Firebase nếu cần
+  Future<void> syncAllDeadlines(List<Deadline> localDeadlines) async {
+    if (userId == null || localDeadlines.isEmpty) return;
+
+    // Sử dụng WriteBatch để đẩy nhiều dữ liệu cùng lúc cho nhanh
+    final batch = _db.batch();
+    for (var d in localDeadlines) {
+      final docRef = _deadlineRef.doc(d.id);
+      batch.set(docRef, {
+        'title': d.title,
+        'description': d.description,
+        'dueDate': d.dueDate.toIso8601String(),
+        'dueTimeHour': d.dueTime.hour,
+        'dueTimeMinute': d.dueTime.minute,
+        'isCompleted': d.isCompleted,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    debugPrint("Đã đồng bộ thành công ${localDeadlines.length} deadlines lên Firebase.");
+  }
+
+  // Hàm đồng bộ toàn bộ lịch học (Schedule) lên Firebase
+  Future<void> syncAllSchedule(List<StudyClass> localSchedule) async {
+    if (userId == null || localSchedule.isEmpty) return;
+
+    final batch = _db.batch();
+    for (var s in localSchedule) {
+      final docRef = _scheduleRef.doc(s.id);
+      batch.set(docRef, {
+        'name': s.name,
+        'start': s.start,
+        'end': s.end,
+        'room': s.room,
+        'weekday': s.weekday,
+        'colorValue': s.color.value,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    }
+    await batch.commit();
+    debugPrint("Đã đồng bộ thành công ${localSchedule.length} môn học lên Firebase.");
+  }
+
+}
