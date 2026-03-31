@@ -39,13 +39,13 @@ class _ForumTabState extends State<ForumTab> {
 
   Widget _buildSafeImage(BuildContext context, String? imgData) {
     if (imgData == null || imgData.isEmpty) return const SizedBox();
-    if (imgData.startsWith('http')) {
-      return Image.network(imgData, width: double.infinity, fit: BoxFit.cover);
-    }
     try {
       return GestureDetector(
         onTap: () => _viewImage(context, imgData),
-        child: Image.memory(base64Decode(imgData), width: double.infinity, fit: BoxFit.cover),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Image.memory(base64Decode(imgData), width: double.infinity, height: 200, fit: BoxFit.cover),
+        ),
       );
     } catch (e) {
       return const SizedBox();
@@ -54,16 +54,15 @@ class _ForumTabState extends State<ForumTab> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: Colors.transparent,
+      backgroundColor: Colors.white, // CSS: #FFFFFF
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('forum_posts').orderBy('timestamp', descending: true).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF6797E1)));
+          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
+
           return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 80),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
@@ -72,53 +71,106 @@ class _ForumTabState extends State<ForumTab> {
               String? avatarData = data['authorAvatar'];
 
               return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [BoxShadow(color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1)), // CSS: Vector 136
                 ),
-                // BỌC GESTUREDETECTOR LỚN ĐỂ VÀO DETAIL
                 child: GestureDetector(
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PostDetailPage(docId: docId, initialPostData: data),
-                      ),
-                    );
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => PostDetailPage(docId: docId, initialPostData: data)));
                   },
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.orangeAccent.withOpacity(isDarkMode ? 0.3 : 0.2),
-                          backgroundImage: (avatarData != null && avatarData.isNotEmpty) ? MemoryImage(base64Decode(avatarData)) : null,
-                          child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.orange) : null,
+                      // --- HEADER (CSS: Frame 1359) ---
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: [
+                            // Avatar (CSS: Frame 1497)
+                            CircleAvatar(
+                              radius: 22.5,
+                              backgroundColor: Colors.white,
+                              child: CircleAvatar(
+                                radius: 22.5,
+                                backgroundColor: const Color(0xFFF0F0F0),
+                                backgroundImage: (avatarData != null && avatarData.isNotEmpty)
+                                    ? MemoryImage(base64Decode(avatarData)) : null,
+                                child: (avatarData == null || avatarData.isEmpty)
+                                    ? const Icon(Icons.person, color: Colors.grey) : null,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            // Name & Time (CSS: Frame 1350)
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    data['authorName'] ?? 'Sinh viên ẩn danh',
+                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454)),
+                                  ),
+                                  Text(
+                                    data['timestamp'] != null
+                                        ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
+                                        : 'Vừa xong',
+                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF545454)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.more_horiz, color: Color(0xFF777777)), // CSS: mage:dots
+                          ],
                         ),
-                        title: Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87)),
-                        subtitle: Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                        trailing: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white54 : Colors.grey),
                       ),
+
+                      // --- HASHTAGS (CSS: Frame 29018 / Frame 1365) ---
                       if (data['hashtags'] != null)
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          padding: const EdgeInsets.only(bottom: 8),
                           child: Wrap(
-                            spacing: 8, runSpacing: 4,
-                            children: (data['hashtags'] as List).map((tag) => Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.15 : 0.1), borderRadius: BorderRadius.circular(12)),
-                              child: Text('#$tag', style: TextStyle(color: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.w600)),
-                            )).toList(),
+                            spacing: 8,
+                            children: (data['hashtags'] as List).map((tag) {
+                              // Màu sắc hashtag tùy chỉnh theo text (Cảnh báo: Đỏ, còn lại: Xám xanh)
+                              bool isWarning = tag.toString().toLowerCase().contains('cảnh báo');
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isWarning ? const Color(0xFFFF6C6C).withOpacity(0.6) : const Color(0xFFEDEDED).withOpacity(0.92),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.tag, size: 13, color: Color(0xFF344054)),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      tag.toString(),
+                                      style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
                           ),
                         ),
-                      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 0), child: Text(data['content'] ?? '', style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white70 : Colors.black87, height: 1.5))),
-                      const SizedBox(height: 12),
-                      Padding(padding: const EdgeInsets.symmetric(horizontal: 12), child: ClipRRect(borderRadius: BorderRadius.circular(10), child: _buildSafeImage(context, data['imageUrl']))),
-                      Divider(height: 24, thickness: 0.5, indent: 16, endIndent: 16, color: isDarkMode ? Colors.white10 : Colors.black12),
 
-                      // CHẶN CHẠM Ở THANH ACTION
+                      // --- CONTENT (CSS: Encode Sans Expanded 15px) ---
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                          data['content'] ?? '',
+                          style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4),
+                        ),
+                      ),
+
+                      // --- IMAGE (Nếu có) ---
+                      _buildSafeImage(context, data['imageUrl']),
+
+                      const SizedBox(height: 12),
+
+                      // --- ACTION ROW (Like, Comment, Save) ---
                       GestureDetector(
                         onTap: () {},
                         behavior: HitTestBehavior.opaque,
@@ -129,6 +181,7 @@ class _ForumTabState extends State<ForumTab> {
                           collectionPath: 'forum_posts',
                         ),
                       ),
+                      const SizedBox(height: 12),
                     ],
                   ),
                 ),
@@ -140,8 +193,10 @@ class _ForumTabState extends State<ForumTab> {
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_forum_tab",
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostPage())),
-        backgroundColor: const Color(0xFF6797E1), elevation: 6, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(100)),
-        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
+        backgroundColor: const Color(0xFF5893D8), // Đồng bộ màu Primary mới
+        elevation: 4,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 30),
       ),
     );
   }

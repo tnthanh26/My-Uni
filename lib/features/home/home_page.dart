@@ -25,7 +25,7 @@ class _HomePageState extends State<HomePage> {
     required BuildContext context,
     required String docId,
     required Map<String, dynamic> data,
-    required String saveType, // 'general' hoặc 'course'
+    required String saveType,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -34,42 +34,31 @@ class _HomePageState extends State<HomePage> {
       );
       return;
     }
-
     final docRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
         .collection('saved_posts')
         .doc(docId);
-
     try {
       final docSnapshot = await docRef.get();
-
       if (docSnapshot.exists) {
         await docRef.delete();
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Đã bỏ lưu bài viết")),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã bỏ lưu bài viết")));
         }
       } else {
-        // Clone data và thêm flag phân loại
         final Map<String, dynamic> saveData = Map.from(data);
         saveData['saveType'] = saveType;
         saveData['savedAt'] = FieldValue.serverTimestamp();
         saveData['originalDocId'] = docId;
-
         await docRef.set(saveData);
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")));
         }
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: ${e.toString()}")),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
       }
     }
   }
@@ -81,132 +70,133 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMainHomeContent() {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
+        backgroundColor: Colors.white,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
-              SliverOverlapAbsorber(
-                handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                sliver: SliverAppBar(
-                  expandedHeight: 120.0,
-                  pinned: true,
-                  floating: false,
-                  backgroundColor: const Color(0xFF6797E1),
-                  elevation: 0,
-                  flexibleSpace: FlexibleSpaceBar(
-                    collapseMode: CollapseMode.pin,
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        Image.asset(
-                          'assets/images/background.jpg',
-                          fit: BoxFit.cover,
-                        ),
-                        Container(color: Colors.black38),
-                        const Positioned(
-                          left: 20,
-                          bottom: 80,
-                          child: Row(
-                            children: [
-                              Icon(Icons.logo_dev_sharp, color: Colors.white, size: 32),
-                              SizedBox(width: 10),
-                              Text(
-                                'HCMUS',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 26,
-                                  fontWeight: FontWeight.bold,
-                                  shadows: [Shadow(blurRadius: 10, color: Colors.black45)],
+              SliverAppBar(
+                expandedHeight: 160.0,
+                pinned: true,
+                elevation: 4,
+                shadowColor: Colors.black26,
+                backgroundColor: const Color(0xFF5893D8),
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.asset('assets/images/background.jpg', fit: BoxFit.cover),
+                      Container(color: Colors.black26),
+                      // HCMUS Text (CSS: left 58px, top 48px)
+                      Positioned(
+                        left: 20,
+                        bottom: 65,
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Image.asset(
+                                  'assets/images/logo.png',
+                                  fit: BoxFit.contain,
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'HCMUS',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Nunito',
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                  ),
-                  actions: [
-                    Builder(
-                        builder: (context) {
-                          return IconButton(
-                            icon: const Icon(Icons.search, color: Colors.white),
-                            onPressed: () {
-                              final tabIndex = DefaultTabController.of(context).index;
-                              final Map<int, SearchScope> tabScopeMap = {
-                                0: SearchScope.official,
-                                1: SearchScope.forum,
-                                2: SearchScope.review,
-                                3: SearchScope.material,
-                              };
-                              final currentScope = tabScopeMap[tabIndex] ?? SearchScope.forum;
-
-                              showSearch(
-                                context: context,
-                                delegate: MyUniSearchDelegate(currentScope: currentScope),
-                              );
-                            },
-                          );
-                        }
-                    ),
-                    IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Colors.white), onPressed: () {}),
-                    const SizedBox(width: 8),
-                  ],
-                  bottom: PreferredSize(
-                    preferredSize: const Size.fromHeight(52),
-                    child: Container(
-                      color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                      child: TabBar(
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.start,
-                        padding: const EdgeInsets.only(left: 12),
-                        indicatorSize: TabBarIndicatorSize.tab,
-                        indicator: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.3 : 0.2),
-                        ),
-                        labelColor: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF003366),
-                        unselectedLabelColor: isDarkMode ? Colors.white38 : Colors.grey,
-                        labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                        dividerColor: Colors.transparent,
-                        tabs: const [
-                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Chính thức'))),
-                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Diễn đàn'))),
-                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Review'))),
-                          Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 12), child: Text('Tài liệu'))),
-                        ],
                       ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  // Search button (CSS: mingcute:search-line)
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white),
+                    onPressed: () {
+                      final tabIndex = DefaultTabController.of(context).index;
+                      showSearch(
+                        context: context,
+                        delegate: MyUniSearchDelegate(
+                          currentScope: [SearchScope.official, SearchScope.forum, SearchScope.review, SearchScope.material][tabIndex],
+                        ),
+                      );
+                    },
+                  ),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white), onPressed: () {}),
+                      Positioned(
+                        right: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(color: Color(0xFFFF6868), shape: BoxShape.circle),
+                          child: const Text('1', style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)),
+                        ),
+                      )
+                    ],
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                bottom: PreferredSize(
+                  preferredSize: const Size.fromHeight(40),
+                  child: Container(
+                    height: 30,
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: TabBar(
+                      isScrollable: true,
+                      tabAlignment: TabAlignment.start,
+                      indicatorSize: TabBarIndicatorSize.label,
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      indicator: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        color: const Color(0xFF5893D8),
+                      ),
+                      labelColor: Colors.white,
+                      unselectedLabelColor: Colors.black,
+                      labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, fontSize: 14),
+                      unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 14),
+                      dividerColor: Colors.transparent,
+                      tabs: const [
+                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Chính Thức'))),
+                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Diễn Đàn'))),
+                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Review'))),
+                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Tài Liệu'))),
+                      ],
                     ),
                   ),
                 ),
               ),
             ];
           },
-          body: Builder(
-            builder: (context) {
-              return CustomScrollView(
-                slivers: [
-                  SliverOverlapInjector(
-                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                  ),
-                  SliverFillRemaining(
-                    child: TabBarView(
-                      children: [
-                        // TRUYỀN HÀM XUỐNG CÁC TAB
-                        OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-                        ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-                        ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
-                        MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+          body: TabBarView(
+            children: [
+              OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+              ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+              ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+              MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+            ],
           ),
         ),
       ),
@@ -215,10 +205,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
     final bool isGuest = user == null;
-
     final guestScreen = _buildGuestAccountScreen(context);
 
     final List<Widget> pages = [
@@ -231,70 +219,59 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       body: IndexedStack(index: _selectedIndex, children: pages),
-      bottomNavigationBar: _buildBottomNav(isDarkMode),
+      bottomNavigationBar: _buildBottomNav(),
     );
   }
 
-  Widget _buildBottomNav(bool isDarkMode) {
+  Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05))),
+        color: const Color(0xFFF6F6F6),
+        border: Border(top: BorderSide(color: Colors.black.withOpacity(0.2))),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 4)),
+        ],
       ),
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.transparent,
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF6797E1),
-        unselectedItemColor: isDarkMode ? Colors.white38 : Colors.grey,
-        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-        unselectedLabelStyle: const TextStyle(fontSize: 11),
+        selectedItemColor: const Color(0xFF457EC0), // Active color CSS
+        unselectedItemColor: const Color(0xFF545454), // Inactive color CSS
+        selectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
+        unselectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
         elevation: 0,
         onTap: _onItemTapped,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_outlined), activeIcon: Icon(Icons.home), label: 'Trang chủ'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_available_outlined), label: 'Sự kiện'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Hỏi Đáp'),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view_outlined), label: 'Góc Nhỏ'),
-          BottomNavigationBarItem(icon: Icon(Icons.account_circle_outlined), label: 'Tài khoản'),
+          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.event_note_rounded), label: 'Events'),
+          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Hỏi Đáp'),
+          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'MySpace'),
+          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Account'),
         ],
       ),
     );
   }
 
   Widget _buildGuestAccountScreen(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.account_circle_outlined, size: 100, color: isDarkMode ? Colors.white24 : Colors.grey),
-                const SizedBox(height: 20),
-                Text(
-                    'Bạn đang ở chế độ khách',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black87)
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Đăng nhập để sử dụng đầy đủ tính năng.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6797E1),
-                      minimumSize: const Size(200, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    ),
-                    child: const Text('Đăng nhập ngay', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                )
-              ]
-          ),
-        )
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.account_circle_outlined, size: 100, color: Colors.grey),
+          const SizedBox(height: 20),
+          const Text('Chế độ khách', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 30),
+          ElevatedButton(
+            onPressed: () => Navigator.pushNamed(context, '/login'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF457EC0),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            ),
+            child: const Text('Đăng nhập ngay', style: TextStyle(color: Colors.white)),
+          )
+        ],
+      ),
     );
   }
 }

@@ -30,7 +30,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   @override
   void initState() {
     super.initState();
-    // Khởi tạo dữ liệu từ existingData nếu đang ở chế độ chỉnh sửa
     _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
     _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
@@ -52,8 +51,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("Chưa đăng nhập tài khoản");
 
-      // Gom dữ liệu chung. Việc đưa authorId vào đây giúp "vá" dữ liệu cho các bài cũ
-      // vốn dĩ trước đó bạn lỡ quên không lưu authorId.
       final reviewData = {
         'authorId': user.uid,
         'semester': _selectedSemester,
@@ -65,13 +62,11 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       };
 
       if (widget.docId != null) {
-        // CHẾ ĐỘ CHỈNH SỬA: Sử dụng update để bổ sung/cập nhật dữ liệu
         await FirebaseFirestore.instance
             .collection('course_reviews')
             .doc(widget.docId)
             .update(reviewData);
       } else {
-        // CHẾ ĐỘ TẠO MỚI: Thêm các trường khởi tạo mặc định
         reviewData['timestamp'] = FieldValue.serverTimestamp();
         reviewData['likeCount'] = 0;
         reviewData['commentCount'] = 0;
@@ -98,107 +93,231 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    const Color mainColor = Color(0xFF6797E1);
+    const Color figmaHeaderBlue = Color(0xFF457EC0);
+    const Color figmaLabelColor = Color(0xFF1E1E1E);
+    const Color figmaHintColor = Color(0xFF8E8E93);
+    const Color starYellow = Color(0xFFFFCB45);
+    const Color starGrey = Color(0xFFF2F2F2);
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
-      appBar: AppBar(
-        backgroundColor: mainColor,
-        elevation: 0,
-        leading: TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Hủy", style: TextStyle(color: Colors.white, fontSize: 16))
-        ),
-        title: Text(
-            widget.docId == null ? "Review" : "Sửa Review",
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)
-        ),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitReview,
-            child: _isSubmitting
-                ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-            )
-                : const Text("Lưu", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(54),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: figmaHeaderBlue,
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.25),
+                offset: Offset(0, 1),
+                blurRadius: 4,
+              )
+            ],
           ),
-        ],
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Text(
+                      "Hủy",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                        letterSpacing: -0.0041,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    widget.docId == null ? "Review" : "Sửa Review",
+                    style: const TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
+                      color: Color(0xFFFFFDFD),
+                      letterSpacing: -0.0041,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isSubmitting ? null : _submitReview,
+                    child: _isSubmitting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                      "Lưu",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                        letterSpacing: -0.0041,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildLabel("Học kỳ", isDarkMode),
+              // Frame 1433 & Dropdown (Normal Text Field)
+              _buildSectionLabel("Học kỳ"),
               _buildDropdown(),
-              const SizedBox(height: 20),
-              _buildLabel("Khóa học", isDarkMode),
-              _buildTextField(_courseController, "Tên môn học", isDarkMode),
-              const SizedBox(height: 20),
-              _buildLabel("Giảng viên", isDarkMode),
-              _buildTextField(_teacherController, "Tên giảng viên", isDarkMode),
-              const SizedBox(height: 20),
-              _buildLabel("Trải nghiệm của bạn về khóa học này?", isDarkMode),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Khóa học"),
+              _buildUnderlineTextField(_courseController, "Tên môn học"),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Giảng viên"),
+              _buildUnderlineTextField(_teacherController, "Tên giảng viên"),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Trải nghiệm của bạn về khóa học này?"),
+              const SizedBox(height: 10),
               Row(
-                children: List.generate(5, (i) => IconButton(
-                  onPressed: () => setState(() => _rating = i + 1),
-                  icon: Icon(
-                      i < _rating ? Icons.star : Icons.star_border,
-                      color: Colors.amber,
-                      size: 32
-                  ),
-                )),
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: List.generate(5, (i) {
+                  return GestureDetector(
+                    onTap: () => setState(() => _rating = i + 1),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 11.6), // Tương ứng gap giữa các sao
+                      child: Icon(
+                        Icons.star,
+                        color: i < _rating ? starYellow : starGrey,
+                        size: 34, // Theo width 34.94px của Figma
+                      ),
+                    ),
+                  );
+                }),
               ),
-              const SizedBox(height: 20),
-              _buildLabel("Nội dung", isDarkMode),
-              _buildContentField(isDarkMode, "Nhập đánh giá của bạn..."),
-            ]
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Nội dung"),
+              const SizedBox(height: 10),
+              // Text Field - Component (Boxed style)
+              Container(
+                width: double.infinity,
+                height: 214,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: figmaHintColor),
+                ),
+                child: TextField(
+                  controller: _contentController,
+                  maxLines: null,
+                  style: const TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 15,
+                    color: figmaLabelColor,
+                  ),
+                  decoration: const InputDecoration(
+                    hintText: "Nội dung",
+                    hintStyle: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 15,
+                      color: figmaHintColor,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildLabel(String text, bool isDark) => Text(
-      text,
-      style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14)
-  );
+  Widget _buildSectionLabel(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontWeight: FontWeight.w400,
+          fontSize: 15,
+          color: Color(0xFF1E1E1E),
+          letterSpacing: -0.0024,
+        ),
+      ),
+    );
+  }
 
-  Widget _buildDropdown() => DropdownButtonFormField<String>(
-    value: _selectedSemester,
-    items: _semesters.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-    onChanged: (v) => setState(() => _selectedSemester = v!),
-    decoration: const InputDecoration(contentPadding: EdgeInsets.symmetric(vertical: 0)),
-  );
-
-  Widget _buildTextField(TextEditingController ctrl, String hint, bool isDark) => TextField(
-    controller: ctrl,
-    style: TextStyle(color: isDark ? Colors.white : Colors.black),
-    decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: const TextStyle(color: Colors.grey, fontSize: 14)
-    ),
-  );
-
-  Widget _buildContentField(bool isDark, String hint) => Container(
-    margin: const EdgeInsets.only(top: 10),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(10)
-    ),
-    child: TextField(
-        controller: _contentController,
-        maxLines: 5,
-        style: TextStyle(color: isDark ? Colors.white : Colors.black),
-        decoration: InputDecoration(
+  Widget _buildDropdown() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButtonFormField<String>(
+          value: _selectedSemester,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1E1E1E), size: 24),
+          items: _semesters.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+          onChanged: (v) => setState(() => _selectedSemester = v!),
+          decoration: const InputDecoration(
+            contentPadding: EdgeInsets.fromLTRB(8, 0, 0, 8),
             border: InputBorder.none,
-            hintText: hint,
-            hintStyle: const TextStyle(fontSize: 14)
-        )
-    ),
-  );
+          ),
+          style: const TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            color: Color(0xFF1E1E1E),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnderlineTextField(TextEditingController ctrl, String hint) {
+    return Container(
+      padding: const EdgeInsets.only(left: 8),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      ),
+      child: TextField(
+        controller: ctrl,
+        style: const TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 15,
+          color: Color(0xFF1E1E1E),
+        ),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontSize: 15,
+            color: Color(0xFF8E8E93),
+          ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+        ),
+      ),
+    );
+  }
 }

@@ -12,12 +12,21 @@ class MyReviewsPage extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      // Đồng bộ màu nền trắng chuẩn các Tab
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Đánh giá của tôi", style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Đánh giá của tôi",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.bold,
+            color: Color(0xFF545454),
+          ),
+        ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Color(0xFF545454)),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -27,7 +36,7 @@ class MyReviewsPage extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator(color: Color(0xFF6797E1)));
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -35,7 +44,7 @@ class MyReviewsPage extends StatelessWidget {
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
@@ -43,15 +52,12 @@ class MyReviewsPage extends StatelessWidget {
               String docId = doc.id;
 
               return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))
-                  ],
+                margin: const EdgeInsets.only(bottom: 12),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  // Border dưới ngăn cách theo style Vector 136 - 2px của ReviewTab
+                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2)),
                 ),
-                // BỌC GESTUREDETECTOR ĐỂ VÀO DETAIL
                 child: GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -61,31 +67,56 @@ class MyReviewsPage extends StatelessWidget {
                       ),
                     );
                   },
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // --- HEADER (Tên môn & Giảng viên) ---
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(data['courseName'] ?? 'Không rõ môn học',
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  Text(
+                                    data['courseName'] ?? 'Không rõ môn học',
+                                    style: const TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      color: Color(0xFF545454),
+                                    ),
+                                  ),
                                   const SizedBox(height: 4),
-                                  Text(data['semester'] ?? '',
-                                      style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                                  Text(
+                                    "Giảng viên: ${data['teacherName'] ?? 'Chưa cập nhật'}",
+                                    style: const TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: 14,
+                                      color: Color(0xFF545454),
+                                    ),
+                                  ),
+                                  Text(
+                                    data['semester'] ?? '',
+                                    style: const TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontWeight: FontWeight.w300,
+                                      fontSize: 14,
+                                      color: Color(0xFF545454),
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
-                            // GIỮ NGUYÊN LOGIC EDIT/DELETE
+                            // Giữ nguyên logic Edit/Delete nhưng đổi Icon cho thanh thoát
                             Row(
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit_outlined, size: 20, color: Colors.blueGrey),
+                                  icon: const Icon(Icons.edit_outlined, size: 22, color: Color(0xFF5893D8)),
                                   onPressed: () {
                                     Navigator.push(
                                       context,
@@ -96,33 +127,59 @@ class MyReviewsPage extends StatelessWidget {
                                   },
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                                  icon: const Icon(Icons.delete_outline, size: 22, color: Color(0xFFFF6C6C)),
                                   onPressed: () => _confirmDelete(context, doc.reference),
                                 ),
                               ],
-                            )
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: List.generate(5, (i) => Icon(
-                            i < (data['rating'] ?? 0) ? Icons.star : Icons.star_border,
-                            color: Colors.amber,
-                            size: 18,
-                          )),
+                      ),
+
+                      // --- STARS (Style #FFCB45) ---
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          children: List.generate(5, (i) {
+                            int rating = (data['rating'] ?? 0).toInt();
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 3),
+                              child: Icon(
+                                i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                                color: i < rating ? const Color(0xFFFFCB45) : const Color(0xFFD9D9D9),
+                                size: 22,
+                              ),
+                            );
+                          }),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                            data['content'] ?? '',
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                                color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                                height: 1.4
-                            )
+                      ),
+
+                      // --- CONTENT (15px, height 1.33) ---
+                      Text(
+                        data['content'] ?? '',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 15,
+                          color: Color(0xFF545454),
+                          height: 1.33,
                         ),
-                      ],
-                    ),
+                      ),
+
+                      // --- XEM THÊM ---
+                      const Padding(
+                        padding: EdgeInsets.only(top: 4, bottom: 16),
+                        child: Text(
+                          "Xem thêm",
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 14,
+                            color: Color(0xFFA9A9A9),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               );
@@ -133,6 +190,7 @@ class MyReviewsPage extends StatelessWidget {
     );
   }
 
+  // --- CÁC HÀM HELPER GIỮ NGUYÊN LOGIC, CẬP NHẬT UI ĐỒNG BỘ ---
   Widget _buildEmptyReviewState(BuildContext context) {
     return Center(
       child: Padding(
@@ -140,20 +198,27 @@ class MyReviewsPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.stars_outlined, size: 100, color: Color(0xFFFFD54F)),
+            const Icon(Icons.stars_outlined, size: 100, color: Color(0xFFFFCB45)),
             const SizedBox(height: 24),
-            const Text("Bạn chưa có đánh giá nào!", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(
+                "Bạn chưa có đánh giá nào!",
+                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF545454))
+            ),
             const SizedBox(height: 12),
-            const Text("Ý kiến của bạn rất quan trọng! Hãy review các môn đã học để giúp các bạn khóa sau chọn môn dễ dàng hơn nhé.",
-                textAlign: TextAlign.center, style: TextStyle(color: Colors.grey, fontSize: 14, height: 1.5)),
+            const Text(
+                "Ý kiến của bạn rất quan trọng! Hãy review các môn đã học để giúp các bạn khóa sau chọn môn dễ dàng hơn nhé.",
+                textAlign: TextAlign.center,
+                style: TextStyle(fontFamily: 'Encode Sans Expanded', color: Colors.grey, fontSize: 14, height: 1.5)
+            ),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateReviewPage())),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6797E1),
+                backgroundColor: const Color(0xFF5893D8),
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 15),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
               ),
               child: const Text("Tạo đánh giá mới", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             )
@@ -171,13 +236,17 @@ class MyReviewsPage extends StatelessWidget {
         content: const Text("Dữ liệu này sẽ bị xóa vĩnh viễn và không thể khôi phục."),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy", style: TextStyle(color: Colors.grey))),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Hủy", style: TextStyle(color: Colors.grey))
+          ),
           TextButton(
               onPressed: () async {
                 await ref.delete();
                 if (context.mounted) Navigator.pop(context);
               },
-              child: const Text("Xóa ngay", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+              child: const Text("Xóa ngay", style: TextStyle(color: Color(0xFFFF6C6C), fontWeight: FontWeight.bold))
+          ),
         ],
       ),
     );

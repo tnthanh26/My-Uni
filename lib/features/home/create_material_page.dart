@@ -31,7 +31,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
-        allowMultiple: false, // Chỉ chọn 1 file
+        allowMultiple: false,
       );
 
       if (result != null && result.files.single.path != null) {
@@ -43,16 +43,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
           _fileName = result.files.single.name;
           _isImage = ['.jpg', '.jpeg', '.png'].contains(extension);
         });
-        debugPrint("Đã chọn file: $_fileName");
-      } else {
-        // Người dùng hủy chọn
-        debugPrint("Người dùng đã hủy chọn file");
       }
     } catch (e) {
       debugPrint("Lỗi FilePicker: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Không thể mở trình chọn tệp: $e"))
-      );
     }
   }
 
@@ -94,88 +87,295 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    const Color mainColor = Color(0xFF6797E1);
+    const Color figmaHeaderBlue = Color(0xFF457EC0);
+    const Color figmaDashedColor = Color(0xFF1C95BE);
+    const Color figmaHintColor = Color(0xFF8E8E93);
+    const Color figmaLabelColor = Color(0xFF1E1E1E);
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
-      appBar: AppBar(
-        backgroundColor: mainColor, elevation: 0,
-        leading: TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy", style: TextStyle(color: Colors.white, fontSize: 16))),
-        title: const Text("Tài Liệu", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          TextButton(onPressed: _isSubmitting ? null : _submitMaterial, child: const Text("Lưu", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _buildLabel("Học kỳ", isDarkMode),
-          _buildDropdown(),
-          const SizedBox(height: 20),
-          _buildLabel("Khóa học", isDarkMode),
-          _buildTextField(_courseController, "Tên môn học", isDarkMode),
-          const SizedBox(height: 20),
-          _buildLabel("Giảng viên", isDarkMode),
-          _buildTextField(_teacherController, "Tên giảng viên", isDarkMode),
-          const SizedBox(height: 20),
-          _buildLabel("Nội dung mô tả", isDarkMode),
-          _buildContentField(isDarkMode, "Mô tả về tài liệu..."),
-          const SizedBox(height: 20),
-          _buildLabel("Đính kèm tệp", isDarkMode),
-          const SizedBox(height: 10),
-
-          // KHU VỰC CHỌN FILE + NÚT XÓA (X)
-          _attachedFile != null
-              ? Stack(children: [
-            Container(
-              width: 140, height: 120,
-              decoration: BoxDecoration(border: Border.all(color: mainColor), borderRadius: BorderRadius.circular(10)),
-              child: _buildFilePreview(),
-            ),
-            Positioned(top: 5, right: 5, child: GestureDetector(
-              onTap: () => setState(() { _attachedFile = null; _fileName = null; }),
-              child: Container(padding: const EdgeInsets.all(4), decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle), child: const Icon(Icons.close, color: Colors.white, size: 16)),
-            )),
-          ])
-              : GestureDetector(
-            onTap: _pickFile,
-            child: Container(
-              width: 140, height: 120,
-              decoration: BoxDecoration(color: isDarkMode ? Colors.white10 : Colors.grey[100], border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid), borderRadius: BorderRadius.circular(10)),
-              child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add_circle_outline, color: mainColor), Text("Thêm File/Ảnh", style: TextStyle(fontSize: 10))]),
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(54),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: figmaHeaderBlue,
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.25),
+                offset: Offset(0, 1),
+                blurRadius: 4,
+              )
+            ],
+          ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Text(
+                      "Hủy",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                        letterSpacing: -0.0041,
+                      ),
+                    ),
+                  ),
+                  const Text(
+                    "Tài Liệu",
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
+                      color: Color(0xFFFFFDFD),
+                      letterSpacing: -0.0041,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isSubmitting ? null : _submitMaterial,
+                    child: _isSubmitting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                      "Lưu",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                        letterSpacing: -0.0041,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ]),
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionLabel("Học kỳ"),
+              _buildDropdown(),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Khóa học"),
+              _buildUnderlineTextField(_courseController, "Tên môn học"),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Giảng viên"),
+              _buildUnderlineTextField(_teacherController, "Tên giảng viên"),
+              const SizedBox(height: 24),
+
+              _buildSectionLabel("Nội dung mô tả"),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                height: 214,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: figmaHintColor),
+                ),
+                child: TextField(
+                  controller: _contentController,
+                  maxLines: null,
+                  style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: figmaLabelColor),
+                  decoration: const InputDecoration(
+                    hintText: "Nội dung",
+                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: figmaHintColor),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.all(8),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Upload Area with Custom Dotted Border
+              _buildSectionLabel("Đính kèm tệp"),
+              const SizedBox(height: 10),
+              GestureDetector(
+                onTap: _attachedFile == null ? _pickFile : null,
+                child: CustomPaint(
+                  painter: _attachedFile == null ? DashRectPainter(color: figmaDashedColor) : null,
+                  child: Container(
+                    width: 130,
+                    height: 130,
+                    decoration: _attachedFile != null
+                        ? BoxDecoration(border: Border.all(color: figmaDashedColor), borderRadius: BorderRadius.circular(20))
+                        : null,
+                    alignment: Alignment.center,
+                    child: _attachedFile != null
+                        ? Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: _buildFilePreview(),
+                        ),
+                        Positioned(
+                          top: 5,
+                          right: 5,
+                          child: GestureDetector(
+                            onTap: () => setState(() { _attachedFile = null; _fileName = null; }),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                        : const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                        "Nhấn để thêm\nẢnh/Tài liệu",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: figmaDashedColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  // --- HÀM HELPER ĐỒNG BỘ ---
-  Widget _buildLabel(String text, bool isDark) => Text(text, style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 14));
+  Widget _buildSectionLabel(String text) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontFamily: 'Encode Sans Expanded',
+        fontWeight: FontWeight.w400,
+        fontSize: 15,
+        color: Color(0xFF1E1E1E),
+        letterSpacing: -0.0024,
+      ),
+    );
+  }
 
-  Widget _buildDropdown() => DropdownButtonFormField<String>(
-    value: _selectedSemester,
-    items: _semesters.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-    onChanged: (v) => setState(() => _selectedSemester = v!),
-  );
+  Widget _buildUnderlineTextField(TextEditingController ctrl, String hint) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      ),
+      child: TextField(
+        controller: ctrl,
+        style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF1E1E1E)),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF8E8E93)),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+        ),
+      ),
+    );
+  }
 
-  Widget _buildTextField(TextEditingController ctrl, String hint, bool isDark) => TextField(
-    controller: ctrl,
-    style: TextStyle(color: isDark ? Colors.white : Colors.black),
-    decoration: InputDecoration(hintText: hint, hintStyle: const TextStyle(color: Colors.grey, fontSize: 14)),
-  );
-
-  Widget _buildContentField(bool isDark, String hint) => Container(
-    margin: const EdgeInsets.only(top: 10),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(10)),
-    child: TextField(controller: _contentController, maxLines: 3, style: TextStyle(color: isDark ? Colors.white : Colors.black), decoration: InputDecoration(border: InputBorder.none, hintText: hint, hintStyle: const TextStyle(fontSize: 14))),
-  );
+  Widget _buildDropdown() {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButtonFormField<String>(
+          value: _selectedSemester,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1E1E1E), size: 24),
+          items: _semesters.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+          onChanged: (v) => setState(() => _selectedSemester = v!),
+          decoration: const InputDecoration(
+            contentPadding: EdgeInsets.fromLTRB(8, 0, 0, 8),
+            border: InputBorder.none,
+          ),
+          style: const TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.w500,
+            fontSize: 15,
+            color: Color(0xFF1E1E1E),
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _buildFilePreview() {
-    if (_isImage) return ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.file(_attachedFile!, fit: BoxFit.cover));
-    return Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.description, size: 40, color: Colors.blue), Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: Text(_fileName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10)))]);
+    if (_isImage) return Image.file(_attachedFile!, width: 120, height: 120, fit: BoxFit.cover);
+    return Container(
+      width: 120, height: 120,
+      color: Colors.grey[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.description, size: 40, color: Colors.blue),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: Text(_fileName ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10)),
+          )
+        ],
+      ),
+    );
   }
+}
+
+class DashRectPainter extends CustomPainter {
+  final Color color;
+  DashRectPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double dashWidth = 6, dashSpace = 3;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    RRect rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      const Radius.circular(20),
+    );
+
+    Path path = Path()..addRRect(rrect);
+    Path dashPath = Path();
+
+    for (var metric in path.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        dashPath.addPath(
+          metric.extractPath(distance, distance + dashWidth),
+          Offset.zero,
+        );
+        distance += dashWidth + dashSpace;
+      }
+    }
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

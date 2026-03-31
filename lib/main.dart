@@ -99,7 +99,7 @@ class MyUniApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.light,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6797E1),
+          seedColor: const Color(0xFF5893D8),
           brightness: Brightness.light,
         ),
         scaffoldBackgroundColor: Colors.white,
@@ -110,7 +110,7 @@ class MyUniApp extends StatelessWidget {
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6797E1),
+          seedColor: const Color(0xFF5893D8),
           brightness: Brightness.dark,
         ),
         // Bạn có thể tùy chỉnh màu nền Dark Mode ở đây
@@ -135,8 +135,7 @@ class MyUniHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Lấy màu primary từ Theme để dùng đồng nhất
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final primaryColor = Color(0xFF5893D8);
 
     return Scaffold(
       body: Container(

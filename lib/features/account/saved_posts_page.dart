@@ -51,9 +51,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
         .collection('saved_posts').doc(docId).delete();
   }
 
-  // --- HELPER ĐIỀU HƯỚNG CHUNG ---
   void _navigateToDetail(Map<String, dynamic> data, String docId) {
-    // Lấy originalDocId đã lưu trong HomePage
     String originalId = data['originalDocId'] ?? docId;
     Navigator.push(
       context,
@@ -65,24 +63,26 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Color(0xFF545454)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text("Bài đã lưu", style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black)),
+        title: const Text(
+            "Bài đã lưu",
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, color: Color(0xFF545454))
+        ),
         centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(60),
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: isDarkMode ? Colors.white10 : Colors.grey[200],
+              color: const Color(0xFFF0F0F0),
               borderRadius: BorderRadius.circular(30),
             ),
             child: TabBar(
@@ -91,11 +91,11 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
               dividerColor: Colors.transparent,
               indicator: BoxDecoration(
                 borderRadius: BorderRadius.circular(30),
-                color: const Color(0xFF6797E1).withOpacity(0.2),
+                color: const Color(0xFF5893D8),
               ),
-              labelColor: const Color(0xFF6797E1),
-              unselectedLabelColor: Colors.grey,
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+              labelColor: Colors.white,
+              unselectedLabelColor: const Color(0xFF777777),
+              labelStyle: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold),
               tabs: const [
                 Tab(text: "Diễn đàn chung"),
                 Tab(text: "Khóa học"),
@@ -107,14 +107,14 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildSavedList("general", isDarkMode),
-          _buildSavedList("course", isDarkMode),
+          _buildSavedList("general"),
+          _buildSavedList("course"),
         ],
       ),
     );
   }
 
-  Widget _buildSavedList(String type, bool isDarkMode) {
+  Widget _buildSavedList(String type) {
     final user = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<QuerySnapshot>(
@@ -124,29 +124,41 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           .where('saveType', isEqualTo: type)
           .snapshots(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) return _buildEmptyState();
 
         return ListView.builder(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           itemCount: docs.length,
           itemBuilder: (context, index) {
             var data = docs[index].data() as Map<String, dynamic>;
             String docId = docs[index].id;
 
-            // MỖI CARD ĐƯỢC BỌC GESTUREDETECTOR ĐỂ VÀO DETAIL
+            // FIX: Bọc GestureDetector cho từng loại Card để điều hướng
             if (data.containsKey('department')) {
-              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildOfficialCard(data, docId, isDarkMode));
+              return GestureDetector(
+                onTap: () => _navigateToDetail(data, docId),
+                child: _buildOfficialCard(data, docId),
+              );
             }
             if (data.containsKey('authorName')) {
-              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildForumCard(data, docId, isDarkMode));
+              return GestureDetector(
+                onTap: () => _navigateToDetail(data, docId),
+                child: _buildForumCard(data, docId),
+              );
             }
             if (data.containsKey('rating')) {
-              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildReviewCard(data, docId, isDarkMode));
+              return GestureDetector(
+                onTap: () => _navigateToDetail(data, docId),
+                child: _buildReviewCard(data, docId),
+              );
             }
             if (data.containsKey('fileData')) {
-              return GestureDetector(onTap: () => _navigateToDetail(data, docId), child: _buildMaterialCard(data, docId, isDarkMode));
+              return GestureDetector(
+                onTap: () => _navigateToDetail(data, docId),
+                child: _buildMaterialCard(data, docId),
+              );
             }
 
             return const SizedBox();
@@ -156,38 +168,34 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  // --- CÁC CARD UI (GIỮ NGUYÊN LOGIC CỦA BẠN) ---
-  Widget _buildOfficialCard(Map<String, dynamic> data, String docId, bool isDark) {
+  // --- CÁC HÀM BUILD CARD (GIỮ NGUYÊN UI ĐÃ SỬA) ---
+  Widget _buildOfficialCard(Map<String, dynamic> data, String docId) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ListTile(
-          leading: const CircleAvatar(backgroundColor: Color(0xFF6797E1), child: Icon(Icons.school, color: Colors.white, size: 20)),
-          title: Text(data['department'] ?? 'Thông báo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          subtitle: Text(data['date'] ?? '', style: const TextStyle(fontSize: 12)),
-          trailing: IconButton(icon: const Icon(Icons.bookmark, color: Colors.amber), onPressed: () => _removeSave(docId)),
-        ),
+        Row(children: [
+          CircleAvatar(radius: 20, backgroundColor: Colors.white, child: Image.asset('assets/images/logo.png', fit: BoxFit.contain)),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(data['department'] ?? 'HCMUS News', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454))),
+            Text(data['date'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777))),
+          ])),
+          IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
+        ]),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Text(data['summary'] ?? '', maxLines: 4, overflow: TextOverflow.ellipsis, style: TextStyle(color: isDark ? Colors.white70 : Colors.grey[800], height: 1.4)),
-          ]),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Text(data['title'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF545454), height: 1.3)),
         ),
+        ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset('assets/images/news.png', width: double.infinity, height: 180, fit: BoxFit.cover)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.asset('assets/images/news.png', width: double.infinity, height: 180, fit: BoxFit.cover)),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          padding: const EdgeInsets.symmetric(vertical: 16),
           child: SizedBox(
-            width: double.infinity,
+            width: double.infinity, height: 40,
             child: OutlinedButton(
               onPressed: () => _launchURL(data['link'] ?? ''),
-              style: OutlinedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), side: BorderSide(color: const Color(0xFF6797E1))),
-              child: const Text('Xem chi tiết bài viết', style: TextStyle(color: Color(0xFF6797E1), fontWeight: FontWeight.bold)),
+              style: OutlinedButton.styleFrom(side: const BorderSide(color: Color(0xFF5893D8)), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+              child: const Text('Xem chi tiết bài viết', style: TextStyle(color: Color(0xFF5893D8), fontWeight: FontWeight.bold)),
             ),
           ),
         ),
@@ -195,100 +203,99 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  Widget _buildForumCard(Map<String, dynamic> data, String docId, bool isDark) {
+  Widget _buildForumCard(Map<String, dynamic> data, String docId) {
     String? avatarData = data['authorAvatar'];
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        ListTile(
-          leading: CircleAvatar(
-            backgroundColor: Colors.orangeAccent.withOpacity(0.2),
+        Row(children: [
+          CircleAvatar(
+            radius: 20, backgroundColor: const Color(0xFFF0F0F0),
             backgroundImage: (avatarData != null && avatarData.isNotEmpty) ? MemoryImage(base64Decode(avatarData)) : null,
-            child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.orange) : null,
+            child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
           ),
-          title: Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-          subtitle: Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontSize: 12)),
-          trailing: IconButton(icon: const Icon(Icons.bookmark, color: Colors.amber), onPressed: () => _removeSave(docId)),
-        ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454))),
+            Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777))),
+          ])),
+          IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
+        ]),
         if (data['hashtags'] != null) Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: Wrap(spacing: 8, runSpacing: 4, children: (data['hashtags'] as List).map((tag) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: const Color(0xFF6797E1).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-            child: Text('#$tag', style: const TextStyle(color: Color(0xFF6797E1), fontSize: 12, fontWeight: FontWeight.w600)),
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Wrap(spacing: 8, children: (data['hashtags'] as List).map((tag) => Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+            decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
+            child: Text('#$tag', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black)),
           )).toList()),
         ),
-        Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 12), child: Text(data['content'] ?? '', style: const TextStyle(fontSize: 14, height: 1.5))),
+        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(data['content'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4))),
         if (data['imageUrl'] != null) Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-          child: ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(base64Decode(data['imageUrl']), width: double.infinity, fit: BoxFit.cover)),
+          padding: const EdgeInsets.only(bottom: 12),
+          child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(base64Decode(data['imageUrl']), width: double.infinity, height: 180, fit: BoxFit.cover)),
         ),
       ]),
     );
   }
 
-  Widget _buildReviewCard(Map<String, dynamic> data, String docId, bool isDark) {
+  Widget _buildReviewCard(Map<String, dynamic> data, String docId) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['courseName'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(data['semester'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(data['courseName'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF545454))),
+            const SizedBox(height: 4),
+            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
+            Text(data['semester'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
           ])),
-          IconButton(icon: const Icon(Icons.bookmark, color: Colors.amber), onPressed: () => _removeSave(docId)),
+          IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
         ]),
-        const SizedBox(height: 8),
-        Row(children: List.generate(5, (i) => Icon(i < (data['rating'] ?? 0) ? Icons.star : Icons.star_border, color: Colors.amber, size: 18))),
-        const SizedBox(height: 12),
-        Text(data['content'] ?? '', style: const TextStyle(height: 1.4)),
-        const Divider(),
-        Row(children: [const Icon(Icons.favorite_border, color: Colors.grey, size: 20), const SizedBox(width: 4), Text("${data['likeCount'] ?? 0}", style: const TextStyle(color: Colors.grey))]),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          child: Row(children: List.generate(5, (i) => Icon(i < (data['rating'] ?? 0) ? Icons.star_rounded : Icons.star_outline_rounded, color: const Color(0xFFFFCB45), size: 22))),
+        ),
+        Text(data['content'] ?? '', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.33)),
+        const SizedBox(height: 16),
       ]),
     );
   }
 
-  Widget _buildMaterialCard(Map<String, dynamic> data, String docId, bool isDark) {
+  Widget _buildMaterialCard(Map<String, dynamic> data, String docId) {
     String? fileData = data['fileData'];
     String? fileName = data['fileName'];
     bool isImage = data['isImage'] ?? false;
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: isDark ? Colors.black26 : Colors.black.withOpacity(0.05), blurRadius: 10)]),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['courseName'] ?? 'Tài liệu', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            Text(data['semester'] ?? '', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            Text(data['courseName'] ?? 'Tài liệu', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF545454))),
+            const SizedBox(height: 4),
+            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
           ])),
-          IconButton(icon: const Icon(Icons.bookmark, color: Colors.amber), onPressed: () => _removeSave(docId)),
+          IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
         ]),
-        const SizedBox(height: 12),
-        Text(data['content'] ?? '', style: const TextStyle(height: 1.4)),
-        const SizedBox(height: 12),
+        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(data['content'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.33))),
         if (fileData != null) GestureDetector(
           onTap: () => _handleOpenFile(context, fileData, fileName ?? 'document'),
           child: isImage
-              ? ClipRRect(borderRadius: BorderRadius.circular(10), child: Image.memory(base64Decode(fileData), width: double.infinity, fit: BoxFit.cover))
+              ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(base64Decode(fileData), width: double.infinity, height: 180, fit: BoxFit.cover))
               : Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: isDark ? Colors.white10 : Colors.grey[100], borderRadius: BorderRadius.circular(10), border: Border.all(color: Colors.grey.withOpacity(0.2))),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFDFE6E9))),
             child: Row(children: [
-              const Icon(Icons.insert_drive_file, color: Color(0xFF6797E1), size: 28),
+              const Icon(Icons.description_rounded, color: Color(0xFF5893D8), size: 32),
               const SizedBox(width: 12),
-              Expanded(child: Text(fileName ?? 'Tài liệu đính kèm', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13))),
-              const Icon(Icons.file_download_outlined, color: Colors.grey, size: 20),
+              Expanded(child: Text(fileName ?? 'Tài liệu', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF545454)))),
+              const Icon(Icons.file_download_outlined, color: Color(0xFF777777)),
             ]),
           ),
         ),
-        const Divider(),
-        Row(children: [const Icon(Icons.favorite_border, color: Colors.grey, size: 20), const SizedBox(width: 4), Text("${data['likeCount'] ?? 0}", style: const TextStyle(color: Colors.grey))]),
+        const SizedBox(height: 16),
       ]),
     );
   }
@@ -296,16 +303,14 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
   Widget _buildEmptyState() {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.bookmark_border, size: 100, color: Colors.grey),
+        const Icon(Icons.bookmark_border, size: 100, color: Color(0xFFDFE6E9)),
         const SizedBox(height: 20),
-        const Text("Danh sách lưu trống!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const Text("Danh sách lưu trống!", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF545454))),
         const SizedBox(height: 30),
         ElevatedButton(
-          onPressed: () {
-            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6797E1), minimumSize: const Size(200, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25))),
-          child: const Text("Về trang chủ", style: TextStyle(color: Colors.white)),
+          onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF5893D8), minimumSize: const Size(200, 45), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)), elevation: 0),
+          child: const Text("Về trang chủ", style: TextStyle(fontFamily: 'Encode Sans Expanded', color: Colors.white, fontWeight: FontWeight.bold)),
         )
       ]),
     );

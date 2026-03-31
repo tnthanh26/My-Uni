@@ -49,7 +49,6 @@ dependencies:
   table_calendar: ^3.2.0
   flutter_markdown: ^0.7.3+1
 
-
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
@@ -83,6 +82,7 @@ flutter:
   - assets/images/chatbot_avt.png
   - assets/images/logoApp1.png
   - assets/images/background.jpg
+  - assets/images/logo.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
