@@ -751,7 +751,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage('https://student.hcmus.edu.vn/_next/image?url=%2Fbackground.jpg&w=3840&q=75'),
+              image: AssetImage('assets/images/background.jpg'),
               fit: BoxFit.cover,
             ),
           ),
