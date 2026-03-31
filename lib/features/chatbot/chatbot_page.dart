@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
@@ -85,7 +86,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
       setState(() {
         _isTyping = false;
         _messages.add(ChatMessage(
-          text: "Ú Em đang bận hoặc server đang khởi động. Hoshi đợi xíu rồi thử lại nhé!",
+          text: "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé!",
           isUser: false,
         ));
       });
@@ -250,12 +251,11 @@ class _ChatbotPageState extends State<ChatbotPage> {
                   bottomRight: Radius.circular(18),
                 ),
               ),
-              child: Text(
-                msg.text,
-                style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                    fontSize: 14,
-                    height: 1.4
+              child: MarkdownBody(
+                data: msg.text,
+                styleSheet: MarkdownStyleSheet(
+                  p: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontSize: 14, height: 1.4), //
+                  strong: const TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
             ),
@@ -314,7 +314,10 @@ class _ChatbotPageState extends State<ChatbotPage> {
                 controller: _messageController,
                 minLines: 1,
                 maxLines: 5,
-                keyboardType: TextInputType.multiline,
+                keyboardType: TextInputType.text, // Thay multiline bằng text để hỗ trợ bộ gõ tốt hơn
+                textCapitalization: TextCapitalization.sentences, // Tự động viết hoa đầu câu
+                autocorrect: true, // Bật tự động gợi ý từ
+                enableSuggestions: true,
                 style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
                 decoration: const InputDecoration(
                   hintText: "Nhập tin nhắn ở đây",
