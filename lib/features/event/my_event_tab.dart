@@ -378,7 +378,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
-            image: NetworkImage('https://student.hcmus.edu.vn/_next/image?url=%2Fbackground.jpg&w=3840&q=75'),
+            image: AssetImage('assets/images/background.jpg'),
             fit: BoxFit.cover,
             opacity: 0.6,
             colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken)

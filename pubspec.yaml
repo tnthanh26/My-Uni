@@ -81,6 +81,7 @@ flutter:
   - assets/images/news.png
   - assets/images/chatbot_avt.png
   - assets/images/logoApp1.png
+  - assets/images/background.jpg
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 
