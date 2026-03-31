@@ -7,8 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class CreatePostPage extends StatefulWidget {
-  final String? docId; // Thêm ID để update
-  final Map<String, dynamic>? existingData; // Dữ liệu cũ để đổ vào form
+  final String? docId;
+  final Map<String, dynamic>? existingData;
 
   const CreatePostPage({super.key, this.docId, this.existingData});
 
@@ -25,20 +25,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String? _userPhotoBase64;
   bool _isLoadingUser = true;
 
-  final List<String> _suggestedHashtags = ["Hỏi đáp", "Quân sự", "Học phí", "Tìm đồ", "Chia sẻ"];
-  File? _newImageFile; // Ảnh mới chọn từ máy
-  String? _existingImageUrl; // Ảnh cũ từ Firestore (Base64)
+  final List<String> _suggestedHashtags = ["Hỏi đáp", "Quân sự", "Học phí", "Tìm đồ", "Chia sẻ", "Tìm việc"];
+  File? _newImageFile;
+  String? _existingImageUrl;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
-    // Khởi tạo dữ liệu: Nếu có existingData thì lấy, không thì để mặc định
     _isAnonymous = widget.existingData?['isAnonymous'] ?? false;
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
     _selectedHashtags = List<String>.from(widget.existingData?['hashtags'] ?? []);
     _existingImageUrl = widget.existingData?['imageUrl'];
-
     _loadUserData();
   }
 
@@ -80,8 +78,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
     setState(() => _isSubmitting = true);
     try {
       String uid = FirebaseAuth.instance.currentUser!.uid;
-
-      // Xử lý ảnh: Ưu tiên ảnh mới chọn, nếu không thì giữ ảnh cũ
       String? finalImageBase64 = _existingImageUrl;
       if (_newImageFile != null) {
         finalImageBase64 = await _processImageToBase64(_newImageFile!);
@@ -98,10 +94,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
       };
 
       if (widget.docId != null) {
-        // CHẾ ĐỘ CHỈNH SỬA
         await FirebaseFirestore.instance.collection('forum_posts').doc(widget.docId).update(postData);
       } else {
-        // CHẾ ĐỘ TẠO MỚI
         postData['authorId'] = uid;
         postData['timestamp'] = FieldValue.serverTimestamp();
         postData['likeCount'] = 0;
@@ -117,157 +111,283 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    const Color mainColor = Color(0xFF6797E1);
+    const Color figmaHeaderBlue = Color(0xFF457EC0);
+    const Color figmaDashedColor = Color(0xFF1C95BE);
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF6F8FA),
-      appBar: AppBar(
-        backgroundColor: mainColor,
-        elevation: 0,
-        leading: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("Hủy", style: TextStyle(color: Colors.white, fontSize: 16)),
-        ),
-        title: Text(widget.docId == null ? "Diễn Đàn" : "Sửa Bài Đăng", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitPost,
-            child: _isSubmitting
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Text("Lưu", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+      backgroundColor: Colors.white,
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(54),
+        child: Container(
+          decoration: const BoxDecoration(
+            color: figmaHeaderBlue,
+            boxShadow: [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.25),
+                offset: Offset(0, 1),
+                blurRadius: 4,
+              )
+            ],
           ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header User
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF252525) : const Color(0xFFF1F3F5),
-                borderRadius: BorderRadius.circular(20),
-              ),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            automaticallyImplyLeading: false,
+            titleSpacing: 0,
+            title: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: Colors.grey[700],
-                    backgroundImage: (!_isAnonymous && _userPhotoBase64 != null) ? MemoryImage(base64Decode(_userPhotoBase64!)) : null,
-                    child: (_isAnonymous || _userPhotoBase64 == null) ? const Icon(Icons.person, color: Colors.white54) : null,
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Text(
+                      "Hủy",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Text(_isAnonymous ? 'Vô danh tiểu tốt' : _realUserName, style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black87)),
-                  const Spacer(),
-                  IconButton(
-                    onPressed: () => setState(() => _isAnonymous = !_isAnonymous),
-                    icon: Icon(_isAnonymous ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: _isAnonymous ? mainColor : (isDarkMode ? Colors.white38 : Colors.grey)),
+                  Text(
+                    widget.docId == null ? "Diễn Đàn" : "Sửa Bài Đăng",
+                    style: const TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.w600,
+                      fontSize: 17,
+                      color: Color(0xFFFFFDFD),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: _isSubmitting ? null : _submitPost,
+                    child: _isSubmitting
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                      "Lưu",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 17,
+                        color: Colors.white.withOpacity(0.5),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            const Text("Chọn chủ đề", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _suggestedHashtags.map((tag) {
-                bool isSelected = _selectedHashtags.contains(tag);
-                return InkWell(
-                  onTap: () => setState(() => isSelected ? _selectedHashtags.remove(tag) : (_selectedHashtags.length < 5 ? _selectedHashtags.add(tag) : null)),
-                  borderRadius: BorderRadius.circular(20),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? mainColor : (isDarkMode ? const Color(0xFF2C2C2C) : Colors.white),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: isSelected ? mainColor : (isDarkMode ? Colors.white10 : Colors.grey.shade300)),
-                    ),
-                    child: Text("#$tag", style: TextStyle(fontSize: 13, color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87))),
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 24),
-
-            const Text("Nội dung", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 10),
-            Container(
-              height: 150,
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: isDarkMode ? Colors.white10 : Colors.grey.shade300),
-              ),
-              child: TextField(
-                controller: _contentController,
-                maxLines: null,
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
-                decoration: InputDecoration(
-                  hintText: "Bạn đang nghĩ gì...",
-                  hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black38),
-                  border: InputBorder.none,
-                  contentPadding: const EdgeInsets.all(12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            const Text("Ảnh bài đăng", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-            const SizedBox(height: 10),
-            (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
-                ? Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: _newImageFile != null
-                      ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
-                      : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
-                ),
-                Positioned(
-                  top: 5,
-                  right: 5,
-                  child: GestureDetector(
-                    onTap: () => setState(() {
-                      _newImageFile = null;
-                      _existingImageUrl = null;
-                    }),
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                      child: const Icon(Icons.close, color: Colors.white, size: 16),
-                    ),
-                  ),
-                ),
-              ],
-            )
-                : GestureDetector(
-              onTap: _pickImage,
-              child: Container(
-                width: 100, height: 100,
+          ),
+        ),
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(25),
+            topRight: Radius.circular(25),
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // User Card (Figma style)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF252525) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: mainColor.withOpacity(0.5)),
+                  color: const Color(0xFFEEEEEE),
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Row(
                   children: [
-                    Icon(Icons.add_photo_alternate_outlined, color: mainColor),
-                    Text("Thêm ảnh", style: TextStyle(color: mainColor, fontSize: 11)),
+                    CircleAvatar(
+                      radius: 22.5,
+                      backgroundColor: Colors.grey[300],
+                      backgroundImage: (!_isAnonymous && _userPhotoBase64 != null) ? MemoryImage(base64Decode(_userPhotoBase64!)) : null,
+                      child: (_isAnonymous || _userPhotoBase64 == null) ? const Icon(Icons.person, color: Colors.white) : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
+                      style: const TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () => setState(() => _isAnonymous = !_isAnonymous),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: Icon(
+                          _isAnonymous ? Icons.visibility_off : Icons.visibility,
+                          size: 24,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // Hashtags
+              Row(
+                children: [
+                  const Text("Chọn chủ đề", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: Color(0xFF1E1E1E))),
+                  const SizedBox(width: 8),
+                  Text("(${_selectedHashtags.length}/5)", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: const Color(0xFF1E1E1E).withOpacity(0.5))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 10,
+                children: _suggestedHashtags.map((tag) {
+                  bool isSelected = _selectedHashtags.contains(tag);
+                  return GestureDetector(
+                    onTap: () => setState(() => isSelected ? _selectedHashtags.remove(tag) : (_selectedHashtags.length < 5 ? _selectedHashtags.add(tag) : null)),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isSelected ? figmaHeaderBlue.withOpacity(0.2) : const Color(0xEBEDEDED),
+                        borderRadius: BorderRadius.circular(16),
+                        border: isSelected ? Border.all(color: figmaHeaderBlue) : null,
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.tag, size: 13, color: Color(0xFF306CFE)),
+                          const SizedBox(width: 2),
+                          Text(tag, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black)),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 24),
+
+              // Content Area
+              const Text("Nội dung", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF1E1E1E))),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                height: 219,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF8E8E93)),
+                ),
+                child: TextField(
+                  controller: _contentController,
+                  maxLines: null,
+                  style: const TextStyle(fontSize: 14),
+                  decoration: const InputDecoration(
+                    hintText: "Vui lòng nhập văn bản",
+                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF8E8E93)),
+                    border: InputBorder.none,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Upload Image - Custom Dotted Border (Không dùng package)
+              GestureDetector(
+                onTap: _pickImage,
+                child: CustomPaint(
+                  painter: DashRectPainter(color: figmaDashedColor),
+                  child: Container(
+                    width: 130,
+                    height: 130,
+                    alignment: Alignment.center,
+                    child: (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
+                        ? Stack(
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(18),
+                          child: _newImageFile != null
+                              ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
+                              : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: GestureDetector(
+                            onTap: () => setState(() { _newImageFile = null; _existingImageUrl = null; }),
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                              child: const Icon(Icons.close, color: Colors.white, size: 14),
+                            ),
+                          ),
+                        ),
+                      ],
+                    )
+                        : const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text(
+                        "Nhấn để thêm\nẢnh/Tài liệu",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: figmaDashedColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+}
+
+// LỚP VẼ VIỀN ĐỨT ĐOẠN (CUSTOM PAINTER)
+class DashRectPainter extends CustomPainter {
+  final Color color;
+  DashRectPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double dashWidth = 6, dashSpace = 3;
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 2
+      ..style = PaintingStyle.stroke;
+
+    RRect rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, size.height),
+      const Radius.circular(20),
+    );
+
+    Path path = Path()..addRRect(rrect);
+    Path dashPath = Path();
+
+    for (var metric in path.computeMetrics()) {
+      double distance = 0.0;
+      while (distance < metric.length) {
+        dashPath.addPath(
+          metric.extractPath(distance, distance + dashWidth),
+          Offset.zero,
+        );
+        distance += dashWidth + dashSpace;
+      }
+    }
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }

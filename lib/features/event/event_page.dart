@@ -108,7 +108,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
         onPressed: () => _showCreateEventMenu(context),
         backgroundColor: primaryBrown,
         elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       )
           : null,
@@ -128,11 +128,21 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                   children: [
                     Image.asset('assets/images/background.jpg', fit: BoxFit.cover),
                     Container(color: isDarkMode ? Colors.black54 : Colors.black38),
-                    const Positioned(
+                    Positioned(
                       left: 20, bottom: 80,
                       child: Row(
                         children: [
-                          Icon(Icons.logo_dev_sharp, color: Colors.white, size: 32),
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.white,
+                            child: Padding(
+                              padding: const EdgeInsets.all(2.0),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
                           SizedBox(width: 10),
                           Text('HCMUS', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
                         ],
@@ -148,22 +158,26 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(60),
                 child: Container(
-                  width: double.infinity, // Đảm bảo container chiếm hết chiều ngang
+                  height: 50,
+                  width: double.infinity,
                   color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                   child: TabBar(
                     controller: _tabController,
-                    // BƯỚC 2: Tắt isScrollable hoặc chỉnh labelPadding để nó dàn đều
                     isScrollable: false,
                     indicatorSize: TabBarIndicatorSize.tab,
+                    dividerColor: Colors.transparent,
                     indicator: BoxDecoration(
                       borderRadius: BorderRadius.circular(30),
-                      color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.3 : 0.2),
+                      color: const Color(0xFF5893D8),
                     ),
-                    labelColor: isDarkMode ? const Color(0xFF91B5EE) : const Color(0xFF003366),
-                    unselectedLabelColor: isDarkMode ? Colors.white38 : Colors.grey,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    dividerColor: Colors.transparent,
+                    labelColor: Colors.white,
+                    unselectedLabelColor: const Color(0xFF777777),
+                    labelStyle: const TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                     tabs: const [
                       Tab(text: 'Của tôi'),
                       Tab(text: 'Quan tâm'),
