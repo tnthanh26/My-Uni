@@ -47,6 +47,7 @@ dependencies:
   open_filex: ^4.7.0
   google_generative_ai: ^0.4.7
   table_calendar: ^3.2.0
+  flutter_markdown: ^0.7.3+1
 
 
   # The following adds the Cupertino Icons font to your application.
