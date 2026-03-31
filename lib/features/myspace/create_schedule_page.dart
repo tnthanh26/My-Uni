@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'myspace_firebase_service.dart';
 import 'local_storage_helper.dart';
 import 'myspace_models.dart';
 import 'package:intl/intl.dart';
@@ -30,12 +29,26 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   static const Color borderGrey = Color(0xFF8E8E93);
   static const Color hintGrey = Color(0xFF787878);
 
+  late Color _selectedColor = widget.schedule?.color ?? const Color(0xFFFFC374);
+
+  // Danh sách các màu "Pastel" phù hợp với UI hiện đại
+  final List<Color> _colorOptions = [
+    const Color(0xFFFFC374), // Vàng
+    const Color(0xFF92B9E6), // Xanh dương hcmus
+    const Color(0xFF66D46D), // Xanh lá
+    const Color(0xFFFFA3A3), // Đỏ nhạt
+    const Color(0xFFD492E6), // Tím
+    const Color(0xFF8DE6D4), // Teal nhạt
+  ];
+
   @override
   void initState() {
     super.initState();
     if (widget.schedule != null) {
       _subjectController.text = widget.schedule!.name;
       _locationController.text = widget.schedule!.room;
+      _selectedColor = widget.schedule!.color;
+      _selectedWeekday = _weekdays[widget.schedule!.weekday - 2];
       // Cập nhật các biến thời gian và thứ từ widget.schedule
       // VD: _selectedWeekday = _getWeekdayString(widget.schedule!.weekday);
     }
@@ -177,6 +190,39 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 24),
+              const Text("Màu sắc thẻ",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded')),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 50,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _colorOptions.length,
+                  itemBuilder: (context, index) {
+                    bool isSelected = _selectedColor == _colorOptions[index];
+                    return GestureDetector(
+                      onTap: () => setState(() => _selectedColor = _colorOptions[index]),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 12),
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: _colorOptions[index],
+                          shape: BoxShape.circle,
+                          border: isSelected
+                              ? Border.all(color: headerBg, width: 3)
+                              : Border.all(color: Colors.transparent),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.white)
+                            : null,
+                      ),
+                    );
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -245,7 +291,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
         end: _endTime.format(context),
         room: _locationController.text,
         weekday: _getWeekdayInt(_selectedWeekday),
-        color: widget.schedule?.color ?? Colors.blueAccent, // Giữ màu cũ nếu có
+        color: _selectedColor,
       );
 
       // 4. KIỂM TRA: LÀ SỬA HAY THÊM MỚI?
@@ -264,6 +310,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
       // 5. Lưu danh sách đã cập nhật vào Local Storage
       await LocalStorageHelper.saveSchedule(currentSchedule);
+      await MySpaceFirebaseService().saveSchedule(updatedClass);
 
       // 6. Quay lại màn hình trước và báo hiệu thành công (true)
       if (mounted) {

@@ -3,13 +3,14 @@ import 'myspace_models.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
+import 'myspace_firebase_service.dart';
 
 // Màu sắc và thông số chuẩn từ thiết kế Figma
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusTeal = Color(0xFF279E95);
 const Color hcmusGreyBg = Color(0xFFF2F6FF);
 const Color hcmusRed = Color(0xFFFF6868);
-const Color hcmusLightGrey = Color(0xFFF6F6F6);
+const Color hcmusLightGrey = Color(0xFFEFEFEF);
 
 class MySpaceScreen extends StatefulWidget {
   const MySpaceScreen({super.key});
@@ -33,7 +34,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     // Khởi tạo TabController cho phần Detail
     _tabController = TabController(length: 2, vsync: this);
 
-    LocalStorageHelper.clearAll();
     _loadData();
 
     _tabController.addListener(() {
@@ -44,17 +44,53 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   // --- LOGIC DỮ LIỆU ---
+  // Thêm service vào class
+  final MySpaceFirebaseService _firebaseService = MySpaceFirebaseService();
 
   Future<void> _loadData() async {
-    final dls = await LocalStorageHelper.getDeadlines();
-    final sch = await LocalStorageHelper.getSchedule();
-    if (mounted) {
-      setState(() {
-        mockDeadlines = dls;
-        mockSchedule = sch;
-      });
+    // 1. Lấy dữ liệu từ Local Storage trước để UI hiện ra ngay lập tức
+    final localDls = await LocalStorageHelper.getDeadlines();
+    final localSch = await LocalStorageHelper.getSchedule();
+
+    setState(() {
+      mockDeadlines = localDls;
+      mockSchedule = localSch;
+    });
+
+    // 2. Sau đó đồng bộ từ Firebase (Nếu có mạng)
+    try {
+      final remoteDls = await _firebaseService.getDeadlines();
+
+      if (remoteDls.isEmpty && localDls.isNotEmpty) {
+        // TRƯỜNG HỢP CỦA BẠN: Firebase trống nhưng máy có dữ liệu mẫu
+        // => Đẩy ngược dữ liệu mẫu lên Firebase
+        await _firebaseService.syncAllDeadlines(localDls);
+      } else if (remoteDls.isNotEmpty) {
+        // Nếu Firebase đã có dữ liệu, cập nhật lại UI
+        setState(() {
+          mockDeadlines = remoteDls;
+        });
+        await LocalStorageHelper.saveDeadlines(remoteDls);
+      }
+
+      final remoteSch = await _firebaseService.getSchedule();
+
+      if (remoteSch.isEmpty && localSch.isNotEmpty) {
+        // TRƯỜNG HỢP CỦA BẠN: Firebase trống nhưng máy có dữ liệu mẫu
+        // => Đẩy ngược dữ liệu mẫu lên Firebase
+        await _firebaseService.syncAllSchedule(localSch);
+      } else if (remoteSch.isNotEmpty) {
+        // Nếu Firebase đã có dữ liệu, cập nhật lại UI
+        setState(() {
+          mockSchedule = remoteSch;
+        });
+        await LocalStorageHelper.saveSchedule(remoteSch);
+      }
+    } catch (e) {
+      debugPrint("Firebase Sync Error: $e");
     }
   }
+
 
 
   void _toggleDeadline(String id) async {
@@ -67,6 +103,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
       // Lưu trạng thái mới vào máy
       await LocalStorageHelper.saveDeadlines(mockDeadlines);
+
+      await _firebaseService.saveDeadline(mockDeadlines[index]);
     }
   }
 
@@ -74,7 +112,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     setState(() {
       mockDeadlines.removeWhere((d) => d.id == id);
     });
+    // Lưu trạng thái mới vào máy
     await LocalStorageHelper.saveDeadlines(mockDeadlines);
+
+    // Nếu có mạng thì xóa trên Firebase
+    await _firebaseService.deleteDeadline(id);
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Đã xóa deadline thành công!")),
@@ -293,7 +336,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           top: 0,
           left: 0,
           right: 0,
-          height: 170,
+          height: 160,
           child: Container(
             decoration: BoxDecoration(
               color: const Color(0xFFEBEBF5).withValues(alpha: 0.9),
@@ -307,7 +350,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           children: [
             // Header của Detail (Tháng 2, 2026)
             Padding(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
                   IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20), onPressed: _backToDashboard),
@@ -318,8 +361,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             ),
 
             _buildDetailCalendarStrip(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 36),
             _buildSlidingToggle(),
+            const SizedBox(height: 12),
 
             // Phần danh sách bên dưới (Nằm ngoài lớp phủ 150px nên sẽ hiện trên nền trắng sạch sẽ)
             Expanded(
@@ -352,7 +396,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final currentWeek = _getCurrentWeekDays();
 
     return SizedBox(
-      height: 95,
+      height: 80,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -375,31 +419,43 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           return GestureDetector(
             onTap: () => setState(() => selectedWeekday = weekdayValue),
             child: Container(
-              width: 55,
-              margin: const EdgeInsets.symmetric(horizontal: 5),
+              width: 48,
+              margin: const EdgeInsets.symmetric(horizontal: 8),
               decoration: BoxDecoration(
-                color: isSelected ? hcmusBlueAccent.withValues(alpha: 0.1) : Colors.transparent,
-                borderRadius: BorderRadius.circular(15),
+                color: isSelected ? hcmusBlueAccent : Colors.transparent,
+                borderRadius: BorderRadius.circular(4),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text("${dayDate.day}",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                          color: isSelected ? hcmusBlueAccent : Colors.black)),
+                          color: isSelected ? Colors.white : Colors.black)),
                   Text(dayData['label'],
-                      style: TextStyle(color: isSelected ? hcmusBlueAccent : Colors.grey, fontSize: 12)),
+                      style: TextStyle(color: isSelected ? Colors.white : Color(0xff94A3B8), fontSize: 12)),
                   const SizedBox(height: 4),
                   // Badge thông báo (Đỏ cho Deadline, Teal cho Schedule)
-                  if (count > 0)
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: BoxDecoration(color: badgeColor, shape: BoxShape.circle),
-                      child: Text("$count",
-                          style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                  SizedBox(
+                    height: 18,
+                    child: count > 0
+                        ? Container(
+                      width: 18, // Đảm bảo width = height để tạo hình tròn chuẩn
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: badgeColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Text(
+                        "$count",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     )
-                  else
-                    const SizedBox(height: 18),
+                        : const SizedBox.shrink(), // Vẫn giữ vùng 18px nhưng bên trong trống
+                  ),
                 ],
               ),
             ),
@@ -411,22 +467,52 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   // Thanh trượt deadlines và schedules
   Widget _buildSlidingToggle() {
+    final bool isDeadlineTab = _tabController.index == 0;
+    final Color activeColor = isDeadlineTab ? hcmusRed : hcmusTeal;
+
     return Container(
-      height: 45,
+      height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(color: hcmusLightGrey, borderRadius: BorderRadius.circular(30)),
-      child: TabBar(
-        controller: _tabController,
-        onTap: (index) {
-          setState(() {
-          });
-        },
-        indicator: BoxDecoration(color: hcmusBlueAccent, borderRadius: BorderRadius.circular(30)),
-        indicatorSize: TabBarIndicatorSize.tab,
-        labelColor: Colors.white,
-        unselectedLabelColor: Colors.grey,
-        dividerColor: Colors.transparent,
-        tabs: const [Tab(text: "Deadlines"), Tab(text: "Thời Khóa Biểu")],
+      decoration: BoxDecoration(color: hcmusLightGrey, borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(4), // Tạo khoảng trống để Indicator nhỏ hơn thanh chứa
+        child: TabBar(
+          controller: _tabController,
+          onTap: (index) {
+            setState(() {
+              // Trigger build lại để cập nhật activeColor
+            });
+          },
+          indicator: BoxDecoration(
+            color: activeColor, // Đỏ cho Deadline, Teal cho Schedule
+            borderRadius: BorderRadius.circular(26),
+            boxShadow: [
+              BoxShadow(
+                color: activeColor.withValues(alpha: 0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelColor: Colors.white,
+          unselectedLabelColor: const Color(0xFF94A3B8), // Màu xám (Slate 400)
+          dividerColor: Colors.transparent, // Xóa gạch chân mặc định
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontFamily: 'Poppins',
+            fontSize: 13,
+          ),
+          tabs: const [
+            Tab(text: "Deadlines"),
+            Tab(text: "Thời Khóa Biểu"),
+          ],
+        ),
       ),
     );
   }
@@ -661,7 +747,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       children: [
         // Background Image - Cố định
         Container(
-          height: 130, // Chiều cao hợp lý để lộ logo và text
+          height: 150,
           width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -669,20 +755,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               fit: BoxFit.cover,
             ),
           ),
-          child: Container(color: Colors.black26),
+          child: Container(color: Colors.black38),
         ),
 
         // Logo & HCMUS Text - Cố định
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(children: [
                   CircleAvatar(
                     backgroundColor: Colors.white,
-                    radius: 20,
+                    radius: 18,
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
                       child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
@@ -690,7 +776,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ),
                   const SizedBox(width: 12),
                   const Text("HCMUS",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 24, fontFamily: 'Nunito')),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          fontFamily: 'Nunito',
+                          letterSpacing: 1.2
+                      )
+                  ),
                 ]),
                 Stack(
                   children: [
@@ -715,33 +808,79 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildWelcomeBannerFigma() {
+    final int today = DateTime.now().weekday + 1;
+
+    final int todayClassesCount = mockSchedule.where((c) => c.weekday == today).length;
+
+    final int pendingDeadlinesCount = mockDeadlines.where((d) => !d.isCompleted).length;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            const Color(0xFF042788).withValues(alpha: 0.77),
-            const Color(0xFF66D46D).withValues(alpha: 0.77),
+            const Color(0xFF042788).withValues(alpha: 0.9),
+            const Color(0xFF60CA6F).withValues(alpha: 1),
           ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 4))],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: hcmusBlueAccent.withValues(alpha: 0.3),
+              blurRadius: 8,
+              offset: Offset(0, 4),
+          ),
+        ],
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Icon(Icons.celebration, color: Colors.orangeAccent, size: 20),
               SizedBox(width: 8),
-              Text("Chào buổi sáng, Hậu!",
-                  style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Poppins')),
+              Text("Chào bạn iuu!",
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Poppins')
+              ),
             ],
           ),
           SizedBox(height: 8),
-          Text("Hôm nay bạn có 3 lớp học và 1 deadline cần giải quyết.",
-              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w500, fontFamily: 'Poppins')),
+          RichText(
+            text: TextSpan(
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontFamily: 'Poppins',
+                fontWeight: FontWeight.w400, // Độ đậm cơ bản cho cả câu
+              ),
+              children: [
+                const TextSpan(text: "Hôm nay bạn có "),
+                TextSpan(
+                  text: "$todayClassesCount lớp học",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600, // In đậm con số lớp học
+                    fontSize: 14, // Có thể tăng size nhẹ để nổi bật hơn
+                  ),
+                ),
+                const TextSpan(text: " và "),
+                TextSpan(
+                  text: "$pendingDeadlinesCount deadline",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600, // In đậm con số deadline
+                    fontSize: 14,
+                  ),
+                ),
+                const TextSpan(text: " cần giải quyết."),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -755,8 +894,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         GestureDetector(
           onTap: onPressed,
           child: Container(
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             decoration: const BoxDecoration(color: hcmusLightGrey, shape: BoxShape.circle),
             child: const Icon(Icons.list_rounded, size: 18, color: Colors.black87),
           ),
@@ -767,7 +906,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Map<String, dynamic> _getTimeLeft(Deadline deadline) {
     final now = DateTime.now();
-    // Kết hợp ngày và giờ của deadline
     final deadlineDateTime = DateTime(
       deadline.dueDate.year,
       deadline.dueDate.month,
@@ -779,23 +917,34 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final difference = deadlineDateTime.difference(now);
 
     if (difference.isNegative) {
-      return {"text": "Đã quá hạn", "color": const Color(0xFFDC2626)};
+      return {"text": "Quá trễ rùi", "color": const Color(0xFFDC2626)};
     }
 
     int days = difference.inDays;
     int hours = difference.inHours % 24;
+    int minutes = difference.inMinutes % 60;
 
-    String timeText = "còn ";
+    String timeText = "";
     if (days > 0) {
       timeText += "$days ngày $hours giờ";
+    } else if (hours > 0) {
+      timeText += "$hours giờ $minutes phút";
     } else {
-      timeText += "$hours giờ";
+      timeText += "$minutes phút";
     }
 
-    // Nếu còn dưới 12 giờ thì dùng màu đỏ DC2626
-    Color textColor = difference.inHours < 12
-        ? const Color(0xFFDC2626)
-        : const Color(0xFF0F172A);
+    // LOGIC MÀU SẮC THEO YÊU CẦU:
+    // Đỏ: < 1 ngày (DC2626)
+    // Cam: < 3 ngày (EA580C)
+    // Xanh: Còn lại (448E58)
+    Color textColor;
+    if (difference.inDays < 1) {
+      textColor = const Color(0xFFDC2626);
+    } else if (difference.inDays < 3) {
+      textColor = const Color(0xFFEA580C);
+    } else {
+      textColor = const Color(0xFF448E58);
+    }
 
     return {"text": timeText, "color": textColor};
   }
@@ -810,7 +959,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       decoration: BoxDecoration(
         color: const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 4, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 3, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
@@ -824,10 +973,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.black, width: 1),
               ),
-              child: deadline.isCompleted ? const Icon(Icons.check, color: Colors.white, size: 16) : null,
+              child: deadline.isCompleted ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
             ),
           ),
           const SizedBox(width: 12),
+          // 1. Title (Bài tập CS101)
           Expanded(
             child: Text(
                 deadline.title,
@@ -841,23 +991,46 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             ),
           ),
 
-          Text(
-              timeLeftData["text"],
-              style: TextStyle(
-                  color: timeLeftData["color"], // Màu động: Đỏ nếu < 12h
-                  fontWeight: FontWeight.w600,
+          SizedBox(
+            width: 100, // Độ rộng cố định đủ cho chuỗi "Còn 2 ngày 16 giờ"
+            child: RichText(
+              textAlign: TextAlign.left,
+              text: TextSpan(
+                style: const TextStyle(
                   fontSize: 10,
-                  fontFamily: 'Poppins'
-              )
+                  fontFamily: 'Poppins',
+                  color: Color(0xFF0F172A),
+                ),
+                children: [
+                  if (timeLeftData["color"] != const Color(0xFFDC2626))
+                    const TextSpan(text: "Còn "),
+                  TextSpan(
+                    text: timeLeftData["text"].replaceAll("còn ", ""),
+                    style: TextStyle(
+                      color: timeLeftData["color"],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
 
-          if (deadline.isCompleted) ...[
-            const SizedBox(width: 8),
-            IconButton(
-              icon: const Icon(Icons.delete_outline, color: Colors.red, size: 18),
-              onPressed: () => _deleteDeadline(deadline.id),
-            ),
-          ]
+          SizedBox(
+            width: 18, // Cố định chiều rộng vùng này
+            child: Align(
+              alignment: Alignment.centerRight, // Căn icon về bên phải trong vùng 32px
+              child: deadline.isCompleted
+                  ? IconButton(
+                constraints: const BoxConstraints(),
+                padding: EdgeInsets.zero,
+                icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFDC2626), size: 18),
+                onPressed: () => _deleteDeadline(deadline.id),
+              )
+                  : const SizedBox.shrink(), // Khi chưa xong, vùng 32px vẫn tồn tại nhưng trống
+            ), // Nếu chưa xong thì để trống nhưng SizedBox cha vẫn giữ 32px
+          ),
         ],
       ),
     );
@@ -947,24 +1120,27 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       mockSchedule.removeWhere((s) => s.id == id);
     });
     await LocalStorageHelper.saveSchedule(mockSchedule);
+
+    await _firebaseService.deleteSchedule(id);
   }
 
   Widget _buildScheduleCardFigma(StudyClass c) { // Thay đổi tham số truyền vào là StudyClass
     return Container(
-      height: 94, // Điều chỉnh theo Figma (94px)
-      margin: const EdgeInsets.only(bottom: 12),
+      height: 80, // Điều chỉnh theo Figma (94px)
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
+        // hcmusTeal
         color: hcmusTeal,
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 4))
         ],
       ),
-      child: Stack( // Sử dụng Stack để đặt nút "ba chấm" chính xác theo Figma
+      child: Stack(
         children: [
           Row(
             children: [
-              // Rectangle 482 (Thanh màu bên trái)
+              // Thanh màu bên trái
               Container(
                 width: 10,
                 decoration: BoxDecoration(
@@ -981,9 +1157,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(_formatTime24h(c.start), style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Poppins')),
-                  const SizedBox(height: 25), // Khoảng cách giữa start và end
-                  Text(_formatTime24h(c.end), style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Poppins')),
+                  Text(_formatTime24h(c.start), style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Poppins', fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 20), // Khoảng cách giữa start và end
+                  Text(_formatTime24h(c.end), style: const TextStyle(color: Colors.white, fontSize: 12, fontFamily: 'Poppins', fontWeight: FontWeight.w500)),
                 ],
               ),
               const SizedBox(width: 10),
@@ -993,7 +1169,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 color: Colors.white,
                 indent: 10,
                 endIndent: 10,
-                thickness: 1,
+                thickness: 1.5,
               ),
               const SizedBox(width: 10),
 

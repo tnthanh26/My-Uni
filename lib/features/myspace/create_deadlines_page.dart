@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'myspace_firebase_service.dart';
 import 'package:intl/intl.dart';
 import 'local_storage_helper.dart';
 import 'myspace_models.dart';
@@ -253,7 +252,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
 
       // 5. Lưu danh sách đã sửa đổi trở lại vào LocalStorage
       await LocalStorageHelper.saveDeadlines(currentDeadlines);
-
+      await MySpaceFirebaseService().saveDeadline(updatedDeadline);
 
       // 6. Quay lại màn hình trước và thông báo thành công
       if (mounted) {
