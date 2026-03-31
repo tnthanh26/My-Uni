@@ -126,7 +126,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.network('https://student.hcmus.edu.vn/_next/image?url=%2Fbackground.jpg&w=3840&q=75', fit: BoxFit.cover),
+                    Image.asset('assets/images/background.jpg', fit: BoxFit.cover),
                     Container(color: isDarkMode ? Colors.black54 : Colors.black38),
                     const Positioned(
                       left: 20, bottom: 80,

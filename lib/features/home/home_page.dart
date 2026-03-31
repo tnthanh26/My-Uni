@@ -103,8 +103,8 @@ class _HomePageState extends State<HomePage> {
                     background: Stack(
                       fit: StackFit.expand,
                       children: [
-                        Image.network(
-                          'https://student.hcmus.edu.vn/_next/image?url=%2Fbackground.jpg&w=3840&q=75',
+                        Image.asset(
+                          'assets/images/background.jpg',
                           fit: BoxFit.cover,
                         ),
                         Container(color: Colors.black38),
