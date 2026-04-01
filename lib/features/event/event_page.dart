@@ -138,7 +138,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                             child: Padding(
                               padding: const EdgeInsets.all(2.0),
                               child: Image.asset(
-                                'assets/images/logo.png',
+                                'assets/images/logoApp1.png',
                                 fit: BoxFit.contain,
                               ),
                             ),

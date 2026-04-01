@@ -76,87 +76,107 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.white,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
+            final tabController = DefaultTabController.of(context);
             return [
               SliverAppBar(
-                expandedHeight: 160.0,
+                // 1. GIẢM expandedHeight để nâng nền trắng lên (Khớp vị trí ảnh tòa nhà)
+                expandedHeight: 102.0,
                 pinned: true,
-                elevation: 4,
-                shadowColor: Colors.black26,
+                elevation: 0,
                 backgroundColor: const Color(0xFF5893D8),
+                automaticallyImplyLeading: false,
+                actions: const [SizedBox.shrink()],
                 flexibleSpace: FlexibleSpaceBar(
+                  collapseMode: CollapseMode.pin,
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset('assets/images/background.jpg', fit: BoxFit.cover),
-                      Container(color: Colors.black26),
-                      // HCMUS Text (CSS: left 58px, top 48px)
-                      Positioned(
-                        left: 20,
-                        bottom: 65,
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: Colors.white,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2.0),
-                                child: Image.asset(
-                                  'assets/images/logo.png',
-                                  fit: BoxFit.contain,
+                      Container(
+                        height: 102,
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          image: DecorationImage(
+                            image: AssetImage('assets/images/background.jpg'),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        child: Container(color: Colors.black38),
+                      ), // Làm tối nhẹ nền
+
+                      SafeArea(
+                        child: Padding(
+                          // 2. GIẢM bottom padding để đưa Logo/HCMUS lên sát Status bar hơn
+                          padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Cụm trái: Logo + HCMUS
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 18,
+                                    backgroundColor: Colors.white,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3.0),
+                                      child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text(
+                                    'HCMUS',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w800, // Tăng độ đậm theo Figma
+                                      fontFamily: 'Nunito',
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Cụm phải: THANH TIỆN ÍCH (SEARCH | NOTI)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: Color(0xff545454), // Đậm hơn một chút để nổi bật icon
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.search, color: Colors.white, size: 24),
+                                    const SizedBox(width: 8),
+                                    const Text("|", style: TextStyle(color: Colors.white38)),
+                                    const SizedBox(width: 8),
+                                    const Stack(
+                                      children: [
+                                        Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                        Positioned(
+                                          right: 0,
+                                          top: 0,
+                                          child: CircleAvatar(
+                                            radius: 5,
+                                            backgroundColor: Colors.red,
+                                            child: Text("3", style: TextStyle(color: Colors.white, fontSize: 6)),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'HCMUS',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                fontFamily: 'Nunito',
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                actions: [
-                  // Search button (CSS: mingcute:search-line)
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Colors.white),
-                    onPressed: () {
-                      final tabIndex = DefaultTabController.of(context).index;
-                      showSearch(
-                        context: context,
-                        delegate: MyUniSearchDelegate(
-                          currentScope: [SearchScope.official, SearchScope.forum, SearchScope.review, SearchScope.material][tabIndex],
-                        ),
-                      );
-                    },
-                  ),
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(icon: const Icon(Icons.notifications_none, color: Colors.white), onPressed: () {}),
-                      Positioned(
-                        right: 8,
-                        top: 8,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: const BoxDecoration(color: Color(0xFFFF6868), shape: BoxShape.circle),
-                          child: const Text('1', style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold)),
-                        ),
-                      )
-                    ],
-                  ),
-                  const SizedBox(width: 10),
-                ],
+                // 3. PHẦN TABBAR NỀN TRẮNG (Chỉnh lại Gap và Alignment)
                 bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(40),
+                  preferredSize: const Size.fromHeight(48),
                   child: Container(
-                    height: 30,
+                    width: double.infinity,
+                    height: 48,
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.only(
@@ -166,27 +186,45 @@ class _HomePageState extends State<HomePage> {
                     ),
                     child: TabBar(
                       isScrollable: true,
-                      tabAlignment: TabAlignment.start,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 10),
+                      tabAlignment: TabAlignment.center,
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      // GIẢM labelPadding để các tab gần nhau hơn theo Figma
+                      labelPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       indicator: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         color: const Color(0xFF5893D8),
                       ),
                       labelColor: Colors.white,
-                      unselectedLabelColor: Colors.black,
-                      labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w700, fontSize: 14),
+                      unselectedLabelColor: Colors.black87,
+                      labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 16),
                       unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 14),
                       dividerColor: Colors.transparent,
                       tabs: const [
-                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Chính Thức'))),
-                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Diễn Đàn'))),
-                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Review'))),
-                        Tab(child: Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('Tài Liệu'))),
+                        Tab(text: 'Chính Thức'),
+                        Tab(text: 'Diễn Đàn'),
+                        Tab(text: 'Review'),
+                        Tab(text: 'Tài Liệu'),
                       ],
                     ),
                   ),
                 ),
+              ),
+              AnimatedBuilder(
+                animation: tabController,
+                builder: (context, child) {
+                  // CHỈ HIỂN THỊ BANNER KHI Ở TAB ĐẦU TIÊN (INDEX 0)
+                  if (tabController.index == 0) {
+                    return SliverToBoxAdapter(
+                      child: Container(
+                        color: Colors.transparent,
+                        child: _buildPromoBanner(),
+                      ),
+                    );
+                  }
+                  // Trả về một sliver trống khi ở các tab khác
+                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+                },
               ),
             ];
           },
@@ -197,6 +235,24 @@ class _HomePageState extends State<HomePage> {
               ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
               MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPromoBanner() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: AspectRatio(
+        aspectRatio: 391 / 73, // Tỉ lệ chính xác theo Figma của bạn (W:378, H:94)
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16), // Bo góc nhẹ cho giống ảnh mẫu
+            image: const DecorationImage(
+              image: AssetImage('assets/images/Ads_template.png'),
+              fit: BoxFit.fill, // Ép ảnh vừa khít khung hình mà không cần design lại
+            ),
           ),
         ),
       ),
