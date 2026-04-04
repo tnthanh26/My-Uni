@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'discover_event_tab.dart';
 import 'my_event_tab.dart';
-import 'interested_event_tab.dart';
 import 'create_personal_event_page.dart';
 import 'create_community_event_page.dart';
 
@@ -19,13 +18,12 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {
-          // Hiện FAB ở Tab 0 (Cá nhân) và Tab 1 (Đã quan tâm)
-          _showFab = _tabController.index == 0 || _tabController.index == 1;
+          _showFab = _tabController.index == 0;
         });
       }
     });
@@ -179,8 +177,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                       fontSize: 13,
                     ),
                     tabs: const [
-                      Tab(text: 'Của tôi'),
-                      Tab(text: 'Quan tâm'),
+                      Tab(text: 'Sự kiện của tôi'),
                       Tab(text: 'Khám phá'),
                     ],
                   ),
@@ -193,7 +190,6 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
           controller: _tabController,
           children: const [
             MyEventTab(),
-            InterestedEventTab(),
             DiscoverEventTab(),
           ],
         ),

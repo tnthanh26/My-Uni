@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/models/event_model.dart';
+import 'package:my_uni/notification_service.dart';
 
 class CreatePersonalEventPage extends StatefulWidget {
   final EventModel? event;
@@ -22,13 +23,11 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   String _selectedReminder = 'Đặt lời nhắc';
   bool _isLoading = false;
 
-  // Màu nâu đặc trưng của dự án MyUni
   static const Color primaryBrown = Color(0xFF47352E);
 
   @override
   void initState() {
     super.initState();
-    // Nếu có event truyền vào -> Đang ở chế độ CHỈNH SỬA
     if (widget.event != null) {
       _titleController.text = widget.event!.title;
       _locationController.text = widget.event!.location;
@@ -85,7 +84,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
     );
   }
 
-  // Lưu hoặc Cập nhật vào Firebase
+  // --- HÀM LƯU SỰ KIỆN VÀ ĐẶT LỜI NHẮC ---
   Future<void> _saveEvent() async {
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập tên sự kiện")));
@@ -101,12 +100,24 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           _selectedTime.hour, _selectedTime.minute,
         );
 
+        // 1. Tính toán thời gian thông báo
+        int minutesBefore = 0;
+        if (_selectedReminder == '5 phút trước') minutesBefore = 5;
+        else if (_selectedReminder == '15 phút trước') minutesBefore = 15;
+        else if (_selectedReminder == '1 giờ trước') minutesBefore = 60;
+
+        DateTime notificationTime = finalDateTime.subtract(Duration(minutes: minutesBefore));
+
+        // 2. Tạo ID thông báo (dựa trên timestamp để không bị trùng)
+        int notificationId = finalDateTime.millisecondsSinceEpoch ~/ 1000;
+
         final eventData = {
           'title': _titleController.text,
           'location': _locationController.text,
           'description': _descController.text,
           'dateTime': Timestamp.fromDate(finalDateTime),
           'reminder': _selectedReminder,
+          'notificationId': notificationId, // Lưu ID để có thể hủy/sửa sau này
           'updatedAt': FieldValue.serverTimestamp(),
         };
 
@@ -116,12 +127,24 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
             .collection('personal_events');
 
         if (widget.event != null) {
-          // CHẾ ĐỘ SỬA: Cập nhật tài liệu cũ
+          if (widget.event!.notificationId != null) {
+            await NotificationService.cancelNotification(widget.event!.notificationId!);
+          }
           await collection.doc(widget.event!.id).update(eventData);
         } else {
           // CHẾ ĐỘ TẠO MỚI
           eventData['createdAt'] = FieldValue.serverTimestamp();
           await collection.add(eventData);
+        }
+
+        // 3. Đặt lịch thông báo trên thiết bị nếu người dùng không chọn 'Không'
+        if (_selectedReminder != 'Không' && notificationTime.isAfter(DateTime.now())) {
+          await NotificationService.scheduleNotification(
+            id: notificationId,
+            title: "Nhắc nhở sự kiện: ${_titleController.text}",
+            body: "Sắp đến giờ diễn ra tại ${_locationController.text}",
+            scheduledDate: notificationTime,
+          );
         }
 
         if (mounted) Navigator.pop(context);
@@ -171,7 +194,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           children: [
             TextField(
               controller: _titleController,
-              autofocus: widget.event == null, // Chỉ tự động focus khi tạo mới
+              autofocus: widget.event == null,
               style: TextStyle(fontSize: 20, color: textColor, fontWeight: FontWeight.bold),
               decoration: InputDecoration(
                 hintText: 'Tên sự kiện',

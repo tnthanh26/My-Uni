@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/models/event_model.dart';
 import 'create_personal_event_page.dart';
+import 'interested_event_tab.dart';
 
 class MyEventTab extends StatefulWidget {
   const MyEventTab({super.key});
@@ -18,6 +19,8 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   String _listFilter = 'Gần nhất';
+
+  String _activeSubTab = 'Cá nhân';
 
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color primaryBrown = Color(0xFF47352E);
@@ -56,14 +59,11 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
         .map((snapshot) => snapshot.docs.map((doc) => EventModel.fromFirestore(doc)).toList());
   }
 
-  // CẬP NHẬT: Hàm lấy ngày giờ linh hoạt theo tháng được chọn
   List<DateTime> _getDaysInWeek() {
-    // Nếu ngày đang chọn không thuộc tháng đang lọc, thì reset về ngày đầu tiên của tháng đó
     DateTime baseDay = _selectedDay!;
     if (baseDay.month != _selectedMonth) {
       baseDay = DateTime(DateTime.now().year, _selectedMonth, 1);
     }
-
     DateTime firstDayOfWeek = baseDay.subtract(Duration(days: baseDay.weekday % 7));
     return List.generate(7, (index) => firstDayOfWeek.add(Duration(days: index)));
   }
@@ -80,14 +80,10 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Chọn ngày",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
+              const Text("Chọn ngày", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
               const SizedBox(height: 10),
               SizedBox(
-                height: 300,
-                width: 300,
+                height: 300, width: 300,
                 child: CalendarDatePicker(
                   initialDate: _selectedDay!,
                   firstDate: DateTime(2024),
@@ -113,9 +109,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     showModalBottomSheet(
       context: context,
       backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
       isScrollControlled: true,
       builder: (context) => Padding(
         padding: const EdgeInsets.all(20),
@@ -126,16 +120,8 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(
-                    ev.title,
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.close),
-                ),
+                Expanded(child: Text(ev.title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
               ],
             ),
             const Divider(),
@@ -159,17 +145,9 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
         children: [
           Icon(icon, size: 20, color: Colors.grey[600]),
           const SizedBox(width: 10),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600),
-          ),
+          Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
           const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ),
+          Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
     );
@@ -182,29 +160,64 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
         title: const Text("Xác nhận xóa"),
         content: Text("Bạn có chắc chắn muốn xóa sự kiện '${ev.title}' không?"),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text("Hủy"),
-          ),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Hủy")),
           TextButton(
             onPressed: () async {
               final user = FirebaseAuth.instance.currentUser;
               if (user != null) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('personal_events')
-                    .doc(ev.id)
-                    .delete();
+                await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('personal_events').doc(ev.id).delete();
                 Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa sự kiện")),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã xóa sự kiện")));
               }
             },
             child: const Text("Xóa", style: TextStyle(color: Colors.red)),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubTabToggle(bool isDarkMode) {
+    return Container(
+      width: 180,
+      height: 36,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.white10 : const Color(0xFFF1F1F1),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          _buildToggleItem("Cá nhân", isDarkMode),
+          _buildToggleItem("Quan tâm", isDarkMode),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToggleItem(String label, bool isDarkMode) {
+    bool isSelected = _activeSubTab == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _activeSubTab = label),
+        child: Container(
+          decoration: BoxDecoration(
+            color: isSelected ? (isDarkMode ? Colors.grey[800] : Colors.white) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: isSelected && !isDarkMode
+                ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))]
+                : [],
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              color: isSelected ? figmaSelectionBlue : Colors.grey,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -216,82 +229,83 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: StreamBuilder<List<EventModel>>(
-          stream: _getEventsStream(),
-          builder: (context, snapshot) {
-            final List<EventModel> allEvents = snapshot.data ?? [];
-            int count = _viewTabController!.index == 0
-                ? allEvents.length
-                : allEvents.where((e) => DateUtils.isSameDay(e.dateTime, _selectedDay)).length;
+      body: Column(
+        children: [
+          const SizedBox(height: 140),
 
-            return CustomScrollView(
-              slivers: [
-                const SliverToBoxAdapter(child: SizedBox(height: 120)),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      children: [
-                        _viewTabController!.index == 0
-                            ? _buildListFilter(isDarkMode)
-                            : _buildMonthPicker(isDarkMode),
-                        const Spacer(),
-                        _buildViewSwitcher(isDarkMode),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Center(
-                      child: Text(
-                        "Bạn đang có $count sự kiện sắp diễn ra",
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Center(child: _buildSubTabToggle(isDarkMode)),
+          ),
+
+          Expanded(
+            child: _activeSubTab == "Quan tâm"
+                ? const InterestedEventTab()
+                : StreamBuilder<List<EventModel>>(
+              stream: _getEventsStream(),
+              builder: (context, snapshot) {
+                final List<EventModel> allEvents = snapshot.data ?? [];
+                int count = _viewTabController!.index == 0
+                    ? allEvents.length
+                    : allEvents.where((e) => DateUtils.isSameDay(e.dateTime, _selectedDay)).length;
+
+                return CustomScrollView(
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 5, 16, 12),
+                        child: Row(
+                          children: [
+                            _viewTabController!.index == 0
+                                ? _buildListFilter(isDarkMode)
+                                : _buildMonthPicker(isDarkMode),
+                            const Spacer(),
+                            _buildViewSwitcher(isDarkMode),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                SliverFillRemaining(
-                  child: TabBarView(
-                    controller: _viewTabController,
-                    children: [
-                      _buildListView(allEvents, isDarkMode),
-                      _buildCalendarView(allEvents, isDarkMode),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          }),
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16),
+                        child: Center(
+                          child: Text(
+                            "Bạn đang có $count sự kiện sắp diễn ra",
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                          ),
+                        ),
+                      ),
+                    ),
+                    SliverFillRemaining(
+                      child: TabBarView(
+                        controller: _viewTabController,
+                        children: [
+                          _buildListView(allEvents, isDarkMode),
+                          _buildCalendarView(allEvents, isDarkMode),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildViewSwitcher(bool isDarkMode) {
     return Container(
-      height: 42,
-      width: 96,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white10 : const Color(0xFFF1F1F1),
-        borderRadius: BorderRadius.circular(25),
-      ),
+      height: 42, width: 96, padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(color: lightUiBg(isDarkMode), borderRadius: BorderRadius.circular(25)),
       child: Stack(
         children: [
           AnimatedAlign(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            alignment: _viewTabController!.index == 0
-                ? Alignment.centerLeft
-                : Alignment.centerRight,
-            child: Container(
-              width: 44,
-              height: 34,
-              decoration: BoxDecoration(
-                color: primaryBrown,
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
+            alignment: _viewTabController!.index == 0 ? Alignment.centerLeft : Alignment.centerRight,
+            child: Container(width: 44, height: 34, decoration: BoxDecoration(color: primaryBrown, borderRadius: BorderRadius.circular(20))),
           ),
           Row(
             children: [
@@ -299,26 +313,14 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                 child: GestureDetector(
                   onTap: () => _viewTabController!.animateTo(0),
                   behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Icon(
-                      Icons.list_alt_rounded,
-                      size: 22,
-                      color: _viewTabController!.index == 0 ? Colors.white : Colors.grey,
-                    ),
-                  ),
+                  child: Center(child: Icon(Icons.list_alt_rounded, size: 22, color: _viewTabController!.index == 0 ? Colors.white : Colors.grey)),
                 ),
               ),
               Expanded(
                 child: GestureDetector(
                   onTap: () => _viewTabController!.animateTo(1),
                   behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Icon(
-                      Icons.calendar_month_outlined,
-                      size: 22,
-                      color: _viewTabController!.index == 1 ? Colors.white : Colors.grey,
-                    ),
-                  ),
+                  child: Center(child: Icon(Icons.calendar_month_outlined, size: 22, color: _viewTabController!.index == 1 ? Colors.white : Colors.grey)),
                 ),
               ),
             ],
@@ -347,7 +349,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
       child: Column(
         children: [
           Container(
-            color: Colors.white,
+            color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
             height: 90,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
@@ -363,15 +365,12 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                   child: Container(
                     width: 48,
                     margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: isSelected ? figmaSelectionBlue : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
+                    decoration: BoxDecoration(color: isSelected ? figmaSelectionBlue : Colors.transparent, borderRadius: BorderRadius.circular(16)),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.black54, fontSize: 12)),
-                        Text("${day.day}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : Colors.black)),
+                        Text("${day.day}", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black))),
                       ],
                     ),
                   ),
@@ -383,38 +382,22 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                IconButton(
-                  onPressed: () => _showFullCalendarPopup(isDarkMode),
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                  child: Row(
-                    children: const [
-                      Text("Time", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
-                      SizedBox(width: 45),
-                      Text("Event", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
-                    ],
-                  ),
-                ),
+                IconButton(onPressed: () => _showFullCalendarPopup(isDarkMode), icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey)),
                 const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 35),
-                  child: Divider(color: Color(0xFF949494)),
+                  padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
+                  child: Row(children: [
+                    Text("Time", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
+                    SizedBox(width: 45),
+                    Text("Event", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
+                  ]),
                 ),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 35), child: Divider(color: Color(0xFF949494))),
                 Stack(
                   children: [
-                    Positioned(
-                      left: 83, top: 0, bottom: 0,
-                      child: Container(width: 1, color: const Color(0xFF949494)),
-                    ),
+                    Positioned(left: 83, top: 0, bottom: 0, child: Container(width: 1, color: const Color(0xFF949494))),
                     Column(
                       children: dayEvents.isEmpty
-                          ? [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 50, left: 100),
-                          child: Text("Không có sự kiện", style: TextStyle(color: Colors.black54)),
-                        )
-                      ]
+                          ? [const Padding(padding: EdgeInsets.only(top: 50, left: 100), child: Text("Không có sự kiện", style: TextStyle(color: Colors.black54)))]
                           : dayEvents.asMap().entries.map((entry) => _buildTimelineRow(isDarkMode, entry.value, entry.key)).toList(),
                     ),
                   ],
@@ -428,7 +411,9 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   }
 
   Widget _buildTimelineRow(bool isDarkMode, EventModel ev, int index) {
-    Color cardBg = index % 2 == 0 ? const Color(0xFFD6FBD5) : const Color(0xFFFBF5D5);
+    Color cardBg = isDarkMode
+        ? (index % 2 == 0 ? const Color(0xFF2E402E) : const Color(0xFF403E2E))
+        : (index % 2 == 0 ? const Color(0xFFD6FBD5) : const Color(0xFFFBF5D5));
     return Padding(
       padding: const EdgeInsets.only(bottom: 25),
       child: Row(
@@ -437,10 +422,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
           SizedBox(
             width: 80,
             child: Center(
-              child: Text(
-                DateFormat('HH:mm').format(ev.dateTime),
-                style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 19),
-              ),
+              child: Text(DateFormat('HH:mm').format(ev.dateTime), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 19)),
             ),
           ),
           const SizedBox(width: 25),
@@ -464,13 +446,11 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                     ],
                   ),
                   const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.location_on_outlined, size: 18),
-                      const SizedBox(width: 4),
-                      Expanded(child: Text(ev.location, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14), overflow: TextOverflow.ellipsis)),
-                    ],
-                  ),
+                  Row(children: [
+                    const Icon(Icons.location_on_outlined, size: 18),
+                    const SizedBox(width: 4),
+                    Expanded(child: Text(ev.location, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14), overflow: TextOverflow.ellipsis)),
+                  ]),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
@@ -559,16 +539,11 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
           _focusedDay = _selectedDay!;
         });
       },
-      itemBuilder: (ctx) => List.generate(
-        12,
-            (i) => PopupMenuItem(
-          value: i + 1,
-          child: Text("Tháng ${i + 1}"),
-        ),
-      ),
+      itemBuilder: (ctx) => List.generate(12, (i) => PopupMenuItem(value: i + 1, child: Text("Tháng ${i + 1}"))),
       child: _filterChip(isDarkMode, "Tháng $_selectedMonth"),
     );
   }
+
   Widget _buildListFilter(bool isDarkMode) {
     return PopupMenuButton<String>(
       onSelected: (v) => setState(() => _listFilter = v),

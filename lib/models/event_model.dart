@@ -7,6 +7,7 @@ class EventModel {
   final String location;
   final String reminder;
   final String description;
+  final int? notificationId;
 
   EventModel({
     required this.id,
@@ -15,6 +16,7 @@ class EventModel {
     required this.location,
     required this.reminder,
     required this.description,
+    this.notificationId,
   });
 
   // Chuyển đổi từ Firestore Document thành EventModel
@@ -26,8 +28,9 @@ class EventModel {
       // Firestore Timestamp -> Dart DateTime
       dateTime: (data['dateTime'] as Timestamp).toDate(),
       location: data['location'] ?? '',
-      reminder: data['reminder'] ?? 'None',
+      reminder: data['reminder'] ?? 'Không',
       description: data['description'] ?? '',
+      notificationId: data['notificationId'],
     );
   }
 
@@ -35,12 +38,12 @@ class EventModel {
   Map<String, dynamic> toFirestore() {
     return {
       'title': title,
-      // Dart DateTime -> Firestore Timestamp
       'dateTime': Timestamp.fromDate(dateTime),
       'location': location,
       'reminder': reminder,
       'description': description,
-      'createdAt': FieldValue.serverTimestamp(), // Lưu thời gian tạo
+      'notificationId': notificationId,
+      'updatedAt': FieldValue.serverTimestamp(),
     };
   }
 }
