@@ -62,7 +62,6 @@ class InterestedEventTab extends StatelessWidget {
 
         return CustomScrollView(
           slivers: [
-            SliverOverlapInjector(handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context)),
             SliverPadding(
               padding: const EdgeInsets.all(16),
               sliver: SliverList(

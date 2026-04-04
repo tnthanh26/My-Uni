@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
-// Import các trang của bạn
 import 'package:my_uni/features/credential/login_page.dart';
 import 'package:my_uni/features/credential/signup_page.dart';
 import 'package:my_uni/features/credential/otp_page.dart';
@@ -11,6 +12,7 @@ import 'package:my_uni/features/credential/forgot_password_page.dart';
 import 'package:my_uni/features/home/home_page.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart'; // Import MySpaceScreen
 import 'firebase_options.dart';
+import 'notification_service.dart';
 
 // --- PHẦN 1: QUẢN LÝ TRẠNG THÁI (APP PROVIDER) ---
 class AppProvider extends ChangeNotifier {
@@ -65,6 +67,9 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  tz.initializeTimeZones();
+  tz.setLocalLocation(tz.getLocation('Asia/Ho_Chi_Minh'));
+  await NotificationService.init();
 
   runApp(
     // Bao bọc App bằng Provider để quản lý Dark Mode & Ngôn ngữ
