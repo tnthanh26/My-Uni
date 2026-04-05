@@ -190,7 +190,7 @@ class _HomePageState extends State<HomePage> {
                       indicatorSize: TabBarIndicatorSize.tab,
                       // GIẢM labelPadding để các tab gần nhau hơn theo Figma
                       labelPadding: const EdgeInsets.symmetric(horizontal: 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       indicator: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         color: const Color(0xFF5893D8),

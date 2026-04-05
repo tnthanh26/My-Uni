@@ -115,64 +115,116 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
           SliverOverlapAbsorber(
             handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
             sliver: SliverAppBar(
-              expandedHeight: 120.0,
+              expandedHeight: 102.0,
               pinned: true,
-              automaticallyImplyLeading: false,
-              backgroundColor: const Color(0xFF6797E1),
+              elevation: 0,
+              automaticallyImplyLeading: false, // Tắt nút quay lại mặc định
+              actions: const [SizedBox.shrink()],
+              backgroundColor: const Color(0xFF5893D8),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.pin,
                 background: Stack(
                   fit: StackFit.expand,
                   children: [
-                    Image.asset('assets/images/background.jpg', fit: BoxFit.cover),
-                    Container(color: isDarkMode ? Colors.black54 : Colors.black38),
-                    Positioned(
-                      left: 20, bottom: 80,
-                      child: Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.all(2.0),
-                              child: Image.asset(
-                                'assets/images/logoApp1.png',
-                                fit: BoxFit.contain,
+                    Container(
+                      height: 102,
+                      width: double.infinity,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/images/background.jpg'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      child: Container(color: isDarkMode ? Colors.black54 : Colors.black38),
+                    ),
+
+                    SafeArea(
+                      child: Padding(
+                        // Padding bottom 50 để đẩy Row lên trên, không bị đè bởi nền trắng TabBar
+                        padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            // Cụm trái: Logo + Tên trường
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: Colors.white,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                const Text(
+                                  'HCMUS',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.w800,
+                                    fontFamily: 'Nunito',
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            // Cụm phải: Thanh tiện ích (Search | Noti)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Color(0xff545454), // Đậm hơn một chút để nổi bật icon
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Stack(
+                                children: [
+                                  // thay cho hàm button bằng UI
+                                  Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                  Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: CircleAvatar(
+                                      radius: 5,
+                                      backgroundColor: Colors.red,
+                                      child: Text("3", style: TextStyle(color: Colors.white, fontSize: 6)),
+                                    ),
+                                  )
+                                ],
                               ),
                             ),
-                          ),
-                          SizedBox(width: 10),
-                          Text('HCMUS', style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              actions: [
-                _buildNotificationIcon(),
-                const SizedBox(width: 8),
-              ],
               bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(60),
+                preferredSize: const Size.fromHeight(48),
                 child: Container(
-                  height: 50,
                   width: double.infinity,
-                  color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
                   child: TabBar(
                     controller: _tabController,
                     isScrollable: false,
                     indicatorSize: TabBarIndicatorSize.tab,
-                    dividerColor: Colors.transparent,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     indicator: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(25),
                       color: const Color(0xFF5893D8),
                     ),
                     labelColor: Colors.white,
-                    unselectedLabelColor: const Color(0xFF777777),
+                    unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                    dividerColor: Colors.transparent,
                     labelStyle: const TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
+                      fontFamily: 'Nunito',
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
                     ),
@@ -200,7 +252,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   Widget _buildNotificationIcon() {
     return Stack(
       children: [
-        IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Colors.white), onPressed: () {}),
+        IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 32), onPressed: () {}),
         Positioned(
           right: 8, top: 8,
           child: Container(
