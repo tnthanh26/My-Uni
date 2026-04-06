@@ -4,6 +4,9 @@ import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
 import 'myspace_firebase_service.dart';
+import 'package:my_uni/features/notification/notification_page.dart';
+import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/models/notification_model.dart';
 
 // Màu sắc và thông số chuẩn từ thiết kế Figma
 const Color hcmusBlueAccent = Color(0xFF5893D8);
@@ -252,7 +255,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       body: Stack(
         children: [
           // 1. Phần Header cố định (Fixed Header)
-          _buildFixedHeader(),
+          _buildFixedHeader(context),
 
           // 2. Phần nội dung có thể cuộn (Scrollable Content)
           Column(
@@ -742,7 +745,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildFixedHeader() {
+  Widget _buildFixedHeader(BuildContext context) {
     return Stack(
       children: [
         // Background Image - Cố định
@@ -758,13 +761,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           child: Container(color: Colors.black38),
         ),
 
-        // Logo & HCMUS Text - Cố định
+        // Logo & HCMUS Text & Notification - Cố định
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // Cụm trái: Logo + Tên trường
                 Row(children: [
                   CircleAvatar(
                     backgroundColor: Colors.white,
@@ -785,19 +789,53 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       )
                   ),
                 ]),
-                Stack(
-                  children: [
-                    const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 32),
-                    Positioned(
-                      right: 0,
-                      top: 4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        decoration: BoxDecoration(color: hcmusRed, borderRadius: BorderRadius.circular(9)),
-                        child: const Text("3", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
-                      ),
-                    )
-                  ],
+
+                // Cụm phải: Nút thông báo UI Capsule (Đã cập nhật)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => NotificationScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff545454),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: StreamBuilder<List<MyUniNotification>>(
+                      stream: NotificationService.getNotifications(),
+                      builder: (context, snapshot) {
+                        // Đếm số thông báo chưa đọc thực tế
+                        final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                            if (unreadCount > 0)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: CircleAvatar(
+                                  radius: 6,
+                                  backgroundColor: Colors.red,
+                                  child: Text(
+                                    unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 7,
+                                        fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                ),
+                              )
+                          ],
+                        );
+                      },
+                    ),
+                  ),
                 ),
               ],
             ),

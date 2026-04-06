@@ -1,8 +1,11 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
+import 'models/notification_model.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -11,6 +14,9 @@ class NotificationService {
   static const String _channelId = 'my_uni_urgent_channel';
   static const String _channelName = 'MyUni Notifications';
   static const String _channelDescription = 'Thông báo nhắc nhở sự kiện MyUni';
+
+  static final FirebaseFirestore _db = FirebaseFirestore.instance;
+  static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   static Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -21,15 +27,14 @@ class NotificationService {
     const InitializationSettings settings =
     InitializationSettings(android: androidInit);
 
-    // Khởi tạo plugin với tham số có tên (Named parameters)
     await _notificationsPlugin.initialize(
       settings: settings,
       onDidReceiveNotificationResponse: (details) {
         debugPrint('User clicked notification: ${details.payload}');
       },
     );
+
     await _notificationsPlugin.cancelAll();
-    debugPrint('ĐÃ XÓA TẤT CẢ THÔNG BÁO CŨ ĐỂ TEST MỚI');
 
     if (!kIsWeb && Platform.isAndroid) {
       final androidPlugin = _notificationsPlugin
@@ -49,18 +54,27 @@ class NotificationService {
       await androidPlugin?.requestNotificationsPermission();
       await androidPlugin?.requestExactAlarmsPermission();
     }
+  }
 
-    debugPrint('--- INIT DONE ---');
+  static Stream<List<MyUniNotification>> getNotifications() {
+    String? uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value([]);
+    return _db
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => MyUniNotification.fromFirestore(doc))
+        .toList());
+  }
 
-    // TEST 1: Nổ ngay lập tức để check Icon/Channel
-    // await showInstantNotification(
-    //   id: 999,
-    //   title: 'Hệ thống MyUni',
-    //   body: 'Thông báo tức thời hoạt động OK!',
-    // );
-
-    // TEST 2: Hẹn giờ sau 20 giây
-    await testAfter20Seconds();
+  static Future<void> markAsRead(String docId) async {
+    try {
+      await _db.collection('notifications').doc(docId).update({'isRead': true});
+    } catch (e) {
+      debugPrint('Lỗi markAsRead: $e');
+    }
   }
 
   static Future<void> showInstantNotification({
@@ -80,11 +94,9 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
-          fullScreenIntent: true,
         ),
       ),
     );
-    debugPrint('SHOW INSTANT OK -> id=$id');
   }
 
   static Future<void> scheduleNotification({
@@ -94,10 +106,9 @@ class NotificationService {
     required DateTime scheduledDate,
   }) async {
     final location = tz.getLocation('Asia/Ho_Chi_Minh');
-    final now = tz.TZDateTime.now(location);
     final scheduled = tz.TZDateTime.from(scheduledDate, location);
 
-    if (!scheduled.isAfter(now)) return;
+    if (!scheduled.isAfter(tz.TZDateTime.now(location))) return;
 
     await _notificationsPlugin.zonedSchedule(
       id: id,
@@ -112,26 +123,9 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
-          fullScreenIntent: true,
-          audioAttributesUsage: AudioAttributesUsage.alarm,
         ),
       ),
-      // ĐỔI LẠI THÀNH exactAllowWhileIdle cho máy ảo dễ thở
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
-
-    debugPrint('ĐẶT LỊCH OK -> ID: $id');
-  }
-
-  static Future<void> testAfter20Seconds() async {
-    final location = tz.getLocation('Asia/Ho_Chi_Minh');
-    final target = tz.TZDateTime.now(location).add(const Duration(seconds: 20));
-
-    await scheduleNotification(
-      id: 123456,
-      title: 'Hẹn giờ MyUni',
-      body: 'Thông báo này nổ sau 20 giây!',
-      scheduledDate: target,
     );
   }
 
