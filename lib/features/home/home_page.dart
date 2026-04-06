@@ -10,6 +10,9 @@ import 'package:my_uni/features/account/account_page.dart';
 import 'package:my_uni/features/chatbot/chatbot_page.dart';
 import 'package:my_uni/features/event/event_page.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart';
+import 'package:my_uni/features/notification/notification_page.dart';
+import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/models/notification_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -76,10 +79,8 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.white,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
-            final tabController = DefaultTabController.of(context);
             return [
               SliverAppBar(
-                // 1. GIẢM expandedHeight để nâng nền trắng lên (Khớp vị trí ảnh tòa nhà)
                 expandedHeight: 102.0,
                 pinned: true,
                 elevation: 0,
@@ -101,16 +102,13 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                         child: Container(color: Colors.black38),
-                      ), // Làm tối nhẹ nền
-
+                      ),
                       SafeArea(
                         child: Padding(
-                          // 2. GIẢM bottom padding để đưa Logo/HCMUS lên sát Status bar hơn
                           padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Cụm trái: Logo + HCMUS
                               Row(
                                 children: [
                                   CircleAvatar(
@@ -127,39 +125,75 @@ class _HomePageState extends State<HomePage> {
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 24,
-                                      fontWeight: FontWeight.w800, // Tăng độ đậm theo Figma
+                                      fontWeight: FontWeight.w800,
                                       fontFamily: 'Nunito',
                                       letterSpacing: 0.5,
                                     ),
                                   ),
                                 ],
                               ),
-                              // Cụm phải: THANH TIỆN ÍCH (SEARCH | NOTI)
+                              // --- CỤM THANH TIỆN ÍCH (ĐÃ CẬP NHẬT LOGIC) ---
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
-                                  color: Color(0xff545454), // Đậm hơn một chút để nổi bật icon
+                                  color: const Color(0xff545454),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.search, color: Colors.white, size: 24),
+                                    // NÚT SEARCH
+                                    GestureDetector(
+                                      onTap: () {
+                                        final tabIndex = DefaultTabController.of(context).index;
+                                        showSearch(
+                                          context: context,
+                                          delegate: MyUniSearchDelegate(
+                                            currentScope: [
+                                              SearchScope.official,
+                                              SearchScope.forum,
+                                              SearchScope.review,
+                                              SearchScope.material
+                                            ][tabIndex],
+                                          ),
+                                        );
+                                      },
+                                      child: const Icon(Icons.search, color: Colors.white, size: 24),
+                                    ),
                                     const SizedBox(width: 8),
                                     const Text("|", style: TextStyle(color: Colors.white38)),
                                     const SizedBox(width: 8),
-                                    const Stack(
-                                      children: [
-                                        Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                        Positioned(
-                                          right: 0,
-                                          top: 0,
-                                          child: CircleAvatar(
-                                            radius: 5,
-                                            backgroundColor: Colors.red,
-                                            child: Text("3", style: TextStyle(color: Colors.white, fontSize: 6)),
-                                          ),
-                                        )
-                                      ],
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => NotificationScreen()),
+                                        );
+                                      },
+                                      child: StreamBuilder<List<MyUniNotification>>(
+                                        stream: NotificationService.getNotifications(),
+                                        builder: (context, snapshot) {
+                                          final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                                          return Stack(
+                                            children: [
+                                              const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                              if (unreadCount > 0)
+                                                Positioned(
+                                                  right: 0,
+                                                  top: 0,
+                                                  child: CircleAvatar(
+                                                    radius: 6,
+                                                    backgroundColor: Colors.red,
+                                                    child: Text(
+                                                      unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                                      style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                )
+                                            ],
+                                          );
+                                        },
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -171,7 +205,6 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                 ),
-                // 3. PHẦN TABBAR NỀN TRẮNG (Chỉnh lại Gap và Alignment)
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(48),
                   child: Container(
@@ -188,7 +221,6 @@ class _HomePageState extends State<HomePage> {
                       isScrollable: true,
                       tabAlignment: TabAlignment.center,
                       indicatorSize: TabBarIndicatorSize.tab,
-                      // GIẢM labelPadding để các tab gần nhau hơn theo Figma
                       labelPadding: const EdgeInsets.symmetric(horizontal: 16),
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       indicator: BoxDecoration(
@@ -210,20 +242,23 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              AnimatedBuilder(
-                animation: tabController,
-                builder: (context, child) {
-                  // CHỈ HIỂN THỊ BANNER KHI Ở TAB ĐẦU TIÊN (INDEX 0)
-                  if (tabController.index == 0) {
-                    return SliverToBoxAdapter(
-                      child: Container(
-                        color: Colors.transparent,
-                        child: _buildPromoBanner(),
-                      ),
-                    );
-                  }
-                  // Trả về một sliver trống khi ở các tab khác
-                  return const SliverToBoxAdapter(child: SizedBox.shrink());
+              Builder(
+                builder: (context) {
+                  final tabController = DefaultTabController.of(context);
+                  return AnimatedBuilder(
+                    animation: tabController,
+                    builder: (context, child) {
+                      if (tabController.index == 0) {
+                        return SliverToBoxAdapter(
+                          child: Container(
+                            color: Colors.transparent,
+                            child: _buildPromoBanner(),
+                          ),
+                        );
+                      }
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    },
+                  );
                 },
               ),
             ];

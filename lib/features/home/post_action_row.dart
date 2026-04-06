@@ -17,7 +17,26 @@ class PostActionRow extends StatelessWidget {
     required this.collectionPath,
   });
 
-  // Hàm xử lý Like/Unlike thực tế trên Firestore
+  // --- HÀM MỚI: GỬI THÔNG BÁO ---
+  Future<void> _sendNotification({
+    required String targetUserId,
+    required String type,
+    required String content,
+  }) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || currentUser.uid == targetUserId) return;
+
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': targetUserId,
+      'type': type,
+      'title': type == 'like' ? 'Thích' : 'Bình luận',
+      'content': content,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'relatedPostId': docId,
+    });
+  }
+
   Future<void> _handleLike() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -28,13 +47,20 @@ class PostActionRow extends StatelessWidget {
     final docSnapshot = await userLikeRef.get();
 
     if (docSnapshot.exists) {
-      // Nếu đã like rồi thì Unlike
       await userLikeRef.delete();
       await postRef.update({'likeCount': FieldValue.increment(-1)});
     } else {
-      // Nếu chưa like thì Like
       await userLikeRef.set({'timestamp': FieldValue.serverTimestamp()});
       await postRef.update({'likeCount': FieldValue.increment(1)});
+
+      // Bắn thông báo khi Like
+      if (data['authorId'] != null) {
+        _sendNotification(
+          targetUserId: data['authorId'],
+          type: 'like',
+          content: 'Có người đã thích bài viết của bạn.',
+        );
+      }
     }
   }
 
@@ -49,25 +75,19 @@ class PostActionRow extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // 1. NÚT THÍCH (Xử lý tại chỗ)
           _buildLikeButton(user, isDarkMode, defaultColor),
-
-          // 2. NÚT BÌNH LUẬN (Bấm vào để điều hướng sang Detail)
           _buildActionButton(
             icon: Icons.chat_bubble_outline,
             label: '${data['commentCount'] ?? 0}',
             color: defaultColor,
             onTap: () => _navigateToDetail(context),
           ),
-
-          // 3. NÚT LƯU (Xử lý tại chỗ qua callback onSave)
           _buildSaveButton(user, isDarkMode, defaultColor),
         ],
       ),
     );
   }
 
-  // Widget riêng cho nút Like để quản lý Stream
   Widget _buildLikeButton(User? user, bool isDarkMode, Color defaultColor) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -82,13 +102,12 @@ class PostActionRow extends StatelessWidget {
           icon: isLiked ? Icons.favorite : Icons.favorite_border,
           label: '${data['likeCount'] ?? 0}',
           color: isLiked ? Colors.redAccent : defaultColor,
-          onTap: _handleLike, // Gọi hàm Like/Unlike trực tiếp
+          onTap: _handleLike,
         );
       },
     );
   }
 
-  // Widget riêng cho nút Lưu
   Widget _buildSaveButton(User? user, bool isDarkMode, Color defaultColor) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -103,13 +122,12 @@ class PostActionRow extends StatelessWidget {
           icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
           label: 'Lưu',
           color: isSaved ? Colors.amber : defaultColor,
-          onTap: () => onSave(docId, data), // Gọi hàm onSave từ tab truyền vào
+          onTap: () => onSave(docId, data),
         );
       },
     );
   }
 
-  // Hàm điều hướng sang trang chi tiết
   void _navigateToDetail(BuildContext context) {
     Navigator.push(
       context,
@@ -122,7 +140,6 @@ class PostActionRow extends StatelessWidget {
     );
   }
 
-  // Widget helper tạo Layout cho từng nút
   Widget _buildActionButton({
     required IconData icon,
     required String label,
@@ -131,7 +148,7 @@ class PostActionRow extends StatelessWidget {
   }) {
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque, // Đảm bảo bắt sự kiện click chính xác
+      behavior: HitTestBehavior.opaque,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(

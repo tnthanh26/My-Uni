@@ -3,6 +3,9 @@ import 'discover_event_tab.dart';
 import 'my_event_tab.dart';
 import 'create_personal_event_page.dart';
 import 'create_community_event_page.dart';
+import 'package:my_uni/features/notification/notification_page.dart';
+import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/models/notification_model.dart';
 
 class EventPage extends StatefulWidget {
   const EventPage({super.key});
@@ -118,7 +121,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
               expandedHeight: 102.0,
               pinned: true,
               elevation: 0,
-              automaticallyImplyLeading: false, // Tắt nút quay lại mặc định
+              automaticallyImplyLeading: false,
               actions: const [SizedBox.shrink()],
               backgroundColor: const Color(0xFF5893D8),
               flexibleSpace: FlexibleSpaceBar(
@@ -140,12 +143,10 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
 
                     SafeArea(
                       child: Padding(
-                        // Padding bottom 50 để đẩy Row lên trên, không bị đè bởi nền trắng TabBar
                         padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Cụm trái: Logo + Tên trường
                             Row(
                               children: [
                                 CircleAvatar(
@@ -169,27 +170,50 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                                 ),
                               ],
                             ),
-                            // Cụm phải: Thanh tiện ích (Search | Noti)
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Color(0xff545454), // Đậm hơn một chút để nổi bật icon
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: const Stack(
-                                children: [
-                                  // thay cho hàm button bằng UI
-                                  Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                  Positioned(
-                                    right: 0,
-                                    top: 0,
-                                    child: CircleAvatar(
-                                      radius: 5,
-                                      backgroundColor: Colors.red,
-                                      child: Text("3", style: TextStyle(color: Colors.white, fontSize: 6)),
-                                    ),
-                                  )
-                                ],
+                            // --- CỤM TIỆN ÍCH THÔNG BÁO MỚI ---
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => NotificationScreen()),
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff545454),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: StreamBuilder<List<MyUniNotification>>(
+                                  stream: NotificationService.getNotifications(),
+                                  builder: (context, snapshot) {
+                                    final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                                    return Stack(
+                                      clipBehavior: Clip.none,
+                                      children: [
+                                        const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                        if (unreadCount > 0)
+                                          Positioned(
+                                            right: -2,
+                                            top: -2,
+                                            child: CircleAvatar(
+                                              radius: 7,
+                                              backgroundColor: Colors.red,
+                                              child: Text(
+                                                unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                                style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontSize: 8,
+                                                    fontWeight: FontWeight.bold
+                                                ),
+                                              ),
+                                            ),
+                                          )
+                                      ],
+                                    );
+                                  },
+                                ),
                               ),
                             ),
                           ],
@@ -246,23 +270,6 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildNotificationIcon() {
-    return Stack(
-      children: [
-        IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 32), onPressed: () {}),
-        Positioned(
-          right: 8, top: 8,
-          child: Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10)),
-            constraints: const BoxConstraints(minWidth: 14, minHeight: 14),
-            child: const Text('3', style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
-          ),
-        )
-      ],
     );
   }
 }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
-import 'post_action_row.dart'; // Giữ nguyên import logic của bạn
+import 'post_action_row.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -28,7 +28,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
   String? _replyingToId;
   String? _replyingToName;
 
-  // --- LOGIC NHẬN DIỆN COLLECTION CỦA BẠN ---
   String get _collectionPath {
     if (widget.initialPostData.containsKey('link')) return 'official_news';
     if (widget.initialPostData.containsKey('rating')) return 'course_reviews';
@@ -42,7 +41,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
-  // --- LOGIC THÊM COMMENT CỦA BẠN ---
+  // --- HÀM MỚI: GỬI THÔNG BÁO BÌNH LUẬN ---
+  Future<void> _sendCommentNotification(String content) async {
+    final authorId = widget.initialPostData['authorId'];
+    if (_user == null || authorId == null || _user!.uid == authorId) return;
+
+    await _firestore.collection('notifications').add({
+      'userId': authorId,
+      'type': 'comment',
+      'title': 'Bình luận',
+      'content': 'Có người đã bình luận về bài viết của bạn: "$content"',
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'relatedPostId': widget.docId,
+    });
+  }
+
   Future<void> _addComment() async {
     if (_user == null || _commentController.text.trim().isEmpty) return;
 
@@ -71,6 +85,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     await _firestore.collection(_collectionPath).doc(widget.docId).update({
       'commentCount': FieldValue.increment(1)
     });
+
+    // Bắn thông báo sau khi thêm comment thành công
+    await _sendCommentNotification(content);
   }
 
   @override
@@ -97,8 +114,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDynamicHeader(),
-
-                  // DÙNG POSTACTIONROW CỦA BẠN ĐỂ GIỮ LOGIC LIKE/SAVE
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                     child: PostActionRow(
@@ -108,7 +123,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       collectionPath: _collectionPath,
                     ),
                   ),
-
                   Container(color: const Color(0xFFF8F9FA), height: 8),
                   _buildCommentSection(),
                   const SizedBox(height: 20),
@@ -137,7 +151,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return _buildForumUI(data);
   }
 
-  // --- UI OFFICIAL (CHÍNH THỨC) ---
   Widget _buildOfficialUI(Map<String, dynamic> data) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -167,7 +180,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // --- UI REVIEW ---
   Widget _buildReviewUI(Map<String, dynamic> data) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -188,7 +200,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // --- UI MATERIAL (TÀI LIỆU) ---
   Widget _buildMaterialUI(Map<String, dynamic> data) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -212,7 +223,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // --- UI FORUM (DIỄN ĐÀN) ---
   Widget _buildForumUI(Map<String, dynamic> data) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -238,31 +248,35 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  // --- HELPER COMPONENT GIỮ LOGIC LẤY AVATAR CỦA BẠN ---
   Widget _buildAuthorRow(String name, String sub, {String? avatarBase64, bool isOfficial = false}) {
+    Widget avatarWidget;
+    if (isOfficial) {
+      avatarWidget = Image.asset('assets/images/logo.png', fit: BoxFit.contain, width: 45, height: 45);
+    } else {
+      if (avatarBase64 != null && avatarBase64.isNotEmpty) {
+        avatarWidget = ClipOval(child: Image.memory(base64Decode(avatarBase64), fit: BoxFit.cover, width: 45, height: 45));
+      } else {
+        avatarWidget = const Icon(Icons.person, color: Colors.grey, size: 28);
+      }
+    }
+
     return Row(children: [
       CircleAvatar(
         radius: 22.5,
         backgroundColor: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(2.0),
-          child: (avatarBase64 != null && avatarBase64.isNotEmpty)
-              ? ClipOval(child: Image.memory(base64Decode(avatarBase64), fit: BoxFit.cover, width: 45, height: 45))
-              : const Icon(Icons.person, color: Colors.grey),
+          child: avatarWidget,
         ),
       ),
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          Text(name, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15)),
-          if (isOfficial) ...[const SizedBox(width: 4), const Icon(Icons.check_circle, color: Color(0xFF66ACFE), size: 16)],
-        ]),
+        Text(name, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF545454))),
         Text(sub, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Colors.grey)),
       ])
     ]);
   }
 
-  // --- COMMENT SECTION VỚI LOGIC REPLY CỦA BẠN ---
   Widget _buildCommentSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection(_collectionPath).doc(widget.docId).collection('comments').orderBy('timestamp', descending: false).snapshots(),
@@ -298,7 +312,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         CircleAvatar(
           radius: 18,
           backgroundColor: const Color(0xFFF1F2F6),
-          // Logic avatar từ URL (userData) hoặc Base64 tùy dữ liệu của bạn
           backgroundImage: (avt != null && avt.isNotEmpty && avt.startsWith('http'))
               ? NetworkImage(avt) : null,
           child: (avt == null || avt.isEmpty)
