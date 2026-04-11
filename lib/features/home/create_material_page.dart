@@ -1,30 +1,59 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
 
 class CreateMaterialPage extends StatefulWidget {
-  const CreateMaterialPage({super.key});
+  final String? docId; // Thêm trường này
+  final Map<String, dynamic>? existingData; // Thêm trường này
+
+  const CreateMaterialPage({super.key, this.docId, this.existingData});
 
   @override
   State<CreateMaterialPage> createState() => _CreateMaterialPageState();
 }
 
 class _CreateMaterialPageState extends State<CreateMaterialPage> {
-  final _courseController = TextEditingController();
-  final _teacherController = TextEditingController();
-  final _contentController = TextEditingController();
+  late TextEditingController _courseController;
+  late TextEditingController _teacherController;
+  late TextEditingController _contentController;
   String _selectedSemester = 'HK1 2025-2026';
 
   File? _attachedFile;
   String? _fileName;
+  String? _existingFileData; // Lưu trữ data file cũ nếu không thay đổi file mới
   bool _isImage = false;
   bool _isSubmitting = false;
 
   final List<String> _semesters = ['HK1 2025-2026', 'HK3 2024-2025', 'HK2 2024-2025', 'HK1 2024-2025'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Khởi tạo controller với dữ liệu cũ nếu có (chế độ Edit)
+    _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
+    _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
+    _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
+
+    if (widget.existingData != null) {
+      _selectedSemester = widget.existingData!['semester'] ?? _semesters[0];
+      _fileName = widget.existingData!['fileName'];
+      _isImage = widget.existingData!['isImage'] ?? false;
+      _existingFileData = widget.existingData!['fileData'];
+    }
+  }
+
+  @override
+  void dispose() {
+    _courseController.dispose();
+    _teacherController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickFile() async {
     try {
@@ -42,6 +71,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
           _attachedFile = file;
           _fileName = result.files.single.name;
           _isImage = ['.jpg', '.jpeg', '.png'].contains(extension);
+          _existingFileData = null; // Reset file cũ vì đã chọn file mới
         });
       }
     } catch (e) {
@@ -50,24 +80,35 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   }
 
   Future<void> _submitMaterial() async {
-    if (_courseController.text.isEmpty || _attachedFile == null) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng đăng nhập để thực hiện")));
+      return;
+    }
+
+    // Nếu không có file đính kèm mới VÀ cũng không có file cũ thì báo lỗi
+    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập tên môn và chọn file")));
       return;
     }
 
     setState(() => _isSubmitting = true);
     try {
-      String? encodedFileData;
-      final bytes = await _attachedFile!.readAsBytes();
+      String? encodedFileData = _existingFileData;
 
-      if (_isImage) {
-        var compressed = await FlutterImageCompress.compressWithList(bytes, quality: 20, minWidth: 500);
-        encodedFileData = base64Encode(compressed);
-      } else {
-        encodedFileData = base64Encode(bytes);
+      // Nếu người dùng chọn file mới thì mới encode lại
+      if (_attachedFile != null) {
+        final bytes = await _attachedFile!.readAsBytes();
+        if (_isImage) {
+          var compressed = await FlutterImageCompress.compressWithList(bytes, quality: 20, minWidth: 500);
+          encodedFileData = base64Encode(compressed);
+        } else {
+          encodedFileData = base64Encode(bytes);
+        }
       }
 
-      await FirebaseFirestore.instance.collection('study_materials').add({
+      final Map<String, dynamic> materialData = {
         'semester': _selectedSemester,
         'courseName': _courseController.text.trim(),
         'teacherName': _teacherController.text.trim(),
@@ -75,12 +116,30 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         'fileData': encodedFileData,
         'fileName': _fileName,
         'isImage': _isImage,
-        'timestamp': FieldValue.serverTimestamp(),
-        'likeCount': 0,
-        'commentCount': 0,
-      });
+        'timestamp': widget.existingData != null ? widget.existingData!['timestamp'] : FieldValue.serverTimestamp(),
+      };
+
+      if (widget.docId != null) {
+        // Chế độ Cập nhật (Update)
+        await FirebaseFirestore.instance.collection('study_materials').doc(widget.docId).update(materialData);
+      } else {
+        // Chế độ Tạo mới (Create)
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userData = userDoc.data();
+
+        materialData['authorId'] = user.uid;
+        materialData['authorName'] = userData?['displayName'] ?? 'Sinh viên MyUni';
+        materialData['authorAvatar'] = userData?['photoUrl'] ?? '';
+        materialData['likeCount'] = 0;
+        materialData['commentCount'] = 0;
+        materialData['timestamp'] = FieldValue.serverTimestamp();
+
+        await FirebaseFirestore.instance.collection('study_materials').add(materialData);
+      }
+
       if (mounted) Navigator.pop(context);
     } catch (e) {
+      debugPrint("Lỗi nộp tài liệu: $e");
       setState(() => _isSubmitting = false);
     }
   }
@@ -130,9 +189,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                       ),
                     ),
                   ),
-                  const Text(
-                    "Tài Liệu",
-                    style: TextStyle(
+                  Text(
+                    widget.docId != null ? "Sửa Tài Liệu" : "Tài Liệu",
+                    style: const TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w600,
                       fontSize: 17,
@@ -144,13 +203,13 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                     onTap: _isSubmitting ? null : _submitMaterial,
                     child: _isSubmitting
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
+                        : const Text(
                       "Lưu",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
                         fontSize: 17,
-                        color: Colors.white.withOpacity(0.5),
+                        color: Colors.white,
                         letterSpacing: -0.0041,
                       ),
                     ),
@@ -210,21 +269,20 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
               ),
               const SizedBox(height: 24),
 
-              // Upload Area with Custom Dotted Border
               _buildSectionLabel("Đính kèm tệp"),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: _attachedFile == null ? _pickFile : null,
+                onTap: (_attachedFile == null && _existingFileData == null) ? _pickFile : null,
                 child: CustomPaint(
-                  painter: _attachedFile == null ? DashRectPainter(color: figmaDashedColor) : null,
+                  painter: (_attachedFile == null && _existingFileData == null) ? DashRectPainter(color: figmaDashedColor) : null,
                   child: Container(
                     width: 130,
                     height: 130,
-                    decoration: _attachedFile != null
+                    decoration: (_attachedFile != null || _existingFileData != null)
                         ? BoxDecoration(border: Border.all(color: figmaDashedColor), borderRadius: BorderRadius.circular(20))
                         : null,
                     alignment: Alignment.center,
-                    child: _attachedFile != null
+                    child: (_attachedFile != null || _existingFileData != null)
                         ? Stack(
                       children: [
                         ClipRRect(
@@ -235,7 +293,11 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                           top: 5,
                           right: 5,
                           child: GestureDetector(
-                            onTap: () => setState(() { _attachedFile = null; _fileName = null; }),
+                            onTap: () => setState(() {
+                              _attachedFile = null;
+                              _fileName = null;
+                              _existingFileData = null;
+                            }),
                             child: Container(
                               padding: const EdgeInsets.all(4),
                               decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
@@ -325,7 +387,14 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   }
 
   Widget _buildFilePreview() {
-    if (_isImage) return Image.file(_attachedFile!, width: 120, height: 120, fit: BoxFit.cover);
+    // Ưu tiên hiển thị file mới chọn
+    if (_attachedFile != null) {
+      if (_isImage) return Image.file(_attachedFile!, width: 120, height: 120, fit: BoxFit.cover);
+    } else if (_existingFileData != null) {
+      // Hiển thị preview từ data base64 cũ
+      if (_isImage) return Image.memory(base64Decode(_existingFileData!), width: 120, height: 120, fit: BoxFit.cover);
+    }
+
     return Container(
       width: 120, height: 120,
       color: Colors.grey[100],

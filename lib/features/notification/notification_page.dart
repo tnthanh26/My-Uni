@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/notification_model.dart';
 import '../../notification_service.dart';
+import '../home/post_detail_page.dart';
 
 class NotificationScreen extends StatelessWidget {
 
@@ -48,7 +50,36 @@ class NotificationScreen extends StatelessWidget {
 
   Widget _buildNotificationItem(BuildContext context, MyUniNotification noti) {
     return InkWell(
-      onTap: () => NotificationService.markAsRead(noti.id),
+      onTap: () async {
+        NotificationService.markAsRead(noti.id);
+
+        if (noti.relatedPostId != null && noti.collectionPath != null) {
+
+          final postDoc = await FirebaseFirestore.instance
+              .collection(noti.collectionPath!)
+              .doc(noti.relatedPostId)
+              .get();
+
+          if (postDoc.exists) {
+            final postData = postDoc.data() as Map<String, dynamic>;
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PostDetailPage(
+                  docId: noti.relatedPostId!,
+                  initialPostData: postData,
+                ),
+              ),
+            );
+          } else {
+            // Xử lý bài viết đã bị xóa
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Bài viết này không còn tồn tại")),
+            );
+          }
+        }
+      },
       child: Container(
         color: noti.isRead ? Colors.white : const Color(0xFFFFF5F5),
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),

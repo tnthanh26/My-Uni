@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MyUniNotification {
   final String id;
+  final String? relatedPostId;
+  final String? collectionPath;
   final String type;
   final String title;
   final String content;
@@ -9,6 +11,8 @@ class MyUniNotification {
   final bool isRead;
 
   MyUniNotification({
+    this.relatedPostId,
+    this.collectionPath,
     required this.id,
     required this.type,
     required this.title,
@@ -22,6 +26,8 @@ class MyUniNotification {
     Map data = doc.data() as Map<String, dynamic>;
     return MyUniNotification(
       id: doc.id,
+      relatedPostId: data['relatedPostId'],
+      collectionPath: data['collectionPath'],
       type: data['type'] ?? 'info',
       title: data['title'] ?? '',
       content: data['content'] ?? '',

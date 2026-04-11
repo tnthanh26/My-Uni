@@ -11,7 +11,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
-  static const String _channelId = 'my_uni_urgent_channel';
+  static const String _channelId = 'my_uni_urgent_channel_v3';
   static const String _channelName = 'MyUni Notifications';
   static const String _channelDescription = 'Thông báo nhắc nhở sự kiện MyUni';
 
@@ -34,8 +34,6 @@ class NotificationService {
       },
     );
 
-    await _notificationsPlugin.cancelAll();
-
     if (!kIsWeb && Platform.isAndroid) {
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -52,7 +50,11 @@ class NotificationService {
 
       await androidPlugin?.createNotificationChannel(channel);
       await androidPlugin?.requestNotificationsPermission();
-      await androidPlugin?.requestExactAlarmsPermission();
+
+      final bool? canSchedule = await androidPlugin?.canScheduleExactNotifications();
+      if (canSchedule == false) {
+        await androidPlugin?.requestExactAlarmsPermission();
+      }
     }
   }
 
@@ -107,26 +109,34 @@ class NotificationService {
   }) async {
     final location = tz.getLocation('Asia/Ho_Chi_Minh');
     final scheduled = tz.TZDateTime.from(scheduledDate, location);
+    final now = tz.TZDateTime.now(location);
 
-    if (!scheduled.isAfter(tz.TZDateTime.now(location))) return;
+    if (!scheduled.isAfter(now)) return;
 
-    await _notificationsPlugin.zonedSchedule(
-      id: id,
-      title: title,
-      body: body,
-      scheduledDate: scheduled,
-      notificationDetails: const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          channelDescription: _channelDescription,
-          importance: Importance.max,
-          priority: Priority.max,
-          icon: '@mipmap/ic_launcher',
+    try {
+      await _notificationsPlugin.zonedSchedule(
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: scheduled,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channelId,
+            _channelName,
+            channelDescription: _channelDescription,
+            importance: Importance.max,
+            priority: Priority.max,
+            icon: '@mipmap/ic_launcher',
+            // FIX LỖI GIỜ HIỂN THỊ SAI:
+            showWhen: true,
+            when: scheduled.millisecondsSinceEpoch,
+          ),
         ),
-      ),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-    );
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } catch (e) {
+      debugPrint('KẾT QUẢ: Lỗi zonedSchedule: $e');
+    }
   }
 
   static Future<void> cancelNotification(int id) async {

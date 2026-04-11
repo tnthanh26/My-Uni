@@ -140,67 +140,79 @@ class MyUniHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Color(0xFF5893D8);
+    final primaryColor = const Color(0xFF5893D8);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.school_rounded,
-              size: 100,
-              color: primaryColor,
-            ),
-            const SizedBox(height: 30),
-            const Text(
-              'Chào mừng bạn đến với MyUni!',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Kết nối với các bạn cừng trường',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 50),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.school_rounded,
+                  size: 100,
+                  color: primaryColor,
+                ),
+                const SizedBox(height: 30),
 
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, '/login'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                Text(
+                  'Chào mừng bạn đến với MyUni!',
+                  textAlign: TextAlign.center,
+                  textScaler: const TextScaler.linear(1.0),
+                  style: const TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-                child: const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 16),
 
-            SizedBox(
-              width: double.infinity,
-              height: 55,
-              child: OutlinedButton(
-                onPressed: () => Navigator.pushNamed(context, '/signup'),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: primaryColor, width: 2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                const SizedBox(height: 12),
+
+                const Text(
+                  'Kết nối với các bạn cùng trường',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
-                child: Text(
-                  'Đăng ký tài khoản',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+
+                const SizedBox(height: 50),
+
+                // Button Đăng nhập
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/login'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    ),
+                    child: const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 16),
+
+                // Button Đăng ký
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pushNamed(context, '/signup'),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                    ),
+                    child: Text(
+                      'Đăng ký tài khoản',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

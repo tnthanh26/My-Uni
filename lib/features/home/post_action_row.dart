@@ -8,6 +8,7 @@ class PostActionRow extends StatelessWidget {
   final Map<String, dynamic> data;
   final Function(String, Map<String, dynamic>) onSave;
   final String collectionPath;
+  final VoidCallback? onLike;
 
   const PostActionRow({
     super.key,
@@ -15,25 +16,26 @@ class PostActionRow extends StatelessWidget {
     required this.data,
     required this.onSave,
     required this.collectionPath,
+    this.onLike,
   });
 
-  // --- HÀM MỚI: GỬI THÔNG BÁO ---
   Future<void> _sendNotification({
     required String targetUserId,
     required String type,
     required String content,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null || currentUser.uid == targetUserId) return;
+    if (collectionPath == 'official_news' || currentUser == null || currentUser.uid == targetUserId) return;
 
     await FirebaseFirestore.instance.collection('notifications').add({
       'userId': targetUserId,
       'type': type,
-      'title': type == 'like' ? 'Thích' : 'Bình luận',
+      'title': type == 'like' ? 'Yêu thích' : 'Bình luận',
       'content': content,
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
       'relatedPostId': docId,
+      'collectionPath': collectionPath,
     });
   }
 
@@ -53,13 +55,18 @@ class PostActionRow extends StatelessWidget {
       await userLikeRef.set({'timestamp': FieldValue.serverTimestamp()});
       await postRef.update({'likeCount': FieldValue.increment(1)});
 
-      // Bắn thông báo khi Like
-      if (data['authorId'] != null) {
-        _sendNotification(
-          targetUserId: data['authorId'],
-          type: 'like',
-          content: 'Có người đã thích bài viết của bạn.',
-        );
+      if (onLike != null) {
+        onLike!();
+      } else {
+        final String? ownerId = data['authorId'] ?? data['uploaderId'] ?? data['uid'];
+
+        if (ownerId != null) {
+          _sendNotification(
+            targetUserId: ownerId,
+            type: 'like',
+            content: '${user.displayName ?? "Ai đó"} đã thích bài viết của bạn.',
+          );
+        }
       }
     }
   }
@@ -70,25 +77,39 @@ class PostActionRow extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
     final Color defaultColor = isDarkMode ? Colors.white60 : Colors.grey[600]!;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildLikeButton(user, isDarkMode, defaultColor),
-          _buildActionButton(
-            icon: Icons.chat_bubble_outline,
-            label: '${data['commentCount'] ?? 0}',
-            color: defaultColor,
-            onTap: () => _navigateToDetail(context),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection(collectionPath).doc(docId).snapshots(),
+      builder: (context, postSnapshot) {
+        final postData = postSnapshot.hasData && postSnapshot.data!.exists
+            ? postSnapshot.data!.data() as Map<String, dynamic>
+            : data;
+
+        final int currentLikeCount = postData['likeCount'] ?? 0;
+        final int currentCommentCount = postData['commentCount'] ?? 0;
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildLikeButton(user, isDarkMode, defaultColor, currentLikeCount),
+
+              _buildActionButton(
+                icon: Icons.chat_bubble_outline,
+                label: '$currentCommentCount',
+                color: defaultColor,
+                onTap: () => _navigateToDetail(context),
+              ),
+
+              _buildSaveButton(user, isDarkMode, defaultColor),
+            ],
           ),
-          _buildSaveButton(user, isDarkMode, defaultColor),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildLikeButton(User? user, bool isDarkMode, Color defaultColor) {
+  Widget _buildLikeButton(User? user, bool isDarkMode, Color defaultColor, int likeCount) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection(collectionPath)
@@ -100,7 +121,7 @@ class PostActionRow extends StatelessWidget {
         bool isLiked = snapshot.hasData && snapshot.data!.exists;
         return _buildActionButton(
           icon: isLiked ? Icons.favorite : Icons.favorite_border,
-          label: '${data['likeCount'] ?? 0}',
+          label: '$likeCount',
           color: isLiked ? Colors.redAccent : defaultColor,
           onTap: _handleLike,
         );

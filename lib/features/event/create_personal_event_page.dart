@@ -84,14 +84,16 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
     );
   }
 
-  // --- HÀM LƯU SỰ KIỆN VÀ ĐẶT LỜI NHẮC ---
   Future<void> _saveEvent() async {
+    if (_isLoading) return;
+
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập tên sự kiện")));
       return;
     }
 
     setState(() => _isLoading = true);
+
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
@@ -108,8 +110,8 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
 
         DateTime notificationTime = finalDateTime.subtract(Duration(minutes: minutesBefore));
 
-        // 2. Tạo ID thông báo (dựa trên timestamp để không bị trùng)
-        int notificationId = finalDateTime.millisecondsSinceEpoch ~/ 1000;
+        // 2. Tạo ID thông báo (Dùng remainder để đảm bảo an toàn cho Android int32)
+        int notificationId = finalDateTime.millisecondsSinceEpoch.remainder(100000000);
 
         final eventData = {
           'title': _titleController.text,
@@ -117,7 +119,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           'description': _descController.text,
           'dateTime': Timestamp.fromDate(finalDateTime),
           'reminder': _selectedReminder,
-          'notificationId': notificationId, // Lưu ID để có thể hủy/sửa sau này
+          'notificationId': notificationId,
           'updatedAt': FieldValue.serverTimestamp(),
         };
 
@@ -126,18 +128,18 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
             .doc(user.uid)
             .collection('personal_events');
 
+        // 3. Xử lý Hủy thông báo cũ nếu là chế độ Sửa
         if (widget.event != null) {
           if (widget.event!.notificationId != null) {
             await NotificationService.cancelNotification(widget.event!.notificationId!);
           }
           await collection.doc(widget.event!.id).update(eventData);
         } else {
-          // CHẾ ĐỘ TẠO MỚI
           eventData['createdAt'] = FieldValue.serverTimestamp();
           await collection.add(eventData);
         }
 
-        // 3. Đặt lịch thông báo trên thiết bị nếu người dùng không chọn 'Không'
+        // 4. Đặt lịch thông báo mới
         if (_selectedReminder != 'Không' && notificationTime.isAfter(DateTime.now())) {
           await NotificationService.scheduleNotification(
             id: notificationId,
@@ -151,8 +153,11 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       }
     } catch (e) {
       debugPrint("Firebase Error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
+      }
     } finally {
+      // Chỉ tắt loading nếu widget vẫn còn tồn tại và chưa Navigator.pop
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -169,6 +174,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       appBar: AppBar(
         backgroundColor: primaryBrown,
         elevation: 0,
+        leadingWidth: 70,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Hủy', style: TextStyle(color: Colors.white, fontSize: 16)),

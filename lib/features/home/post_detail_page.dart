@@ -41,19 +41,42 @@ class _PostDetailPageState extends State<PostDetailPage> {
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
-  // --- HÀM MỚI: GỬI THÔNG BÁO BÌNH LUẬN ---
   Future<void> _sendCommentNotification(String content) async {
-    final authorId = widget.initialPostData['authorId'];
+    if (_collectionPath == 'official_news') return; // Bỏ qua tab official
+
+    // Tìm ID người đăng bài (tùy theo tab có thể là authorId hoặc uploaderId)
+    final authorId = widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
       'userId': authorId,
       'type': 'comment',
-      'title': 'Bình luận',
-      'content': 'Có người đã bình luận về bài viết của bạn: "$content"',
+      'title': 'Bình luận mới',
+      'content': '${_user!.displayName ?? "Ai đó"} đã bình luận bài viết của bạn',
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
       'relatedPostId': widget.docId,
+      'collectionPath': _collectionPath,
+    });
+  }
+
+  Future<void> _sendLikeNotification() async {
+    if (_collectionPath == 'official_news') return; // Bỏ qua tab official
+
+    final authorId = widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+
+    if (_user == null || authorId == null || _user!.uid == authorId) return;
+
+    await _firestore.collection('notifications').add({
+      'userId': authorId,
+      'type': 'like',
+      'title': 'Yêu thích',
+      'content': '${_user!.displayName ?? "Ai đó"} đã thích bài viết của bạn',
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'relatedPostId': widget.docId,
+      'collectionPath': _collectionPath,
     });
   }
 
@@ -86,7 +109,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
       'commentCount': FieldValue.increment(1)
     });
 
-    // Bắn thông báo sau khi thêm comment thành công
     await _sendCommentNotification(content);
   }
 
@@ -121,6 +143,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       data: widget.initialPostData,
                       onSave: (id, data) {},
                       collectionPath: _collectionPath,
+                      onLike: _sendLikeNotification,
                     ),
                   ),
                   Container(color: const Color(0xFFF8F9FA), height: 8),
