@@ -143,7 +143,7 @@ class _ForumTabState extends State<ForumTab> {
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.tag, size: 13, color: Color(0xFF344054)),
+                                    const Icon(Icons.tag, size: 13, color: Color(0xFF5893D8)),
                                     const SizedBox(width: 2),
                                     Text(
                                       tag.toString(),
@@ -158,7 +158,7 @@ class _ForumTabState extends State<ForumTab> {
 
                       // --- CONTENT (CSS: Encode Sans Expanded 15px) ---
                       Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text(
                           data['content'] ?? '',
                           style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4),
@@ -168,7 +168,7 @@ class _ForumTabState extends State<ForumTab> {
                       // --- IMAGE (Nếu có) ---
                       _buildSafeImage(context, data['imageUrl']),
 
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
 
                       // --- ACTION ROW (Like, Comment, Save) ---
                       GestureDetector(
@@ -181,7 +181,7 @@ class _ForumTabState extends State<ForumTab> {
                           collectionPath: 'forum_posts',
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                     ],
                   ),
                 ),
