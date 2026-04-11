@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
 import 'package:my_uni/models/event_model.dart';
 import 'create_personal_event_page.dart';
 import 'interested_event_tab.dart';
@@ -19,8 +20,9 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   String _listFilter = 'Gần nhất';
-
   String _activeSubTab = 'Cá nhân';
+
+  Timer? _refreshTimer; // Timer mới thêm vào
 
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color primaryBrown = Color(0xFF47352E);
@@ -37,10 +39,15 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
     _viewTabController!.addListener(() {
       if (!_viewTabController!.indexIsChanging) setState(() {});
     });
+
+    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _viewTabController?.dispose();
     super.dispose();
   }
@@ -231,7 +238,7 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
       backgroundColor: Colors.transparent,
       body: Column(
         children: [
-          const SizedBox(height: 140),
+          SizedBox(height: MediaQuery.of(context).padding.top + 100),
 
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 10),
@@ -249,34 +256,30 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                     ? allEvents.length
                     : allEvents.where((e) => DateUtils.isSameDay(e.dateTime, _selectedDay)).length;
 
-                return CustomScrollView(
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 5, 16, 12),
-                        child: Row(
-                          children: [
-                            _viewTabController!.index == 0
-                                ? _buildListFilter(isDarkMode)
-                                : _buildMonthPicker(isDarkMode),
-                            const Spacer(),
-                            _buildViewSwitcher(isDarkMode),
-                          ],
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 5, 16, 12),
+                      child: Row(
+                        children: [
+                          _viewTabController!.index == 0
+                              ? _buildListFilter(isDarkMode)
+                              : _buildMonthPicker(isDarkMode),
+                          const Spacer(),
+                          _buildViewSwitcher(isDarkMode),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Center(
+                        child: Text(
+                          "Bạn đang có $count sự kiện sắp diễn ra",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
                         ),
                       ),
                     ),
-                    SliverToBoxAdapter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Center(
-                          child: Text(
-                            "Bạn đang có $count sự kiện sắp diễn ra",
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                          ),
-                        ),
-                      ),
-                    ),
-                    SliverFillRemaining(
+                    Expanded(
                       child: TabBarView(
                         controller: _viewTabController,
                         children: [
@@ -365,7 +368,10 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                   child: Container(
                     width: 48,
                     margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
-                    decoration: BoxDecoration(color: isSelected ? figmaSelectionBlue : Colors.transparent, borderRadius: BorderRadius.circular(16)),
+                    decoration: BoxDecoration(
+                      color: isSelected ? figmaSelectionBlue : Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -382,22 +388,47 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                IconButton(onPressed: () => _showFullCalendarPopup(isDarkMode), icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey)),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 22, vertical: 10),
-                  child: Row(children: [
-                    Text("Time", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
-                    SizedBox(width: 45),
-                    Text("Event", style: TextStyle(fontFamily: 'Poppins', fontSize: 17)),
-                  ]),
+                IconButton(
+                  onPressed: () => _showFullCalendarPopup(isDarkMode),
+                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
                 ),
-                const Padding(padding: EdgeInsets.symmetric(horizontal: 35), child: Divider(color: Color(0xFF949494))),
+                const Padding(
+                  padding: EdgeInsets.only(left: 16, right: 16, bottom: 10),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 110,
+                        child: Center(
+                          child: Text(
+                            "Thời gian",
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 20),
+                      Text(
+                        "Sự kiện",
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
                 Stack(
                   children: [
-                    Positioned(left: 83, top: 0, bottom: 0, child: Container(width: 1, color: const Color(0xFF949494))),
+                    Positioned(
+                      left: 126,
+                      top: 0,
+                      bottom: 0,
+                      child: Container(width: 1.2, color: const Color(0xFFD1D1D1)),
+                    ),
                     Column(
                       children: dayEvents.isEmpty
-                          ? [const Padding(padding: EdgeInsets.only(top: 50, left: 100), child: Text("Không có sự kiện", style: TextStyle(color: Colors.black54)))]
+                          ? [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 50, left: 100),
+                          child: Text("Không có sự kiện", style: TextStyle(color: Colors.black54)),
+                        )
+                      ]
                           : dayEvents.asMap().entries.map((entry) => _buildTimelineRow(isDarkMode, entry.value, entry.key)).toList(),
                     ),
                   ],
@@ -413,27 +444,40 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   Widget _buildTimelineRow(bool isDarkMode, EventModel ev, int index) {
     Color cardBg = isDarkMode
         ? (index % 2 == 0 ? const Color(0xFF2E402E) : const Color(0xFF403E2E))
-        : (index % 2 == 0 ? const Color(0xFFD6FBD5) : const Color(0xFFFBF5D5));
+        : (index % 2 == 0 ? const Color(0xFFE3F2E1) : const Color(0xFFFFF9C4));
+
     return Padding(
-      padding: const EdgeInsets.only(bottom: 25),
+      padding: const EdgeInsets.only(bottom: 20),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 80,
-            child: Center(
-              child: Text(DateFormat('HH:mm').format(ev.dateTime), style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 19)),
+            width: 110,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Center(
+                child: Text(
+                  DateFormat('HH:mm').format(ev.dateTime),
+                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 17),
+                ),
+              ),
             ),
           ),
-          const SizedBox(width: 25),
+          const SizedBox(width: 32),
           Expanded(
             child: Container(
               margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4, offset: const Offset(0, 4))],
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,26 +485,43 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(child: Text(ev.title, style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 18))),
+                      Expanded(
+                        child: Text(
+                          ev.title,
+                          style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, fontSize: 17),
+                        ),
+                      ),
                       _buildMoreMenu(ev, isDarkMode),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    const Icon(Icons.location_on_outlined, size: 18),
-                    const SizedBox(width: 4),
-                    Expanded(child: Text(ev.location, style: const TextStyle(fontFamily: 'Poppins', fontSize: 14), overflow: TextOverflow.ellipsis)),
-                  ]),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(Icons.location_on_rounded, size: 18, color: Colors.black54),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          ev.location,
+                          style: const TextStyle(fontFamily: 'Poppins', fontSize: 14, color: Colors.black54),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(color: figmaDetailBtn, borderRadius: BorderRadius.circular(20)),
-                        child: const Text("Details", style: TextStyle(color: Colors.white, fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w500)),
+                    child: ElevatedButton(
+                      onPressed: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: figmaDetailBtn,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        minimumSize: const Size(80, 32),
                       ),
+                      child: const Text("Chi tiết", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -474,36 +535,61 @@ class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
 
   Widget _buildLargeEventCard(EventModel ev, bool isDarkMode) {
     final diff = ev.dateTime.difference(DateTime.now());
-    String timeText = diff.inDays > 0 ? "${diff.inDays} days left" : (diff.inHours > 0 ? "${diff.inHours} hours left" : "${diff.inMinutes} mins left");
+    String timeText = diff.isNegative
+        ? "Đang diễn ra"
+        : (diff.inDays > 0
+        ? "Còn ${diff.inDays} ngày nữa"
+        : (diff.inHours > 0 ? " Còn ${diff.inHours} giờ nữa" : "Còn ${diff.inMinutes} phút nữa"));
+
     return Container(
-      height: 150, margin: const EdgeInsets.only(bottom: 16),
+      constraints: const BoxConstraints(minHeight: 150),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        image: const DecorationImage(image: AssetImage('assets/images/background.jpg'), fit: BoxFit.cover, opacity: 0.6, colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken)),
+        image: const DecorationImage(
+          image: AssetImage('assets/images/background.jpg'),
+          fit: BoxFit.cover,
+          opacity: 0.6,
+          colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken),
+        ),
       ),
       padding: const EdgeInsets.all(16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text(ev.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18), overflow: TextOverflow.ellipsis)),
+              Expanded(
+                child: Text(
+                  ev.title,
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
               _buildMoreMenu(ev, isDarkMode),
             ],
           ),
-          const Spacer(),
-          Text(timeText, style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-          const Spacer(),
+          const SizedBox(height: 12),
+          Text(
+            timeText,
+            style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(DateFormat('MMM d, yyyy').format(ev.dateTime), style: const TextStyle(color: Colors.white70)),
+              Text(
+                DateFormat('MMM d, yyyy').format(ev.dateTime),
+                style: const TextStyle(color: Colors.white70),
+              ),
               InkWell(
                 onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(color: figmaDetailBtn, borderRadius: BorderRadius.circular(8)),
-                  child: const Text("Details", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: const Text("Chi tiết", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

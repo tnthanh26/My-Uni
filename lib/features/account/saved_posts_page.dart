@@ -168,7 +168,6 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     );
   }
 
-  // --- CÁC HÀM BUILD CARD (GIỮ NGUYÊN UI ĐÃ SỬA) ---
   Widget _buildOfficialCard(Map<String, dynamic> data, String docId) {
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
