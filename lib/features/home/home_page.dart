@@ -13,6 +13,7 @@ import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -97,7 +98,7 @@ class _HomePageState extends State<HomePage> {
                         width: double.infinity,
                         decoration: const BoxDecoration(
                           image: DecorationImage(
-                            image: AssetImage('assets/images/background.jpg'),
+                            image: AssetImage('assets/images/hcmus_bg.png'),
                             fit: BoxFit.cover,
                           ),
                         ),
@@ -318,9 +319,13 @@ class _HomePageState extends State<HomePage> {
     return Container(
       decoration: BoxDecoration(
         color: const Color(0xFFF6F6F6),
-        border: Border(top: BorderSide(color: Colors.black.withOpacity(0.2))),
+        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.1))),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 20, offset: const Offset(0, 4)),
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 16,
+              offset: const Offset(0, -4)
+          ),
         ],
       ),
       child: BottomNavigationBar(
@@ -328,19 +333,36 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.transparent,
         currentIndex: _selectedIndex,
         selectedItemColor: const Color(0xFF457EC0), // Active color CSS
-        unselectedItemColor: const Color(0xFF545454), // Inactive color CSS
+        unselectedItemColor: const Color(0xFF8E8E93), // Inactive color CSS
         selectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
         unselectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
         elevation: 0,
         onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.event_note_rounded), label: 'Events'),
-          BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_rounded), label: 'Hỏi Đáp'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'MySpace'),
-          BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Account'),
+        items: [
+          _buildNavItem('assets/icons/home.svg', 'Home', 0),
+          _buildNavItem('assets/icons/event.svg', 'Sự kiện', 1),
+          _buildNavItem('assets/icons/chat.svg', 'Hỏi Đáp', 2),
+          _buildNavItem('assets/icons/space.svg', 'Góc nhỏ', 3),
+          _buildNavItem('assets/icons/account.svg', 'Tài Khoản', 4),
         ],
       ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
+    bool isSelected = _selectedIndex == index;
+    return BottomNavigationBarItem(
+      icon: SvgPicture.asset(
+        assetPath,
+        width: 28,
+        height: 28,
+        // Tự động đổi màu icon theo trạng thái chọn
+        colorFilter: ColorFilter.mode(
+          isSelected ? const Color(0xFF457EC0) : const Color(0xFF8E8E93),
+          BlendMode.srcIn,
+        ),
+      ),
+      label: label,
     );
   }
 
