@@ -30,7 +30,11 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   bool _isValidStudentEmail(String email) {
-    return email.toLowerCase().endsWith('.edu.vn');
+    final emailRegex = RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
+    );
+
+    return emailRegex.hasMatch(email.trim().toLowerCase());
   }
 
   Future<void> _sendOTPEmail(String email, String otp) async {
@@ -260,7 +264,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Tùy chỉnh InputDecoration để sạch sẽ và hiện đại
   InputDecoration _inputDecoration(String label, IconData icon, bool isDarkMode, {Widget? suffix}) {
     return InputDecoration(
       labelText: label,

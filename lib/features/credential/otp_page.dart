@@ -43,7 +43,7 @@ class _OtpPageState extends State<OtpPage> {
       await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
         'displayName': "${userData['firstName']} ${userData['lastName']}",
         'email': email,
-        'faculty': userData['university'], // Map với trường 'faculty' ở AccountPage
+        'faculty': userData['university'],
         'isVerified': true,
         'createdAt': FieldValue.serverTimestamp(),
       });
@@ -142,7 +142,6 @@ class _OtpPageState extends State<OtpPage> {
             ),
             const SizedBox(height: 50),
 
-            // Phần nhập OTP nổi bật
             Text(
                 'NHẬP MÃ 6 CHỮ SỐ',
                 style: TextStyle(

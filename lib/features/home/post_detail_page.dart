@@ -41,12 +41,81 @@ class _PostDetailPageState extends State<PostDetailPage> {
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
+  Future<void> _deleteComment(String commentId) async {
+    try {
+      // 1. Lấy tất cả các replies của comment này trước khi xóa
+      final repliesSnapshot = await _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .collection('comments')
+          .where('parentCommentId', isEqualTo: commentId)
+          .get();
+
+      WriteBatch batch = _firestore.batch();
+
+      // 2. Thêm lệnh xóa comment gốc vào batch
+      DocumentReference mainCommentRef = _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .collection('comments')
+          .doc(commentId);
+      batch.delete(mainCommentRef);
+
+      // 3. Thêm lệnh xóa tất cả replies vào batch
+      for (var doc in repliesSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 4. Tính toán số lượng cần giảm (1 gốc + n replies)
+      int totalToDelete = 1 + repliesSnapshot.docs.length;
+
+      // 5. Cập nhật lại commentCount trên bài viết gốc
+      DocumentReference postRef = _firestore.collection(_collectionPath).doc(widget.docId);
+      batch.update(postRef, {
+        'commentCount': FieldValue.increment(-totalToDelete)
+      });
+
+      // 6. Thực thi tất cả các lệnh trên trong 1 lần duy nhất
+      await batch.commit();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Đã xóa bình luận và ${repliesSnapshot.docs.length} phản hồi")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Lỗi khi xóa bình luận: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Không thể xóa bình luận. Vui lòng thử lại.")),
+        );
+      }
+    }
+  }
+
+  void _showDeleteConfirmation(String commentId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Xóa bình luận", style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
+        content: const Text("Bạn có chắc chắn muốn xóa bình luận này không?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Hủy")),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deleteComment(commentId);
+            },
+            child: const Text("Xóa", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _sendCommentNotification(String content) async {
-    if (_collectionPath == 'official_news') return; // Bỏ qua tab official
-
-    // Tìm ID người đăng bài (tùy theo tab có thể là authorId hoặc uploaderId)
+    if (_collectionPath == 'official_news') return;
     final authorId = widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
-
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
@@ -62,10 +131,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _sendLikeNotification() async {
-    if (_collectionPath == 'official_news') return; // Bỏ qua tab official
-
+    if (_collectionPath == 'official_news') return;
     final authorId = widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
-
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
@@ -321,7 +388,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       _buildSingleCommentWidget(comment),
       if (replies.isNotEmpty)
         Padding(
-            padding: const EdgeInsets.only(left: 42),
+            padding: const EdgeInsets.only(left: 48), // Thụt lề cho replies
             child: Column(children: replies.map((reply) => _buildCommentTree(reply, allComments)).toList())
         ),
     ]);
@@ -329,38 +396,77 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildSingleCommentWidget(Map<String, dynamic> comment) {
     String? avt = comment['authorAvatar'];
+    final bool isCommentOwner = _user?.uid == comment['authorId'];
+    final bool isPostOwner = _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+    final bool canDelete = isCommentOwner || isPostOwner;
+    final bool isAuthor = comment['authorId'] == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        CircleAvatar(
-          radius: 18,
-          backgroundColor: const Color(0xFFF1F2F6),
-          backgroundImage: (avt != null && avt.isNotEmpty && avt.startsWith('http'))
-              ? NetworkImage(avt) : null,
-          child: (avt == null || avt.isEmpty)
-              ? const Icon(Icons.person, size: 20, color: Colors.grey)
-              : (avt.startsWith('http') ? null : ClipOval(child: Image.memory(base64Decode(avt), fit: BoxFit.cover))),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: const Color(0xFFF1F2F6), borderRadius: BorderRadius.circular(16)),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(comment['authorName'], style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 13)),
-              const SizedBox(height: 4),
-              Text(comment['content'], style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14, color: Color(0xFF545454))),
-            ]),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(left: 8, top: 4),
-            child: GestureDetector(
-              onTap: () => setState(() { _replyingToId = comment['id']; _replyingToName = comment['authorName']; }),
-              child: const Text("Trả lời", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777), fontWeight: FontWeight.bold)),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Giảm vertical padding cho khít hơn
+      child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xFFF1F2F6),
+              child: (avt == null || avt.isEmpty)
+                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                  : ClipOval(child: Image.memory(base64Decode(avt), fit: BoxFit.cover, width: 36, height: 36)),
             ),
-          ),
-        ]))
-      ]),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center, // Căn giữa theo chiều dọc
+                      children: [
+                        Text(
+                            comment['authorName'],
+                            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF545454))
+                        ),
+                        if (isAuthor) ...[
+                          const SizedBox(width: 6),
+                          const Text("Tác giả", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF5893D8))),
+                        ],
+                        const Spacer(),
+                        if (canDelete)
+                          SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: PopupMenuButton<String>(
+                              padding: EdgeInsets.zero, // Xóa sạch padding thừa của nút 3 chấm
+                              icon: const Icon(Icons.more_horiz, size: 18, color: Color(0xFF777777)),
+                              onSelected: (val) => _showDeleteConfirmation(comment['id']),
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(value: 'delete', child: Text("Xóa", style: TextStyle(color: Colors.red))),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+                    Transform.translate(
+                      offset: const Offset(0, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              comment['content'],
+                              style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14, color: Color(0xFF545454), height: 1.3)
+                          ),
+                          const SizedBox(height: 4),
+                          GestureDetector(
+                            onTap: () => setState(() { _replyingToId = comment['id']; _replyingToName = comment['authorName']; }),
+                            child: const Text("Reply", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF5893D8), fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+            )
+          ]
+      ),
     );
   }
 

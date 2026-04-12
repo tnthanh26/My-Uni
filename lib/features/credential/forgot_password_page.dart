@@ -26,50 +26,50 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         content: Text(message),
         backgroundColor: isError ? Colors.redAccent : Colors.green,
         duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating, // Cho nổi lên nhìn chuyên nghiệp hơn
+        behavior: SnackBarBehavior.floating,
       ),
     );
   }
 
   Future<void> _resetPassword() async {
+    // 1. Validate form trước khi chạy logic
     if (!_formKey.currentState!.validate()) return;
 
     final email = _emailController.text.trim();
     setState(() => _isLoading = true);
 
     try {
-      final userQuery = await FirebaseFirestore.instance
-          .collection('users')
-          .where('email', isEqualTo: email)
-          .limit(1)
-          .get();
-
-      if (userQuery.docs.isEmpty) {
-        if (mounted) {
-          _showSnackBar('Email này chưa được đăng ký trong hệ thống MyUni.', isError: true);
-        }
-        setState(() => _isLoading = false);
-        return;
-      }
-
+      // 2. Gửi yêu cầu reset pass trực tiếp qua Firebase Auth
+      // Firebase sẽ xử lý việc gửi mail nếu email tồn tại
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
 
       if (mounted) {
-        _showSnackBar('Link đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư.');
-        Future.delayed(const Duration(seconds: 2), () {
+        // 3. Thông báo khéo léo để người dùng tự kiểm tra lại email nếu nhập sai
+        _showSnackBar(
+          'Yêu cầu đã gửi đến: $email. Nếu không nhận được, hãy kiểm tra kỹ hộp thư hoặc thư rác.',
+        );
+
+        // Chờ người dùng kịp đọc email đã nhập trên SnackBar rồi mới quay về
+        Future.delayed(const Duration(seconds: 4), () {
           if (mounted) Navigator.pop(context);
         });
       }
     } on FirebaseAuthException catch (e) {
       String errorMessage = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+
       if (e.code == 'too-many-requests') {
         errorMessage = 'Quá nhiều yêu cầu. Vui lòng thử lại sau ít phút.';
       } else if (e.code == 'network-request-failed') {
         errorMessage = 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
+      } else if (e.code == 'invalid-email') {
+        errorMessage = 'Địa chỉ email không hợp lệ.';
+      } else if (e.code == 'user-disabled') {
+        errorMessage = 'Tài khoản này đã bị khóa.';
       }
-      _showSnackBar(errorMessage, isError: true);
+
+      if (mounted) _showSnackBar(errorMessage, isError: true);
     } catch (e) {
-      _showSnackBar('Lỗi không xác định: $e', isError: true);
+      if (mounted) _showSnackBar('Lỗi không xác định: $e', isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -178,8 +178,16 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Vui lòng nhập email';
-                    if (!value.contains('@')) return 'Email không hợp lệ';
+                    if (value == null || value.isEmpty) {
+                      return 'Vui lòng nhập email';
+                    }
+                    final RegExp emailRegex = RegExp(
+                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
+                    );
+
+                    if (!emailRegex.hasMatch(value.trim())) {
+                      return 'Vui lòng sử dụng email sinh viên (.edu.vn)';
+                    }
                     return null;
                   },
                 ),
