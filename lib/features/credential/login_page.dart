@@ -181,7 +181,6 @@ class _LoginPageState extends State<LoginPage> {
                 ElevatedButton(
                   onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
                   style: ElevatedButton.styleFrom(
-                    // Chế độ sáng dùng Nâu (Brown 700), Chế độ tối dùng Xám xanh đá (BlueGrey 800)
                     backgroundColor: isDarkMode
                         ? Colors.blueGrey[800]
                         : Colors.grey[600],
@@ -189,7 +188,6 @@ class _LoginPageState extends State<LoginPage> {
                     minimumSize: const Size(double.infinity, 55),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(15),
-                      // Viền mờ nhẹ ở Dark Mode để tạo chiều sâu
                       side: isDarkMode
                           ? BorderSide(color: Colors.white.withOpacity(0.05))
                           : BorderSide.none,
@@ -208,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
                         'Tiếp tục với tư cách Khách',
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: FontWeight.w600, // Đậm vừa phải, thanh lịch
+                          fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
                       ),
@@ -224,7 +222,6 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Widget dùng chung để tạo style Input chuyên nghiệp
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
