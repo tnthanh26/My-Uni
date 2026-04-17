@@ -43,7 +43,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Future<void> _deleteComment(String commentId) async {
     try {
-      // 1. Lấy tất cả các replies của comment này trước khi xóa
       final repliesSnapshot = await _firestore
           .collection(_collectionPath)
           .doc(widget.docId)
@@ -53,7 +52,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
       WriteBatch batch = _firestore.batch();
 
-      // 2. Thêm lệnh xóa comment gốc vào batch
       DocumentReference mainCommentRef = _firestore
           .collection(_collectionPath)
           .doc(widget.docId)
@@ -61,21 +59,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
           .doc(commentId);
       batch.delete(mainCommentRef);
 
-      // 3. Thêm lệnh xóa tất cả replies vào batch
       for (var doc in repliesSnapshot.docs) {
         batch.delete(doc.reference);
       }
 
-      // 4. Tính toán số lượng cần giảm (1 gốc + n replies)
       int totalToDelete = 1 + repliesSnapshot.docs.length;
 
-      // 5. Cập nhật lại commentCount trên bài viết gốc
       DocumentReference postRef = _firestore.collection(_collectionPath).doc(widget.docId);
       batch.update(postRef, {
         'commentCount': FieldValue.increment(-totalToDelete)
       });
 
-      // 6. Thực thi tất cả các lệnh trên trong 1 lần duy nhất
       await batch.commit();
 
       if (mounted) {
@@ -85,11 +79,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     } catch (e) {
       debugPrint("Lỗi khi xóa bình luận: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Không thể xóa bình luận. Vui lòng thử lại.")),
-        );
-      }
     }
   }
 
@@ -181,18 +170,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: Text(_getAppBarTitle(),
-            style: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold, fontSize: 18)),
+            style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold, fontSize: 18, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF545454),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        foregroundColor: isDarkMode ? Colors.white : const Color(0xFF545454),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFDFE6E9), height: 1),
+          child: Container(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), height: 1),
         ),
       ),
       body: Column(
@@ -213,7 +204,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       onLike: _sendLikeNotification,
                     ),
                   ),
-                  Container(color: const Color(0xFFF8F9FA), height: 8),
+                  Container(color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8F9FA), height: 8),
                   _buildCommentSection(),
                   const SizedBox(height: 20),
                 ],
@@ -242,16 +233,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildOfficialUI(Map<String, dynamic> data) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _buildAuthorRow(data['department'] ?? 'HCMUS', data['date'] ?? '', isOfficial: true),
         const SizedBox(height: 16),
         Text(data['title'] ?? '',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 18, color: Color(0xFF545454))),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 18, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
         const SizedBox(height: 12),
         Text(data['summary'] ?? '',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.5)),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white70 : const Color(0xFF545454), height: 1.5)),
         const SizedBox(height: 16),
         ClipRRect(
           borderRadius: BorderRadius.circular(12),
@@ -271,11 +263,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildReviewUI(Map<String, dynamic> data) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(data['courseName'] ?? '',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 20, color: Color(0xFF545454))),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 20, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
         Text("Giảng viên: ${data['teacherName']}",
             style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w400, color: Color(0xFF5893D8))),
         Text(data['semester'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', color: Colors.grey, fontSize: 13)),
@@ -285,35 +278,37 @@ class _PostDetailPageState extends State<PostDetailPage> {
             color: const Color(0xFFFFCB45), size: 28))),
         const SizedBox(height: 15),
         Text(data['content'] ?? '',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, height: 1.6, color: Color(0xFF545454))),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, height: 1.6, color: isDarkMode ? Colors.white70 : const Color(0xFF545454))),
       ]),
     );
   }
 
   Widget _buildMaterialUI(Map<String, dynamic> data) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(data['courseName'] ?? 'Tài liệu',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 20, color: Color(0xFF545454))),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 20, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
         Text(data['semester'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', color: Colors.grey, fontSize: 13)),
         const SizedBox(height: 16),
         Text(data['content'] ?? '',
-            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, color: Color(0xFF545454))),
+            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, color: isDarkMode ? Colors.white70 : const Color(0xFF545454))),
         const SizedBox(height: 16),
         if (data['fileData'] != null)
           data['isImage'] == true
               ? ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(data['fileData']), width: double.infinity, fit: BoxFit.contain))
               : Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFDFE6E9))),
-            child: Row(children: [const Icon(Icons.description_rounded, color: Color(0xFF5893D8), size: 32), const SizedBox(width: 12), Expanded(child: Text(data['fileName'] ?? 'document.pdf', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500)))]),
+            decoration: BoxDecoration(color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12), border: Border.all(color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9))),
+            child: Row(children: [const Icon(Icons.description_rounded, color: Color(0xFF5893D8), size: 32), const SizedBox(width: 12), Expanded(child: Text(data['fileName'] ?? 'document.pdf', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500, color: isDarkMode ? Colors.white : Colors.black87)))]),
           ),
       ]),
     );
   }
 
   Widget _buildForumUI(Map<String, dynamic> data) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -326,11 +321,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
         if (data['hashtags'] != null)
           Wrap(spacing: 8, children: (data['hashtags'] as List).map((t) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
-            child: Text("#$t", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF344054))),
+            decoration: BoxDecoration(color: isDarkMode ? Colors.white12 : const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
+            child: Text("#$t", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 11, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : const Color(0xFF344054))),
           )).toList()),
         const SizedBox(height: 16),
-        Text(data['content'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, height: 1.5, color: Color(0xFF545454))),
+        Text(data['content'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 16, height: 1.5, color: isDarkMode ? Colors.white70 : const Color(0xFF545454))),
         const SizedBox(height: 16),
         if (data['imageUrl'] != null && data['imageUrl'] != '')
           ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(data['imageUrl']), width: double.infinity, fit: BoxFit.cover)),
@@ -339,6 +334,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildAuthorRow(String name, String sub, {String? avatarBase64, bool isOfficial = false}) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     Widget avatarWidget;
     if (isOfficial) {
       avatarWidget = Image.asset('assets/images/logo.png', fit: BoxFit.contain, width: 45, height: 45);
@@ -346,14 +342,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
       if (avatarBase64 != null && avatarBase64.isNotEmpty) {
         avatarWidget = ClipOval(child: Image.memory(base64Decode(avatarBase64), fit: BoxFit.cover, width: 45, height: 45));
       } else {
-        avatarWidget = const Icon(Icons.person, color: Colors.grey, size: 28);
+        avatarWidget = Icon(Icons.person, color: isDarkMode ? Colors.white38 : Colors.grey, size: 28);
       }
     }
 
     return Row(children: [
       CircleAvatar(
         radius: 22.5,
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? Colors.white10 : Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(2.0),
           child: avatarWidget,
@@ -361,7 +357,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       ),
       const SizedBox(width: 12),
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(name, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF545454))),
+        Text(name, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
         Text(sub, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Colors.grey)),
       ])
     ]);
@@ -388,13 +384,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
       _buildSingleCommentWidget(comment),
       if (replies.isNotEmpty)
         Padding(
-            padding: const EdgeInsets.only(left: 48), // Thụt lề cho replies
+            padding: const EdgeInsets.only(left: 48),
             child: Column(children: replies.map((reply) => _buildCommentTree(reply, allComments)).toList())
         ),
     ]);
   }
 
   Widget _buildSingleCommentWidget(Map<String, dynamic> comment) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avt = comment['authorAvatar'];
     final bool isCommentOwner = _user?.uid == comment['authorId'];
     final bool isPostOwner = _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
@@ -402,15 +399,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final bool isAuthor = comment['authorId'] == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6), // Giảm vertical padding cho khít hơn
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 18,
-              backgroundColor: const Color(0xFFF1F2F6),
+              backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
               child: (avt == null || avt.isEmpty)
-                  ? const Icon(Icons.person, size: 20, color: Colors.grey)
+                  ? Icon(Icons.person, size: 20, color: isDarkMode ? Colors.white38 : Colors.grey)
                   : ClipOval(child: Image.memory(base64Decode(avt), fit: BoxFit.cover, width: 36, height: 36)),
             ),
             const SizedBox(width: 12),
@@ -419,11 +416,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.center, // Căn giữa theo chiều dọc
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Text(
                             comment['authorName'],
-                            style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF545454))
+                            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF545454))
                         ),
                         if (isAuthor) ...[
                           const SizedBox(width: 6),
@@ -435,8 +432,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             height: 24,
                             width: 24,
                             child: PopupMenuButton<String>(
-                              padding: EdgeInsets.zero, // Xóa sạch padding thừa của nút 3 chấm
-                              icon: const Icon(Icons.more_horiz, size: 18, color: Color(0xFF777777)),
+                              padding: EdgeInsets.zero,
+                              icon: Icon(Icons.more_horiz, size: 18, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
                               onSelected: (val) => _showDeleteConfirmation(comment['id']),
                               itemBuilder: (context) => [
                                 const PopupMenuItem(value: 'delete', child: Text("Xóa", style: TextStyle(color: Colors.red))),
@@ -445,22 +442,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           ),
                       ],
                     ),
-                    Transform.translate(
-                      offset: const Offset(0, 0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                              comment['content'],
-                              style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14, color: Color(0xFF545454), height: 1.3)
-                          ),
-                          const SizedBox(height: 4),
-                          GestureDetector(
-                            onTap: () => setState(() { _replyingToId = comment['id']; _replyingToName = comment['authorName']; }),
-                            child: const Text("Reply", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF5893D8), fontWeight: FontWeight.bold)),
-                          ),
-                        ],
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                            comment['content'],
+                            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14, color: isDarkMode ? Colors.white70 : const Color(0xFF545454), height: 1.3)
+                        ),
+                        const SizedBox(height: 4),
+                        GestureDetector(
+                          onTap: () => setState(() { _replyingToId = comment['id']; _replyingToName = comment['authorName']; }),
+                          child: const Text("Reply", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF5893D8), fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                   ],
                 )
@@ -471,9 +465,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildCommentInputField() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.fromLTRB(12, 12, 12, MediaQuery.of(context).padding.bottom + 12),
-      decoration: BoxDecoration(color: Colors.white, border: Border(top: BorderSide(color: Colors.black.withOpacity(0.05)))),
+      decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white, border: Border(top: BorderSide(color: isDarkMode ? Colors.white12 : Colors.black.withOpacity(0.05)))),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         if (_replyingToId != null)
           Container(
@@ -481,7 +476,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(color: const Color(0xFF5893D8).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
             child: Row(children: [
-              Text("Đang trả lời ", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12)),
+              Text("Đang trả lời ", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: isDarkMode ? Colors.white70 : Colors.black87)),
               Text(_replyingToName ?? "", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF5893D8))),
               const Spacer(),
               GestureDetector(onTap: () => setState(() { _replyingToId = null; _replyingToName = null; }), child: const Icon(Icons.close, size: 16, color: Colors.grey))
@@ -490,11 +485,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
         Row(children: [
           Expanded(child: TextField(
               controller: _commentController,
-              style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14),
+              style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 14, color: isDarkMode ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                   hintText: "Viết bình luận...",
+                  hintStyle: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(25), borderSide: BorderSide.none),
-                  filled: true, fillColor: const Color(0xFFF1F2F6),
+                  filled: true, fillColor: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F2F6),
                   contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10)))),
           const SizedBox(width: 8),
           CircleAvatar(radius: 22, backgroundColor: const Color(0xFF5893D8), child: IconButton(onPressed: _addComment, icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20)))

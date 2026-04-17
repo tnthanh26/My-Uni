@@ -74,10 +74,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildMainHomeContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return DefaultTabController(
       length: 4,
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: NestedScrollView(
           headerSliverBuilder: (context, innerBoxIsScrolled) {
             return [
@@ -133,7 +135,6 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 ],
                               ),
-                              // --- CỤM THANH TIỆN ÍCH (ĐÃ CẬP NHẬT LOGIC) ---
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                                 decoration: BoxDecoration(
@@ -142,7 +143,6 @@ class _HomePageState extends State<HomePage> {
                                 ),
                                 child: Row(
                                   children: [
-                                    // NÚT SEARCH
                                     GestureDetector(
                                       onTap: () {
                                         final tabIndex = DefaultTabController.of(context).index;
@@ -211,9 +211,9 @@ class _HomePageState extends State<HomePage> {
                   child: Container(
                     width: double.infinity,
                     height: 48,
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
+                      borderRadius: const BorderRadius.only(
                         topLeft: Radius.circular(20),
                         topRight: Radius.circular(20),
                       ),
@@ -229,7 +229,7 @@ class _HomePageState extends State<HomePage> {
                         color: const Color(0xFF5893D8),
                       ),
                       labelColor: Colors.white,
-                      unselectedLabelColor: Colors.black87,
+                      unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
                       labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 16),
                       unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 14),
                       dividerColor: Colors.transparent,
@@ -281,13 +281,13 @@ class _HomePageState extends State<HomePage> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: AspectRatio(
-        aspectRatio: 391 / 73, // Tỉ lệ chính xác theo Figma của bạn (W:378, H:94)
+        aspectRatio: 391 / 73,
         child: Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16), // Bo góc nhẹ cho giống ảnh mẫu
+            borderRadius: BorderRadius.circular(16),
             image: const DecorationImage(
               image: AssetImage('assets/images/Ads_template.png'),
-              fit: BoxFit.fill, // Ép ảnh vừa khít khung hình mà không cần design lại
+              fit: BoxFit.fill,
             ),
           ),
         ),
@@ -316,10 +316,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBottomNav() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF6F6F6),
-        border: Border(top: BorderSide(color: Colors.black.withValues(alpha: 0.1))),
+        color: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF6F6F6),
+        border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black.withValues(alpha: 0.1))),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withValues(alpha: 0.1),
@@ -332,8 +334,8 @@ class _HomePageState extends State<HomePage> {
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.transparent,
         currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF457EC0), // Active color CSS
-        unselectedItemColor: const Color(0xFF8E8E93), // Inactive color CSS
+        selectedItemColor: const Color(0xFF457EC0),
+        unselectedItemColor: isDarkMode ? Colors.white38 : const Color(0xFF8E8E93),
         selectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
         unselectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
         elevation: 0,
@@ -351,14 +353,15 @@ class _HomePageState extends State<HomePage> {
 
   BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
     bool isSelected = _selectedIndex == index;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return BottomNavigationBarItem(
       icon: SvgPicture.asset(
         assetPath,
         width: 28,
         height: 28,
-        // Tự động đổi màu icon theo trạng thái chọn
         colorFilter: ColorFilter.mode(
-          isSelected ? const Color(0xFF457EC0) : const Color(0xFF8E8E93),
+          isSelected ? const Color(0xFF457EC0) : (isDarkMode ? Colors.white38 : const Color(0xFF8E8E93)),
           BlendMode.srcIn,
         ),
       ),
@@ -367,13 +370,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildGuestAccountScreen(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.account_circle_outlined, size: 100, color: Colors.grey),
+          Icon(Icons.account_circle_outlined, size: 100, color: isDarkMode ? Colors.white30 : Colors.grey),
           const SizedBox(height: 20),
-          const Text('Chế độ khách', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          Text(
+              'Chế độ khách',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black
+              )
+          ),
           const SizedBox(height: 30),
           ElevatedButton(
             onPressed: () => Navigator.pushNamed(context, '/login'),

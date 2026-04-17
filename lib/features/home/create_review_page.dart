@@ -21,6 +21,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   bool _isSubmitting = false;
 
   final List<String> _semesters = [
+    'HK2 2025-2026',
     'HK1 2025-2026',
     'HK3 2024-2025',
     'HK2 2024-2025',
@@ -33,7 +34,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
     _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
-    _selectedSemester = widget.existingData?['semester'] ?? 'HK1 2025-2026';
+    _selectedSemester = widget.existingData?['semester'] ?? 'HK2 2025-2026';
     _rating = widget.existingData?['rating'] ?? 0;
   }
 
@@ -94,19 +95,17 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   @override
   Widget build(BuildContext context) {
     const Color figmaHeaderBlue = Color(0xFF457EC0);
-    const Color figmaLabelColor = Color(0xFF1E1E1E);
-    const Color figmaHintColor = Color(0xFF8E8E93);
     const Color starYellow = Color(0xFFFFCB45);
-    const Color starGrey = Color(0xFFF2F2F2);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(54),
         child: Container(
-          decoration: const BoxDecoration(
-            color: figmaHeaderBlue,
-            boxShadow: [
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : figmaHeaderBlue,
+            boxShadow: const [
               BoxShadow(
                 color: Color.fromRGBO(0, 0, 0, 0.25),
                 offset: Offset(0, 1),
@@ -133,7 +132,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                         fontWeight: FontWeight.w600,
                         fontSize: 17,
                         color: Colors.white.withOpacity(0.5),
-                        letterSpacing: -0.0041,
                       ),
                     ),
                   ),
@@ -144,7 +142,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                       fontWeight: FontWeight.w600,
                       fontSize: 17,
                       color: Color(0xFFFFFDFD),
-                      letterSpacing: -0.0041,
                     ),
                   ),
                   GestureDetector(
@@ -158,7 +155,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                         fontWeight: FontWeight.w600,
                         fontSize: 17,
                         color: Colors.white.withOpacity(0.5),
-                        letterSpacing: -0.0041,
                       ),
                     ),
                   ),
@@ -169,9 +165,9 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
           ),
@@ -181,20 +177,19 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Frame 1433 & Dropdown (Normal Text Field)
-              _buildSectionLabel("Học kỳ"),
-              _buildDropdown(),
+              _buildSectionLabel(context, "Học kỳ"),
+              _buildDropdown(context),
               const SizedBox(height: 24),
 
-              _buildSectionLabel("Khóa học"),
-              _buildUnderlineTextField(_courseController, "Tên môn học"),
+              _buildSectionLabel(context, "Khóa học"),
+              _buildUnderlineTextField(context, _courseController, "Tên môn học"),
               const SizedBox(height: 24),
 
-              _buildSectionLabel("Giảng viên"),
-              _buildUnderlineTextField(_teacherController, "Tên giảng viên"),
+              _buildSectionLabel(context, "Giảng viên"),
+              _buildUnderlineTextField(context, _teacherController, "Tên giảng viên"),
               const SizedBox(height: 24),
 
-              _buildSectionLabel("Trải nghiệm của bạn về khóa học này?"),
+              _buildSectionLabel(context, "Trải nghiệm của bạn về khóa học này?"),
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.start,
@@ -202,11 +197,11 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                   return GestureDetector(
                     onTap: () => setState(() => _rating = i + 1),
                     child: Container(
-                      margin: const EdgeInsets.only(right: 11.6), // Tương ứng gap giữa các sao
+                      margin: const EdgeInsets.only(right: 11.6),
                       child: Icon(
                         Icons.star,
-                        color: i < _rating ? starYellow : starGrey,
-                        size: 34, // Theo width 34.94px của Figma
+                        color: i < _rating ? starYellow : (isDarkMode ? Colors.white12 : const Color(0xFFF2F2F2)),
+                        size: 34,
                       ),
                     ),
                   );
@@ -214,34 +209,33 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
               ),
               const SizedBox(height: 24),
 
-              _buildSectionLabel("Nội dung"),
+              _buildSectionLabel(context, "Nội dung"),
               const SizedBox(height: 10),
-              // Text Field - Component (Boxed style)
               Container(
                 width: double.infinity,
                 height: 214,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: figmaHintColor),
+                  border: Border.all(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93)),
                 ),
                 child: TextField(
                   controller: _contentController,
                   maxLines: null,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 15,
-                    color: figmaLabelColor,
+                    color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: "Nội dung",
                     hintStyle: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 15,
-                      color: figmaHintColor,
+                      color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
                     ),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.all(8),
+                    contentPadding: const EdgeInsets.all(8),
                   ),
                 ),
               ),
@@ -252,67 +246,73 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     );
   }
 
-  Widget _buildSectionLabel(String text) {
+  Widget _buildSectionLabel(BuildContext context, String text) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Encode Sans Expanded',
           fontWeight: FontWeight.w400,
           fontSize: 15,
-          color: Color(0xFF1E1E1E),
-          letterSpacing: -0.0024,
+          color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E),
         ),
       ),
     );
   }
 
-  Widget _buildDropdown() {
+  Widget _buildDropdown(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButtonFormField<String>(
           value: _selectedSemester,
-          icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF1E1E1E), size: 24),
-          items: _semesters.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+          dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          icon: Icon(Icons.keyboard_arrow_down, color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E), size: 24),
+          items: _semesters.map((s) => DropdownMenuItem(
+              value: s,
+              child: Text(s, style: TextStyle(color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)))
+          )).toList(),
           onChanged: (v) => setState(() => _selectedSemester = v!),
           decoration: const InputDecoration(
             contentPadding: EdgeInsets.fromLTRB(8, 0, 0, 8),
             border: InputBorder.none,
           ),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontWeight: FontWeight.w500,
             fontSize: 15,
-            color: Color(0xFF1E1E1E),
+            color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildUnderlineTextField(TextEditingController ctrl, String hint) {
+  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.only(left: 8),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: Color(0xFF8E8E93), width: 1.0)),
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
       ),
       child: TextField(
         controller: ctrl,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Encode Sans Expanded',
           fontSize: 15,
-          color: Color(0xFF1E1E1E),
+          color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
         ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: const TextStyle(
+          hintStyle: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontSize: 15,
-            color: Color(0xFF8E8E93),
+            color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
           ),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 8),

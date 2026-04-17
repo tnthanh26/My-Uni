@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:my_uni/main.dart';
+import 'package:my_uni/app_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -97,8 +99,15 @@ class _SettingsPageState extends State<SettingsPage> {
 
             _buildSettingItem(
               label: 'Thông báo',
-              trailing: Icon(Icons.notifications_none, color: isDarkMode ? Colors.white38 : Colors.black26),
-              onTap: () {},
+              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () async {
+                bool isOpened = await openAppSettings();
+                if (!isOpened) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Không thể mở cài đặt lúc này")),
+                  );
+                }
+              },
             ),
             Divider(height: 1, color: Theme.of(context).dividerColor),
 
@@ -110,31 +119,26 @@ class _SettingsPageState extends State<SettingsPage> {
             Divider(height: 1, color: Theme.of(context).dividerColor),
 
             _buildSettingItem(
-              label: 'Ngôn ngữ ứng dụng',
-              status: langText,
-              onTap: () {},
-            ),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-
-            const SizedBox(height: 20),
-
-            _buildSettingItem(
               label: 'Điều khoản dịch vụ',
               trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {},
-            ),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-
-            _buildSettingItem(
-              label: 'Trung tâm trợ giúp',
-              trailing: const Icon(Icons.chevron_right, size: 20),
+              onTap: () async {
+                final Uri url = Uri.parse('https://tinyurl.com/58dcj7cb');
+                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  throw Exception('Could not launch $url');
+                }
+              },
             ),
             Divider(height: 1, color: Theme.of(context).dividerColor),
 
             _buildSettingItem(
               label: 'Gửi phản hồi',
               trailing: const Icon(Icons.chevron_right, size: 20),
-              onTap: () {},
+              onTap: () async {
+                final Uri url = Uri.parse('https://forms.gle/zyU75ecHFuapfPGz8');
+                if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+                  throw Exception('Could not launch $url');
+                }
+              },
             ),
             Divider(height: 1, color: Theme.of(context).dividerColor),
           ],

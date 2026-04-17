@@ -113,15 +113,16 @@ class _CreatePostPageState extends State<CreatePostPage> {
   Widget build(BuildContext context) {
     const Color figmaHeaderBlue = Color(0xFF457EC0);
     const Color figmaDashedColor = Color(0xFF1C95BE);
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(54),
         child: Container(
-          decoration: const BoxDecoration(
-            color: figmaHeaderBlue,
-            boxShadow: [
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E1E1E) : figmaHeaderBlue,
+            boxShadow: const [
               BoxShadow(
                 color: Color.fromRGBO(0, 0, 0, 0.25),
                 offset: Offset(0, 1),
@@ -181,9 +182,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
         ),
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+          borderRadius: const BorderRadius.only(
             topLeft: Radius.circular(25),
             topRight: Radius.circular(25),
           ),
@@ -198,25 +199,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEEEEEE),
+                  color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFEEEEEE),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   children: [
                     CircleAvatar(
                       radius: 22.5,
-                      backgroundColor: Colors.grey[300],
+                      backgroundColor: isDarkMode ? Colors.white10 : Colors.grey[300],
                       backgroundImage: (!_isAnonymous && _userPhotoBase64 != null) ? MemoryImage(base64Decode(_userPhotoBase64!)) : null,
                       child: (_isAnonymous || _userPhotoBase64 == null) ? const Icon(Icons.person, color: Colors.white) : null,
                     ),
                     const SizedBox(width: 12),
                     Text(
                       _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: Colors.black,
+                        color: isDarkMode ? Colors.white : Colors.black,
                       ),
                     ),
                     const Spacer(),
@@ -225,11 +226,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
                       child: Container(
                         width: 36,
                         height: 36,
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                            color: isDarkMode ? Colors.white10 : Colors.white,
+                            shape: BoxShape.circle
+                        ),
                         child: Icon(
                           _isAnonymous ? Icons.visibility_off : Icons.visibility,
                           size: 24,
-                          color: Colors.black,
+                          color: isDarkMode ? Colors.white70 : Colors.black,
                         ),
                       ),
                     ),
@@ -241,9 +245,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
               // Hashtags
               Row(
                 children: [
-                  const Text("Chọn chủ đề", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: Color(0xFF1E1E1E))),
+                  Text("Chọn chủ đề", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E))),
                   const SizedBox(width: 8),
-                  Text("(${_selectedHashtags.length}/5)", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: const Color(0xFF1E1E1E).withOpacity(0.5))),
+                  Text("(${_selectedHashtags.length}/5)", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: isDarkMode ? Colors.white38 : const Color(0xFF1E1E1E).withOpacity(0.5))),
                 ],
               ),
               const SizedBox(height: 12),
@@ -257,7 +261,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                       decoration: BoxDecoration(
-                        color: isSelected ? figmaHeaderBlue.withOpacity(0.2) : const Color(0xEBEDEDED),
+                        color: isSelected ? figmaHeaderBlue.withOpacity(0.2) : (isDarkMode ? Colors.white10 : const Color(0xEBEDEDED)),
                         borderRadius: BorderRadius.circular(16),
                         border: isSelected ? Border.all(color: figmaHeaderBlue) : null,
                       ),
@@ -266,7 +270,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                         children: [
                           const Icon(Icons.tag, size: 13, color: Color(0xFF306CFE)),
                           const SizedBox(width: 2),
-                          Text(tag, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black)),
+                          Text(tag, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: isDarkMode ? Colors.white70 : Colors.black)),
                         ],
                       ),
                     ),
@@ -276,7 +280,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
               const SizedBox(height: 24),
 
               // Content Area
-              const Text("Nội dung", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF1E1E1E))),
+              Text("Nội dung", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E))),
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
@@ -284,26 +288,26 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFF8E8E93)),
+                  border: Border.all(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93)),
                 ),
                 child: TextField(
                   controller: _contentController,
                   maxLines: null,
-                  style: const TextStyle(fontSize: 14),
-                  decoration: const InputDecoration(
+                  style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black),
+                  decoration: InputDecoration(
                     hintText: "Vui lòng nhập văn bản",
-                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF8E8E93)),
+                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93)),
                     border: InputBorder.none,
                   ),
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Upload Image - Custom Dotted Border (Không dùng package)
+              // Upload Image
               GestureDetector(
                 onTap: _pickImage,
                 child: CustomPaint(
-                  painter: DashRectPainter(color: figmaDashedColor),
+                  painter: DashRectPainter(color: isDarkMode ? Colors.white30 : figmaDashedColor),
                   child: Container(
                     width: 130,
                     height: 130,
@@ -331,15 +335,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
                         ),
                       ],
                     )
-                        : const Padding(
-                      padding: EdgeInsets.all(8.0),
+                        : Padding(
+                      padding: const EdgeInsets.all(8.0),
                       child: Text(
                         "Nhấn để thêm\nẢnh/Tài liệu",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
-                          color: figmaDashedColor,
+                          color: isDarkMode ? Colors.white38 : figmaDashedColor,
                         ),
                       ),
                     ),
@@ -354,7 +358,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 }
 
-// LỚP VẼ VIỀN ĐỨT ĐOẠN (CUSTOM PAINTER)
 class DashRectPainter extends CustomPainter {
   final Color color;
   DashRectPainter({required this.color});
