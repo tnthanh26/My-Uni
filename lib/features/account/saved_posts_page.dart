@@ -63,18 +63,24 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF545454)),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white70 : const Color(0xFF545454)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
             "Bài đã lưu",
-            style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, color: Color(0xFF545454))
+            style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : const Color(0xFF545454)
+            )
         ),
         centerTitle: true,
         bottom: PreferredSize(
@@ -82,7 +88,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           child: Container(
             margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFFF0F0F0),
+              color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF0F0F0),
               borderRadius: BorderRadius.circular(30),
             ),
             child: TabBar(
@@ -94,7 +100,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
                 color: const Color(0xFF5893D8),
               ),
               labelColor: Colors.white,
-              unselectedLabelColor: const Color(0xFF777777),
+              unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
               labelStyle: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold),
               tabs: const [
                 Tab(text: "Diễn đàn chung"),
@@ -135,7 +141,6 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
             var data = docs[index].data() as Map<String, dynamic>;
             String docId = docs[index].id;
 
-            // FIX: Bọc GestureDetector cho từng loại Card để điều hướng
             if (data.containsKey('department')) {
               return GestureDetector(
                 onTap: () => _navigateToDetail(data, docId),
@@ -169,22 +174,25 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
   }
 
   Widget _buildOfficialCard(Map<String, dynamic> data, String docId) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), width: 1))
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           CircleAvatar(radius: 20, backgroundColor: Colors.white, child: Image.asset('assets/images/logo.png', fit: BoxFit.contain)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['department'] ?? 'HCMUS News', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454))),
+            Text(data['department'] ?? 'HCMUS News', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
             Text(data['date'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777))),
           ])),
           IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
         ]),
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Text(data['title'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF545454), height: 1.3)),
+          child: Text(data['title'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF545454), height: 1.3)),
         ),
         ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.asset('assets/images/news.png', width: double.infinity, height: 180, fit: BoxFit.cover)),
         Padding(
@@ -203,20 +211,23 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
   }
 
   Widget _buildForumCard(Map<String, dynamic> data, String docId) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), width: 1))
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           CircleAvatar(
-            radius: 20, backgroundColor: const Color(0xFFF0F0F0),
+            radius: 20, backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
             backgroundImage: (avatarData != null && avatarData.isNotEmpty) ? MemoryImage(base64Decode(avatarData)) : null,
             child: (avatarData == null || avatarData.isEmpty) ? const Icon(Icons.person, color: Colors.grey) : null,
           ),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454))),
+            Text(data['authorName'] ?? 'Sinh viên ẩn danh', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
             Text(data['timestamp'] != null ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi') : 'Vừa xong', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777))),
           ])),
           IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
@@ -225,11 +236,11 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Wrap(spacing: 8, children: (data['hashtags'] as List).map((tag) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-            decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
-            child: Text('#$tag', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black)),
+            decoration: BoxDecoration(color: isDarkMode ? Colors.white10 : const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
+            child: Text('#$tag', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: isDarkMode ? Colors.white70 : Colors.black, fontWeight: FontWeight.bold)),
           )).toList()),
         ),
-        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(data['content'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4))),
+        Padding(padding: const EdgeInsets.symmetric(vertical: 8), child: Text(data['content'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white70 : const Color(0xFF545454), height: 1.4))),
         if (data['imageUrl'] != null) Padding(
           padding: const EdgeInsets.only(bottom: 12),
           child: ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(base64Decode(data['imageUrl']), width: double.infinity, height: 180, fit: BoxFit.cover)),
@@ -239,16 +250,19 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
   }
 
   Widget _buildReviewCard(Map<String, dynamic> data, String docId) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9), width: 2))
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['courseName'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF545454))),
+            Text(data['courseName'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
             const SizedBox(height: 4),
-            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
-            Text(data['semester'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
+            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: isDarkMode ? Colors.white70 : const Color(0xFF545454))),
+            Text(data['semester'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: isDarkMode ? Colors.white60 : const Color(0xFF545454))),
           ])),
           IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
         ]),
@@ -256,40 +270,47 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(children: List.generate(5, (i) => Icon(i < (data['rating'] ?? 0) ? Icons.star_rounded : Icons.star_outline_rounded, color: const Color(0xFFFFCB45), size: 22))),
         ),
-        Text(data['content'] ?? '', maxLines: 3, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.33)),
+        Text(data['content'] ?? '', maxLines: 3, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white70 : const Color(0xFF545454), height: 1.33)),
         const SizedBox(height: 16),
       ]),
     );
   }
 
   Widget _buildMaterialCard(Map<String, dynamic> data, String docId) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? fileData = data['fileData'];
     String? fileName = data['fileName'];
     bool isImage = data['isImage'] ?? false;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2))),
+      decoration: BoxDecoration(
+          border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9), width: 2))
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(data['courseName'] ?? 'Tài liệu', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF545454))),
+            Text(data['courseName'] ?? 'Tài liệu', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: isDarkMode ? Colors.white : const Color(0xFF545454))),
             const SizedBox(height: 4),
-            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454))),
+            Text("Giảng viên: ${data['teacherName'] ?? ''}", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: isDarkMode ? Colors.white70 : const Color(0xFF545454))),
           ])),
           IconButton(icon: const Icon(Icons.bookmark, color: Color(0xFFFFCB45)), onPressed: () => _removeSave(docId)),
         ]),
-        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(data['content'] ?? '', style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.33))),
+        Padding(padding: const EdgeInsets.symmetric(vertical: 12), child: Text(data['content'] ?? '', style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white70 : const Color(0xFF545454), height: 1.33))),
         if (fileData != null) GestureDetector(
           onTap: () => _handleOpenFile(context, fileData, fileName ?? 'document'),
           child: isImage
               ? ClipRRect(borderRadius: BorderRadius.circular(8), child: Image.memory(base64Decode(fileData), width: double.infinity, height: 180, fit: BoxFit.cover))
               : Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: const Color(0xFFF8F9FA), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFDFE6E9))),
+            decoration: BoxDecoration(
+                color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8F9FA),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9))
+            ),
             child: Row(children: [
               const Icon(Icons.description_rounded, color: Color(0xFF5893D8), size: 32),
               const SizedBox(width: 12),
-              Expanded(child: Text(fileName ?? 'Tài liệu', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF545454)))),
+              Expanded(child: Text(fileName ?? 'Tài liệu', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500, fontSize: 14, color: isDarkMode ? Colors.white : const Color(0xFF545454)))),
               const Icon(Icons.file_download_outlined, color: Color(0xFF777777)),
             ]),
           ),
@@ -300,11 +321,12 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
   }
 
   Widget _buildEmptyState() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Icon(Icons.bookmark_border, size: 100, color: Color(0xFFDFE6E9)),
+        Icon(Icons.bookmark_border, size: 100, color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9)),
         const SizedBox(height: 20),
-        const Text("Danh sách lưu trống!", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF545454))),
+        Text("Danh sách lưu trống!", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 18, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white38 : const Color(0xFF545454))),
         const SizedBox(height: 30),
         ElevatedButton(
           onPressed: () => Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),

@@ -31,21 +31,23 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF545454)),
+          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white70 : const Color(0xFF545454)),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           "Bài đăng của tôi",
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontWeight: FontWeight.bold,
-            color: Color(0xFF545454),
+            color: isDarkMode ? Colors.white : const Color(0xFF545454),
             fontSize: 18,
           ),
         ),
@@ -57,7 +59,7 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
             child: Container(
               height: 45,
               decoration: BoxDecoration(
-                color: const Color(0xFFF1F2F6), // Nền xám nhạt
+                color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF1F2F6),
                 borderRadius: BorderRadius.circular(25),
               ),
               child: TabBar(
@@ -66,10 +68,10 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                 dividerColor: Colors.transparent,
                 indicator: BoxDecoration(
                   borderRadius: BorderRadius.circular(25),
-                  color: const Color(0xFF5893D8), // Màu xanh MyUni
+                  color: const Color(0xFF5893D8),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: const Color(0xFF777777),
+                unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
                 labelStyle: const TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.bold,
@@ -124,13 +126,19 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
   }
 
   Widget _buildDetailedItem(BuildContext context, String docId, Map<String, dynamic> data, String collectionPath, DocumentReference ref) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1)),
+      decoration: BoxDecoration(
+        color: isDarkMode ? Colors.transparent : Colors.white,
+        border: Border(
+            bottom: BorderSide(
+                color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
+                width: 1
+            )
+        ),
       ),
       child: GestureDetector(
         onTap: () {
@@ -150,7 +158,7 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                 children: [
                   CircleAvatar(
                     radius: 22.5,
-                    backgroundColor: const Color(0xFFF0F0F0),
+                    backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
                     backgroundImage: (avatarData != null && avatarData.isNotEmpty)
                         ? MemoryImage(base64Decode(avatarData)) : null,
                     child: (avatarData == null || avatarData.isEmpty)
@@ -163,13 +171,22 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                       children: [
                         Text(
                           collectionPath == 'forum_posts' ? "Bạn" : (data['courseName'] ?? "Tài liệu"),
-                          style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF545454)),
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              color: isDarkMode ? Colors.white : const Color(0xFF545454)
+                          ),
                         ),
                         Text(
                           data['timestamp'] != null
                               ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
                               : 'Vừa xong',
-                          style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF777777)),
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 12,
+                              color: isDarkMode ? Colors.white38 : const Color(0xFF777777)
+                          ),
                         ),
                       ],
                     ),
@@ -184,8 +201,18 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                   spacing: 8,
                   children: (data['hashtags'] as List).map((tag) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                    decoration: BoxDecoration(color: const Color(0xFFEDEDED), borderRadius: BorderRadius.circular(16)),
-                    child: Text("#$tag", style: const TextStyle(fontSize: 10, color: Color(0xFF344054), fontWeight: FontWeight.bold)),
+                    decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white10 : const Color(0xFFEDEDED),
+                        borderRadius: BorderRadius.circular(16)
+                    ),
+                    child: Text(
+                        "#$tag",
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                            fontWeight: FontWeight.bold
+                        )
+                    ),
                   )).toList(),
                 ),
               ),
@@ -195,7 +222,12 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                 data['content'] ?? (collectionPath == 'study_materials' ? (data['fileName'] ?? 'Tài liệu không tên') : ''),
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4),
+                style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 15,
+                    color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
+                    height: 1.4
+                ),
               ),
             ),
             if (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty)
@@ -208,11 +240,11 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                 children: [
                   const Icon(Icons.favorite_outline, size: 18, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text("${data['likeCount'] ?? 0}"),
+                  Text("${data['likeCount'] ?? 0}", style: TextStyle(color: isDarkMode ? Colors.white38 : Colors.black54)),
                   const SizedBox(width: 15),
                   const Icon(Icons.chat_bubble_outline, size: 18, color: Color(0xFF777777)),
                   const SizedBox(width: 4),
-                  Text("${data['commentCount'] ?? 0}"),
+                  Text("${data['commentCount'] ?? 0}", style: TextStyle(color: isDarkMode ? Colors.white38 : Colors.black54)),
                   const Spacer(),
                   IconButton(
                     icon: const Icon(Icons.edit_outlined, color: Color(0xFF5893D8), size: 24),
@@ -252,13 +284,24 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
   }
 
   Widget _buildEmptyState(BuildContext context, String collectionPath) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.article_outlined, size: 80, color: Colors.grey[200]),
+          Icon(
+              Icons.article_outlined,
+              size: 80,
+              color: isDarkMode ? Colors.white10 : Colors.grey[200]
+          ),
           const SizedBox(height: 16),
-          const Text("Bạn chưa có bài đăng nào ở mục này!", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+          Text(
+              "Bạn chưa có bài đăng nào ở mục này!",
+              style: TextStyle(
+                  color: isDarkMode ? Colors.white38 : Colors.grey,
+                  fontWeight: FontWeight.bold
+              )
+          ),
         ],
       ),
     );

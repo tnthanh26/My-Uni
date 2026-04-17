@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import 'models/notification_model.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -145,5 +146,17 @@ class NotificationService {
 
   static Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
+  }
+
+  static Future<bool> requestPermission() async {
+    if (!kIsWeb && Platform.isAndroid) {
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+      // Yêu cầu quyền POST_NOTIFICATIONS (Android 13+)
+      final bool? granted = await androidPlugin?.requestNotificationsPermission();
+      return granted ?? false;
+    }
+    return true; // iOS xử lý khác hoặc mặc định true cho Web/Desktop nếu cần
   }
 }

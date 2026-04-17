@@ -35,8 +35,10 @@ class MaterialTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('study_materials')
@@ -44,7 +46,14 @@ class MaterialTab extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
-          if (snapshot.data!.docs.isEmpty) return const Center(child: Text("Chưa có tài liệu nào."));
+          if (snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                "Chưa có tài liệu nào.",
+                style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              ),
+            );
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -59,9 +68,14 @@ class MaterialTab extends StatelessWidget {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2)), // CSS: Vector 136
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.transparent : Colors.white,
+                  border: Border(
+                      bottom: BorderSide(
+                          color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
+                          width: 2
+                      )
+                  ),
                 ),
                 child: GestureDetector(
                   onTap: () {
@@ -70,7 +84,7 @@ class MaterialTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- HEADER (CSS: Frame 1359) ---
+                      // --- HEADER ---
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Row(
@@ -80,40 +94,57 @@ class MaterialTab extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Tên môn (CSS: font-weight: 700, size: 16)
                                   Text(
                                     data['courseName'] ?? 'Tài liệu',
-                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w700, fontSize: 16, color: Color(0xFF545454)),
+                                    style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 16,
+                                        color: isDarkMode ? Colors.white : const Color(0xFF545454)
+                                    ),
                                   ),
                                   const SizedBox(height: 4),
-                                  // Giảng viên (CSS: font-weight: 300, size: 14)
                                   Text(
                                     "Giảng viên: ${data['teacherName'] ?? ''}",
-                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454)),
+                                    style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontWeight: FontWeight.w300,
+                                        fontSize: 14,
+                                        color: isDarkMode ? Colors.white70 : const Color(0xFF545454)
+                                    ),
                                   ),
-                                  // Học kỳ (CSS: font-weight: 300, size: 14)
                                   Text(
                                     data['semester'] ?? '',
-                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w300, fontSize: 14, color: Color(0xFF545454)),
+                                    style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontWeight: FontWeight.w300,
+                                        fontSize: 14,
+                                        color: isDarkMode ? Colors.white60 : const Color(0xFF545454)
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.more_horiz, color: Color(0xFF777777)),
+                            Icon(Icons.more_horiz, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
                           ],
                         ),
                       ),
 
-                      // --- CONTENT (CSS: 15px, height 1.33) ---
+                      // --- CONTENT ---
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Text(
                           data['content'] ?? '',
-                          style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.33),
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 15,
+                              color: isDarkMode ? Colors.white : const Color(0xFF545454),
+                              height: 1.33
+                          ),
                         ),
                       ),
 
-                      // --- FILE/IMAGE DISPLAY (CSS: Frame 1354) ---
+                      // --- FILE/IMAGE DISPLAY ---
                       if (fileData != null && fileData.isNotEmpty)
                         GestureDetector(
                           onTap: () => _handleOpenFile(context, fileData, fileName ?? 'document'),
@@ -122,13 +153,20 @@ class MaterialTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(8),
                             child: Image.memory(base64Decode(fileData), width: double.infinity, height: 260, fit: BoxFit.cover),
                           )
-                              : _buildFileDisplay(fileName),
+                              : _buildFileDisplay(context, fileName),
                         ),
 
                       // --- XEM THÊM ---
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text("Xem thêm", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFFA9A9A9))),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(
+                            "Xem thêm",
+                            style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 15,
+                                color: isDarkMode ? Colors.white38 : const Color(0xFFA9A9A9)
+                            )
+                        ),
                       ),
 
                       // --- ACTION ROW ---
@@ -162,13 +200,15 @@ class MaterialTab extends StatelessWidget {
     );
   }
 
-  Widget _buildFileDisplay(String? name) {
+  Widget _buildFileDisplay(BuildContext context, String? name) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8F9FA),
+        color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8F9FA),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDFE6E9)),
+        border: Border.all(color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9)),
       ),
       child: Row(
         children: [
@@ -179,10 +219,15 @@ class MaterialTab extends StatelessWidget {
               name ?? 'Tài liệu đính kèm',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w500, fontSize: 14, color: Color(0xFF545454)),
+              style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white : const Color(0xFF545454)
+              ),
             ),
           ),
-          const Icon(Icons.file_download_outlined, color: Color(0xFF777777)),
+          Icon(Icons.file_download_outlined, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
         ],
       ),
     );

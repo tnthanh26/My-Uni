@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -13,62 +12,16 @@ import 'package:my_uni/features/home/home_page.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart'; // Import MySpaceScreen
 import 'firebase_options.dart';
 import 'notification_service.dart';
+import 'app_provider.dart';
 
-// --- PHẦN 1: QUẢN LÝ TRẠNG THÁI (APP PROVIDER) ---
-class AppProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
-  Locale _locale = const Locale('vi'); // Mặc định Tiếng Việt
-
-  ThemeMode get themeMode => _themeMode;
-  Locale get locale => _locale;
-
-  AppProvider() {
-    _loadSettings();
-  }
-
-  // Load cài đặt đã lưu từ bộ nhớ máy
-  Future<void> _loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Load Theme
-    String? theme = prefs.getString('theme');
-    if (theme == 'dark') _themeMode = ThemeMode.dark;
-    else if (theme == 'light') _themeMode = ThemeMode.light;
-    else _themeMode = ThemeMode.system;
-
-    // Load Ngôn ngữ
-    String? lang = prefs.getString('lang');
-    if (lang != null) _locale = Locale(lang);
-
-    notifyListeners();
-  }
-
-  // Hàm thay đổi Theme
-  void setTheme(ThemeMode mode) async {
-    _themeMode = mode;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('theme', mode.toString().split('.').last);
-  }
-
-  // Hàm thay đổi Ngôn ngữ
-  void setLocale(String langCode) async {
-    _locale = Locale(langCode);
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setString('lang', langCode);
-  }
-}
-
-// --- PHẦN 2: HÀM MAIN ---
+// --- PHẦN 1: HÀM MAIN ---
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Asia/Ho_Chi_Minh'));
+
   await NotificationService.init();
 
   runApp(
@@ -80,7 +33,7 @@ void main() async {
   );
 }
 
-// --- PHẦN 3: CẤU HÌNH APP ---
+// --- PHẦN 2: CẤU HÌNH APP ---
 class MyUniApp extends StatelessWidget {
   const MyUniApp({super.key});
 
@@ -134,7 +87,7 @@ class MyUniApp extends StatelessWidget {
   }
 }
 
-// --- PHẦN 4: TRANG WELCOME ---
+// --- PHẦN 3: TRANG WELCOME ---
 class MyUniHomePage extends StatelessWidget {
   const MyUniHomePage({super.key});
 

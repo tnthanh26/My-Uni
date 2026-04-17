@@ -10,8 +10,10 @@ class ReviewTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Màu nền động
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('course_reviews')
@@ -30,10 +32,15 @@ class ReviewTab extends StatelessWidget {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  // Border dưới ngăn cách bài viết (CSS: Vector 136 - 2px)
-                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2)),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.transparent : Colors.white,
+                  // Border dưới ngăn cách bài viết linh hoạt theo theme
+                  border: Border(
+                      bottom: BorderSide(
+                          color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
+                          width: 2
+                      )
+                  ),
                 ),
                 child: GestureDetector(
                   onTap: () {
@@ -47,7 +54,7 @@ class ReviewTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- HEADER (CSS: Frame 1359) ---
+                      // --- HEADER ---
                       Padding(
                         padding: const EdgeInsets.only(top: 16),
                         child: Row(
@@ -58,46 +65,46 @@ class ReviewTab extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  // Tên môn học (CSS: font-weight: 700, size: 16)
+                                  // Tên môn học
                                   Text(
                                     data['courseName'] ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white : const Color(0xFF545454),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  // Tên giảng viên (CSS: top 35px, font-weight: 300)
+                                  // Tên giảng viên
                                   Text(
                                     "Giảng viên: ${data['teacherName'] ?? ''}",
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w300,
                                       fontSize: 14,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
                                     ),
                                   ),
-                                  // Học kỳ (CSS: top 65px, font-weight: 300)
+                                  // Học kỳ
                                   Text(
                                     data['semester'] ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w300,
                                       fontSize: 14,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white60 : const Color(0xFF545454),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.more_horiz, color: Color(0xFF777777)),
+                            Icon(Icons.more_horiz, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
                           ],
                         ),
                       ),
 
-                      // --- STARS (CSS: Stars - gap 3px, color #FFCB45) ---
+                      // --- STARS (Giữ màu vàng đặc trưng, chỉ chỉnh màu sao rỗng) ---
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Row(
@@ -107,7 +114,7 @@ class ReviewTab extends StatelessWidget {
                               padding: const EdgeInsets.only(right: 3),
                               child: Icon(
                                 i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: i < rating ? const Color(0xFFFFCB45) : const Color(0xFFD9D9D9),
+                                color: i < rating ? const Color(0xFFFFCB45) : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
                                 size: 22,
                               ),
                             );
@@ -115,28 +122,28 @@ class ReviewTab extends StatelessWidget {
                         ),
                       ),
 
-                      // --- CONTENT (CSS: font-size: 15, height: 1.33) ---
+                      // --- CONTENT ---
                       Text(
                         data['content'] ?? '',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 15,
-                          color: Color(0xFF545454),
+                          color: isDarkMode ? Colors.white : const Color(0xFF545454),
                           height: 1.33,
                         ),
                       ),
 
                       // --- XEM THÊM ---
-                      const Padding(
-                        padding: EdgeInsets.only(top: 4, bottom: 12),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 12),
                         child: Text(
                           "Xem thêm",
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 15,
-                            color: Color(0xFFA9A9A9),
+                            color: isDarkMode ? Colors.white38 : const Color(0xFFA9A9A9),
                           ),
                         ),
                       ),

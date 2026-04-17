@@ -54,8 +54,10 @@ class _ForumTabState extends State<ForumTab> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white, // CSS: #FFFFFF
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Cập nhật màu nền động
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance.collection('forum_posts').orderBy('timestamp', descending: true).snapshots(),
         builder: (context, snapshot) {
@@ -72,9 +74,14 @@ class _ForumTabState extends State<ForumTab> {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 1)), // CSS: Vector 136
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.transparent : Colors.white,
+                  border: Border(
+                      bottom: BorderSide(
+                          color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
+                          width: 1
+                      )
+                  ),
                 ),
                 child: GestureDetector(
                   onTap: () {
@@ -83,18 +90,17 @@ class _ForumTabState extends State<ForumTab> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- HEADER (CSS: Frame 1359) ---
+                      // --- HEADER ---
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Row(
                           children: [
-                            // Avatar (CSS: Frame 1497)
                             CircleAvatar(
                               radius: 22.5,
-                              backgroundColor: Colors.white,
+                              backgroundColor: isDarkMode ? Colors.white10 : Colors.white,
                               child: CircleAvatar(
                                 radius: 22.5,
-                                backgroundColor: const Color(0xFFF0F0F0),
+                                backgroundColor: isDarkMode ? Colors.white12 : const Color(0xFFF0F0F0),
                                 backgroundImage: (avatarData != null && avatarData.isNotEmpty)
                                     ? MemoryImage(base64Decode(avatarData)) : null,
                                 child: (avatarData == null || avatarData.isEmpty)
@@ -102,42 +108,52 @@ class _ForumTabState extends State<ForumTab> {
                               ),
                             ),
                             const SizedBox(width: 12),
-                            // Name & Time (CSS: Frame 1350)
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     data['authorName'] ?? 'Sinh viên ẩn danh',
-                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF545454)),
+                                    style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: isDarkMode ? Colors.white : const Color(0xFF545454)
+                                    ),
                                   ),
                                   Text(
                                     data['timestamp'] != null
                                         ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
                                         : 'Vừa xong',
-                                    style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: Color(0xFF545454)),
+                                    style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        color: isDarkMode ? Colors.white60 : const Color(0xFF545454)
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                            const Icon(Icons.more_horiz, color: Color(0xFF777777)), // CSS: mage:dots
+                            Icon(Icons.more_horiz, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
                           ],
                         ),
                       ),
 
-                      // --- HASHTAGS (CSS: Frame 29018 / Frame 1365) ---
+                      // --- HASHTAGS ---
                       if (data['hashtags'] != null)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 8),
                           child: Wrap(
                             spacing: 8,
+                            runSpacing: 4,
                             children: (data['hashtags'] as List).map((tag) {
-                              // Màu sắc hashtag tùy chỉnh theo text (Cảnh báo: Đỏ, còn lại: Xám xanh)
                               bool isWarning = tag.toString().toLowerCase().contains('cảnh báo');
                               return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                                 decoration: BoxDecoration(
-                                  color: isWarning ? const Color(0xFFFF6C6C).withOpacity(0.6) : const Color(0xFFEDEDED).withOpacity(0.92),
+                                  color: isWarning
+                                      ? const Color(0xFFFF6C6C).withOpacity(isDarkMode ? 0.3 : 0.6)
+                                      : (isDarkMode ? Colors.white10 : const Color(0xFFEDEDED).withOpacity(0.92)),
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Row(
@@ -147,7 +163,11 @@ class _ForumTabState extends State<ForumTab> {
                                     const SizedBox(width: 2),
                                     Text(
                                       tag.toString(),
-                                      style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: Colors.black),
+                                      style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 10,
+                                          color: isDarkMode ? Colors.white70 : Colors.black
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -156,21 +176,26 @@ class _ForumTabState extends State<ForumTab> {
                           ),
                         ),
 
-                      // --- CONTENT (CSS: Encode Sans Expanded 15px) ---
+                      // --- CONTENT ---
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Text(
                           data['content'] ?? '',
-                          style: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: Color(0xFF545454), height: 1.4),
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 15,
+                              color: isDarkMode ? Colors.white : const Color(0xFF545454),
+                              height: 1.4
+                          ),
                         ),
                       ),
 
-                      // --- IMAGE (Nếu có) ---
+                      // --- IMAGE ---
                       _buildSafeImage(context, data['imageUrl']),
 
                       const SizedBox(height: 4),
 
-                      // --- ACTION ROW (Like, Comment, Save) ---
+                      // --- ACTION ROW ---
                       GestureDetector(
                         onTap: () {},
                         behavior: HitTestBehavior.opaque,
@@ -193,7 +218,7 @@ class _ForumTabState extends State<ForumTab> {
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_forum_tab",
         onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePostPage())),
-        backgroundColor: const Color(0xFF5893D8), // Đồng bộ màu Primary mới
+        backgroundColor: const Color(0xFF5893D8),
         elevation: 4,
         shape: const CircleBorder(),
         child: const Icon(Icons.edit_outlined, color: Colors.white, size: 30),

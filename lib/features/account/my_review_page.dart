@@ -10,23 +10,27 @@ class MyReviewsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      // Đồng bộ màu nền trắng chuẩn các Tab
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Đánh giá của tôi",
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontWeight: FontWeight.bold,
-            color: Color(0xFF545454),
+            color: isDarkMode ? Colors.white : const Color(0xFF545454),
           ),
         ),
         centerTitle: true,
         elevation: 0,
-        backgroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Color(0xFF545454)),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        iconTheme: IconThemeData(color: isDarkMode ? Colors.white70 : const Color(0xFF545454)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), height: 1),
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
@@ -53,10 +57,14 @@ class MyReviewsPage extends StatelessWidget {
 
               return Container(
                 margin: const EdgeInsets.only(bottom: 12),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  // Border dưới ngăn cách theo style Vector 136 - 2px của ReviewTab
-                  border: Border(bottom: BorderSide(color: Color(0xFFDFE6E9), width: 2)),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.transparent : Colors.white,
+                  border: Border(
+                      bottom: BorderSide(
+                          color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
+                          width: 2
+                      )
+                  ),
                 ),
                 child: GestureDetector(
                   onTap: () {
@@ -83,36 +91,35 @@ class MyReviewsPage extends StatelessWidget {
                                 children: [
                                   Text(
                                     data['courseName'] ?? 'Không rõ môn học',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w700,
                                       fontSize: 16,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white : const Color(0xFF545454),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
                                     "Giảng viên: ${data['teacherName'] ?? 'Chưa cập nhật'}",
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w300,
                                       fontSize: 14,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
                                     ),
                                   ),
                                   Text(
                                     data['semester'] ?? '',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontWeight: FontWeight.w300,
                                       fontSize: 14,
-                                      color: Color(0xFF545454),
+                                      color: isDarkMode ? Colors.white60 : const Color(0xFF545454),
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            // Giữ nguyên logic Edit/Delete nhưng đổi Icon cho thanh thoát
                             Row(
                               children: [
                                 IconButton(
@@ -136,7 +143,7 @@ class MyReviewsPage extends StatelessWidget {
                         ),
                       ),
 
-                      // --- STARS (Style #FFCB45) ---
+                      // --- STARS ---
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         child: Row(
@@ -146,7 +153,7 @@ class MyReviewsPage extends StatelessWidget {
                               padding: const EdgeInsets.only(right: 3),
                               child: Icon(
                                 i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: i < rating ? const Color(0xFFFFCB45) : const Color(0xFFD9D9D9),
+                                color: i < rating ? const Color(0xFFFFCB45) : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
                                 size: 22,
                               ),
                             );
@@ -154,28 +161,28 @@ class MyReviewsPage extends StatelessWidget {
                         ),
                       ),
 
-                      // --- CONTENT (15px, height 1.33) ---
+                      // --- CONTENT ---
                       Text(
                         data['content'] ?? '',
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 15,
-                          color: Color(0xFF545454),
+                          color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
                           height: 1.33,
                         ),
                       ),
 
                       // --- XEM THÊM ---
-                      const Padding(
-                        padding: EdgeInsets.only(top: 4, bottom: 16),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4, bottom: 16),
                         child: Text(
                           "Xem thêm",
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 14,
-                            color: Color(0xFFA9A9A9),
+                            color: isDarkMode ? Colors.white38 : const Color(0xFFA9A9A9),
                           ),
                         ),
                       ),
@@ -190,8 +197,8 @@ class MyReviewsPage extends StatelessWidget {
     );
   }
 
-  // --- CÁC HÀM HELPER GIỮ NGUYÊN LOGIC, CẬP NHẬT UI ĐỒNG BỘ ---
   Widget _buildEmptyReviewState(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -200,9 +207,14 @@ class MyReviewsPage extends StatelessWidget {
           children: [
             const Icon(Icons.stars_outlined, size: 100, color: Color(0xFFFFCB45)),
             const SizedBox(height: 24),
-            const Text(
+            Text(
                 "Bạn chưa có đánh giá nào!",
-                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF545454))
+                style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : const Color(0xFF545454)
+                )
             ),
             const SizedBox(height: 12),
             const Text(
@@ -232,8 +244,9 @@ class MyReviewsPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Xóa đánh giá?"),
-        content: const Text("Dữ liệu này sẽ bị xóa vĩnh viễn và không thể khôi phục."),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text("Xóa đánh giá?", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black)),
+        content: Text("Dữ liệu này sẽ bị xóa vĩnh viễn và không thể khôi phục.", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         actions: [
           TextButton(
