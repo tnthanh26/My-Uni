@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../services/content_service.dart';
 
 class CreatePostPage extends StatefulWidget {
   final String? docId;
@@ -71,22 +72,49 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _submitPost() async {
-    if (_contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập nội dung")));
+    final content = _contentController.text.trim();
+
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Vui lòng nhập nội dung"))
+      );
       return;
     }
+
+    // Gọi service để lấy danh sách từ vi phạm
+    List<String> violations = ContentService.getViolatedWords(content);
+    if (violations.isNotEmpty) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Yêu cầu sửa nội dung"),
+          content: Text("Nội dung chứa từ ngữ không phù hợp: (${violations.join(', ')}). Vui lòng xóa hoặc sửa lại các từ này để tiếp tục đăng bài."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Quay lại sửa"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       String uid = FirebaseAuth.instance.currentUser!.uid;
       String? finalImageBase64 = _existingImageUrl;
+
       if (_newImageFile != null) {
         finalImageBase64 = await _processImageToBase64(_newImageFile!);
       }
 
-      final postData = {
+      // --- 1. TẠO MAP CHỨA CÁC TRƯỜNG MÀ CẢ EDIT VÀ CREATE ĐỀU DÙNG ---
+      final commonData = {
         'authorName': _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
         'authorAvatar': _isAnonymous ? null : _userPhotoBase64,
-        'content': _contentController.text.trim(),
+        'content': content,
         'hashtags': _selectedHashtags,
         'imageUrl': finalImageBase64,
         'isAnonymous': _isAnonymous,
@@ -94,18 +122,37 @@ class _CreatePostPageState extends State<CreatePostPage> {
       };
 
       if (widget.docId != null) {
-        await FirebaseFirestore.instance.collection('forum_posts').doc(widget.docId).update(postData);
+        // --- 2. CHẾ ĐỘ SỬA (UPDATE) ---
+        // Chỉ gửi commonData. TUYỆT ĐỐI không gửi status, isReported, authorId...
+        await FirebaseFirestore.instance
+            .collection('forum_posts')
+            .doc(widget.docId)
+            .update(commonData);
+
       } else {
+        // Copy commonData và bổ sung các trường khởi tạo ban đầu
+        final postData = Map<String, dynamic>.from(commonData);
         postData['authorId'] = uid;
+        postData['status'] = 'pending';
+        postData['isToxicChecked'] = false;
+        postData['isReported'] = false;
+        postData['reportCount'] = 0;
+        postData['type'] = 'forum';
         postData['timestamp'] = FieldValue.serverTimestamp();
         postData['likeCount'] = 0;
         postData['commentCount'] = 0;
+
         await FirebaseFirestore.instance.collection('forum_posts').add(postData);
       }
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}"))
+        );
+      }
     }
   }
 

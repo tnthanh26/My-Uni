@@ -5,7 +5,7 @@ import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
 import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
-import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 
 // Màu sắc và thông số chuẩn từ thiết kế Figma
@@ -47,7 +47,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   // --- LOGIC DỮ LIỆU ---
-  // Thêm service vào class
+  // Thêm services vào class
   final MySpaceFirebaseService _firebaseService = MySpaceFirebaseService();
 
   Future<void> _loadData() async {

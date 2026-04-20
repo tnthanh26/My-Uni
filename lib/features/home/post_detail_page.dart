@@ -41,6 +41,86 @@ class _PostDetailPageState extends State<PostDetailPage> {
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
+  void _showReportOptions() {
+    final List<String> reportReasons = [
+      "Ngôn từ gây hấn/Xúc phạm",
+      "Thông tin sai lệch",
+      "Spam/Quảng cáo trái phép",
+      "Nội dung không phù hợp với sinh viên",
+      "Khác"
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Báo cáo bài viết", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'Nunito')),
+              const SizedBox(height: 10),
+              ...reportReasons.map((reason) => ListTile(
+                leading: const Icon(Icons.report_problem_outlined, color: Colors.redAccent),
+                title: Text(reason),
+                onTap: () {
+                  Navigator.pop(context);
+                  _submitReport(reason);
+                },
+              )),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _submitReport(String reason) async {
+    if (_user == null) return;
+
+    try {
+      // 1. Cập nhật bài viết gốc
+      await _firestore.collection(_collectionPath).doc(widget.docId).update({
+        'isReported': true,
+        'reportCount': FieldValue.increment(1),
+      });
+
+      // 2. Lưu vào collection 'reports' để Mod xử lý
+      await _firestore.collection('reports').add({
+        'reporterId': _user!.uid,
+        'reportedPostId': widget.docId,
+        'postCollection': _collectionPath,
+        'reason': reason,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'pending',
+      });
+
+      // 3. Thông báo cho chủ bài viết
+      final authorId = widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+      if (authorId != null) {
+        await _firestore.collection('notifications').add({
+          'userId': authorId,
+          'type': 'warning',
+          'title': 'Cảnh báo nội dung',
+          'content': 'Bài viết của bạn đang bị cộng đồng báo cáo vì lý do: $reason. Mod sẽ tiến hành kiểm tra.',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'relatedPostId': widget.docId,
+          'collectionPath': _collectionPath,
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Cảm ơn bạn! Báo cáo đã được gửi tới điều hành viên.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Lỗi báo cáo: $e");
+    }
+  }
+
   Future<void> _deleteComment(String commentId) async {
     try {
       final repliesSnapshot = await _firestore
@@ -181,6 +261,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
         backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         foregroundColor: isDarkMode ? Colors.white : const Color(0xFF545454),
         elevation: 0,
+        actions: [
+          // Kiểm tra nếu KHÔNG PHẢI là tin chính thống thì mới hiện nút báo cáo
+          if (_collectionPath != 'official_news')
+            IconButton(
+              icon: const Icon(Icons.report_gmailerrorred_outlined, color: Colors.redAccent),
+              onPressed: _showReportOptions,
+              tooltip: "Báo cáo bài viết vi phạm",
+            )
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), height: 1),

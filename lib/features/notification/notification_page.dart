@@ -1,9 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/notification_model.dart';
-import '../../notification_service.dart';
+import '../services/notification_service.dart';
 import '../home/post_detail_page.dart';
 
 class NotificationScreen extends StatelessWidget {
@@ -70,27 +69,32 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context, MyUniNotification noti) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  void _handleNotificationTap(BuildContext context, MyUniNotification noti) async {
+    NotificationService.markAsRead(noti.id);
 
-    // Màu nền cho thông báo chưa đọc (Dark: Xanh mờ, Light: Hồng mờ)
-    Color unreadColor = isDarkMode
-        ? const Color(0xFF5893D8).withOpacity(0.1)
-        : const Color(0xFFFFF5F5);
+    if (noti.relatedPostId != null && noti.collectionPath != null) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+      );
 
-    return InkWell(
-      onTap: () async {
-        NotificationService.markAsRead(noti.id);
+      try {
+        final postDoc = await FirebaseFirestore.instance
+            .collection(noti.collectionPath!)
+            .doc(noti.relatedPostId)
+            .get()
+            .timeout(const Duration(seconds: 5)); // Thêm timeout tránh treo app
 
-        if (noti.relatedPostId != null && noti.collectionPath != null) {
-          final postDoc = await FirebaseFirestore.instance
-              .collection(noti.collectionPath!)
-              .doc(noti.relatedPostId)
-              .get();
+        if (!context.mounted) return;
+        Navigator.pop(context); // Tắt loading
 
-          if (postDoc.exists) {
-            final postData = postDoc.data() as Map<String, dynamic>;
+        if (postDoc.exists) {
+          final postData = postDoc.data() as Map<String, dynamic>;
 
+          if (postData['status'] == 'hidden') {
+            _showUnavailableDialog(context, noti.id);
+          } else {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -100,13 +104,66 @@ class NotificationScreen extends StatelessWidget {
                 ),
               ),
             );
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Bài viết này không còn tồn tại")),
-            );
           }
+        } else {
+          _showUnavailableDialog(context, noti.id);
         }
-      },
+      } on FirebaseException catch (e) {
+        if (!context.mounted) return;
+        Navigator.pop(context);
+
+        // Nếu bị chặn quyền (do bài ẩn) hoặc không tìm thấy, hiện Dialog gỡ bài
+        if (e.code == 'permission-denied' || e.code == 'not-found') {
+          _showUnavailableDialog(context, noti.id);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Lỗi hệ thống: ${e.message}")),
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        Navigator.pop(context);
+        // Mọi lỗi không xác định khác quy về bài viết không khả dụng thay vì báo lỗi kết nối
+        _showUnavailableDialog(context, noti.id);
+      }
+    }
+  }
+
+  void _showUnavailableDialog(BuildContext context, String notiId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Thông báo", style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
+        content: const Text("Nội dung này không còn tồn tại hoặc đã bị gỡ bỏ bởi quản trị viên."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Đóng", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await FirebaseFirestore.instance.collection('notifications').doc(notiId).delete();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã xóa thông báo.")));
+              }
+            },
+            child: const Text("Xóa thông báo", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem(BuildContext context, MyUniNotification noti) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    Color unreadColor = isDarkMode
+        ? const Color(0xFF5893D8).withOpacity(0.1)
+        : const Color(0xFFFFF5F5);
+
+    return InkWell(
+      onTap: () => _handleNotificationTap(context, noti),
       child: Container(
         color: noti.isRead
             ? (isDarkMode ? Colors.transparent : Colors.white)

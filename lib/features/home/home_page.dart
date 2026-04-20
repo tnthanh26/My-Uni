@@ -11,7 +11,7 @@ import 'package:my_uni/features/chatbot/chatbot_page.dart';
 import 'package:my_uni/features/event/event_page.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
-import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 

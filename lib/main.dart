@@ -1,21 +1,45 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:my_uni/features/credential/login_page.dart';
 import 'package:my_uni/features/credential/signup_page.dart';
 import 'package:my_uni/features/credential/otp_page.dart';
 import 'package:my_uni/features/credential/forgot_password_page.dart';
 import 'package:my_uni/features/home/home_page.dart';
-import 'package:my_uni/features/myspace/myspace_screen.dart'; // Import MySpaceScreen
+import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'firebase_options.dart';
-import 'notification_service.dart';
+import 'features/services/notification_service.dart';
 import 'app_provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:my_uni/web_mod/mod_dashboard.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter_web_plugins/url_strategy.dart';
+import 'package:my_uni/web_mod/mod_login_page.dart';
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  late final StreamSubscription<dynamic> _subscription;
+
+  GoRouterRefreshStream(Stream<dynamic> stream) {
+    notifyListeners();
+    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+  }
+
+  @override
+  void dispose() {
+    _subscription.cancel();
+    super.dispose();
+  }
+}
 
 // --- PHẦN 1: HÀM MAIN ---
 void main() async {
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
+
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(
@@ -25,7 +49,6 @@ void main() async {
   await NotificationService.init();
 
   runApp(
-    // Bao bọc App bằng Provider để quản lý Dark Mode & Ngôn ngữ
     ChangeNotifierProvider(
       create: (_) => AppProvider(),
       child: const MyUniApp(),
@@ -34,60 +57,88 @@ void main() async {
 }
 
 // --- PHẦN 2: CẤU HÌNH APP ---
+final GoRouter _webRouter = GoRouter(
+  initialLocation: '/mod-login',
+  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  redirect: (context, state) {
+    final user = FirebaseAuth.instance.currentUser;
+    // Email moderator của bạn
+    final isLoggedIn = user != null && user.email == 'nhatthanhtran2606@gmail.com';
+    final isGoingToLogin = state.matchedLocation == '/mod-login';
+
+    if (!isLoggedIn && !isGoingToLogin) {
+      return '/mod-login';
+    }
+
+    if (isLoggedIn && isGoingToLogin) {
+      return '/mod';
+    }
+
+    return null;
+  },
+  routes: [
+    GoRoute(
+      path: '/mod',
+      builder: (context, state) => const ModDashboard(),
+    ),
+    GoRoute(
+      path: '/mod-login',
+      builder: (context, state) => const ModLoginPage(),
+    ),
+  ],
+);
+
 class MyUniApp extends StatelessWidget {
   const MyUniApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Lắng nghe sự thay đổi từ AppProvider
     final appProvider = Provider.of<AppProvider>(context);
+
+    if (kIsWeb) {
+      return MaterialApp.router(
+        routerConfig: _webRouter,
+        title: 'MyUni Moderator',
+        debugShowCheckedModeBanner: false,
+        theme: _buildTheme(Brightness.light),
+        darkTheme: _buildTheme(Brightness.dark),
+        themeMode: appProvider.themeMode,
+      );
+    }
 
     return MaterialApp(
       title: 'MyUni',
       debugShowCheckedModeBanner: false,
-
-      // Cấu hình Ngôn ngữ
-      locale: appProvider.locale,
-
-      // Cấu hình Dark Mode / Light Mode
-      themeMode: appProvider.themeMode,
-
-      // Theme Sáng
-      theme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.light,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5893D8),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: Colors.white,
-      ),
-
-      // Theme Tối
-      darkTheme: ThemeData(
-        useMaterial3: true,
-        brightness: Brightness.dark,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF5893D8),
-          brightness: Brightness.dark,
-        ),
-        // Bạn có thể tùy chỉnh màu nền Dark Mode ở đây
-      ),
-
-      home: const MyUniHomePage(),
-
+      initialRoute: '/',
       routes: {
+        '/': (context) => const MyUniHomePage(),
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
         '/otp': (context) => const OtpPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
         '/home': (context) => const HomePage(),
       },
+      theme: _buildTheme(Brightness.light),
+      darkTheme: _buildTheme(Brightness.dark),
+      themeMode: appProvider.themeMode,
+      locale: appProvider.locale,
+    );
+  }
+
+  ThemeData _buildTheme(Brightness brightness) {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: brightness,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: const Color(0xFF5893D8),
+        brightness: brightness,
+      ),
+      scaffoldBackgroundColor: brightness == Brightness.light ? Colors.white : null,
     );
   }
 }
 
-// --- PHẦN 3: TRANG WELCOME ---
+// --- PHẦN 3: TRANG WELCOME (MOBILE) ---
 class MyUniHomePage extends StatelessWidget {
   const MyUniHomePage({super.key});
 
@@ -103,70 +154,59 @@ class MyUniHomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.school_rounded,
-                  size: 100,
-                  color: primaryColor,
-                ),
+                Icon(Icons.school_rounded, size: 100, color: primaryColor),
                 const SizedBox(height: 30),
-
-                Text(
+                const Text(
                   'Chào mừng bạn đến với MyUni!',
                   textAlign: TextAlign.center,
-                  textScaler: const TextScaler.linear(1.0),
-                  style: const TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                 ),
-
-                const SizedBox(height: 12),
-
-                const Text(
-                  'Kết nối với các bạn cùng trường',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
-
                 const SizedBox(height: 50),
 
-                // Button Đăng nhập
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/login'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    ),
-                    child: const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ),
+                _buildButton(
+                    context,
+                    'Đăng nhập',
+                    primaryColor,
+                        () => Navigator.pushNamed(context, '/login'),
+                    isOutlined: false
                 ),
-
                 const SizedBox(height: 16),
-
-                // Button Đăng ký
-                SizedBox(
-                  width: double.infinity,
-                  height: 55,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pushNamed(context, '/signup'),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: primaryColor, width: 2),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    ),
-                    child: Text(
-                      'Đăng ký tài khoản',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: primaryColor),
-                    ),
-                  ),
+                _buildButton(
+                    context,
+                    'Đăng ký tài khoản',
+                    primaryColor,
+                        () => Navigator.pushNamed(context, '/signup'),
+                    isOutlined: true
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildButton(BuildContext context, String text, Color color, VoidCallback onPressed, {required bool isOutlined}) {
+    return SizedBox(
+      width: double.infinity,
+      height: 55,
+      child: isOutlined
+          ? OutlinedButton(
+        onPressed: onPressed,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: color, width: 2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        ),
+        child: Text(text, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+      )
+          : ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        ),
+        child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
       ),
     );
   }

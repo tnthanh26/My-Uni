@@ -52,7 +52,10 @@ class PostActionRow extends StatelessWidget {
       await userLikeRef.delete();
       await postRef.update({'likeCount': FieldValue.increment(-1)});
     } else {
-      await userLikeRef.set({'timestamp': FieldValue.serverTimestamp()});
+      await userLikeRef.set({
+        'userId': user.uid,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
       await postRef.update({'likeCount': FieldValue.increment(1)});
 
       if (onLike != null) {

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import '../services/content_service.dart';
 
 class CreateReviewPage extends StatefulWidget {
   final String? docId;
@@ -46,31 +47,69 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       return;
     }
 
+    // Gom tất cả văn bản lại để quét một lượt
+    String combinedText = "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
+    List<String> violations = ContentService.getViolatedWords(combinedText);
+
+    if (violations.isNotEmpty) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Nội dung không hợp lệ"),
+          content: Text("Thông tin review có chứa từ ngữ vi phạm: (${violations.join(', ')}). Bạn cần sửa lại trước khi lưu."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Để mình sửa")),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("Chưa đăng nhập tài khoản");
 
-      final reviewData = {
-        'authorId': user.uid,
-        'semester': _selectedSemester,
-        'courseName': _courseController.text.trim(),
-        'teacherName': _teacherController.text.trim(),
-        'rating': _rating,
-        'content': _contentController.text.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
 
       if (widget.docId != null) {
+        // 1. Nếu là SỬA: Chỉ gửi những trường user được phép sửa theo Rules
+        // Không gửi 'status', 'authorId', 'isReported', 'reportCount' vì Rules sẽ chặn Owner sửa các trường này
+        final updateData = {
+          'semester': _selectedSemester,
+          'courseName': _courseController.text.trim(),
+          'teacherName': _teacherController.text.trim(),
+          'rating': _rating,
+          'content': _contentController.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        };
+
         await FirebaseFirestore.instance
             .collection('course_reviews')
             .doc(widget.docId)
-            .update(reviewData);
+            .update(updateData);
+
       } else {
-        reviewData['timestamp'] = FieldValue.serverTimestamp();
-        reviewData['likeCount'] = 0;
-        reviewData['commentCount'] = 0;
+        // 2. Nếu là TẠO MỚI: Gửi đầy đủ các trường khởi tạo
+        final reviewData = {
+          'authorId': user.uid,
+          'semester': _selectedSemester,
+          'courseName': _courseController.text.trim(),
+          'teacherName': _teacherController.text.trim(),
+          'rating': _rating,
+          'content': _contentController.text.trim(),
+          'updatedAt': FieldValue.serverTimestamp(),
+          'status': 'pending',
+          'isToxicChecked': false,
+          'isReported': false,
+          'reportCount': 0,
+          'type': 'review',
+          'timestamp': FieldValue.serverTimestamp(),
+          'likeCount': 0,
+          'commentCount': 0,
+        };
+
         await FirebaseFirestore.instance
             .collection('course_reviews')
             .add(reviewData);
