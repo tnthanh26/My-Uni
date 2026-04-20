@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/models/event_model.dart';
-import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/features/services/notification_service.dart';
 
 class CreatePersonalEventPage extends StatefulWidget {
   final EventModel? event;

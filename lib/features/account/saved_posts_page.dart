@@ -26,6 +26,13 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
     timeago.setLocaleMessages('vi', timeago.ViMessages());
   }
 
+  String _getCollectionPath(Map<String, dynamic> data) {
+    if (data.containsKey('link')) return 'official_news';
+    if (data.containsKey('rating')) return 'course_reviews';
+    if (data.containsKey('fileData')) return 'study_materials';
+    return 'forum_posts';
+  }
+
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) return;
@@ -51,12 +58,75 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
         .collection('saved_posts').doc(docId).delete();
   }
 
-  void _navigateToDetail(Map<String, dynamic> data, String docId) {
-    String originalId = data['originalDocId'] ?? docId;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostDetailPage(docId: originalId, initialPostData: data),
+  // --- HÀM ĐIỀU HƯỚNG ĐÃ CẬP NHẬT (CHÍNH XÁC COLLECTION & XÓA LỖI) ---
+  void _navigateToDetail(Map<String, dynamic> data, String savedDocId) async {
+    String originalId = data['originalDocId'] ?? savedDocId;
+    // Tự động nhận diện collection dựa trên data để đi đúng đường
+    String collectionPath = _getCollectionPath(data);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+    );
+
+    try {
+      DocumentSnapshot originalDoc = await FirebaseFirestore.instance
+          .collection(collectionPath)
+          .doc(originalId)
+          .get()
+          .timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+      Navigator.pop(context); // Tắt loading
+
+      if (originalDoc.exists) {
+        Map<String, dynamic> currentData = originalDoc.data() as Map<String, dynamic>;
+
+        if (currentData['status'] == 'hidden') {
+          _showUnavailableMessage(savedDocId);
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailPage(docId: originalId, initialPostData: currentData),
+            ),
+          );
+        }
+      } else {
+        _showUnavailableMessage(savedDocId);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+      _showUnavailableMessage(savedDocId);
+    }
+  }
+
+  void _showUnavailableMessage(String savedDocId) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Thông báo", style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
+        content: const Text("Bài viết này không còn tồn tại hoặc đã bị gỡ bỏ. Bạn có muốn xóa bản lưu này không?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Đóng", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _removeSave(savedDocId);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Đã gỡ bản lưu không còn khả dụng."))
+                );
+              }
+            },
+            child: const Text("Xóa bản lưu", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -147,7 +217,7 @@ class _SavedPostsPageState extends State<SavedPostsPage> with SingleTickerProvid
                 child: _buildOfficialCard(data, docId),
               );
             }
-            if (data.containsKey('authorName')) {
+            if (data.containsKey('authorName') && !data.containsKey('rating') && !data.containsKey('fileData')) {
               return GestureDetector(
                 onTap: () => _navigateToDetail(data, docId),
                 child: _buildForumCard(data, docId),

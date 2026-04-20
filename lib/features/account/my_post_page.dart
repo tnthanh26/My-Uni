@@ -29,6 +29,29 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
     super.dispose();
   }
 
+  Widget _buildStatusBadge(String status) {
+    bool isPending = status == 'pending';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: isPending ? Colors.orange.withOpacity(0.1) : Colors.green.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isPending ? Colors.orange.withOpacity(0.5) : Colors.green.withOpacity(0.5),
+          width: 0.5,
+        ),
+      ),
+      child: Text(
+        isPending ? "Đang chờ duyệt" : "Đã đăng",
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: isPending ? Colors.orange : Colors.green,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -103,6 +126,8 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
       stream: FirebaseFirestore.instance
           .collection(collectionPath)
           .where('authorId', isEqualTo: user?.uid)
+          .where('status', isNotEqualTo: 'hidden')
+          .orderBy('status')
           .orderBy('timestamp', descending: true)
           .snapshots(),
       builder: (context, snapshot) {
@@ -128,6 +153,7 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
   Widget _buildDetailedItem(BuildContext context, String docId, Map<String, dynamic> data, String collectionPath, DocumentReference ref) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
+    String currentStatus = data['status'] ?? 'pending';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -155,6 +181,7 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start, // Để nhãn căn theo top của avatar
                 children: [
                   CircleAvatar(
                     radius: 22.5,
@@ -191,6 +218,7 @@ class _MyPostsPageState extends State<MyPostsPage> with SingleTickerProviderStat
                       ],
                     ),
                   ),
+                  _buildStatusBadge(currentStatus),
                 ],
               ),
             ),

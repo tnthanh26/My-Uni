@@ -4,7 +4,7 @@ import 'my_event_tab.dart';
 import 'create_personal_event_page.dart';
 import 'create_community_event_page.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
-import 'package:my_uni/notification_service.dart';
+import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 
 class EventPage extends StatefulWidget {

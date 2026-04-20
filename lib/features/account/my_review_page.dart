@@ -36,6 +36,8 @@ class MyReviewsPage extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('course_reviews')
             .where('authorId', isEqualTo: user?.uid)
+            .where('status', isNotEqualTo: 'hidden')
+            .orderBy('status')
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {

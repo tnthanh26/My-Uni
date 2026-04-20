@@ -57,11 +57,23 @@ class _ForumTabState extends State<ForumTab> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, // Cập nhật màu nền động
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('forum_posts').orderBy('timestamp', descending: true).snapshots(),
+        stream: FirebaseFirestore.instance
+              .collection('forum_posts')
+              .where('status', isEqualTo: 'approved')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
+          if (snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                "Chưa có bài viết nào.",
+                style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              ),
+            );
+          }
 
           return ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

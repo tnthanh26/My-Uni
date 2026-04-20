@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
+import '../services/content_service.dart';
 
 class CreateMaterialPage extends StatefulWidget {
   final String? docId;
@@ -91,6 +92,25 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       return;
     }
 
+    // Quét cả tên môn, mô tả và tên file đính kèm
+    String combinedText = "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
+    List<String> violations = ContentService.getViolatedWords(combinedText);
+
+    if (violations.isNotEmpty) {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Tài liệu không hợp lệ"),
+          content: Text("Tên tài liệu hoặc mô tả chứa từ ngữ vi phạm: (${violations.join(', ')}). Vui lòng chỉnh sửa lại."),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Đã hiểu")),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
     try {
       String? encodedFileData = _existingFileData;
@@ -105,7 +125,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         }
       }
 
-      final Map<String, dynamic> materialData = {
+      // --- 1. TẠO MAP CHỨA CÁC TRƯỜNG DÙNG CHUNG CHO CẢ EDIT VÀ CREATE ---
+      final Map<String, dynamic> commonData = {
         'semester': _selectedSemester,
         'courseName': _courseController.text.trim(),
         'teacherName': _teacherController.text.trim(),
@@ -113,18 +134,31 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         'fileData': encodedFileData,
         'fileName': _fileName,
         'isImage': _isImage,
-        'timestamp': widget.existingData != null ? widget.existingData!['timestamp'] : FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       };
 
       if (widget.docId != null) {
-        await FirebaseFirestore.instance.collection('study_materials').doc(widget.docId).update(materialData);
+        // Chỉ gửi commonData. KHÔNG gửi status, isReported, authorId... để tránh bị Security Rules chặn
+        await FirebaseFirestore.instance
+            .collection('study_materials')
+            .doc(widget.docId)
+            .update(commonData);
+
       } else {
+        // Copy commonData và bổ sung các trường khởi tạo ban đầu + thông tin Author
+        final Map<String, dynamic> materialData = Map<String, dynamic>.from(commonData);
+
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         final userData = userDoc.data();
 
         materialData['authorId'] = user.uid;
         materialData['authorName'] = userData?['displayName'] ?? 'Sinh viên MyUni';
         materialData['authorAvatar'] = userData?['photoUrl'] ?? '';
+        materialData['status'] = 'pending';
+        materialData['isToxicChecked'] = false;
+        materialData['isReported'] = false;
+        materialData['reportCount'] = 0;
+        materialData['type'] = 'material';
         materialData['likeCount'] = 0;
         materialData['commentCount'] = 0;
         materialData['timestamp'] = FieldValue.serverTimestamp();
@@ -134,8 +168,13 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      debugPrint("Lỗi nộp tài liệu: $e");
-      setState(() => _isSubmitting = false);
+      debugPrint("Lỗi đăng tài liệu: $e");
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}"))
+        );
+      }
     }
   }
 

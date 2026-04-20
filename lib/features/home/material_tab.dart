@@ -42,6 +42,7 @@ class MaterialTab extends StatelessWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('study_materials')
+            .where('status', isEqualTo: 'approved')
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
