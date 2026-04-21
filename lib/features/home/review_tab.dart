@@ -8,6 +8,333 @@ class ReviewTab extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
   const ReviewTab({super.key, required this.onSave});
 
+  Widget _buildRatingStars(int rating, bool isDarkMode) {
+    return Row(
+      children: [
+        ...List.generate(5, (i) {
+          final bool filled = i < rating;
+          return Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: Icon(
+              filled ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: filled
+                  ? const Color(0xFFFFCB45)
+                  : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
+              size: 22,
+            ),
+          );
+        }),
+        const SizedBox(width: 8),
+        Text(
+          "$rating/5",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required bool isDarkMode,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDarkMode
+            ? Colors.white.withOpacity(0.06)
+            : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 13,
+            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(
+      BuildContext context,
+      Map<String, dynamic> data,
+      String docId,
+      bool isDarkMode,
+      ) {
+    final int rating = (data['rating'] ?? 0) is int
+        ? data['rating'] ?? 0
+        : ((data['rating'] ?? 0) as num).toInt();
+
+    final String courseName = data['courseName']?.toString() ?? '';
+    final String teacherName = data['teacherName']?.toString() ?? '';
+    final String semester = data['semester']?.toString() ?? '';
+    final String content = data['content']?.toString() ?? '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 18),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+        ),
+        boxShadow: isDarkMode
+            ? []
+            : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      PostDetailPage(docId: docId, initialPostData: data),
+                ),
+              );
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFCB45).withOpacity(
+                      isDarkMode ? 0.14 : 0.10,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.rate_review_rounded,
+                        size: 16,
+                        color: Color(0xFFC98A00),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        "Đánh giá môn học",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF946200),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              courseName,
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 18,
+                                height: 1.35,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              "Giảng viên: ${teacherName.isEmpty ? 'Chưa cập nhật' : teacherName}",
+                              style: const TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontWeight: FontWeight.w500,
+                                fontSize: 14,
+                                color: Color(0xFF5893D8),
+                              ),
+                            ),
+                            if (semester.isNotEmpty) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                semester,
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 13,
+                                  color: isDarkMode
+                                      ? Colors.white60
+                                      : const Color(0xFF667085),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      Icon(
+                        Icons.more_horiz,
+                        color: isDarkMode
+                            ? Colors.white38
+                            : const Color(0xFF777777),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildInfoChip(
+                        icon: Icons.school_rounded,
+                        label: "Review",
+                        isDarkMode: isDarkMode,
+                      ),
+                      if (semester.isNotEmpty)
+                        _buildInfoChip(
+                          icon: Icons.calendar_month_rounded,
+                          label: semester,
+                          isDarkMode: isDarkMode,
+                        ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.04)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFEAEFF5),
+                      ),
+                    ),
+                    child: _buildRatingStars(rating, isDarkMode),
+                  ),
+                ),
+
+                if (content.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: Text(
+                      content,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 15,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : const Color(0xFF4B5563),
+                        height: 1.65,
+                      ),
+                    ),
+                  ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                  child: InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              PostDetailPage(docId: docId, initialPostData: data),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        "Xem thêm",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          color: Color(0xFF5893D8),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.03)
+                          : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: GestureDetector(
+                      onTap: () {},
+                      behavior: HitTestBehavior.opaque,
+                      child: PostActionRow(
+                        docId: docId,
+                        data: data,
+                        onSave: onSave,
+                        collectionPath: 'course_reviews',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -21,157 +348,65 @@ class ReviewTab extends StatelessWidget {
             .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
+            );
+          }
+
           if (snapshot.data!.docs.isEmpty) {
             return Center(
-              child: Text(
-                "Chưa có đánh giá nào.",
-                style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFE9EEF3),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.reviews_outlined,
+                      size: 42,
+                      color: isDarkMode ? Colors.white38 : Colors.grey,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Chưa có đánh giá nào.",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
             itemCount: snapshot.data!.docs.length,
             itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
               var data = doc.data() as Map<String, dynamic>;
               String docId = doc.id;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.transparent : Colors.white,
-                  // Border dưới ngăn cách bài viết linh hoạt theo theme
-                  border: Border(
-                      bottom: BorderSide(
-                          color: isDarkMode ? Colors.white10 : const Color(0xFFDFE6E9),
-                          width: 2
-                      )
-                  ),
-                ),
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PostDetailPage(docId: docId, initialPostData: data),
-                      ),
-                    );
-                  },
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- HEADER ---
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Tên môn học
-                                  Text(
-                                    data['courseName'] ?? '',
-                                    style: TextStyle(
-                                      fontFamily: 'Encode Sans Expanded',
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 16,
-                                      color: isDarkMode ? Colors.white : const Color(0xFF545454),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  // Tên giảng viên
-                                  Text(
-                                    "Giảng viên: ${data['teacherName'] ?? ''}",
-                                    style: TextStyle(
-                                      fontFamily: 'Encode Sans Expanded',
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: 14,
-                                      color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
-                                    ),
-                                  ),
-                                  // Học kỳ
-                                  Text(
-                                    data['semester'] ?? '',
-                                    style: TextStyle(
-                                      fontFamily: 'Encode Sans Expanded',
-                                      fontWeight: FontWeight.w300,
-                                      fontSize: 14,
-                                      color: isDarkMode ? Colors.white60 : const Color(0xFF545454),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(Icons.more_horiz, color: isDarkMode ? Colors.white38 : const Color(0xFF777777)),
-                          ],
-                        ),
-                      ),
-
-                      // --- STARS (Giữ màu vàng đặc trưng, chỉ chỉnh màu sao rỗng) ---
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Row(
-                          children: List.generate(5, (i) {
-                            int rating = (data['rating'] ?? 0).toInt();
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 3),
-                              child: Icon(
-                                i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                                color: i < rating ? const Color(0xFFFFCB45) : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
-                                size: 22,
-                              ),
-                            );
-                          }),
-                        ),
-                      ),
-
-                      // --- CONTENT ---
-                      Text(
-                        data['content'] ?? '',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 15,
-                          color: isDarkMode ? Colors.white : const Color(0xFF545454),
-                          height: 1.33,
-                        ),
-                      ),
-
-                      // --- XEM THÊM ---
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4, bottom: 12),
-                        child: Text(
-                          "Xem thêm",
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 15,
-                            color: isDarkMode ? Colors.white38 : const Color(0xFFA9A9A9),
-                          ),
-                        ),
-                      ),
-
-                      // --- ACTION ROW ---
-                      GestureDetector(
-                        onTap: () {},
-                        behavior: HitTestBehavior.opaque,
-                        child: PostActionRow(
-                          docId: docId,
-                          data: data,
-                          onSave: onSave,
-                          collectionPath: 'course_reviews',
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                ),
+              return _buildReviewCard(
+                context,
+                data,
+                docId,
+                isDarkMode,
               );
             },
           );
@@ -179,11 +414,18 @@ class ReviewTab extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_review_tab",
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CreateReviewPage())),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CreateReviewPage()),
+        ),
         backgroundColor: const Color(0xFF5893D8),
-        elevation: 4,
+        elevation: 5,
         shape: const CircleBorder(),
-        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 30),
+        child: const Icon(
+          Icons.edit_outlined,
+          color: Colors.white,
+          size: 28,
+        ),
       ),
     );
   }
