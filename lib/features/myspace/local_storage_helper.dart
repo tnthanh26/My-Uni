@@ -6,6 +6,7 @@ import 'myspace_models.dart';
 class LocalStorageHelper {
   static const String _deadlineKey = 'user_deadlines';
   static const String _scheduleKey = 'user_schedule';
+  static const String _autoDeadlineConfigKey = 'auto_deadline_config';
 
   static List<Deadline> get _defaultDeadlines => [
     Deadline(
@@ -132,10 +133,46 @@ class LocalStorageHelper {
     )).toList();
   }
 
+
+
+  static Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
+    final prefs = await SharedPreferences.getInstance();
+    final encodedData = jsonEncode({
+      'isEnabled': config.isEnabled,
+      'provider': config.provider,
+      'emailAddress': config.emailAddress,
+      'allowedSenders': config.allowedSenders,
+      'subjectKeywords': config.subjectKeywords,
+      'onlyUnread': config.onlyUnread,
+      'includeAttachments': config.includeAttachments,
+      'permissionRequested': config.permissionRequested,
+      'permissionGranted': config.permissionGranted,
+      'updatedAt': config.updatedAt?.toIso8601String(),
+    });
+    await prefs.setString(_autoDeadlineConfigKey, encodedData);
+  }
+
+  static Future<AutoDeadlineConfig> getAutoDeadlineConfig({String emailAddress = ''}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? data = prefs.getString(_autoDeadlineConfigKey);
+
+    if (data == null || data.trim().isEmpty) {
+      return AutoDeadlineConfig.empty(emailAddress: emailAddress);
+    }
+
+    final Map<String, dynamic> decoded = Map<String, dynamic>.from(jsonDecode(data));
+    return AutoDeadlineConfig.fromMap(decoded).copyWith(
+      emailAddress: (decoded['emailAddress'] == null || (decoded['emailAddress'] as String).trim().isEmpty)
+          ? emailAddress
+          : decoded['emailAddress'],
+    );
+  }
+
   // --- RESET DATA ---
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_deadlineKey);
     await prefs.remove(_scheduleKey);
+    await prefs.remove(_autoDeadlineConfigKey);
   }
 }

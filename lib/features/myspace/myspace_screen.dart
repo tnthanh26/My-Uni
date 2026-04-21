@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'myspace_models.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
@@ -29,6 +30,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   // Dữ liệu mẫu
   List<Deadline> mockDeadlines = [];
   List<StudyClass> mockSchedule = [];
+  AutoDeadlineConfig? _autoDeadlineConfig;
 
   @override
   void initState() {
@@ -54,10 +56,15 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     // 1. Lấy dữ liệu từ Local Storage trước để UI hiện ra ngay lập tức
     final localDls = await LocalStorageHelper.getDeadlines();
     final localSch = await LocalStorageHelper.getSchedule();
+    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final localAutoConfig = await LocalStorageHelper.getAutoDeadlineConfig(
+      emailAddress: currentUserEmail,
+    );
 
     setState(() {
       mockDeadlines = localDls;
       mockSchedule = localSch;
+      _autoDeadlineConfig = localAutoConfig;
     });
 
     // 2. Sau đó đồng bộ từ Firebase (Nếu có mạng)
@@ -88,6 +95,25 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           mockSchedule = remoteSch;
         });
         await LocalStorageHelper.saveSchedule(remoteSch);
+      }
+
+      final remoteAutoConfig = await _firebaseService.getAutoDeadlineConfig();
+      if (remoteAutoConfig != null) {
+        final mergedConfig = remoteAutoConfig.copyWith(
+          emailAddress: remoteAutoConfig.emailAddress.trim().isEmpty
+              ? currentUserEmail
+              : remoteAutoConfig.emailAddress,
+        );
+        setState(() {
+          _autoDeadlineConfig = mergedConfig;
+        });
+        await LocalStorageHelper.saveAutoDeadlineConfig(mergedConfig);
+      } else if ((localAutoConfig.emailAddress.isNotEmpty ||
+          localAutoConfig.allowedSenders.isNotEmpty ||
+          localAutoConfig.subjectKeywords.isNotEmpty ||
+          localAutoConfig.permissionRequested) &&
+          _firebaseService.userId != null) {
+        await _firebaseService.saveAutoDeadlineConfig(localAutoConfig);
       }
     } catch (e) {
       debugPrint("Firebase Sync Error: $e");
@@ -142,13 +168,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _showCreateOptions(BuildContext context) {
+    bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -185,6 +212,347 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   // --- UI HELPER ---
+
+  List<String> _splitCommaSeparated(String input) {
+    return input
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+  }
+
+  Future<void> _saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
+    final normalized = config.copyWith(updatedAt: DateTime.now());
+    await LocalStorageHelper.saveAutoDeadlineConfig(normalized);
+    await _firebaseService.saveAutoDeadlineConfig(normalized);
+
+    if (!mounted) return;
+    setState(() {
+      _autoDeadlineConfig = normalized;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã lưu cấu hình auto-update deadline.'),
+      ),
+    );
+  }
+
+  Future<void> _showAutoDeadlineConfigSheet() async {
+    final baseConfig = _autoDeadlineConfig ?? AutoDeadlineConfig.empty(
+      emailAddress: FirebaseAuth.instance.currentUser?.email ?? '',
+    );
+
+    final emailController = TextEditingController(text: baseConfig.emailAddress);
+    final senderController = TextEditingController(
+      text: baseConfig.allowedSenders.join(', '),
+    );
+    final keywordController = TextEditingController(
+      text: baseConfig.subjectKeywords.join(', '),
+    );
+
+    bool isEnabled = baseConfig.isEnabled;
+    String provider = baseConfig.provider;
+    bool onlyUnread = baseConfig.onlyUnread;
+    bool includeAttachments = baseConfig.includeAttachments;
+    bool permissionRequested = baseConfig.permissionRequested;
+    bool permissionGranted = baseConfig.permissionGranted;
+    bool _showAdvancedOptions = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Auto-update deadline',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Poppins',
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: Icon(
+                              Icons.close_rounded,
+                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Mới là phần UI + lưu cấu hình. Chưa đọc mail thật cho tới khi mình nối email_listener/OAuth backend.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                          fontFamily: 'Poppins',
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      SwitchListTile.adaptive(
+                        value: isEnabled,
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: hcmusBlueAccent,
+                        title: const Text(
+                          'Bật tự động cập nhật deadline',
+                          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                        ),
+                        subtitle: const Text(
+                          'Sau này hệ thống sẽ quét email hợp lệ và gợi ý/tạo deadline tự động.',
+                          style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                        ),
+                        onChanged: (value) => setModalState(() => isEnabled = value),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildConfigLabel('Loại email cần đọc'),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: provider,
+                        decoration: _configInputDecoration('Chọn nhà cung cấp email'),
+                        items: const [
+                          DropdownMenuItem(value: 'gmail', child: Text('Gmail')),
+                          DropdownMenuItem(value: 'outlook', child: Text('Outlook / Microsoft')),
+                          DropdownMenuItem(value: 'other', child: Text('Khác')),
+                        ],
+                        onChanged: (value) {
+                          if (value != null) {
+                            setModalState(() => provider = value);
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      _buildConfigLabel('Email sẽ dùng để đồng bộ'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: _configInputDecoration('vd: hoshi@student.edu.vn'),
+                      ),
+                      const SizedBox(height: 14),
+                      _buildConfigLabel('Tự đọc mail từ ai'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: senderController,
+                        maxLines: 2,
+                        decoration: _configInputDecoration(
+                          'vd: daotao@school.edu.vn, lecturer@hcmus.edu.vn',
+                        ),
+                      ),
+                      /*
+                      const SizedBox(height: 14),
+                      _buildConfigLabel('Từ khóa tiêu đề / nội dung ưu tiên'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: keywordController,
+                        maxLines: 2,
+                        decoration: _configInputDecoration(
+                          'vd: deadline, assignment, quiz, submission, exam',
+                        ),
+                      ),
+                      */
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () => setModalState(() => _showAdvancedOptions = !_showAdvancedOptions),
+                        child: Text(
+                          _showAdvancedOptions ? 'Ẩn tùy chọn nâng cao' : 'Tùy chọn nâng cao',
+                          style: TextStyle(
+                            color: hcmusBlueAccent,
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      if (_showAdvancedOptions) ...[
+                        CheckboxListTile(
+                          value: onlyUnread,
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: hcmusBlueAccent,
+                          title: const Text('Ưu tiên chỉ đọc email chưa đọc', style: TextStyle(fontFamily: 'Poppins')),
+                          onChanged: (value) => setModalState(() => onlyUnread = value ?? true),
+                        ),
+                        CheckboxListTile(
+                          value: includeAttachments,
+                          contentPadding: EdgeInsets.zero,
+                          activeColor: hcmusBlueAccent,
+                          title: const Text('Cho phép xét cả email có file đính kèm', style: TextStyle(fontFamily: 'Poppins')),
+                          onChanged: (value) => setModalState(() => includeAttachments = value ?? false),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? const Color(0xFF23262B) : const Color(0xFFF5F8FF),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFDCE7FF)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  permissionGranted ? Icons.verified_rounded : Icons.lock_outline_rounded,
+                                  size: 18,
+                                  color: permissionGranted ? hcmusTeal : Colors.orange,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  permissionGranted ? 'Quyền truy cập: đã cấp' : 'Quyền truy cập: chưa cấp',
+                                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Nút này mới là bước xin phép/gợi ý UX. OAuth thật sẽ nối ở bước sau.',
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
+                            ),
+                            const SizedBox(height: 10),
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                setModalState(() {
+                                  permissionRequested = true;
+                                  permissionGranted = false;
+                                });
+                                ScaffoldMessenger.of(this.context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Đã ghi nhận yêu cầu cấp quyền. Bước OAuth thật sẽ nối sau.'),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.mark_email_read_outlined),
+                              label: Text(
+                                permissionRequested ? 'Yêu cầu cấp quyền lại' : 'Yêu cầu cấp quyền',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: hcmusBlueAccent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: () async {
+                            final email = emailController.text.trim();
+                            if (email.isEmpty) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(content: Text('Điền email trước đã.')),
+                              );
+                              return;
+                            }
+
+                            final config = AutoDeadlineConfig(
+                              isEnabled: isEnabled,
+                              provider: provider,
+                              emailAddress: email,
+                              allowedSenders: _splitCommaSeparated(senderController.text),
+                              subjectKeywords: _splitCommaSeparated(keywordController.text),
+                              onlyUnread: onlyUnread,
+                              includeAttachments: includeAttachments,
+                              permissionRequested: permissionRequested,
+                              permissionGranted: permissionGranted,
+                              updatedAt: DateTime.now(),
+                            );
+
+                            await _saveAutoDeadlineConfig(config);
+                            if (mounted) {
+                              Navigator.pop(context);
+                            }
+                          },
+                          child: const Text(
+                            'Lưu cấu hình',
+                            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildConfigLabel(String text) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        fontFamily: 'Poppins',
+        color: isDarkMode ? Colors.white : Colors.black87,
+      ),
+    );
+  }
+
+  InputDecoration _configInputDecoration(String hintText) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: TextStyle(
+        fontFamily: 'Poppins',
+        fontSize: 13,
+        color: isDarkMode ? Colors.white54 : null,
+      ),
+      filled: true,
+      fillColor: isDarkMode ? const Color(0xFF23262B) : const Color(0xFFF8FAFD),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: hcmusBlueAccent, width: 1.4),
+      ),
+    );
+  }
 
   void _showSuccessSnackBar(String title) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -250,8 +618,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
       body: Stack(
         children: [
           // 1. Phần Header cố định (Fixed Header)
@@ -265,8 +634,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               Expanded(
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
@@ -285,7 +654,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       floatingActionButton: _isDetailView
           ? FloatingActionButton(
         onPressed: () => _showCreateOptions(context),
-        backgroundColor: const Color(0xFF5A5959),
+        backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
         child: const Icon(Icons.add, size: 35, color: Colors.white),
       )
           : null,
@@ -317,7 +686,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           _buildWelcomeBannerFigma(),
 
           const SizedBox(height: 25),
-          _buildSectionHeaderFigma("Deadlines", () => _navigateToDetail(0)),
+          _buildDeadlineSectionHeader(),
           ...top3Deadlines.map((d) => _buildDeadlineCardFigma(d)),
 
           const SizedBox(height: 25),
@@ -332,6 +701,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildDetailViewContent() {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Stack(
       children: [
         // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
@@ -342,7 +712,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           height: 160,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFFEBEBF5).withValues(alpha: 0.9),
+              color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
             ),
           ),
@@ -356,8 +726,26 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
-                  IconButton(icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20), onPressed: _backToDashboard),
-                  const Expanded(child: Center(child: Text("Tháng 2, 2026", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)))),
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                    onPressed: _backToDashboard,
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        "Tháng 2, 2026",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 48),
                 ],
               ),
@@ -397,6 +785,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildDetailCalendarStrip() {
     final currentWeek = _getCurrentWeekDays();
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return SizedBox(
       height: 80,
@@ -433,9 +822,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 children: [
                   Text("${dayDate.day}",
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : Colors.black)),
+                          color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black))),
                   Text(dayData['label'],
-                      style: TextStyle(color: isSelected ? Colors.white : Color(0xff94A3B8), fontSize: 12)),
+                      style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white60 : const Color(0xff94A3B8)), fontSize: 12)),
                   const SizedBox(height: 4),
                   // Badge thông báo (Đỏ cho Deadline, Teal cho Schedule)
                   SizedBox(
@@ -472,11 +861,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   Widget _buildSlidingToggle() {
     final bool isDeadlineTab = _tabController.index == 0;
     final Color activeColor = isDeadlineTab ? hcmusRed : hcmusTeal;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: 48,
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(color: hcmusLightGrey, borderRadius: BorderRadius.circular(24)),
+      decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, borderRadius: BorderRadius.circular(24)),
       child: Padding(
         padding: const EdgeInsets.all(4), // Tạo khoảng trống để Indicator nhỏ hơn thanh chứa
         child: TabBar(
@@ -499,7 +889,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           labelColor: Colors.white,
-          unselectedLabelColor: const Color(0xFF94A3B8), // Màu xám (Slate 400)
+          unselectedLabelColor: isDarkMode ? Colors.white60 : const Color(0xFF94A3B8), // Màu xám (Slate 400)
           dividerColor: Colors.transparent, // Xóa gạch chân mặc định
           labelStyle: const TextStyle(
             fontWeight: FontWeight.bold,
@@ -532,7 +922,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     ).toList();
 
     if (filteredDeadlines.isEmpty) {
-      return const Center(child: Text("Không có deadline cho ngày này!"));
+      return Center(child: Text("Không có deadline cho ngày này!", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87)));
     }
 
     return ListView.builder(
@@ -543,6 +933,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildDeadlineDetailCard(Deadline d) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       margin: const EdgeInsets.only(bottom: 15, left: 20, right: 20), // Thêm margin để card nằm giữa màn hình
       height: 94,
@@ -553,7 +944,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             width: double.infinity,
             height: 94,
             decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
+              color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF),
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
@@ -574,7 +965,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               style: TextStyle(
                 fontFamily: 'Lexend Deca',
                 fontSize: 11,
-                color: const Color(0xFF6E6A7C),
+                color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C),
               ),
             ),
           ),
@@ -589,7 +980,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 fontFamily: 'Lexend Deca',
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
-                color: const Color(0xFF24252C),
+                color: isDarkMode ? Colors.white : const Color(0xFF24252C),
                 decoration: d.isCompleted ? TextDecoration.lineThrough : null,
               ),
             ),
@@ -621,7 +1012,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             top: 12,
             child: GestureDetector(
               onTap: () => _showDeadlineActionMenu(d),
-              child: const Icon(Icons.more_horiz, color: Color(0xFF6E6A7C), size: 20),
+              child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20),
             ),
           ),
 
@@ -635,9 +1026,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: d.isCompleted ? hcmusBlueAccent : Colors.white,
+                  color: d.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white),
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 1),
+                  border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1),
                 ),
                 child: d.isCompleted
                     ? const Icon(Icons.check, color: Colors.white, size: 16)
@@ -674,57 +1065,60 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Tiêu đề để biết đang thao tác với deadline nào
-            Text(
-                d.title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                    fontFamily: 'Lexend Deca'
-                )
-            ),
-            const Divider(),
-
-            // Lựa chọn CHỈNH SỬA - Đã được cập nhật logic
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent),
-              title: const Text("Chỉnh sửa deadline",
-                  style: TextStyle(fontFamily: 'Lexend Deca')),
-              onTap: () {
-                Navigator.pop(context); // Đóng Menu trước
-                _editDeadline(d);       // Gọi hàm điều hướng sang trang Create (kèm dữ liệu)
-              },
-            ),
-
-            // Lựa chọn XÓA - Màu đỏ khẩn cấp
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
-              title: const Text(
-                "Xóa deadline",
-                style: TextStyle(
-                    color: Color(0xFFDC2626),
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Lexend Deca'
-                ),
+      builder: (context) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Tiêu đề để biết đang thao tác với deadline nào
+              Text(
+                  d.title,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isDarkMode ? Colors.white70 : Colors.grey,
+                      fontFamily: 'Lexend Deca'
+                  )
               ),
-              onTap: () {
-                Navigator.pop(context); // Đóng Menu trước
-                _deleteDeadline(d.id);  // Gọi hàm xóa
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
+              Divider(color: isDarkMode ? Colors.white12 : null),
+
+              // Lựa chọn CHỈNH SỬA - Đã được cập nhật logic
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent),
+                title: const Text("Chỉnh sửa deadline",
+                    style: TextStyle(fontFamily: 'Lexend Deca')),
+                onTap: () {
+                  Navigator.pop(context); // Đóng Menu trước
+                  _editDeadline(d);       // Gọi hàm điều hướng sang trang Create (kèm dữ liệu)
+                },
+              ),
+
+              // Lựa chọn XÓA - Màu đỏ khẩn cấp
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
+                title: const Text(
+                  "Xóa deadline",
+                  style: TextStyle(
+                      color: Color(0xFFDC2626),
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Lexend Deca'
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context); // Đóng Menu trước
+                  _deleteDeadline(d.id);  // Gọi hàm xóa
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -732,7 +1126,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
 
     if (dayClasses.isEmpty) {
-      return const Center(child: Text("Hôm nay không có lịch học", style: TextStyle(color: Colors.grey)));
+      return Center(child: Text("Hôm nay không có lịch học", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.grey)));
     }
 
     return ListView.builder(
@@ -867,9 +1261,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: hcmusBlueAccent.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
+            color: hcmusBlueAccent.withValues(alpha: 0.3),
+            blurRadius: 8,
+            offset: Offset(0, 4),
           ),
         ],
       ),
@@ -924,18 +1318,83 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildDeadlineSectionHeader() {
+    final config = _autoDeadlineConfig;
+    final bool isEnabled = config?.isEnabled ?? false;
+    final bool permissionRequested = config?.permissionRequested ?? false;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Deadlines',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87),
+          ),
+        ),
+        GestureDetector(
+          onTap: _showAutoDeadlineConfigSheet,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: isEnabled ? (isDarkMode ? const Color(0xFF1D3557) : const Color(0xFFE7F1FF)) : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isEnabled ? hcmusBlueAccent : Colors.transparent,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_rounded,
+                  size: 15,
+                  color: isEnabled ? hcmusBlueAccent : (isDarkMode ? Colors.white60 : Colors.black54),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isEnabled ? 'Auto-update ON' : 'Auto-update',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    color: isEnabled ? hcmusBlueAccent : (isDarkMode ? Colors.white : Colors.black87),
+                  ),
+                ),
+                if (permissionRequested && !isEnabled) ...[
+                  const SizedBox(width: 6),
+                  const Icon(Icons.access_time_rounded, size: 14, color: Colors.orange),
+                ],
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => _navigateToDetail(0),
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
+            child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSectionHeaderFigma(String title, VoidCallback onPressed) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Poppins')),
+        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87)),
         GestureDetector(
           onTap: onPressed,
           child: Container(
             width: 36,
             height: 36,
-            decoration: const BoxDecoration(color: hcmusLightGrey, shape: BoxShape.circle),
-            child: const Icon(Icons.list_rounded, size: 18, color: Colors.black87),
+            decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
+            child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
           ),
         )
       ],
@@ -989,13 +1448,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildDeadlineCardFigma(Deadline deadline) {
     final timeLeftData = _getTimeLeft(deadline);
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
       height: 50,
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 3, offset: const Offset(0, 4))],
       ),
@@ -1009,7 +1469,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               decoration: BoxDecoration(
                 color: deadline.isCompleted ? hcmusBlueAccent : Colors.transparent,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 1),
+                border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1),
               ),
               child: deadline.isCompleted ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
             ),
@@ -1022,7 +1482,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 style: TextStyle(
                   fontSize: 14,
                   fontFamily: 'Poppins',
-                  color: const Color(0xFF0F172A),
+                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
                   // Thêm gạch ngang nếu xong
                   decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
                 )
@@ -1034,10 +1494,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             child: RichText(
               textAlign: TextAlign.left,
               text: TextSpan(
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 10,
                   fontFamily: 'Poppins',
-                  color: Color(0xFF0F172A),
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF0F172A),
                 ),
                 children: [
                   if (timeLeftData["color"] != const Color(0xFFDC2626))
@@ -1098,19 +1558,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _calendarDayFigma(String day, String weekday, {bool isSelected = false}) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       width: 36,
       height: 54,
       decoration: BoxDecoration(
-        color: isSelected ? hcmusBlueAccent : hcmusLightGrey,
+        color: isSelected ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(weekday, style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontSize: 12, height: 0.75)),
+          Text(weekday, style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black), fontSize: 12, height: 0.75)),
           const SizedBox(height: 4),
-          Text(day, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isSelected ? Colors.white : Colors.black)),
+          Text(day, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black))),
         ],
       ),
     );
@@ -1120,36 +1581,39 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(s.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
-              title: const Text("Chỉnh sửa lịch học"),
-              onTap: () {
-                Navigator.pop(context);
-                _editSchedule(s); // Gọi hàm sửa vừa tạo
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_outline, color: hcmusRed),
-              title: const Text("Xóa lịch học", style: TextStyle(color: hcmusRed)),
-              onTap: () {
-                Navigator.pop(context);
-                _deleteSchedule(s.id);
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (context) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(s.name, style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey)),
+              Divider(color: isDarkMode ? Colors.white12 : null),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
+                title: const Text("Chỉnh sửa lịch học"),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editSchedule(s); // Gọi hàm sửa vừa tạo
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: hcmusRed),
+                title: const Text("Xóa lịch học", style: TextStyle(color: hcmusRed)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deleteSchedule(s.id);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1163,12 +1627,13 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildScheduleCardFigma(StudyClass c) { // Thay đổi tham số truyền vào là StudyClass
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 80, // Điều chỉnh theo Figma (94px)
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         // hcmusTeal
-        color: hcmusTeal,
+        color: isDarkMode ? const Color(0xFF164E63) : hcmusTeal,
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 4))

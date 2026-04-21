@@ -55,10 +55,16 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   }
 
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final Color cardBg = isDarkMode ? const Color(0xFF1C1C1E) : fieldBg;
+    final Color primaryText = isDarkMode ? Colors.white : Colors.black;
+    final Color secondaryText = isDarkMode ? Colors.white70 : hintGrey;
+    final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: headerBg,
+        backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : headerBg,
         elevation: 4,
         leadingWidth: 80,
         leading: TextButton(
@@ -93,12 +99,12 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               // 1. Tên Môn học
               TextField(
                 controller: _subjectController,
-                style: const TextStyle(fontSize: 20, color: Colors.black, fontFamily: 'Encode Sans Expanded'),
-                decoration: const InputDecoration(
+                style: TextStyle(fontSize: 20, color: primaryText, fontFamily: 'Encode Sans Expanded'),
+                decoration: InputDecoration(
                   hintText: 'Tên Môn học',
-                  hintStyle: TextStyle(color: borderGrey, fontSize: 20),
-                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: borderGrey)),
-                  focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: headerBg)),
+                  hintStyle: TextStyle(color: secondaryText, fontSize: 20),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: headerBg)),
                 ),
               ),
               const SizedBox(height: 24),
@@ -107,15 +113,16 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               _buildRectangleField(
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_month_outlined, size: 24),
+                    Icon(Icons.calendar_month_outlined, size: 24, color: primaryText),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: _selectedWeekday,
+                          dropdownColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
                           isExpanded: true,
-                          icon: const Icon(Icons.keyboard_arrow_down, color: hintGrey),
-                          style: const TextStyle(fontSize: 20, fontFamily: 'Urbanist', color: Colors.black),
+                          icon: Icon(Icons.keyboard_arrow_down, color: secondaryText),
+                          style: TextStyle(fontSize: 20, fontFamily: 'Urbanist', color: primaryText),
                           onChanged: (String? newValue) {
                             setState(() => _selectedWeekday = newValue!);
                           },
@@ -142,25 +149,25 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                         onTap: () => _selectTime(true),
                         child: Row(
                           children: [
-                            const Icon(Icons.access_time, size: 24),
+                            Icon(Icons.access_time, size: 24, color: primaryText),
                             const SizedBox(width: 8),
                             Text(_startTime.format(context),
-                                style: const TextStyle(fontSize: 18, fontFamily: 'Encode Sans Expanded', color: hintGrey)),
+                                style: TextStyle(fontSize: 18, fontFamily: 'Encode Sans Expanded', color: secondaryText)),
                           ],
                         ),
                       ),
                     ),
-                    const VerticalDivider(color: borderGrey, indent: 20, endIndent: 20),
+                    VerticalDivider(color: borderColor, indent: 20, endIndent: 20),
                     Expanded(
                       child: InkWell(
                         onTap: () => _selectTime(false),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            const Icon(Icons.access_time, size: 24),
+                            Icon(Icons.access_time, size: 24, color: primaryText),
                             const SizedBox(width: 8),
                             Text(_endTime.format(context),
-                                style: const TextStyle(fontSize: 18, fontFamily: 'Encode Sans Expanded', color: hintGrey)),
+                                style: TextStyle(fontSize: 18, fontFamily: 'Encode Sans Expanded', color: secondaryText)),
                           ],
                         ),
                       ),
@@ -174,15 +181,15 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               _buildRectangleField(
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on_outlined, size: 24),
+                    Icon(Icons.location_on_outlined, size: 24, color: primaryText),
                     const SizedBox(width: 12),
                     Expanded(
                       child: TextField(
                         controller: _locationController,
-                        style: const TextStyle(fontSize: 20, fontFamily: 'Encode Sans Expanded'),
-                        decoration: const InputDecoration(
+                        style: TextStyle(fontSize: 20, fontFamily: 'Encode Sans Expanded', color: primaryText),
+                        decoration: InputDecoration(
                           hintText: 'Địa điểm',
-                          hintStyle: TextStyle(color: hintGrey),
+                          hintStyle: TextStyle(color: secondaryText),
                           border: InputBorder.none,
                         ),
                       ),
@@ -192,8 +199,8 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               ),
 
               const SizedBox(height: 24),
-              const Text("Màu sắc thẻ",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded')),
+              Text("Màu sắc thẻ",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded', color: primaryText)),
               const SizedBox(height: 12),
               SizedBox(
                 height: 50,
@@ -212,7 +219,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                           color: _colorOptions[index],
                           shape: BoxShape.circle,
                           border: isSelected
-                              ? Border.all(color: headerBg, width: 3)
+                              ? Border.all(color: isDarkMode ? Colors.white : headerBg, width: 3)
                               : Border.all(color: Colors.transparent),
                         ),
                         child: isSelected
@@ -231,6 +238,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   }
 
   Widget _buildRectangleField({required Widget child, VoidCallback? onTap}) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
@@ -238,7 +246,13 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
         width: double.infinity,
         height: 77,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(color: fieldBg, borderRadius: BorderRadius.circular(20)),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1C1C1E) : fieldBg,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDarkMode ? const Color(0xFF3A3A3C) : Colors.transparent,
+          ),
+        ),
         child: child,
       ),
     );
