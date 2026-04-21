@@ -91,6 +91,7 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
             .collection('course_reviews')
             .where('courseName', isEqualTo: widget.fullCourseName)
             .where('teacherName', isEqualTo: widget.teacherName)
+            .where('status', isEqualTo: 'approved')
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

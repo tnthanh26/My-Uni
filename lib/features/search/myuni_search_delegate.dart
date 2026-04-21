@@ -232,23 +232,28 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     List<String> activeTags = selectedHashtags.where((t) => t != 'Tất cả').toList();
     String tagParam = activeTags.isEmpty ? '' : activeTags.join(',');
 
-    final uri = Uri.parse('http://10.0.2.2:8000/search').replace(queryParameters: {
-      'query': cleanQuery,
-      'scope': scopeString,
-      'tag': tagParam,
-      'sort': sortOrder,
-    });
+    final uri = Uri.parse('http://34.21.194.185:8080/search').replace(
+      queryParameters: {
+        'query': cleanQuery,
+        'scope': scopeString,
+        'tag': tagParam,
+        'sort': sortOrder,
+      },
+    );
 
     try {
-      final response = await http.get(uri);
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
+
       if (response.statusCode == 200) {
         final List<dynamic>? data = jsonDecode(utf8.decode(response.bodyBytes));
         return data ?? [];
+      } else {
+        throw Exception('Search API error: ${response.statusCode}');
       }
     } catch (e) {
       debugPrint("Lỗi Search: $e");
+      rethrow;
     }
-    return [];
   }
 
   Widget _buildResultList(BuildContext context, List<dynamic> results) {
@@ -436,7 +441,6 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       courseCode = parts[0].trim();
       displayName = parts.sublist(1).join(' - ').trim();
     }
-
     final int reviewCount = data['reviewCount'] ?? 0;
     final double rating = (data['rating'] ?? 5.0).toDouble();
 
