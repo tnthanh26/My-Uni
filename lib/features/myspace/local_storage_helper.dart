@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'myspace_models.dart';
+import 'models/myspace_models.dart';
 
 class LocalStorageHelper {
   static const String _deadlineKey = 'user_deadlines';
