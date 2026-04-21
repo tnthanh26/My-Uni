@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'myspace_models.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import './models/myspace_models.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
@@ -8,6 +9,12 @@ import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
+import './services/myspace_weather_coordinator.dart';
+import './services/weather_alert_service.dart';
+import './services/weather_service.dart';
+import './models/weather_models.dart';
+import 'weather_alert_card.dart';
+import 'package:intl/intl.dart';
 
 // Màu sắc và thông số chuẩn từ thiết kế Figma
 const Color hcmusBlueAccent = Color(0xFF5893D8);
@@ -31,6 +38,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   List<Deadline> mockDeadlines = [];
   List<StudyClass> mockSchedule = [];
   AutoDeadlineConfig? _autoDeadlineConfig;
+  String _userUniversity = '';
+  Future<WeatherAlertResult>? _weatherFuture;
 
   @override
   void initState() {
@@ -48,6 +57,40 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     });
   }
 
+  void _prepareWeatherFuture() {
+    final todayClasses =
+    mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+
+    final campusId = _mapUniversityToCampusId(_userUniversity);
+
+    debugPrint('=== PREPARE WEATHER FUTURE ===');
+    debugPrint('_userUniversity: $_userUniversity');
+    debugPrint('campusId: $campusId');
+    debugPrint('todayClasses length: ${todayClasses.length}');
+
+    if (campusId == null || todayClasses.isEmpty) {
+      _weatherFuture = Future.value(WeatherAlertResult.none());
+      return;
+    }
+
+    final schedules = todayClasses.map((c) {
+      return ScheduleItem(
+        id: c.id,
+        title: c.name,
+        startTime: _combineTodayAndTime(c.start),
+        endTime: _combineTodayAndTime(c.end),
+        campusId: campusId,
+        room: c.room,
+      );
+    }).toList();
+
+    _weatherFuture = MySpaceWeatherCoordinator(
+      weatherService: WeatherService(),
+      alertService: WeatherAlertService(),
+    ).buildWeatherAlertForToday(
+      schedules: schedules,
+    );
+  }
   // --- LOGIC DỮ LIỆU ---
   // Thêm services vào class
   final MySpaceFirebaseService _firebaseService = MySpaceFirebaseService();
@@ -60,6 +103,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final localAutoConfig = await LocalStorageHelper.getAutoDeadlineConfig(
       emailAddress: currentUserEmail,
     );
+    final currentUser = FirebaseAuth.instance.currentUser;
 
     setState(() {
       mockDeadlines = localDls;
@@ -69,6 +113,23 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     // 2. Sau đó đồng bộ từ Firebase (Nếu có mạng)
     try {
+      if (currentUser != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(currentUser.uid)
+            .get();
+
+        final university = userDoc.data()?['university'] ?? '';
+
+        if (mounted) {
+          setState(() {
+            _userUniversity = university;
+          });
+        }
+      }
+
+      _prepareWeatherFuture();
+
       final remoteDls = await _firebaseService.getDeadlines();
 
       if (remoteDls.isEmpty && localDls.isNotEmpty) {
@@ -390,6 +451,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                           ),
                         ),
                       ),
+                      /*
                       if (_showAdvancedOptions) ...[
                         CheckboxListTile(
                           value: onlyUnread,
@@ -406,6 +468,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                           onChanged: (value) => setModalState(() => includeAttachments = value ?? false),
                         ),
                       ],
+                       */
                       const SizedBox(height: 8),
                       Container(
                         width: double.infinity,
@@ -662,20 +725,133 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   // --- DASHBOARD CONTENT (3.1) ---
-  Widget _buildDashboardContent() {
-    // Lọc môn học theo ngày đang chọn
-    final todayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+  DateTime _combineTodayAndTime(String time) {
+    final now = DateTime.now();
 
-    // 1. Sắp xếp list theo thời gian gần nhất (chỉ lấy những cái chưa hoàn thành hoặc tất cả tùy Hoshi)
+    final parsedTime = DateFormat('h:mm a').parse(time.trim());
+
+    return DateTime(
+      now.year,
+      now.month,
+      now.day,
+      parsedTime.hour,
+      parsedTime.minute,
+    );
+  }
+
+  String? _mapUniversityToCampusId(String university) {
+    switch (university.trim()) {
+      case 'VNU - HCMUS (CS1)':
+        return 'us_cs1';
+      case 'VNU - HCMUS (CS2)':
+        return 'us_cs2';
+      default:
+        return null;
+    }
+  }
+
+  Widget _buildCompactSummaryBanner() {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final todayClassesCount =
+        mockSchedule.where((c) => c.weekday == selectedWeekday).length;
+
+    final activeDeadlinesCount =
+        mockDeadlines.where((d) => !d.isCompleted).length;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDarkMode
+              ? [const Color(0xFF40539B), const Color(0xFF74C98C)]
+              : [const Color(0xFF4C63D2), const Color(0xFF83E28D)],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Text(
+              '🎉',
+              style: TextStyle(fontSize: 20),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  color: Colors.white,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontWeight: FontWeight.w600,
+                ),
+                children: [
+                  const TextSpan(text: 'Hôm nay bạn có '),
+                  TextSpan(
+                    text: '$todayClassesCount lớp học',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const TextSpan(text: ' và\n'),
+                  TextSpan(
+                    text: '$activeDeadlinesCount deadline',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  const TextSpan(text: ' cần giải quyết.'),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDashboardContent() {
+    final todayClasses =
+    mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+
     List<Deadline> sortedDeadlines = List.from(mockDeadlines);
     sortedDeadlines.sort((a, b) {
-      final aDateTime = DateTime(a.dueDate.year, a.dueDate.month, a.dueDate.day, a.dueTime.hour, a.dueTime.minute);
-      final bDateTime = DateTime(b.dueDate.year, b.dueDate.month, b.dueDate.day, b.dueTime.hour, b.dueTime.minute);
+      final aDateTime = DateTime(
+        a.dueDate.year,
+        a.dueDate.month,
+        a.dueDate.day,
+        a.dueTime.hour,
+        a.dueTime.minute,
+      );
+      final bDateTime = DateTime(
+        b.dueDate.year,
+        b.dueDate.month,
+        b.dueDate.day,
+        b.dueTime.hour,
+        b.dueTime.minute,
+      );
       return aDateTime.compareTo(bDateTime);
     });
 
-    // 2. Lấy top 3 cái gần nhất
     List<Deadline> top3Deadlines = sortedDeadlines.take(3).toList();
+
+    final campusId = _mapUniversityToCampusId(_userUniversity);
+
+    debugPrint('=== TOP BANNER DEBUG ===');
+    debugPrint('_userUniversity: $_userUniversity');
+    debugPrint('campusId: $campusId');
+    debugPrint('todayClasses length: ${todayClasses.length}');
+    for (final c in todayClasses) {
+      debugPrint('class: ${c.name} ${c.start} - ${c.end}');
+    }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -683,7 +859,36 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       child: Column(
         children: [
           const SizedBox(height: 20),
-          _buildWelcomeBannerFigma(),
+
+          FutureBuilder<WeatherAlertResult>(
+            future: _weatherFuture ?? Future.value(WeatherAlertResult.none()),
+            builder: (context, snapshot) {
+              debugPrint('snapshot.connectionState: ${snapshot.connectionState}');
+              debugPrint('snapshot.hasError: ${snapshot.hasError}');
+              debugPrint('snapshot.error: ${snapshot.error}');
+
+              final result = snapshot.data ?? WeatherAlertResult.none();
+              debugPrint('result.shouldShow: ${result.shouldShow}');
+              debugPrint('result.title: ${result.title}');
+
+              if (snapshot.connectionState == ConnectionState.waiting ||
+                  !result.shouldShow) {
+                return _buildWelcomeBannerFigma();
+              }
+
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildCompactSummaryBanner(),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: WeatherAlertCard(alert: result),
+                  ),
+                ],
+              );
+            },
+          ),
 
           const SizedBox(height: 25),
           _buildDeadlineSectionHeader(),
@@ -694,7 +899,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
 
-          const SizedBox(height: 80), // Padding đáy
+          const SizedBox(height: 80),
         ],
       ),
     );
@@ -1274,7 +1479,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             children: [
               Icon(Icons.celebration, color: Colors.orangeAccent, size: 20),
               SizedBox(width: 8),
-              Text("Chào bạn iuu!",
+              Text("Chào bạn tui!",
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,

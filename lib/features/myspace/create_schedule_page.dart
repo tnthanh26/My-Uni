@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'myspace_firebase_service.dart';
 import 'local_storage_helper.dart';
-import 'myspace_models.dart';
+import 'models/myspace_models.dart';
 import 'package:intl/intl.dart';
 
 class CreateSchedulePage extends StatefulWidget {
