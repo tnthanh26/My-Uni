@@ -6,63 +6,184 @@ import '../services/notification_service.dart';
 import '../home/post_detail_page.dart';
 
 class NotificationScreen extends StatelessWidget {
+  const NotificationScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
+      backgroundColor:
+      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDarkMode ? Colors.white : Colors.black,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Thông báo",
           style: TextStyle(
-              color: isDarkMode ? Colors.white : Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 24,
-              fontFamily: 'Nunito'
+            color: isDarkMode ? Colors.white : Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            fontFamily: 'Nunito',
           ),
         ),
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: isDarkMode ? Colors.white12 : const Color(0xFFDFE6E9), height: 1),
+          child: Container(
+            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            height: 1,
+          ),
         ),
       ),
       body: StreamBuilder<List<MyUniNotification>>(
         stream: NotificationService.getNotifications(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return const Center(child: Text("Đã có lỗi xảy ra"));
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Color(0xFF5893D8)));
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Đã có lỗi xảy ra",
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
+              ),
+            );
+          }
+
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
+            );
+          }
 
           final notifications = snapshot.data!;
 
           if (notifications.isEmpty) {
             return Center(
-              child: Text(
-                "Bạn chưa có thông báo nào",
-                style: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey),
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 28,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFE9EEF3),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.notifications_none_rounded,
+                      size: 42,
+                      color: isDarkMode ? Colors.white38 : Colors.grey,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      "Bạn chưa có thông báo nào",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
 
-          return ListView.separated(
-            itemCount: notifications.length,
-            separatorBuilder: (context, index) => Divider(
-                height: 1,
-                indent: 70,
-                color: isDarkMode ? Colors.white12 : Colors.grey[200]
-            ),
-            itemBuilder: (context, index) {
-              final noti = notifications[index];
-              return _buildNotificationItem(context, noti);
-            },
+          final unreadCount =
+              notifications.where((n) => !n.isRead).length;
+
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFE9EEF3),
+                  ),
+                  boxShadow: isDarkMode
+                      ? []
+                      : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.03),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF5893D8).withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.notifications_active_outlined,
+                        color: Color(0xFF5893D8),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        unreadCount > 0
+                            ? "Bạn có $unreadCount thông báo chưa đọc"
+                            : "Bạn đã xem hết thông báo rồi",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF344054),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+                  itemCount: notifications.length,
+                  itemBuilder: (context, index) {
+                    final noti = notifications[index];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildNotificationItem(context, noti),
+                    );
+                  },
+                ),
+              ),
+            ],
           );
         },
       ),
@@ -76,7 +197,12 @@ class NotificationScreen extends StatelessWidget {
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (context) => const Center(child: CircularProgressIndicator(color: Colors.white)),
+        builder: (context) => Container(
+          color: Colors.black.withOpacity(0.18),
+          child: const Center(
+            child: CircularProgressIndicator(color: Color(0xFF5893D8)),
+          ),
+        ),
       );
 
       try {
@@ -84,10 +210,10 @@ class NotificationScreen extends StatelessWidget {
             .collection(noti.collectionPath!)
             .doc(noti.relatedPostId)
             .get()
-            .timeout(const Duration(seconds: 5)); // Thêm timeout tránh treo app
+            .timeout(const Duration(seconds: 5));
 
         if (!context.mounted) return;
-        Navigator.pop(context); // Tắt loading
+        Navigator.pop(context);
 
         if (postDoc.exists) {
           final postData = postDoc.data() as Map<String, dynamic>;
@@ -112,7 +238,6 @@ class NotificationScreen extends StatelessWidget {
         if (!context.mounted) return;
         Navigator.pop(context);
 
-        // Nếu bị chặn quyền (do bài ẩn) hoặc không tìm thấy, hiện Dialog gỡ bài
         if (e.code == 'permission-denied' || e.code == 'not-found') {
           _showUnavailableDialog(context, noti.id);
         } else {
@@ -123,32 +248,65 @@ class NotificationScreen extends StatelessWidget {
       } catch (e) {
         if (!context.mounted) return;
         Navigator.pop(context);
-        // Mọi lỗi không xác định khác quy về bài viết không khả dụng thay vì báo lỗi kết nối
         _showUnavailableDialog(context, noti.id);
       }
     }
   }
 
   void _showUnavailableDialog(BuildContext context, String notiId) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Thông báo", style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
-        content: const Text("Nội dung này không còn tồn tại hoặc đã bị gỡ bỏ bởi quản trị viên."),
+        backgroundColor:
+        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Thông báo",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          "Nội dung này không còn tồn tại hoặc đã bị gỡ bỏ bởi quản trị viên.",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text("Đóng", style: TextStyle(color: Colors.grey)),
+            child: const Text(
+              "Đóng",
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await FirebaseFirestore.instance.collection('notifications').doc(notiId).delete();
+              await FirebaseFirestore.instance
+                  .collection('notifications')
+                  .doc(notiId)
+                  .delete();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã xóa thông báo.")));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Đã xóa thông báo.")),
+                );
               }
             },
-            child: const Text("Xóa thông báo", style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+            child: const Text(
+              "Xóa thông báo",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -158,58 +316,122 @@ class NotificationScreen extends StatelessWidget {
   Widget _buildNotificationItem(BuildContext context, MyUniNotification noti) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    Color unreadColor = isDarkMode
-        ? const Color(0xFF5893D8).withOpacity(0.1)
-        : const Color(0xFFFFF5F5);
+    final Color unreadBg = isDarkMode
+        ? const Color(0xFF66ACFE).withOpacity(0.10)
+        : const Color(0xFFEEF6FF);
 
-    return InkWell(
-      onTap: () => _handleNotificationTap(context, noti),
-      child: Container(
-        color: noti.isRead
-            ? (isDarkMode ? Colors.transparent : Colors.white)
-            : unreadColor,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _getIcon(context, noti.type),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                          noti.title,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: isDarkMode ? Colors.white : Colors.black
-                          )
-                      ),
-                      Text(
-                        DateFormat('h:mm a').format(noti.timestamp),
-                        style: const TextStyle(color: Colors.grey, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    noti.content,
-                    style: TextStyle(
-                        color: isDarkMode ? Colors.white70 : Colors.grey[800],
-                        height: 1.3,
-                        fontFamily: 'Encode Sans Expanded'
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+    final Color cardBg = noti.isRead
+        ? (isDarkMode ? const Color(0xFF15171A) : Colors.white)
+        : unreadBg;
+
+    final Color borderColor = noti.isRead
+        ? (isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3))
+        : const Color(0xFF66ACFE).withOpacity(0.28);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => _handleNotificationTap(context, noti),
+        child: Container(
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: isDarkMode
+                ? []
+                : [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.03),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _getIcon(context, noti.type),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            noti.title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              fontFamily: 'Encode Sans Expanded',
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          DateFormat('h:mm a').format(noti.timestamp),
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? Colors.white38
+                                : Colors.grey[600],
+                            fontSize: 11,
+                            fontFamily: 'Encode Sans Expanded',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      noti.content,
+                      style: TextStyle(
+                        color: isDarkMode
+                            ? Colors.white70
+                            : const Color(0xFF4B5563),
+                        height: 1.45,
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 13,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        if (!noti.isRead)
+                          Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF5893D8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        if (!noti.isRead) const SizedBox(width: 8),
+                        Text(
+                          noti.isRead ? "Đã xem" : "Chưa đọc",
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: noti.isRead
+                                ? (isDarkMode
+                                ? Colors.white38
+                                : Colors.grey[600])
+                                : const Color(0xFF5893D8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -219,36 +441,45 @@ class NotificationScreen extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     IconData iconData;
     Color iconColor;
+    Color bgColor;
 
     switch (type) {
       case 'trending':
-        iconData = Icons.whatshot_outlined;
+        iconData = Icons.whatshot_rounded;
         iconColor = Colors.orange;
+        bgColor = Colors.orange.withOpacity(0.14);
         break;
       case 'warning':
         iconData = Icons.warning_amber_rounded;
         iconColor = Colors.redAccent;
+        bgColor = Colors.redAccent.withOpacity(0.14);
         break;
       case 'comment':
         iconData = Icons.chat_bubble_outline_rounded;
         iconColor = const Color(0xFF5893D8);
+        bgColor = const Color(0xFF5893D8).withOpacity(0.14);
         break;
       case 'like':
-        iconData = Icons.thumb_up_off_alt;
+        iconData = Icons.thumb_up_off_alt_rounded;
         iconColor = Colors.pinkAccent;
+        bgColor = Colors.pinkAccent.withOpacity(0.14);
         break;
       default:
-        iconData = Icons.notifications_none;
+        iconData = Icons.notifications_none_rounded;
         iconColor = isDarkMode ? Colors.white70 : Colors.black54;
+        bgColor = isDarkMode
+            ? Colors.white.withOpacity(0.10)
+            : Colors.black.withOpacity(0.06);
     }
 
     return Container(
-      padding: const EdgeInsets.all(8),
+      width: 46,
+      height: 46,
       decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          shape: BoxShape.circle
+        color: bgColor,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Icon(iconData, size: 24, color: iconColor),
+      child: Icon(iconData, size: 23, color: iconColor),
     );
   }
 }
