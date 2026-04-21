@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'myspace_models.dart';
+import 'models/myspace_models.dart';
 
 class MySpaceFirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
