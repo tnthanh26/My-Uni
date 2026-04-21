@@ -37,11 +37,18 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
   }
 
   Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color scaffoldBg = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final Color cardBg = isDarkMode ? const Color(0xFF1C1C1E) : fieldBg;
+    final Color surfaceBg = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
+    final Color primaryText = isDarkMode ? Colors.white : Colors.black;
+    final Color secondaryText = isDarkMode ? Colors.white70 : borderGrey;
+    final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: scaffoldBg,
       // Status bar giả lập theo Figma (40px)
       appBar: AppBar(
-        backgroundColor: headerBg,
+        backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : headerBg,
         elevation: 4, // Tương đương box-shadow trong CSS
         leadingWidth: 80,
         leading: TextButton(
@@ -77,12 +84,12 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                   // 1. Tên Deadline (Gạch chân)
                   TextField(
                     controller: _titleController,
-                    style: const TextStyle(fontSize: 20, color: Colors.black),
-                    decoration: const InputDecoration(
+                    style: TextStyle(fontSize: 20, color: primaryText),
+                    decoration: InputDecoration(
                       hintText: 'Tên deadline',
-                      hintStyle: TextStyle(color: borderGrey, fontSize: 20, fontFamily: 'Encode Sans Expanded'),
-                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: borderGrey)),
-                      focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: headerBg)),
+                      hintStyle: TextStyle(color: secondaryText, fontSize: 20, fontFamily: 'Encode Sans Expanded'),
+                      enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                      focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: headerBg)),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -92,7 +99,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                     width: double.infinity,
                     height: 77,
                     decoration: BoxDecoration(
-                      color: fieldBg,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -104,11 +111,11 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                             onTap: _selectDate,
                             child: Row(
                               children: [
-                                const Icon(Icons.calendar_today, size: 24),
+                                Icon(Icons.calendar_today, size: 24, color: primaryText),
                                 const SizedBox(width: 8),
                                 Text(
                                   DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
-                                  style: const TextStyle(fontSize: 18, fontFamily: 'Urbanist'),
+                                  style: TextStyle(fontSize: 18, fontFamily: 'Urbanist', color: primaryText),
                                 ),
                               ],
                             ),
@@ -119,11 +126,11 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                           onTap: _selectTime,
                           child: Row(
                             children: [
-                              const Icon(Icons.access_time_outlined, size: 24),
+                              Icon(Icons.access_time_outlined, size: 24, color: primaryText),
                               const SizedBox(width: 8),
                               Text(
                                 _selectedTime.format(context),
-                                style: const TextStyle(fontSize: 18, fontFamily: 'Urbanist'),
+                                style: TextStyle(fontSize: 18, fontFamily: 'Urbanist', color: primaryText),
                               ),
                             ],
                           ),
@@ -138,39 +145,41 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                     width: double.infinity,
                     height: 77,
                     decoration: BoxDecoration(
-                      color: fieldBg,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: const Row(
+                    child: Row(
                       children: [
-                        Icon(Icons.alarm_outlined, size: 24),
-                        SizedBox(width: 12),
+                        Icon(Icons.alarm_outlined, size: 24, color: primaryText),
+                        const SizedBox(width: 12),
                         Text('Đặt lời nhắc',
-                            style: TextStyle(color: Color(0xFF787878), fontSize: 20, fontFamily: 'Encode Sans Expanded')),
+                            style: TextStyle(color: secondaryText, fontSize: 20, fontFamily: 'Encode Sans Expanded')),
                       ],
                     ),
                   ),
                   const SizedBox(height: 30),
 
                   // 4. Phần Nội dung
-                  const Text('Nội dung',
-                      style: TextStyle(fontSize: 15, color: Colors.black, fontFamily: 'Encode Sans Expanded')),
+                  Text('Nội dung',
+                      style: TextStyle(fontSize: 15, color: primaryText, fontFamily: 'Encode Sans Expanded')),
                   const SizedBox(height: 8),
                   Container(
                     width: double.infinity,
                     height: 214,
                     decoration: BoxDecoration(
-                      border: Border.all(color: borderGrey),
+                      color: surfaceBg,
+                      border: Border.all(color: borderColor),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     padding: const EdgeInsets.all(12),
                     child: TextField(
                       controller: _descController,
                       maxLines: 8,
-                      decoration: const InputDecoration(
+                      style: TextStyle(color: primaryText),
+                      decoration: InputDecoration(
                         hintText: 'Chi tiết về deadlines',
-                        hintStyle: TextStyle(color: borderGrey, fontSize: 15, fontFamily: 'Encode Sans Expanded'),
+                        hintStyle: TextStyle(color: secondaryText, fontSize: 15, fontFamily: 'Encode Sans Expanded'),
                         border: InputBorder.none,
                       ),
                     ),

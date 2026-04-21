@@ -14,6 +14,9 @@ class MySpaceFirebaseService {
   CollectionReference get _scheduleRef =>
       _db.collection('users').doc(userId).collection('schedule');
 
+  DocumentReference get _autoDeadlineConfigRef =>
+      _db.collection('users').doc(userId).collection('settings').doc('auto_deadline_config');
+
   // --- DEADLINES ---
   Future<void> saveDeadline(Deadline d) async {
     if (userId == null) return;
@@ -138,4 +141,25 @@ class MySpaceFirebaseService {
     debugPrint("Đã đồng bộ thành công ${localSchedule.length} môn học lên Firebase.");
   }
 
+  Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
+    if (userId == null) return;
+    await _autoDeadlineConfigRef.set(config.toMap(), SetOptions(merge: true));
+  }
+
+  Future<AutoDeadlineConfig?> getAutoDeadlineConfig() async {
+    if (userId == null) return null;
+    try {
+      final snapshot = await _autoDeadlineConfigRef.get();
+      if (!snapshot.exists) return null;
+      final data = snapshot.data() as Map<String, dynamic>?;
+      if (data == null) return null;
+      return AutoDeadlineConfig.fromMap(data);
+    } catch (e) {
+      debugPrint("Error fetching auto deadline config: $e");
+      return null;
+    }
+  }
+
 }
+
+
