@@ -98,6 +98,16 @@ flutter:
   - assets/icons/account.svg
   - assets/icons/home.svg
   - assets/images/rain_icon.png
+  - assets/images/announcement.jpg
+  - assets/images/contest.jpg
+  - assets/images/graduation.jpg
+  - assets/images/art.jpg
+  - assets/images/tech.jpg
+  - assets/images/sport.jpg
+  - assets/images/seminar.jpg
+  - assets/images/job.jpg
+  - assets/images/scholarship.png
+  - assets/images/health.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -53,7 +53,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
       String uid = FirebaseAuth.instance.currentUser!.uid;
       _emailController.text = FirebaseAuth.instance.currentUser?.email ?? "";
 
-      var doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      var doc =
+      await FirebaseFirestore.instance.collection('users').doc(uid).get();
       if (doc.exists) {
         var data = doc.data()!;
         setState(() {
@@ -74,7 +75,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+    await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() => _imageFile = File(pickedFile.path));
     }
@@ -82,7 +84,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _saveProfile() async {
     if (_nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Vui lòng nhập tên người dùng.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập tên người dùng.')),
+      );
       return;
     }
 
@@ -113,133 +117,131 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       if (mounted) {
         Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật hồ sơ thành công!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Lưu thất bại: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lưu thất bại: $e')),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new, color: isDarkMode ? Colors.white : Colors.black, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Chỉnh sửa hồ sơ',
-          style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black),
-        ),
-        centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF6797E1)))
-          : SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30),
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            // Avatar section
-            Stack(
-              alignment: Alignment.bottomRight,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: const Color(0xFF6797E1), width: 3),
-                  ),
-                  child: CircleAvatar(
-                    radius: 60,
-                    backgroundColor: isDarkMode ? Colors.white10 : Colors.grey[200],
-                    backgroundImage: _imageFile != null
-                        ? FileImage(_imageFile!) as ImageProvider
-                        : (_currentPhotoBase64 != null
-                        ? MemoryImage(base64Decode(_currentPhotoBase64!))
-                        : const AssetImage('assets/images/cat_avatar.jpg') as ImageProvider),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: const BoxDecoration(color: Color(0xFF6797E1), shape: BoxShape.circle),
-                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 20),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 40),
-
-            // Fields
-            _buildTextField(context, 'Tên người dùng', _nameController, hint: 'Thanh'),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-            _buildTextField(context, 'Email', _emailController, enabled: false),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-            _buildTextField(context, 'Số điện thoại', _phoneController, hint: '09xxxxxx'),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-            _buildTextField(context, 'Ngày sinh', _dobController, hint: '01-01-2004'),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-            _buildDropdownField(context, 'Khoa'),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-            _buildStaticField(context, 'Niên khóa', '2022 - 2026'),
-            Divider(height: 1, color: Theme.of(context).dividerColor),
-
-            const SizedBox(height: 60),
-
-            ElevatedButton(
-              onPressed: _saveProfile,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6797E1),
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 55),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-                elevation: 0,
-              ),
-              child: const Text('Lưu', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            const SizedBox(height: 30),
-          ],
+  Widget _buildSectionTitle(String title, bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4, bottom: 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.3,
+          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
         ),
       ),
     );
   }
 
-  Widget _buildTextField(BuildContext context, String label, TextEditingController controller,
-      {String? hint, bool enabled = true}) {
+  Widget _buildGroup({
+    required bool isDarkMode,
+    required List<Widget> children,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+        ),
+        boxShadow: isDarkMode
+            ? []
+            : [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(children: children),
+    );
+  }
+
+  Widget _buildDivider(bool isDarkMode) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 64),
+      child: Divider(
+        height: 1,
+        color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+      ),
+    );
+  }
+
+  Widget _buildTextFieldCard(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required TextEditingController controller,
+        String? hint,
+        bool enabled = true,
+        TextInputType? keyboardType,
+      }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
         children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: const Color(0xFF6797E1), size: 20),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
           ),
           Expanded(
             flex: 3,
             child: TextField(
               controller: controller,
               enabled: enabled,
+              keyboardType: keyboardType,
               textAlign: TextAlign.right,
               style: TextStyle(
-                  fontSize: 16,
-                  color: enabled ? (isDarkMode ? Colors.white : Colors.black) : Colors.grey
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 14,
+                color: enabled
+                    ? (isDarkMode ? Colors.white : Colors.black87)
+                    : (isDarkMode ? Colors.white38 : Colors.black38),
               ),
               decoration: InputDecoration(
                 hintText: hint,
-                hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black26),
+                hintStyle: TextStyle(
+                  color: isDarkMode ? Colors.white24 : Colors.black26,
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 14,
+                ),
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
+                isDense: true,
               ),
             ),
           ),
@@ -248,29 +250,83 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildStaticField(BuildContext context, String label, String value) {
+  Widget _buildStaticFieldCard(
+      BuildContext context, {
+        required IconData icon,
+        required String label,
+        required String value,
+      }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.grey, fontSize: 16)),
-          Text(value, style: const TextStyle(fontSize: 16)),
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: const Color(0xFF6797E1), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 14,
+              color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDropdownField(BuildContext context, String label) {
+  Widget _buildDropdownFieldCard(BuildContext context, String label) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       child: Row(
         children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.school_outlined,
+              color: Color(0xFF6797E1),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            flex: 1,
-            child: Text(label, style: const TextStyle(color: Colors.grey, fontSize: 16)),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode ? Colors.white : Colors.black87,
+              ),
+            ),
           ),
           Expanded(
             flex: 2,
@@ -278,24 +334,304 @@ class _EditProfilePageState extends State<EditProfilePage> {
               value: selectedFaculty,
               isExpanded: true,
               alignment: Alignment.centerRight,
-              // Quan trọng: Màu nền menu xổ xuống
               dropdownColor: isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
               decoration: const InputDecoration(border: InputBorder.none),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
-              hint: const Align(
-                  alignment: Alignment.centerRight,
-                  child: Text("Chọn khoa", style: TextStyle(color: Colors.black26, fontSize: 16))
+              icon: Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: isDarkMode ? Colors.white38 : Colors.grey,
               ),
-              items: faculties.map((f) => DropdownMenuItem(
+              hint: Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  "Chọn khoa",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white24 : Colors.black26,
+                    fontSize: 14,
+                    fontFamily: 'Encode Sans Expanded',
+                  ),
+                ),
+              ),
+              items: faculties
+                  .map(
+                    (f) => DropdownMenuItem(
                   value: f,
                   child: Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(f, style: const TextStyle(fontSize: 16))
-                  )
-              )).toList(),
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      f,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+                  .toList(),
               onChanged: (val) => setState(() => selectedFaculty = val),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  ImageProvider _buildAvatarProvider() {
+    if (_imageFile != null) {
+      return FileImage(_imageFile!);
+    }
+
+    if (_currentPhotoBase64 != null && _currentPhotoBase64!.isNotEmpty) {
+      try {
+        return MemoryImage(base64Decode(_currentPhotoBase64!));
+      } catch (_) {
+        return const AssetImage('assets/images/cat_avatar.jpg');
+      }
+    }
+
+    return const AssetImage('assets/images/cat_avatar.jpg');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Scaffold(
+      backgroundColor:
+      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: isDarkMode ? Colors.white : Colors.black,
+            size: 20,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Chỉnh sửa hồ sơ',
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
+        elevation: 0,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            height: 1,
+          ),
+        ),
+      ),
+      body: Stack(
+        children: [
+          IgnorePointer(
+            ignoring: _isLoading,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFE9EEF3),
+                      ),
+                      boxShadow: isDarkMode
+                          ? []
+                          : [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 18,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFF6797E1),
+                                  width: 3,
+                                ),
+                              ),
+                              child: CircleAvatar(
+                                radius: 56,
+                                backgroundColor: isDarkMode
+                                    ? Colors.white10
+                                    : Colors.grey[200],
+                                backgroundImage: _buildAvatarProvider(),
+                              ),
+                            ),
+                            Positioned(
+                              right: 0,
+                              bottom: 0,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(99),
+                                onTap: _pickImage,
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF6797E1),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_outlined,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          'Cập nhật thông tin cá nhân',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color:
+                            isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Điều chỉnh ảnh đại diện, thông tin liên hệ và khoa của bạn.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            height: 1.5,
+                            color: isDarkMode
+                                ? Colors.white60
+                                : const Color(0xFF667085),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  _buildSectionTitle('Thông tin cá nhân', isDarkMode),
+                  _buildGroup(
+                    isDarkMode: isDarkMode,
+                    children: [
+                      _buildTextFieldCard(
+                        context,
+                        icon: Icons.person_outline_rounded,
+                        label: 'Tên người dùng',
+                        controller: _nameController,
+                        hint: 'Thanh',
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildTextFieldCard(
+                        context,
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        controller: _emailController,
+                        enabled: false,
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildTextFieldCard(
+                        context,
+                        icon: Icons.phone_outlined,
+                        label: 'Số điện thoại',
+                        controller: _phoneController,
+                        hint: '09xxxxxx',
+                        keyboardType: TextInputType.phone,
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildTextFieldCard(
+                        context,
+                        icon: Icons.cake_outlined,
+                        label: 'Ngày sinh',
+                        controller: _dobController,
+                        hint: '01-01-2004',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  _buildSectionTitle('Học tập', isDarkMode),
+                  _buildGroup(
+                    isDarkMode: isDarkMode,
+                    children: [
+                      _buildDropdownFieldCard(context, 'Khoa'),
+                      _buildDivider(isDarkMode),
+                      _buildStaticFieldCard(
+                        context,
+                        icon: Icons.school_outlined,
+                        label: 'Niên khóa',
+                        value: '2022 - 2026',
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _saveProfile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6797E1),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 54),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        elevation: 0,
+                      ),
+                      icon: const Icon(Icons.save_outlined, size: 20),
+                      label: const Text(
+                        'Lưu thay đổi',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          if (_isLoading)
+            Container(
+              color: Colors.black.withOpacity(0.16),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF6797E1),
+                ),
+              ),
+            ),
         ],
       ),
     );

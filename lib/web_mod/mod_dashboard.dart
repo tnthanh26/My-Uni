@@ -16,9 +16,23 @@ class _ModDashboardState extends State<ModDashboard> {
   int _selectedCollIndex = 0;
   int _filterStatusIndex = 0;
 
-  final List<String> _collections = ['forum_posts', 'course_reviews', 'study_materials'];
-  final List<String> _collTitles = ['Diễn đàn sinh viên', 'Đánh giá môn học', 'Tài liệu học thuật'];
+  final List<String> _collections = [
+    'forum_posts',
+    'course_reviews',
+    'study_materials',
+    'official_news',
+  ];
+
+  final List<String> _collTitles = [
+    'Diễn đàn sinh viên',
+    'Đánh giá môn học',
+    'Tài liệu học thuật',
+    'Thông báo chính thức',
+  ];
+
   final List<String> _filterLabels = ['Chờ duyệt', 'Bị báo cáo', 'Tất cả bài viết'];
+
+  bool get _isOfficialNews => _collections[_selectedCollIndex] == 'official_news';
 
   @override
   Widget build(BuildContext context) {
@@ -39,12 +53,19 @@ class _ModDashboardState extends State<ModDashboard> {
                 const SizedBox(height: 10),
                 const Text(
                   "MYUNI MOD",
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 2, fontFamily: 'Nunito'),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    letterSpacing: 2,
+                    fontFamily: 'Nunito',
+                  ),
                 ),
                 const SizedBox(height: 40),
                 _buildMenuItem(0, Icons.forum_outlined, "Diễn đàn"),
                 _buildMenuItem(1, Icons.rate_review_outlined, "Đánh giá"),
                 _buildMenuItem(2, Icons.description_outlined, "Tài liệu"),
+                _buildMenuItem(3, Icons.campaign_outlined, "Thông báo chính thức"),
                 const Spacer(),
                 _buildUserAvatar(user),
               ],
@@ -63,16 +84,40 @@ class _ModDashboardState extends State<ModDashboard> {
                     children: [
                       Row(
                         children: [
-                          Text(_collTitles[_selectedCollIndex],
-                              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1A1F37), fontFamily: 'Nunito')),
+                          Text(
+                            _collTitles[_selectedCollIndex],
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF1A1F37),
+                              fontFamily: 'Nunito',
+                            ),
+                          ),
                           const Spacer(),
                           const Icon(Icons.notifications_none, color: Colors.grey),
                         ],
                       ),
                       const SizedBox(height: 20),
-                      Row(
-                        children: List.generate(_filterLabels.length, (index) => _buildFilterTab(index)),
-                      ),
+
+                      if (!_isOfficialNews)
+                        Row(
+                          children: List.generate(
+                            _filterLabels.length,
+                                (index) => _buildFilterTab(index),
+                          ),
+                        )
+                      else
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            "Quản lý trực tiếp các thông báo chính thức từ website trường",
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                              fontFamily: 'Nunito',
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -93,11 +138,17 @@ class _ModDashboardState extends State<ModDashboard> {
         margin: const EdgeInsets.only(right: 32),
         padding: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          border: isSelected ? const Border(bottom: BorderSide(color: Colors.blueAccent, width: 3)) : null,
+          border: isSelected
+              ? const Border(bottom: BorderSide(color: Colors.blueAccent, width: 3))
+              : null,
         ),
         child: Text(
           _filterLabels[index],
-          style: TextStyle(fontFamily: 'Nunito', color: isSelected ? Colors.blueAccent : Colors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            color: isSelected ? Colors.blueAccent : Colors.grey,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          ),
         ),
       ),
     );
@@ -121,7 +172,14 @@ class _ModDashboardState extends State<ModDashboard> {
           children: [
             Icon(icon, color: isSelected ? Colors.blueAccent : Colors.grey),
             const SizedBox(width: 15),
-            Text(title, style: TextStyle(fontFamily: 'Nunito', color: isSelected ? Colors.white : Colors.grey, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            Text(
+              title,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                color: isSelected ? Colors.white : Colors.grey,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
           ],
         ),
       ),
@@ -129,9 +187,44 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Widget _buildMainContent() {
+    if (_isOfficialNews) {
+      final query = FirebaseFirestore.instance
+          .collection('official_news')
+          .orderBy('timestamp', descending: true);
+
+      return StreamBuilder<QuerySnapshot>(
+        stream: query.snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint("🚨 [FIRESTORE ERROR - OFFICIAL NEWS]: ${snapshot.error}");
+            return _buildErrorState(snapshot.error.toString());
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+          if (docs.isEmpty) return _buildEmptyState(customText: "Không có thông báo chính thức nào!");
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(32),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final docId = docs[index].id;
+              return _buildOfficialNewsCard(docId, data);
+            },
+          );
+        },
+      );
+    }
+
     Query query = FirebaseFirestore.instance.collection(_collections[_selectedCollIndex]);
-    if (_filterStatusIndex == 0) query = query.where('status', isEqualTo: 'pending');
-    else if (_filterStatusIndex == 1) query = query.where('isReported', isEqualTo: true);
+    if (_filterStatusIndex == 0) {
+      query = query.where('status', isEqualTo: 'pending');
+    } else if (_filterStatusIndex == 1) {
+      query = query.where('isReported', isEqualTo: true);
+    }
 
     return StreamBuilder<QuerySnapshot>(
       stream: query.orderBy('updatedAt', descending: true).snapshots(),
@@ -140,7 +233,10 @@ class _ModDashboardState extends State<ModDashboard> {
           debugPrint("🚨 [FIRESTORE ERROR]: ${snapshot.error}");
           return _buildErrorState(snapshot.error.toString());
         }
-        if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) return _buildEmptyState();
 
@@ -154,6 +250,216 @@ class _ModDashboardState extends State<ModDashboard> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildOfficialNewsCard(String docId, Map<String, dynamic> data) {
+    final title = data['title'] ?? 'Không có tiêu đề';
+    final summary = data['summary'] ?? '';
+    final department = data['department'] ?? '';
+    final authorName = data['authorName'] ?? 'Official';
+    final authorId = data['authorId'] ?? '';
+    final authorAvatar = data['authorAvatar'] ?? '';
+    final date = data['date'] ?? '';
+    final link = data['link'] ?? '';
+    final likeCount = data['likeCount'] ?? 0;
+    final commentCount = data['commentCount'] ?? 0;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                authorAvatar.toString().trim().isNotEmpty
+                    ? CircleAvatar(
+                  backgroundImage: NetworkImage(authorAvatar),
+                  radius: 22,
+                )
+                    : const CircleAvatar(
+                  backgroundColor: Color(0xFFEAF2FF),
+                  radius: 22,
+                  child: Icon(Icons.campaign_outlined, color: Colors.blueAccent),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                      Text(
+                        authorId.isNotEmpty ? authorId : department,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 12,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.blueAccent.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    "OFFICIAL NEWS",
+                    style: TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A1F37),
+                fontSize: 20,
+                fontFamily: 'Nunito',
+              ),
+            ),
+            const SizedBox(height: 10),
+
+            if (department.toString().trim().isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.apartment, size: 16, color: Colors.blueGrey),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      department,
+                      style: const TextStyle(
+                        color: Colors.blueGrey,
+                        fontFamily: 'Nunito',
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            if (date.toString().trim().isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(
+                    date,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 13,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
+
+            Text(
+              summary,
+              style: const TextStyle(
+                fontSize: 15,
+                height: 1.5,
+                color: Color(0xFF4A4A4A),
+                fontFamily: 'Nunito',
+              ),
+            ),
+
+            if (link.toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.link, color: Colors.blueAccent, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: SelectableText(
+                        link,
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontSize: 13,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                _buildStatChip(Icons.favorite_border, "$likeCount lượt thích"),
+                const SizedBox(width: 10),
+                _buildStatChip(Icons.chat_bubble_outline, "$commentCount bình luận"),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                _buildActionButton(
+                  Icons.edit_outlined,
+                  "SỬA BÀI",
+                  Colors.orange,
+                      () => _handleEditOfficialNews(docId, data),
+                ),
+                const SizedBox(width: 12),
+                _buildActionButton(
+                  Icons.delete_sweep,
+                  "XÓA BÀI",
+                  Colors.redAccent,
+                      () => _handleDeleteOfficialNews(docId),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -230,7 +536,20 @@ class _ModDashboardState extends State<ModDashboard> {
             ],
 
             if (currentColl == 'forum_posts' && data['hashtags'] != null) ...[
-              Wrap(spacing: 8, children: (data['hashtags'] as List).map((t) => Text("#$t", style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'Nunito'))).toList()),
+              Wrap(
+                spacing: 8,
+                children: (data['hashtags'] as List)
+                    .map((t) => Text(
+                  "#$t",
+                  style: const TextStyle(
+                    color: Colors.blueAccent,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontFamily: 'Nunito',
+                  ),
+                ))
+                    .toList(),
+              ),
               const SizedBox(height: 10),
             ],
 
@@ -238,11 +557,27 @@ class _ModDashboardState extends State<ModDashboard> {
 
             if (data['imageUrl'] != null && data['imageUrl'] != '') ...[
               const SizedBox(height: 16),
-              ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(data['imageUrl']), width: double.infinity, height: 300, fit: BoxFit.cover)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  base64Decode(data['imageUrl']),
+                  width: double.infinity,
+                  height: 300,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ],
             if (data['isImage'] == true && data['fileData'] != null) ...[
               const SizedBox(height: 16),
-              ClipRRect(borderRadius: BorderRadius.circular(12), child: Image.memory(base64Decode(data['fileData']), width: double.infinity, height: 300, fit: BoxFit.cover)),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.memory(
+                  base64Decode(data['fileData']),
+                  width: double.infinity,
+                  height: 300,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ],
 
             const SizedBox(height: 24),
@@ -251,27 +586,30 @@ class _ModDashboardState extends State<ModDashboard> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // 1. Hiển thị nhãn nếu bài viết đã bị xử lý (Ẩn)
                 if (data['status'] == 'hidden')
                   Container(
                     margin: const EdgeInsets.only(right: 12),
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                        color: Colors.grey[200],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.redAccent.withOpacity(0.5))
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
                     ),
                     child: const Row(
                       children: [
                         Icon(Icons.visibility_off, color: Colors.redAccent, size: 16),
                         SizedBox(width: 8),
-                        Text("ĐÃ GỠ KHỎI HỆ THỐNG",
-                            style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12)),
+                        Text(
+                          "ĐÃ GỠ KHỎI HỆ THỐNG",
+                          style: TextStyle(
+                            color: Colors.redAccent,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-
-                // 2. Chỉ hiện các nút tương tác nếu bài viết CHƯA bị ẩn
                 if (data['status'] != 'hidden') ...[
                   if (isReported)
                     _buildActionButton(Icons.refresh, "HỦY BÁO CÁO", Colors.blueGrey, () => _handleDismissReport(docId, data)),
@@ -281,7 +619,6 @@ class _ModDashboardState extends State<ModDashboard> {
                   if (data['status'] == 'pending')
                     _buildActionButton(Icons.check_circle, "DUYỆT BÀI", Colors.green, () => _handleApprovePost(docId, data)),
                 ] else ...[
-                  // NẾU BÀI ĐÃ ẨN: Cho phép Mod khôi phục lại nếu cần
                   _buildActionButton(Icons.restore, "KHÔI PHỤC", Colors.teal, () => _handleRestorePost(docId, data)),
                 ],
               ],
@@ -291,7 +628,6 @@ class _ModDashboardState extends State<ModDashboard> {
       ),
     );
   }
-
 
   void _viewMaterial(Map<String, dynamic> data) {
     if (data['fileData'] == null) return;
@@ -317,14 +653,11 @@ class _ModDashboardState extends State<ModDashboard> {
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),
-
-          // NÚT TẢI FILE VỀ (Dành cho Web)
           ElevatedButton.icon(
             icon: const Icon(Icons.download, size: 18),
             label: const Text("TẢI XUỐNG"),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
             onPressed: () {
-              // Gọi class helper, Flutter sẽ tự biết lấy file nào tùy nền tảng
               FileHelper.downloadFile(base64str, fileName);
               Navigator.pop(ctx);
             },
@@ -335,8 +668,21 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Future<void> _handleApprovePost(String docId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance.collection(_collections[_selectedCollIndex]).doc(docId).update({'status': 'approved', 'updatedAt': FieldValue.serverTimestamp()});
-    _sendNotification(userId: data['authorId'], title: "Bài viết đã được duyệt", content: "Bài viết của bạn đã được phê duyệt thành công.", type: 'comment', postId: docId);
+    await FirebaseFirestore.instance
+        .collection(_collections[_selectedCollIndex])
+        .doc(docId)
+        .update({
+      'status': 'approved',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    _sendNotification(
+      userId: data['authorId'],
+      title: "Bài viết đã được duyệt",
+      content: "Bài viết của bạn đã được phê duyệt thành công.",
+      type: 'comment',
+      postId: docId,
+    );
   }
 
   Future<void> _handleDeletePost(String docId, Map<String, dynamic> data) async {
@@ -349,7 +695,10 @@ class _ModDashboardState extends State<ModDashboard> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text("Lý do xóa bài", style: TextStyle(fontWeight: FontWeight.bold)),
-          content: TextField(controller: reasonController, decoration: const InputDecoration(hintText: "Nhập lý do cụ thể gửi user...")),
+          content: TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(hintText: "Nhập lý do cụ thể gửi user..."),
+          ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
             TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xác nhận", style: TextStyle(color: Colors.red))),
@@ -357,12 +706,33 @@ class _ModDashboardState extends State<ModDashboard> {
         ),
       );
       if (confirm != true) return;
-      reason = reasonController.text.isEmpty ? "Nội dung không phù hợp với quy định của MyUni." : reasonController.text;
+      reason = reasonController.text.isEmpty
+          ? "Nội dung không phù hợp với quy định của MyUni."
+          : reasonController.text;
     }
 
-    await FirebaseFirestore.instance.collection(_collections[_selectedCollIndex]).doc(docId).update({'status': 'hidden', 'isReported': false, 'updatedAt': FieldValue.serverTimestamp()});
-    _sendNotification(userId: data['authorId'], title: "Bài viết bị gỡ bỏ", content: "Lý do: $reason", type: 'warning', postId: docId);
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo.")));
+    await FirebaseFirestore.instance
+        .collection(_collections[_selectedCollIndex])
+        .doc(docId)
+        .update({
+      'status': 'hidden',
+      'isReported': false,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+
+    _sendNotification(
+      userId: data['authorId'],
+      title: "Bài viết bị gỡ bỏ",
+      content: "Lý do: $reason",
+      type: 'warning',
+      postId: docId,
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo.")),
+      );
+    }
   }
 
   Future<void> _handleRestorePost(String docId, Map<String, dynamic> data) async {
@@ -370,7 +740,7 @@ class _ModDashboardState extends State<ModDashboard> {
         .collection(_collections[_selectedCollIndex])
         .doc(docId)
         .update({
-      'status': 'approved', // Chuyển về trạng thái đã duyệt
+      'status': 'approved',
       'updatedAt': FieldValue.serverTimestamp(),
     });
 
@@ -382,26 +752,174 @@ class _ModDashboardState extends State<ModDashboard> {
       postId: docId,
     );
 
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã khôi phục bài viết")));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã khôi phục bài viết")),
+      );
+    }
   }
 
   Future<void> _handleDismissReport(String docId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance.collection(_collections[_selectedCollIndex]).doc(docId).update({'isReported': false, 'reportCount': 0});
-  }
-
-  Future<void> _sendNotification({required String userId, required String title, required String content, required String type, required String postId}) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': userId, 'title': title, 'content': content, 'type': type, 'timestamp': FieldValue.serverTimestamp(), 'isRead': false, 'relatedPostId': postId, 'collectionPath': _collections[_selectedCollIndex],
+    await FirebaseFirestore.instance
+        .collection(_collections[_selectedCollIndex])
+        .doc(docId)
+        .update({
+      'isReported': false,
+      'reportCount': 0,
     });
   }
 
-  // --- UI HELPERS ---
+  Future<void> _handleEditOfficialNews(String docId, Map<String, dynamic> data) async {
+    final titleController = TextEditingController(text: data['title'] ?? '');
+    final summaryController = TextEditingController(text: data['summary'] ?? '');
+    final departmentController = TextEditingController(text: data['department'] ?? '');
+    final linkController = TextEditingController(text: data['link'] ?? '');
+    final dateController = TextEditingController(text: data['date'] ?? '');
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          "Chỉnh sửa thông báo",
+          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
+        ),
+        content: SizedBox(
+          width: 550,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: "Tiêu đề"),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: departmentController,
+                  decoration: const InputDecoration(labelText: "Phòng ban / đơn vị"),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: dateController,
+                  decoration: const InputDecoration(labelText: "Ngày hiển thị"),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: linkController,
+                  decoration: const InputDecoration(labelText: "Link bài viết"),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: summaryController,
+                  maxLines: 6,
+                  decoration: const InputDecoration(labelText: "Tóm tắt"),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Hủy"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text("Lưu", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    await FirebaseFirestore.instance.collection('official_news').doc(docId).update({
+      'title': titleController.text.trim(),
+      'summary': summaryController.text.trim(),
+      'department': departmentController.text.trim(),
+      'link': linkController.text.trim(),
+      'date': dateController.text.trim(),
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã cập nhật thông báo chính thức.")),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteOfficialNews(String docId) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          "Xóa thông báo?",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: const Text("Bài viết official news sẽ bị xóa khỏi Firebase. Không gửi thông báo cho user."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Hủy"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    await FirebaseFirestore.instance.collection('official_news').doc(docId).delete();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã xóa thông báo chính thức.")),
+      );
+    }
+  }
+
+  Future<void> _sendNotification({
+    required String userId,
+    required String title,
+    required String content,
+    required String type,
+    required String postId,
+  }) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': userId,
+      'title': title,
+      'content': content,
+      'type': type,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'relatedPostId': postId,
+      'collectionPath': _collections[_selectedCollIndex],
+    });
+  }
+
   Widget _buildToxicityBadge(double toxicity) {
-    Color toxicColor = toxicity > 0.5 ? Colors.redAccent : (toxicity > 0.2 ? Colors.orangeAccent : Colors.greenAccent);
+    Color toxicColor = toxicity > 0.5
+        ? Colors.redAccent
+        : (toxicity > 0.2 ? Colors.orangeAccent : Colors.greenAccent);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(color: toxicColor.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-      child: Text("Toxicity: ${toxicity.toStringAsFixed(2)}", style: TextStyle(color: toxicColor, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Nunito')),
+      decoration: BoxDecoration(
+        color: toxicColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        "Toxicity: ${toxicity.toStringAsFixed(2)}",
+        style: TextStyle(
+          color: toxicColor,
+          fontWeight: FontWeight.bold,
+          fontSize: 12,
+          fontFamily: 'Nunito',
+        ),
+      ),
     );
   }
 
@@ -410,27 +928,139 @@ class _ModDashboardState extends State<ModDashboard> {
       padding: const EdgeInsets.all(16.0),
       child: Container(
         padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: Colors.white.withOpacity(0.05), borderRadius: BorderRadius.circular(12)),
-        child: Row(children: [
-          const CircleAvatar(backgroundColor: Colors.blueAccent, child: Icon(Icons.person, color: Colors.white)),
-          const SizedBox(width: 10),
-          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(user?.displayName ?? "Moderator", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Nunito')),
-            Text(user?.email ?? "", style: const TextStyle(color: Colors.grey, fontSize: 10), overflow: TextOverflow.ellipsis),
-          ])),
-        ]),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.05),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.person, color: Colors.white),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user?.displayName ?? "Moderator",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                  Text(
+                    user?.email ?? "",
+                    style: const TextStyle(color: Colors.grey, fontSize: 10),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onPressed) {
     return ElevatedButton.icon(
-      onPressed: onPressed, icon: Icon(icon, size: 18), label: Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, fontFamily: 'Nunito')),
-      style: ElevatedButton.styleFrom(backgroundColor: color, foregroundColor: Colors.white, elevation: 0, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Nunito',
+        ),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        elevation: 0,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
     );
   }
 
-  Widget _buildEmptyState() => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.done_all_rounded, size: 80, color: Colors.green[100]), const SizedBox(height: 20), const Text("Không có bài viết cần xử lý!", style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500, fontFamily: 'Nunito'))]));
+  Widget _buildStatChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.blueGrey),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.blueGrey,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-  Widget _buildErrorState(String error) => Center(child: Padding(padding: const EdgeInsets.all(32), child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [const Icon(Icons.report_gmailerrorred_outlined, color: Colors.redAccent, size: 60), const SizedBox(height: 16), const Text("THIẾU CHỈ MỤC (INDEX)", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent, fontSize: 18)), const SizedBox(height: 20), Text(error, style: const TextStyle(fontSize: 11, color: Colors.black54), textAlign: TextAlign.center)])));
+  Widget _buildEmptyState({String text = "Không có bài viết cần xử lý!", String? customText}) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.done_all_rounded, size: 80, color: Colors.green[100]),
+          const SizedBox(height: 20),
+          Text(
+            customText ?? text,
+            style: const TextStyle(
+              fontSize: 18,
+              color: Colors.grey,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Nunito',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String error) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.report_gmailerrorred_outlined, color: Colors.redAccent, size: 60),
+            const SizedBox(height: 16),
+            const Text(
+              "THIẾU CHỈ MỤC (INDEX)",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.redAccent,
+                fontSize: 18,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              error,
+              style: const TextStyle(fontSize: 11, color: Colors.black54),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
