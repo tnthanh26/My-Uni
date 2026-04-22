@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'models/weather_models.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class WeatherAlertCard extends StatelessWidget {
   final WeatherAlertResult alert;
@@ -19,32 +20,39 @@ class WeatherAlertCard extends StatelessWidget {
       height: 92,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: style.gradientColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+        gradient: const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFC5D3DE),
+            Color(0xFF2D6D90),
+          ],
         ),
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
+        borderRadius: BorderRadius.circular(6),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.10),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Color.fromRGBO(0, 0, 0, 0.25),
+            offset: Offset(0, 4),
+            blurRadius: 4,
           ),
         ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            style.icon,
-            color: style.iconColor,
-            size: 26,
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: Image.asset(
+              'assets/images/rain_icon.png',
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   alert.title,
