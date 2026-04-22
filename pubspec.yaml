@@ -97,6 +97,7 @@ flutter:
   - assets/icons/space.svg
   - assets/icons/account.svg
   - assets/icons/home.svg
+  - assets/images/rain_icon.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

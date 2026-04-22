@@ -95,8 +95,8 @@ class WeatherAlertService {
       );
     }
 
-    return WeatherAlertResult.none();
-    /*
+    //return WeatherAlertResult.none();
+
     return WeatherAlertResult(
       shouldShow: true,
       level: WeatherAlertLevel.heavyRain,
@@ -105,7 +105,7 @@ class WeatherAlertService {
       classStart: schedule.startTime,
       classEnd: schedule.endTime,
     );
-     */
+
 
   }
 

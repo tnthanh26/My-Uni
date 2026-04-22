@@ -318,7 +318,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     bool includeAttachments = baseConfig.includeAttachments;
     bool permissionRequested = baseConfig.permissionRequested;
     bool permissionGranted = baseConfig.permissionGranted;
-    bool _showAdvancedOptions = false;
+    bool showAdvancedOptions = false;
 
     await showModalBottomSheet(
       context: context,
@@ -381,7 +381,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       SwitchListTile.adaptive(
                         value: isEnabled,
                         contentPadding: EdgeInsets.zero,
-                        activeColor: hcmusBlueAccent,
+                        activeThumbColor: hcmusBlueAccent,
                         title: const Text(
                           'Bật tự động cập nhật deadline',
                           style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
@@ -396,7 +396,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       _buildConfigLabel('Loại email cần đọc'),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
-                        value: provider,
+                        initialValue: provider,
                         decoration: _configInputDecoration('Chọn nhà cung cấp email'),
                         items: const [
                           DropdownMenuItem(value: 'gmail', child: Text('Gmail')),
@@ -438,12 +438,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                           'vd: deadline, assignment, quiz, submission, exam',
                         ),
                       ),
-                      */
+
                       const SizedBox(height: 10),
                       TextButton(
-                        onPressed: () => setModalState(() => _showAdvancedOptions = !_showAdvancedOptions),
+                        onPressed: () => setModalState(() => showAdvancedOptions = !showAdvancedOptions),
                         child: Text(
-                          _showAdvancedOptions ? 'Ẩn tùy chọn nâng cao' : 'Tùy chọn nâng cao',
+                          showAdvancedOptions ? 'Ẩn tùy chọn nâng cao' : 'Tùy chọn nâng cao',
                           style: TextStyle(
                             color: hcmusBlueAccent,
                             fontFamily: 'Poppins',
@@ -451,7 +451,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                           ),
                         ),
                       ),
-                      /*
+
                       if (_showAdvancedOptions) ...[
                         CheckboxListTile(
                           value: onlyUnread,
@@ -620,7 +620,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   void _showSuccessSnackBar(String title) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text("🎉 Chúc mừng Hoshi đã xong: $title"),
+        content: Text("Chúc mừng bạn đã xong: $title"),
         backgroundColor: hcmusTeal,
         duration: const Duration(seconds: 2),
       ),
@@ -761,13 +761,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      height: 92,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDarkMode
-              ? [const Color(0xFF40539B), const Color(0xFF74C98C)]
-              : [const Color(0xFF4C63D2), const Color(0xFF83E28D)],
+              ? [const Color(0xFF40539B).withValues(alpha: 0.9), const Color(0xFF74C98C)]
+              : [const Color(0xFF042788).withValues(alpha: 0.9), const Color(0xFF439472).withValues(alpha: 0.7)],
         ),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(6),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.12),
@@ -781,10 +782,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 2),
-            child: Text(
-              '🎉',
-              style: TextStyle(fontSize: 20),
-            ),
+            child: Icon(Icons.celebration, color: Colors.orangeAccent, size: 20),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -803,7 +801,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                     text: '$todayClassesCount lớp học',
                     style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
-                  const TextSpan(text: ' và\n'),
+                  const TextSpan(text: ' và '),
                   TextSpan(
                     text: '$activeDeadlinesCount deadline',
                     style: const TextStyle(fontWeight: FontWeight.w800),
