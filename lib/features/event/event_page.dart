@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'discover_event_tab.dart';
-import 'my_event_tab.dart';
-import 'create_personal_event_page.dart';
 import 'create_community_event_page.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
+import 'my_event_tab.dart';
+import 'create_personal_event_page.dart';
 
 class EventPage extends StatefulWidget {
   const EventPage({super.key});
@@ -170,7 +169,6 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                                 ),
                               ],
                             ),
-                            // --- CỤM TIỆN ÍCH THÔNG BÁO MỚI ---
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
@@ -253,8 +251,8 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                       fontSize: 13,
                     ),
                     tabs: const [
-                      Tab(text: 'Sự kiện của tôi'),
-                      Tab(text: 'Khám phá'),
+                      Tab(text: 'Cá nhân'),
+                      Tab(text: 'Cộng đồng'),
                     ],
                   ),
                 ),
@@ -265,8 +263,8 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
         body: TabBarView(
           controller: _tabController,
           children: const [
-            MyEventTab(),
-            DiscoverEventTab(),
+            MyEventTab(mode: EventTabMode.personal),
+            MyEventTab(mode: EventTabMode.community),
           ],
         ),
       ),

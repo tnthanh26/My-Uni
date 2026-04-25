@@ -5,12 +5,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_uni/models/event_model.dart';
-
 import 'create_personal_event_page.dart';
 import 'interested_event_tab.dart';
+import 'discover_event_tab.dart';
+
+enum EventTabMode {
+  personal,
+  community,
+}
 
 class MyEventTab extends StatefulWidget {
-  const MyEventTab({super.key});
+  final EventTabMode mode;
+
+  const MyEventTab({
+    super.key,
+    this.mode = EventTabMode.personal,
+  });
 
   @override
   State<MyEventTab> createState() => _MyEventTabState();
@@ -24,7 +34,6 @@ class _MyEventTabState extends State<MyEventTab>
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay = DateTime.now();
   String _listFilter = 'Gần nhất';
-  String _activeSubTab = 'Cá nhân';
 
   Timer? _refreshTimer;
 
@@ -353,54 +362,56 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildSubTabToggle(bool isDarkMode) {
-    return Container(
-      width: 190,
-      height: 42,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: _secondarySurfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _borderColor(isDarkMode)),
-      ),
-      child: Row(
-        children: [
-          _buildToggleItem('Cá nhân', isDarkMode),
-          _buildToggleItem('Quan tâm', isDarkMode),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildToggleItem(String label, bool isDarkMode) {
-    final isSelected = _activeSubTab == label;
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => setState(() => _activeSubTab = label),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeInOut,
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDarkMode ? const Color(0xFF323232) : Colors.white)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-            boxShadow: isSelected ? _cardShadow(isDarkMode) : [],
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-              color: isSelected
-                  ? figmaSelectionBlue
-                  : _secondaryTextColor(isDarkMode),
+  Widget _buildCommunityTab(bool isDarkMode) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+          child: SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(
+                        title: const Text("Sự kiện Cộng đồng mới", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        backgroundColor: const Color(0xFF6797E1),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                      ),
+                      body: const DiscoverEventTab(
+                        useNestedScrollOverlap: false,
+                      ),
+                    ),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.explore_rounded, size: 20),
+              label: const Text(
+                'Khám phá sự kiện cộng đồng',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: figmaSelectionBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        const Expanded(
+          child: InterestedEventTab(),
+        ),
+      ],
     );
   }
 
@@ -417,13 +428,9 @@ class _MyEventTabState extends State<MyEventTab>
       body: Column(
         children: [
           SizedBox(height: MediaQuery.of(context).padding.top + 100),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Center(child: _buildSubTabToggle(isDarkMode)),
-          ),
           Expanded(
-            child: _activeSubTab == 'Quan tâm'
-                ? const InterestedEventTab()
+            child: widget.mode == EventTabMode.community
+                ? _buildCommunityTab(isDarkMode)
                 : StreamBuilder<List<EventModel>>(
               stream: _getEventsStream(),
               builder: (context, snapshot) {
