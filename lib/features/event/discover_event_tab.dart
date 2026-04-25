@@ -3,7 +3,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class DiscoverEventTab extends StatelessWidget {
-  const DiscoverEventTab({super.key});
+  final bool useNestedScrollOverlap;
+
+  const DiscoverEventTab({
+    super.key,
+    this.useNestedScrollOverlap = true,
+  });
 
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color detailBlue = Color(0xFF5794F3);
@@ -27,6 +32,20 @@ class DiscoverEventTab extends StatelessWidget {
     "${title.toString()} ${summary.toString()}".toLowerCase();
 
     return keywords.any((k) => content.contains(k));
+  }
+
+  List<Widget> _buildOverlapSliver(BuildContext context) {
+    if (!useNestedScrollOverlap) {
+      return const [
+        SliverToBoxAdapter(child: SizedBox(height: 12)),
+      ];
+    }
+
+    return [
+      SliverOverlapInjector(
+        handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
+      ),
+    ];
   }
 
   Future<void> _toggleInterest(
@@ -141,10 +160,7 @@ class DiscoverEventTab extends StatelessWidget {
           if (eventDocs.isEmpty) {
             return CustomScrollView(
               slivers: [
-                SliverOverlapInjector(
-                  handle:
-                  NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-                ),
+                ..._buildOverlapSliver(context),
                 SliverFillRemaining(
                   hasScrollBody: false,
                   child: Center(
@@ -160,10 +176,7 @@ class DiscoverEventTab extends StatelessWidget {
 
           return CustomScrollView(
             slivers: [
-              SliverOverlapInjector(
-                handle:
-                NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-              ),
+              ..._buildOverlapSliver(context),
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
                 sliver: SliverList(
