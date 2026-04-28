@@ -21,6 +21,7 @@ class _ModDashboardState extends State<ModDashboard> {
     'course_reviews',
     'study_materials',
     'official_news',
+    'users',
   ];
 
   final List<String> _collTitles = [
@@ -28,11 +29,13 @@ class _ModDashboardState extends State<ModDashboard> {
     'Đánh giá môn học',
     'Tài liệu học thuật',
     'Thông báo chính thức',
+    'Quản lý người dùng',
   ];
 
   final List<String> _filterLabels = ['Chờ duyệt', 'Bị báo cáo', 'Tất cả bài viết'];
 
   bool get _isOfficialNews => _collections[_selectedCollIndex] == 'official_news';
+  bool get _isUsers => _collections[_selectedCollIndex] == 'users';
 
   @override
   Widget build(BuildContext context) {
@@ -62,10 +65,15 @@ class _ModDashboardState extends State<ModDashboard> {
                   ),
                 ),
                 const SizedBox(height: 40),
+                _buildSidebarSectionTitle("NỘI DUNG"),
                 _buildMenuItem(0, Icons.forum_outlined, "Diễn đàn"),
                 _buildMenuItem(1, Icons.rate_review_outlined, "Đánh giá"),
                 _buildMenuItem(2, Icons.description_outlined, "Tài liệu"),
                 _buildMenuItem(3, Icons.campaign_outlined, "Thông báo chính thức"),
+
+                const SizedBox(height: 18),
+                _buildSidebarSectionTitle("QUẢN TRỊ"),
+                _buildMenuItem(4, Icons.people_alt_outlined, "Người dùng"),
                 const Spacer(),
                 _buildUserAvatar(user),
               ],
@@ -99,18 +107,30 @@ class _ModDashboardState extends State<ModDashboard> {
                       ),
                       const SizedBox(height: 20),
 
-                      if (!_isOfficialNews)
+                      if (!_isOfficialNews && !_isUsers)
                         Row(
                           children: List.generate(
                             _filterLabels.length,
                                 (index) => _buildFilterTab(index),
                           ),
                         )
-                      else
+                      else if (_isOfficialNews)
                         const Padding(
                           padding: EdgeInsets.only(bottom: 12),
                           child: Text(
                             "Quản lý trực tiếp các thông báo chính thức từ website trường",
+                            style: TextStyle(
+                              color: Colors.grey,
+                              fontSize: 13,
+                              fontFamily: 'Nunito',
+                            ),
+                          ),
+                        )
+                      else
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                            child: Text(
+                              "Quản lý trạng thái tài khoản người dùng trong hệ thống",
                             style: TextStyle(
                               color: Colors.grey,
                               fontSize: 13,
@@ -154,6 +174,25 @@ class _ModDashboardState extends State<ModDashboard> {
     );
   }
 
+  Widget _buildSidebarSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(32, 16, 16, 8),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Text(
+          title,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.45),
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.2,
+            fontFamily: 'Nunito',
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuItem(int index, IconData icon, String title) {
     bool isSelected = _selectedCollIndex == index;
     return InkWell(
@@ -187,6 +226,42 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Widget _buildMainContent() {
+    if (_isUsers) {
+      final query = FirebaseFirestore.instance
+          .collection('users')
+          .orderBy('lastUpdated', descending: true);
+
+      return StreamBuilder<QuerySnapshot>(
+        stream: query.snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            debugPrint("🚨 [FIRESTORE ERROR - USERS]: ${snapshot.error}");
+            return _buildErrorState(snapshot.error.toString());
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final docs = snapshot.data?.docs ?? [];
+
+          if (docs.isEmpty) {
+            return _buildEmptyState(customText: "Chưa có người dùng nào!");
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(32),
+            itemCount: docs.length,
+            itemBuilder: (context, index) {
+              final data = docs[index].data() as Map<String, dynamic>;
+              final uid = docs[index].id;
+              return _buildUserCard(uid, data);
+            },
+          );
+        },
+      );
+    }
+
     if (_isOfficialNews) {
       final query = FirebaseFirestore.instance
           .collection('official_news')
@@ -250,6 +325,180 @@ class _ModDashboardState extends State<ModDashboard> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildUserInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF5F7FA),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.blueGrey),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.blueGrey,
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUserCard(String uid, Map<String, dynamic> data) {
+    final displayName = data['displayName'] ?? 'Chưa có tên';
+    final email = data['email'] ?? '';
+    final university = data['university'] ?? 'Chưa có trường';
+    final faculty = data['faculty'] ?? 'Chưa có khoa';
+    final phone = data['phone'] ?? '';
+    final photoUrl = data['photoUrl'] ?? '';
+    final status = data['status'] ?? 'active';
+
+    Color statusColor;
+    String statusText;
+
+    switch (status) {
+      case 'suspended':
+        statusColor = Colors.orange;
+        statusText = 'Đang bị khóa';
+        break;
+      default:
+        statusColor = Colors.green;
+        statusText = 'Đang hoạt động';
+    }
+
+    ImageProvider? avatarProvider;
+
+    if (photoUrl.toString().trim().isNotEmpty) {
+      try {
+        avatarProvider = MemoryImage(base64Decode(photoUrl));
+      } catch (_) {
+        avatarProvider = null;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 26,
+                  backgroundColor: const Color(0xFFEAF2FF),
+                  backgroundImage: avatarProvider,
+                  child: avatarProvider == null
+                      ? const Icon(Icons.person_outline, color: Colors.blueAccent)
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A1F37),
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        email,
+                        style: TextStyle(
+                          color: Colors.grey[600],
+                          fontSize: 13,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      fontFamily: 'Nunito',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 18),
+
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                _buildUserInfoChip(Icons.school_outlined, university),
+                _buildUserInfoChip(Icons.apartment_outlined, faculty),
+                if (phone.toString().trim().isNotEmpty)
+                  _buildUserInfoChip(Icons.phone_outlined, phone),
+              ],
+            ),
+
+            const SizedBox(height: 22),
+            const Divider(),
+            const SizedBox(height: 12),
+
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (status == 'active') ...[
+                  _buildActionButton(
+                    Icons.lock_outline,
+                    "KHÓA TÀI KHOẢN",
+                    Colors.orange,
+                        () => _handleSuspendUser(uid, data),
+                  ),
+                ] else ...[
+                  _buildActionButton(
+                    Icons.lock_open_outlined,
+                    "MỞ KHÓA",
+                    Colors.green,
+                        () => _handleRestoreUser(uid, data),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -667,6 +916,91 @@ class _ModDashboardState extends State<ModDashboard> {
     );
   }
 
+  Future<void> _handleSuspendUser(String uid, Map<String, dynamic> data) async {
+    final TextEditingController reasonController = TextEditingController();
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text(
+          "Khóa tài khoản?",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: TextField(
+          controller: reasonController,
+          decoration: const InputDecoration(
+            hintText: "Nhập lý do khóa tài khoản...",
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Hủy"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              "Khóa",
+              style: TextStyle(color: Colors.orange),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    final reason = reasonController.text.trim().isEmpty
+        ? "Tài khoản vi phạm quy định cộng đồng MyUni."
+        : reasonController.text.trim();
+
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'status': 'suspended',
+      'isBanned': true,
+      'banReason': reason,
+      'bannedAt': FieldValue.serverTimestamp(),
+      'bannedBy': FirebaseAuth.instance.currentUser?.uid,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await _sendUserNotification(
+      userId: uid,
+      title: "Tài khoản của bạn đã bị khóa",
+      content: "Lý do: $reason",
+      type: "account_suspended",
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã khóa tài khoản người dùng.")),
+      );
+    }
+  }
+
+  Future<void> _handleRestoreUser(String uid, Map<String, dynamic> data) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'status': 'active',
+      'isBanned': false,
+      'banReason': '',
+      'restoredAt': FieldValue.serverTimestamp(),
+      'restoredBy': FirebaseAuth.instance.currentUser?.uid,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await _sendUserNotification(
+      userId: uid,
+      title: "Tài khoản của bạn đã được khôi phục",
+      content: "Bạn có thể tiếp tục sử dụng MyUni bình thường.",
+      type: "account_restored",
+    );
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã khôi phục tài khoản người dùng.")),
+      );
+    }
+  }
+
   Future<void> _handleApprovePost(String docId, Map<String, dynamic> data) async {
     await FirebaseFirestore.instance
         .collection(_collections[_selectedCollIndex])
@@ -880,6 +1214,24 @@ class _ModDashboardState extends State<ModDashboard> {
         const SnackBar(content: Text("Đã xóa thông báo chính thức.")),
       );
     }
+  }
+
+  Future<void> _sendUserNotification({
+    required String userId,
+    required String title,
+    required String content,
+    required String type,
+  }) async {
+    await FirebaseFirestore.instance.collection('notifications').add({
+      'userId': userId,
+      'title': title,
+      'content': content,
+      'type': type,
+      'timestamp': FieldValue.serverTimestamp(),
+      'isRead': false,
+      'relatedPostId': null,
+      'collectionPath': 'users',
+    });
   }
 
   Future<void> _sendNotification({

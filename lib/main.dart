@@ -18,6 +18,8 @@ import 'package:my_uni/web_mod/mod_dashboard.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:my_uni/web_mod/mod_login_page.dart';
+import 'package:my_uni/features/credential/user_status_gate.dart';
+import 'package:my_uni/features/credential/blocked_account_page.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   late final StreamSubscription<dynamic> _subscription;
@@ -116,7 +118,11 @@ class MyUniApp extends StatelessWidget {
         '/signup': (context) => const SignUpPage(),
         '/otp': (context) => const OtpPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
-        '/home': (context) => const HomePage(),
+        '/blocked': (context) => const BlockedAccountPage(),
+        '/home': (context) => const UserStatusGate(
+          child: HomePage(),
+        ),
+
       },
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
