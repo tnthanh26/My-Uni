@@ -40,12 +40,29 @@ class _OtpPageState extends State<OtpPage> {
       );
 
       // Lưu thông tin vào Firestore
-      await FirebaseFirestore.instance.collection('users').doc(userCredential.user!.uid).set({
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
         'displayName': "${userData['firstName']} ${userData['lastName']}",
+        'firstName': userData['firstName'],
+        'lastName': userData['lastName'],
         'email': email,
-        'faculty': userData['university'],
+        'university': userData['university'],
+
+        // field chưa có thì để rỗng/null để EditProfilePage cập nhật sau
+        'faculty': null,
+        'phone': '',
+        'dob': '',
+        'photoUrl': '',
+
+        // field hệ thống
+        'status': 'active',
+        'isBanned': false,
+        'role': 'student',
         'isVerified': true,
         'createdAt': FieldValue.serverTimestamp(),
+        'lastUpdated': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
