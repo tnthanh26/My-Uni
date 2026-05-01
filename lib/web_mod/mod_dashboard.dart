@@ -1,6 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'widgets/mod_empty_state.dart';
+import 'widgets/mod_error_state.dart';
+import 'widgets/user_card.dart';
+import 'widgets/post_card.dart';
+import 'widgets/official_news_card.dart';
+import 'widgets/user_activity_dialog.dart';
+import 'services/mod_notification_service.dart';
+import 'services/user_moderation_service.dart';
+import 'services/user_activity_service.dart';
+import 'services/post_moderation_service.dart';
 import 'dart:convert';
 import 'file_helper_stub.dart'
 if (dart.library.html) 'file_helper_web.dart';
@@ -15,6 +25,7 @@ class ModDashboard extends StatefulWidget {
 class _ModDashboardState extends State<ModDashboard> {
   int _selectedCollIndex = 0;
   int _filterStatusIndex = 0;
+  String _userSearchKeyword = '';
 
   final List<String> _collections = [
     'forum_posts',
@@ -75,12 +86,11 @@ class _ModDashboardState extends State<ModDashboard> {
                 _buildSidebarSectionTitle("QUẢN TRỊ"),
                 _buildMenuItem(4, Icons.people_alt_outlined, "Người dùng"),
                 const Spacer(),
-                _buildUserAvatar(user),
+                _buildModAvatar(user),
               ],
             ),
           ),
 
-          // --- MAIN CONTENT ---
           Expanded(
             child: Column(
               children: [
@@ -127,17 +137,40 @@ class _ModDashboardState extends State<ModDashboard> {
                           ),
                         )
                       else
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: 12),
-                            child: Text(
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
                               "Quản lý trạng thái tài khoản người dùng trong hệ thống",
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                              fontFamily: 'Nunito',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 13,
+                                fontFamily: 'Nunito',
+                              ),
                             ),
-                          ),
-                        ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: 420,
+                              child: TextField(
+                                onChanged: (value) {
+                                  setState(() => _userSearchKeyword = value);
+                                },
+                                decoration: InputDecoration(
+                                  hintText: "Tìm theo tên hoặc email...",
+                                  prefixIcon: const Icon(Icons.search),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF5F7FA),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                        )
                     ],
                   ),
                 ),
@@ -235,7 +268,6 @@ class _ModDashboardState extends State<ModDashboard> {
         stream: query.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            debugPrint("🚨 [FIRESTORE ERROR - USERS]: ${snapshot.error}");
             return _buildErrorState(snapshot.error.toString());
           }
 
@@ -243,7 +275,18 @@ class _ModDashboardState extends State<ModDashboard> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final docs = snapshot.data?.docs ?? [];
+          final allDocs = snapshot.data?.docs ?? [];
+
+          final keyword = _userSearchKeyword.trim().toLowerCase();
+
+          final docs = keyword.isEmpty
+              ? allDocs
+              : allDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            final name = (data['displayName'] ?? '').toString().toLowerCase();
+            final email = (data['email'] ?? '').toString().toLowerCase();
+            return name.contains(keyword) || email.contains(keyword);
+          }).toList();
 
           if (docs.isEmpty) {
             return _buildEmptyState(customText: "Chưa có người dùng nào!");
@@ -271,7 +314,6 @@ class _ModDashboardState extends State<ModDashboard> {
         stream: query.snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            debugPrint("🚨 [FIRESTORE ERROR - OFFICIAL NEWS]: ${snapshot.error}");
             return _buildErrorState(snapshot.error.toString());
           }
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -287,7 +329,12 @@ class _ModDashboardState extends State<ModDashboard> {
             itemBuilder: (context, index) {
               final data = docs[index].data() as Map<String, dynamic>;
               final docId = docs[index].id;
-              return _buildOfficialNewsCard(docId, data);
+              return OfficialNewsCard(
+                docId: docId,
+                data: data,
+                onEdit: () => _handleEditOfficialNews(docId, data),
+                onDelete: () => _handleDeleteOfficialNews(docId),
+              );
             },
           );
         },
@@ -305,7 +352,6 @@ class _ModDashboardState extends State<ModDashboard> {
       stream: query.orderBy('updatedAt', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          debugPrint("🚨 [FIRESTORE ERROR]: ${snapshot.error}");
           return _buildErrorState(snapshot.error.toString());
         }
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -321,560 +367,29 @@ class _ModDashboardState extends State<ModDashboard> {
           itemBuilder: (context, index) {
             final data = docs[index].data() as Map<String, dynamic>;
             final docId = docs[index].id;
-            return _buildPostCard(docId, data);
+            return PostCard(
+              docId: docId,
+              data: data,
+              collection: _collections[_selectedCollIndex],
+              onApprove: () => _handleApprovePost(docId, data),
+              onDelete: () => _handleDeletePost(docId, data),
+              onRestore: () => _handleRestorePost(docId, data),
+              onDismissReport: () => _handleDismissReport(docId, data),
+              onViewMaterial: () => _viewMaterial(data),
+            );
           },
         );
       },
     );
   }
 
-  Widget _buildUserInfoChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Colors.blueGrey),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.blueGrey,
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildUserCard(String uid, Map<String, dynamic> data) {
-    final displayName = data['displayName'] ?? 'Chưa có tên';
-    final email = data['email'] ?? '';
-    final university = data['university'] ?? 'Chưa có trường';
-    final faculty = data['faculty'] ?? 'Chưa có khoa';
-    final phone = data['phone'] ?? '';
-    final photoUrl = data['photoUrl'] ?? '';
-    final status = data['status'] ?? 'active';
-
-    Color statusColor;
-    String statusText;
-
-    switch (status) {
-      case 'suspended':
-        statusColor = Colors.orange;
-        statusText = 'Đang bị khóa';
-        break;
-      default:
-        statusColor = Colors.green;
-        statusText = 'Đang hoạt động';
-    }
-
-    ImageProvider? avatarProvider;
-
-    if (photoUrl.toString().trim().isNotEmpty) {
-      try {
-        avatarProvider = MemoryImage(base64Decode(photoUrl));
-      } catch (_) {
-        avatarProvider = null;
-      }
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 26,
-                  backgroundColor: const Color(0xFFEAF2FF),
-                  backgroundImage: avatarProvider,
-                  child: avatarProvider == null
-                      ? const Icon(Icons.person_outline, color: Colors.blueAccent)
-                      : null,
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        displayName,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A1F37),
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        email,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 13,
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 18),
-
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _buildUserInfoChip(Icons.school_outlined, university),
-                _buildUserInfoChip(Icons.apartment_outlined, faculty),
-                if (phone.toString().trim().isNotEmpty)
-                  _buildUserInfoChip(Icons.phone_outlined, phone),
-              ],
-            ),
-
-            const SizedBox(height: 22),
-            const Divider(),
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (status == 'active') ...[
-                  _buildActionButton(
-                    Icons.lock_outline,
-                    "KHÓA TÀI KHOẢN",
-                    Colors.orange,
-                        () => _handleSuspendUser(uid, data),
-                  ),
-                ] else ...[
-                  _buildActionButton(
-                    Icons.lock_open_outlined,
-                    "MỞ KHÓA",
-                    Colors.green,
-                        () => _handleRestoreUser(uid, data),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildOfficialNewsCard(String docId, Map<String, dynamic> data) {
-    final title = data['title'] ?? 'Không có tiêu đề';
-    final summary = data['summary'] ?? '';
-    final department = data['department'] ?? '';
-    final authorName = data['authorName'] ?? 'Official';
-    final authorId = data['authorId'] ?? '';
-    final authorAvatar = data['authorAvatar'] ?? '';
-    final date = data['date'] ?? '';
-    final link = data['link'] ?? '';
-    final likeCount = data['likeCount'] ?? 0;
-    final commentCount = data['commentCount'] ?? 0;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                authorAvatar.toString().trim().isNotEmpty
-                    ? CircleAvatar(
-                  backgroundImage: NetworkImage(authorAvatar),
-                  radius: 22,
-                )
-                    : const CircleAvatar(
-                  backgroundColor: Color(0xFFEAF2FF),
-                  radius: 22,
-                  child: Icon(Icons.campaign_outlined, color: Colors.blueAccent),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        authorName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                      Text(
-                        authorId.isNotEmpty ? authorId : department,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.blueAccent.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "OFFICIAL NEWS",
-                    style: TextStyle(
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF1A1F37),
-                fontSize: 20,
-                fontFamily: 'Nunito',
-              ),
-            ),
-            const SizedBox(height: 10),
-
-            if (department.toString().trim().isNotEmpty) ...[
-              Row(
-                children: [
-                  const Icon(Icons.apartment, size: 16, color: Colors.blueGrey),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      department,
-                      style: const TextStyle(
-                        color: Colors.blueGrey,
-                        fontFamily: 'Nunito',
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ],
-
-            if (date.toString().trim().isNotEmpty) ...[
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Text(
-                    date,
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            Text(
-              summary,
-              style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
-                color: Color(0xFF4A4A4A),
-                fontFamily: 'Nunito',
-              ),
-            ),
-
-            if (link.toString().trim().isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.link, color: Colors.blueAccent, size: 18),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: SelectableText(
-                        link,
-                        style: const TextStyle(
-                          color: Colors.blueAccent,
-                          fontSize: 13,
-                          fontFamily: 'Nunito',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 18),
-            Row(
-              children: [
-                _buildStatChip(Icons.favorite_border, "$likeCount lượt thích"),
-                const SizedBox(width: 10),
-                _buildStatChip(Icons.chat_bubble_outline, "$commentCount bình luận"),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 12),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _buildActionButton(
-                  Icons.edit_outlined,
-                  "SỬA BÀI",
-                  Colors.orange,
-                      () => _handleEditOfficialNews(docId, data),
-                ),
-                const SizedBox(width: 12),
-                _buildActionButton(
-                  Icons.delete_sweep,
-                  "XÓA BÀI",
-                  Colors.redAccent,
-                      () => _handleDeleteOfficialNews(docId),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPostCard(String docId, Map<String, dynamic> data) {
-    double toxicity = (data['toxicityScore'] ?? 0).toDouble();
-    bool isReported = data['isReported'] ?? false;
-    int reportCount = data['reportCount'] ?? 0;
-    String currentColl = _collections[_selectedCollIndex];
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const CircleAvatar(backgroundColor: Color(0xFFF0F2F5), child: Icon(Icons.person_outline, color: Colors.grey)),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(data['authorName'] ?? "Ẩn danh", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, fontFamily: 'Nunito')),
-                    Text(data['timestamp']?.toDate().toString().substring(0, 16) ?? "", style: TextStyle(color: Colors.grey[500], fontSize: 12)),
-                  ],
-                ),
-                const Spacer(),
-                if (isReported)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(color: Colors.redAccent.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
-                    child: Text("Báo cáo: $reportCount", style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold, fontSize: 12, fontFamily: 'Nunito')),
-                  ),
-                _buildToxicityBadge(toxicity),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            if (currentColl == 'course_reviews') ...[
-              Text("Môn học: ${data['courseName']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent, fontSize: 17, fontFamily: 'Nunito')),
-              Text("Giảng viên: ${data['teacherName'] ?? 'N/A'}", style: const TextStyle(color: Colors.blueGrey, fontFamily: 'Nunito')),
-              const SizedBox(height: 8),
-              Row(children: List.generate(5, (i) => Icon(i < (data['rating'] ?? 0) ? Icons.star : Icons.star_border, color: Colors.amber, size: 24))),
-              const SizedBox(height: 12),
-            ],
-
-            if (currentColl == 'study_materials') ...[
-              Text("Tài liệu: ${data['courseName']}", style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blueAccent, fontSize: 17, fontFamily: 'Nunito')),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  children: [
-                    const Icon(Icons.attach_file, color: Colors.blueGrey),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(data['fileName'] ?? "Chưa rõ tên file", style: const TextStyle(fontStyle: FontStyle.italic, fontFamily: 'Nunito'))),
-                    ElevatedButton(
-                      onPressed: () => _viewMaterial(data),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.blueGrey),
-                      child: const Text("XEM FILE", style: TextStyle(color: Colors.white, fontSize: 11)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            if (currentColl == 'forum_posts' && data['hashtags'] != null) ...[
-              Wrap(
-                spacing: 8,
-                children: (data['hashtags'] as List)
-                    .map((t) => Text(
-                  "#$t",
-                  style: const TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    fontFamily: 'Nunito',
-                  ),
-                ))
-                    .toList(),
-              ),
-              const SizedBox(height: 10),
-            ],
-
-            Text(data['content'] ?? "", style: const TextStyle(fontSize: 15, height: 1.5, color: Color(0xFF4A4A4A), fontFamily: 'Nunito')),
-
-            if (data['imageUrl'] != null && data['imageUrl'] != '') ...[
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  base64Decode(data['imageUrl']),
-                  width: double.infinity,
-                  height: 300,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-            if (data['isImage'] == true && data['fileData'] != null) ...[
-              const SizedBox(height: 16),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.memory(
-                  base64Decode(data['fileData']),
-                  width: double.infinity,
-                  height: 300,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ],
-
-            const SizedBox(height: 24),
-            const Divider(),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (data['status'] == 'hidden')
-                  Container(
-                    margin: const EdgeInsets.only(right: 12),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.redAccent.withOpacity(0.5)),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.visibility_off, color: Colors.redAccent, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          "ĐÃ GỠ KHỎI HỆ THỐNG",
-                          style: TextStyle(
-                            color: Colors.redAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (data['status'] != 'hidden') ...[
-                  if (isReported)
-                    _buildActionButton(Icons.refresh, "HỦY BÁO CÁO", Colors.blueGrey, () => _handleDismissReport(docId, data)),
-                  const SizedBox(width: 12),
-                  _buildActionButton(Icons.delete_sweep, "XÓA BÀI", Colors.redAccent, () => _handleDeletePost(docId, data)),
-                  const SizedBox(width: 12),
-                  if (data['status'] == 'pending')
-                    _buildActionButton(Icons.check_circle, "DUYỆT BÀI", Colors.green, () => _handleApprovePost(docId, data)),
-                ] else ...[
-                  _buildActionButton(Icons.restore, "KHÔI PHỤC", Colors.teal, () => _handleRestorePost(docId, data)),
-                ],
-              ],
-            )
-          ],
-        ),
-      ),
+    return UserCard(
+      uid: uid,
+      data: data,
+      onSuspend: () => _handleSuspendUser(uid, data),
+      onRestore: () => _handleRestoreUser(uid, data),
+      onViewActivity: () => _showUserActivity(uid, data),
     );
   }
 
@@ -916,6 +431,31 @@ class _ModDashboardState extends State<ModDashboard> {
     );
   }
 
+  Future<void> _showUserActivity(String uid, Map<String, dynamic> userData) async {
+    try {
+      final activity = await UserActivityService.getUserActivity(uid);
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (ctx) => UserActivityDialog(
+          displayName: userData['displayName'] ?? 'user',
+          forumPosts: activity.forumPosts,
+          reviews: activity.reviews,
+          materials: activity.materials,
+          logs: activity.logs,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Không thể tải hoạt động user: $e")),
+      );
+    }
+  }
+
   Future<void> _handleSuspendUser(String uid, Map<String, dynamic> data) async {
     final TextEditingController reasonController = TextEditingController();
 
@@ -954,20 +494,10 @@ class _ModDashboardState extends State<ModDashboard> {
         ? "Tài khoản vi phạm quy định cộng đồng MyUni."
         : reasonController.text.trim();
 
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
-      'status': 'suspended',
-      'isBanned': true,
-      'banReason': reason,
-      'bannedAt': FieldValue.serverTimestamp(),
-      'bannedBy': FirebaseAuth.instance.currentUser?.uid,
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    await _sendUserNotification(
-      userId: uid,
-      title: "Tài khoản của bạn đã bị khóa",
-      content: "Lý do: $reason",
-      type: "account_suspended",
+    await UserModerationService.suspendUser(
+      uid: uid,
+      data: data,
+      reason: reason,
     );
 
     if (mounted) {
@@ -978,20 +508,9 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Future<void> _handleRestoreUser(String uid, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
-      'status': 'active',
-      'isBanned': false,
-      'banReason': '',
-      'restoredAt': FieldValue.serverTimestamp(),
-      'restoredBy': FirebaseAuth.instance.currentUser?.uid,
-      'lastUpdated': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
-
-    await _sendUserNotification(
-      userId: uid,
-      title: "Tài khoản của bạn đã được khôi phục",
-      content: "Bạn có thể tiếp tục sử dụng MyUni bình thường.",
-      type: "account_restored",
+    await UserModerationService.restoreUser(
+      uid: uid,
+      data: data,
     );
 
     if (mounted) {
@@ -1002,13 +521,10 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Future<void> _handleApprovePost(String docId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance
-        .collection(_collections[_selectedCollIndex])
-        .doc(docId)
-        .update({
-      'status': 'approved',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await PostModerationService.approvePost(
+      collection: _collections[_selectedCollIndex],
+      docId: docId,
+    );
 
     _sendNotification(
       userId: data['authorId'],
@@ -1045,14 +561,10 @@ class _ModDashboardState extends State<ModDashboard> {
           : reasonController.text;
     }
 
-    await FirebaseFirestore.instance
-        .collection(_collections[_selectedCollIndex])
-        .doc(docId)
-        .update({
-      'status': 'hidden',
-      'isReported': false,
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await PostModerationService.deletePost(
+      collection: _collections[_selectedCollIndex],
+      docId: docId,
+    );
 
     _sendNotification(
       userId: data['authorId'],
@@ -1070,13 +582,10 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Future<void> _handleRestorePost(String docId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance
-        .collection(_collections[_selectedCollIndex])
-        .doc(docId)
-        .update({
-      'status': 'approved',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    await PostModerationService.restorePost(
+      collection: _collections[_selectedCollIndex],
+      docId: docId,
+    );
 
     _sendNotification(
       userId: data['authorId'],
@@ -1094,13 +603,10 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   Future<void> _handleDismissReport(String docId, Map<String, dynamic> data) async {
-    await FirebaseFirestore.instance
-        .collection(_collections[_selectedCollIndex])
-        .doc(docId)
-        .update({
-      'isReported': false,
-      'reportCount': 0,
-    });
+    await PostModerationService.dismissReport(
+      collection: _collections[_selectedCollIndex],
+      docId: docId,
+    );
   }
 
   Future<void> _handleEditOfficialNews(String docId, Map<String, dynamic> data) async {
@@ -1216,24 +722,6 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _sendUserNotification({
-    required String userId,
-    required String title,
-    required String content,
-    required String type,
-  }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': userId,
-      'title': title,
-      'content': content,
-      'type': type,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'relatedPostId': null,
-      'collectionPath': 'users',
-    });
-  }
-
   Future<void> _sendNotification({
     required String userId,
     required String title,
@@ -1241,41 +729,17 @@ class _ModDashboardState extends State<ModDashboard> {
     required String type,
     required String postId,
   }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
-      'userId': userId,
-      'title': title,
-      'content': content,
-      'type': type,
-      'timestamp': FieldValue.serverTimestamp(),
-      'isRead': false,
-      'relatedPostId': postId,
-      'collectionPath': _collections[_selectedCollIndex],
-    });
-  }
-
-  Widget _buildToxicityBadge(double toxicity) {
-    Color toxicColor = toxicity > 0.5
-        ? Colors.redAccent
-        : (toxicity > 0.2 ? Colors.orangeAccent : Colors.greenAccent);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: toxicColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        "Toxicity: ${toxicity.toStringAsFixed(2)}",
-        style: TextStyle(
-          color: toxicColor,
-          fontWeight: FontWeight.bold,
-          fontSize: 12,
-          fontFamily: 'Nunito',
-        ),
-      ),
+    await ModNotificationService.sendPostNotification(
+      userId: userId,
+      title: title,
+      content: content,
+      type: type,
+      postId: postId,
+      collectionPath: _collections[_selectedCollIndex],
     );
   }
 
-  Widget _buildUserAvatar(User? user) {
+  Widget _buildModAvatar(User? user) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Container(
@@ -1318,101 +782,16 @@ class _ModDashboardState extends State<ModDashboard> {
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label, Color color, VoidCallback onPressed) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          fontFamily: 'Nunito',
-        ),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    );
-  }
-
-  Widget _buildStatChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: Colors.blueGrey),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Colors.blueGrey,
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState({String text = "Không có bài viết cần xử lý!", String? customText}) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.done_all_rounded, size: 80, color: Colors.green[100]),
-          const SizedBox(height: 20),
-          Text(
-            customText ?? text,
-            style: const TextStyle(
-              fontSize: 18,
-              color: Colors.grey,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Nunito',
-            ),
-          ),
-        ],
-      ),
+  Widget _buildEmptyState({
+    String text = "Không có bài viết cần xử lý!",
+    String? customText,
+  }) {
+    return ModEmptyState(
+      text: customText ?? text,
     );
   }
 
   Widget _buildErrorState(String error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.report_gmailerrorred_outlined, color: Colors.redAccent, size: 60),
-            const SizedBox(height: 16),
-            const Text(
-              "THIẾU CHỈ MỤC (INDEX)",
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.redAccent,
-                fontSize: 18,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              error,
-              style: const TextStyle(fontSize: 11, color: Colors.black54),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
+    return ModErrorState(error: error);
   }
 }

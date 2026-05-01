@@ -61,6 +61,10 @@ class _OtpPageState extends State<OtpPage> {
         'isBanned': false,
         'role': 'student',
         'isVerified': true,
+        'violationCount': 0,
+        'suspensionCount': 0,
+        'lastBanReason': '',
+        'lastViolationAt': null,
         'createdAt': FieldValue.serverTimestamp(),
         'lastUpdated': FieldValue.serverTimestamp(),
       });
