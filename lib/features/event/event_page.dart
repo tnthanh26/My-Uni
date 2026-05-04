@@ -16,6 +16,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   late TabController _tabController;
   bool _showFab = true;
   static const Color primaryBrown = Color(0xFF47352E);
+  static const Color _accent   = Color(0xFF6C63FF); // electric violet
 
   @override
   void initState() {
@@ -83,7 +84,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
           borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 8))],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -239,8 +240,19 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                     indicatorSize: TabBarIndicatorSize.tab,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     indicator: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                      ),
                       borderRadius: BorderRadius.circular(25),
-                      color: const Color(0xFF5893D8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: _accent.withValues(alpha: 0.35),
+                          blurRadius: 10,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     labelColor: Colors.white,
                     unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
