@@ -20,6 +20,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:my_uni/web_mod/mod_login_page.dart';
 import 'package:my_uni/features/credential/user_status_gate.dart';
 import 'package:my_uni/features/credential/blocked_account_page.dart';
+import 'package:my_uni/splash_screen.dart';
 
 class GoRouterRefreshStream extends ChangeNotifier {
   late final StreamSubscription<dynamic> _subscription;
@@ -113,7 +114,8 @@ class MyUniApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       initialRoute: '/',
       routes: {
-        '/': (context) => const MyUniHomePage(),
+        '/': (context) => const SplashPage(),
+        '/welcome': (context) => const MyUniHomePage(),
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignUpPage(),
         '/otp': (context) => const OtpPage(),
@@ -160,7 +162,14 @@ class MyUniHomePage extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.school_rounded, size: 100, color: primaryColor),
+                SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: Image.asset(
+                    'assets/images/logoApp.png',
+                    fit: BoxFit.contain,
+                  ),
+                ),
                 const SizedBox(height: 30),
                 const Text(
                   'Chào mừng bạn đến với MyUni!',

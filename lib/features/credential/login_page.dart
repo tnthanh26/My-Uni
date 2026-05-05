@@ -87,14 +87,15 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
                 // Icon hoặc Logo app
-                const Icon(
-                  Icons.school_rounded,
-                  size: 80,
-                  color: Color(0xFF6797E1),
+                SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: Image.asset(
+                    'assets/images/logoApp1.png',
+                    fit: BoxFit.contain,
+                  ),
                 ),
-                const SizedBox(height: 20),
                 Text(
                   'Đăng nhập',
                   style: TextStyle(
