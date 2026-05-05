@@ -98,6 +98,106 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildFixedHeader(BuildContext context) {
+    return Stack(
+      children: [
+        // Background Image - Cố định
+        Container(
+          height: 150,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/hcmus_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Container(color: Colors.black38),
+        ),
+
+        // Logo & HCMUS Text & Notification - Cố định
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Cụm trái: Logo + Tên trường
+                Row(children: [
+                  CircleAvatar(
+                    backgroundColor: Colors.white,
+                    radius: 18,
+                    child: Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text("HCMUS",
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 24,
+                          fontFamily: 'Nunito',
+                          letterSpacing: 1.2
+                      )
+                  ),
+                ]),
+
+                // Cụm phải: Nút thông báo UI Capsule (Đã cập nhật)
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => NotificationScreen()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xff545454),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: StreamBuilder<List<MyUniNotification>>(
+                      stream: NotificationService.getNotifications(),
+                      builder: (context, snapshot) {
+                        // Đếm số thông báo chưa đọc thực tế
+                        final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                            if (unreadCount > 0)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: CircleAvatar(
+                                  radius: 6,
+                                  backgroundColor: Colors.red,
+                                  child: Text(
+                                    unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                    style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 7,
+                                        fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                ),
+                              )
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -118,7 +218,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
           SliverOverlapAbsorber(
             handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
             sliver: SliverAppBar(
-              expandedHeight: 102.0,
+              expandedHeight: 102,
               pinned: true,
               elevation: 0,
               automaticallyImplyLeading: false,
@@ -126,101 +226,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
               backgroundColor: const Color(0xFF5893D8),
               flexibleSpace: FlexibleSpaceBar(
                 collapseMode: CollapseMode.pin,
-                background: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      height: 102,
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        image: DecorationImage(
-                          image: AssetImage('assets/images/hcmus_bg.png'),
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      child: Container(color: isDarkMode ? Colors.black54 : Colors.black38),
-                    ),
-
-                    SafeArea(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 18,
-                                  backgroundColor: Colors.white,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3.0),
-                                    child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                const Text(
-                                  'HCMUS',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w800,
-                                    fontFamily: 'Nunito',
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => NotificationScreen()),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xff545454),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: StreamBuilder<List<MyUniNotification>>(
-                                  stream: NotificationService.getNotifications(),
-                                  builder: (context, snapshot) {
-                                    final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                                    return Stack(
-                                      clipBehavior: Clip.none,
-                                      children: [
-                                        const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                        if (unreadCount > 0)
-                                          Positioned(
-                                            right: -2,
-                                            top: -2,
-                                            child: CircleAvatar(
-                                              radius: 7,
-                                              backgroundColor: Colors.red,
-                                              child: Text(
-                                                unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                                style: const TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 8,
-                                                    fontWeight: FontWeight.bold
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                      ],
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                background: _buildFixedHeader(context),
               ),
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(48),
