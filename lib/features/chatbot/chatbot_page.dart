@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:intl/intl.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -21,23 +19,45 @@ class ChatMessage {
       : timestamp = timestamp ?? DateTime.now();
 }
 
-class _ChatbotPageState extends State<ChatbotPage> {
+class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final Color primaryColor = const Color(0xFF6797E1);
 
-  bool _isTyping = false; // Track typing state
+  // ── Palette ────────────────────────────────────────────────
+  // Soft Indigo — swap this one line to change the whole theme:
+  //   Violet Mint : const Color(0xFF7C6FF7)
+  //   Rose Slate  : const Color(0xFFE0607E)
+  final Color primaryColor = const Color(0xFF5B8DEF);
 
-  // 1. Your data list lives here
+  bool _isTyping = false;
+  bool _inputFocused = false;
+  late AnimationController _typingController;
+
   final List<ChatMessage> _messages = [
     ChatMessage(
-        text: "Chào bạn, mình là ú em. Mình biết rất nhiều về trường đại học Khoa học Tự nhiên, hãy hỏi mình nếu có thắc mắc gì nhé!",
-        isUser: false
+      text: "Chào bạn, mình là **Ú Em** 👋\nMình biết rất nhiều về trường Đại học Khoa học Tự nhiên, hãy hỏi mình nếu có thắc mắc gì nhé!",
+      isUser: false,
     ),
   ];
 
-  // 2. Put the logic function right here
-  Future<void> _handleSendMessage() async { // Thêm async ở đây
+  @override
+  void initState() {
+    super.initState();
+    _typingController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _typingController.dispose();
+    _messageController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleSendMessage() async {
     if (_messageController.text.trim().isEmpty) return;
 
     final String userText = _messageController.text;
@@ -51,27 +71,23 @@ class _ChatbotPageState extends State<ChatbotPage> {
     _scrollToBottom();
 
     try {
-      // URL của Render bạn vừa deploy
       final url = Uri.parse('https://hcmus-chatbot.onrender.com/chat');
 
-      // Gửi request POST đến FastAPI
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"query": userText}),
-      ).timeout(const Duration(seconds: 60)); // Render free tier có thể mất 50s để tỉnh dậy
+      ).timeout(const Duration(seconds: 60));
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        // Decode dữ liệu tiếng Việt (utf8)
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         String botAnswer = data['answer'];
         List<dynamic> sources = data['sources'] ?? [];
 
-        // Hiển thị thêm nguồn nếu có
         if (sources.isNotEmpty) {
-          botAnswer += "\n\n(Nguồn: Trang ${sources.join(', ')})";
+          botAnswer += "\n\n*(Nguồn: Trang ${sources.join(', ')})*";
         }
 
         setState(() {
@@ -86,7 +102,7 @@ class _ChatbotPageState extends State<ChatbotPage> {
       setState(() {
         _isTyping = false;
         _messages.add(ChatMessage(
-          text: "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé!",
+          text: "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏",
           isUser: false,
         ));
       });
@@ -110,8 +126,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold( // Add this if it's missing
-      resizeToAvoidBottomInset: true, // This pushes the UI up when keyboard appears
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: isDarkMode ? const Color(0xFF0F1117) : const Color(0xFFF7F9FF),
       body: Column(
         children: [
           _buildHeader(isDarkMode),
@@ -123,63 +140,120 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
+  // ── Header ─────────────────────────────────────────────────
   Widget _buildHeader(bool isDarkMode) {
     return Container(
-      padding: const EdgeInsets.only(top: 60, left: 20, right: 20, bottom: 20),
-      decoration: BoxDecoration(
-        color: primaryColor,
-      ),
+      padding: const EdgeInsets.only(top: 56, left: 20, right: 16, bottom: 16),
+      decoration: BoxDecoration(color: primaryColor),
       child: Row(
         children: [
-          const CircleAvatar(
-            radius: 24,
-            backgroundColor: Colors.transparent,
-            backgroundImage: AssetImage('assets/images/chatbot_avt.png'),
+          // Avatar with ring
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
+            ),
+            child: CircleAvatar(
+              radius: 24,
+              backgroundColor: Colors.transparent,
+              backgroundImage: const AssetImage('assets/images/chatbot_avt.png'),
+            ),
           ),
-          const SizedBox(width: 15),
-          const Expanded(
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Ú Em',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.2,
+                  ),
                 ),
+                const SizedBox(height: 3),
                 Row(
                   children: [
-                    Icon(Icons.circle, color: Colors.greenAccent, size: 8),
-                    SizedBox(width: 5),
-                    Text('Trực tuyến', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4ADE80),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF4ADE80).withOpacity(0.5),
+                            blurRadius: 4,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      'Trực tuyến',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 12,
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.remove_circle_outline, color: Colors.white),
-            onPressed: () {},
-          )
+          // Minimize button — now a subtle icon container
+          GestureDetector(
+            onTap: () {},
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.remove_circle_outline,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
+  // ── Chat area ───────────────────────────────────────────────
   Widget _buildChatArea(bool isDarkMode) {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+        color: isDarkMode ? const Color(0xFF0F1117) : const Color(0xFFF7F9FF),
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
         ),
       ),
       child: Column(
         children: [
+          // Drag handle
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(top: 10, bottom: 6),
+            decoration: BoxDecoration(
+              color: isDarkMode ? Colors.white12 : Colors.black12,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               controller: _scrollController,
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
               itemCount: _messages.length + (_isTyping ? 1 : 0),
               itemBuilder: (context, index) {
                 if (index == _messages.length) {
@@ -198,22 +272,54 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
+  // ── Typing indicator ────────────────────────────────────────
   Widget _buildTypingIndicator(bool isDarkMode) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           _buildBotAvatarFrame(),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F3F6),
-              borderRadius: BorderRadius.circular(20),
+              color: isDarkMode
+                  ? primaryColor.withOpacity(0.12)
+                  : primaryColor.withOpacity(0.08),
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(4),
+                topRight: Radius.circular(18),
+                bottomLeft: Radius.circular(18),
+                bottomRight: Radius.circular(18),
+              ),
             ),
-            child: const Text(
-              "Ú Em đang nghĩ...",
-              style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12, color: Colors.grey),
+            child: AnimatedBuilder(
+              animation: _typingController,
+              builder: (context, child) {
+                return Row(
+                  children: List.generate(3, (i) {
+                    final double offset =
+                    ((_typingController.value * 3 - i) % 1.0).clamp(0.0, 1.0);
+                    final double bounce =
+                    offset < 0.5 ? offset * 2 : (1 - offset) * 2;
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 2.5),
+                      child: Transform.translate(
+                        offset: Offset(0, -5 * bounce),
+                        child: Container(
+                          width: 7,
+                          height: 7,
+                          decoration: BoxDecoration(
+                            color: primaryColor.withOpacity(0.6),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                );
+              },
             ),
           ),
         ],
@@ -221,31 +327,47 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
+  // ── Bot avatar ──────────────────────────────────────────────
   Widget _buildBotAvatarFrame() {
-    return CircleAvatar(
-      radius: 18,
-      backgroundColor: primaryColor,
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: primaryColor,
+        border: Border.all(
+          color: primaryColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: Image.asset('assets/images/chatbot_avt.png'),
+        child: Image.asset(
+          'assets/images/chatbot_avt.png',
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
 
+  // ── Bot message ─────────────────────────────────────────────
   Widget _buildBotMessage(bool isDarkMode, ChatMessage msg) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           _buildBotAvatarFrame(),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
-                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF1F3F6),
+                color: isDarkMode
+                    ? primaryColor.withOpacity(0.12)
+                    : primaryColor.withOpacity(0.08),
                 borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(4),
                   topRight: Radius.circular(18),
                   bottomLeft: Radius.circular(18),
                   bottomRight: Radius.circular(18),
@@ -254,30 +376,47 @@ class _ChatbotPageState extends State<ChatbotPage> {
               child: MarkdownBody(
                 data: msg.text,
                 styleSheet: MarkdownStyleSheet(
-                  p: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontSize: 14, height: 1.4), //
-                  strong: const TextStyle(fontWeight: FontWeight.bold),
+                  p: TextStyle(
+                    color: isDarkMode ? const Color(0xFFE2E8F8) : const Color(0xFF1A1F35),
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  strong: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white : const Color(0xFF0F1117),
+                  ),
+                  em: TextStyle(
+                    color: isDarkMode
+                        ? Colors.white54
+                        : const Color(0xFF1A1F35).withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
+                  ),
                 ),
               ),
             ),
           ),
+          const SizedBox(width: 40),
         ],
       ),
     );
   }
 
+  // ── User message ────────────────────────────────────────────
   Widget _buildUserMessage(bool isDarkMode, ChatMessage msg) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          const SizedBox(width: 40),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
                 color: primaryColor,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(18),
+                  topRight: Radius.circular(4),
                   bottomLeft: Radius.circular(18),
                   bottomRight: Radius.circular(18),
                 ),
@@ -285,9 +424,9 @@ class _ChatbotPageState extends State<ChatbotPage> {
               child: Text(
                 msg.text,
                 style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    height: 1.4
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.5,
                 ),
               ),
             ),
@@ -297,39 +436,81 @@ class _ChatbotPageState extends State<ChatbotPage> {
     );
   }
 
+  // ── Input section ───────────────────────────────────────────
   Widget _buildInputSection(bool isDarkMode) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.fromLTRB(
+        16, 8, 16,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F3F6),
-          borderRadius: BorderRadius.circular(30),
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: _inputFocused
+                ? primaryColor.withOpacity(0.5)
+                : isDarkMode
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.07),
+            width: 1.2,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: TextField(
-                controller: _messageController,
-                minLines: 1,
-                maxLines: 5,
-                keyboardType: TextInputType.text, // Thay multiline bằng text để hỗ trợ bộ gõ tốt hơn
-                textCapitalization: TextCapitalization.sentences, // Tự động viết hoa đầu câu
-                autocorrect: true, // Bật tự động gợi ý từ
-                enableSuggestions: true,
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87),
-                decoration: const InputDecoration(
-                  hintText: "Nhập tin nhắn ở đây",
-                  hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
-                  border: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(vertical: 12),
+              child: Focus(
+                onFocusChange: (v) => setState(() => _inputFocused = v),
+                child: TextField(
+                  controller: _messageController,
+                  minLines: 1,
+                  maxLines: 5,
+                  keyboardType: TextInputType.text,
+                  textCapitalization: TextCapitalization.sentences,
+                  autocorrect: true,
+                  enableSuggestions: true,
+                  style: TextStyle(
+                    color: isDarkMode ? const Color(0xFFE2E8F8) : const Color(0xFF1A1F35),
+                    fontSize: 14,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: "Hỏi Ú Em điều gì đó...",
+                    hintStyle: TextStyle(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.25)
+                          : Colors.black.withOpacity(0.3),
+                      fontSize: 14,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    isDense: true,
+                  ),
+                  onSubmitted: (_) => _handleSendMessage(),
                 ),
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.send_rounded, color: primaryColor),
-              onPressed: _handleSendMessage,
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: _handleSendMessage,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: primaryColor,
+                  borderRadius: BorderRadius.circular(19),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 18,
+                ),
+              ),
             ),
           ],
         ),

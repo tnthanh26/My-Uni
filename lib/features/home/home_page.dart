@@ -14,6 +14,7 @@ import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'animated_bottom_nav.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -335,6 +336,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      /*
       child: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.transparent,
@@ -352,6 +354,19 @@ class _HomePageState extends State<HomePage> {
           _buildNavItem('assets/icons/space.svg', 'Góc nhỏ', 3),
           _buildNavItem('assets/icons/account.svg', 'Tài Khoản', 4),
         ],
+      ),
+      */
+      // Thay thế bottom nav có animation
+      child: AnimatedBottomNav(
+         currentIndex: _selectedIndex,
+         onTap: _onItemTapped,
+         items: [
+           AnimatedNavItem(icon: 'assets/icons/home.svg',    label: 'Home'),
+           AnimatedNavItem(icon: 'assets/icons/event.svg',   label: 'Sự kiện'),
+           AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi Đáp'),
+           AnimatedNavItem(icon: 'assets/icons/space.svg',   label: 'Góc nhỏ'),
+           AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài Khoản'),
+         ],
       ),
     );
   }
