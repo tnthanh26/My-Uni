@@ -41,7 +41,7 @@ class OfficialTab extends StatelessWidget {
     String text = "$title $summary";
 
     if (text.contains('học bổng') || text.contains('scholarship')) {
-      return 'assets/images/scholarship.png';
+      return 'assets/images/scholarship.jpg';
     }
     if (text.contains('tuyển dụng') ||
         text.contains('việc làm') ||
