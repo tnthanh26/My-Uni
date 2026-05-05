@@ -335,7 +335,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     String text = "$title $summary";
 
     if (text.contains('học bổng') || text.contains('scholarship')) {
-      return 'assets/images/scholarship.png';
+      return 'assets/images/scholarship.jpg';
     }
     if (text.contains('tuyển dụng') ||
         text.contains('việc làm') ||
@@ -376,7 +376,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       return 'assets/images/announcement.jpg';
     }
     if (text.contains('y tế') || text.contains('khám chữa bệnh')) {
-      return 'assets/images/health.png';
+      return 'assets/images/health.jpg';
     }
 
     return 'assets/images/news.png';
