@@ -115,24 +115,30 @@ class _ForumTabState extends State<ForumTab> {
   Widget _buildTagChip(dynamic tag, bool isDarkMode) {
     final String tagText = tag.toString();
     final String lowerTag = tagText.toLowerCase();
+
     final bool isWarning = lowerTag.contains('cảnh báo');
     final bool isHot =
-        lowerTag.contains('hot') || lowerTag.contains('gấp') || lowerTag.contains('urgent');
+        lowerTag.contains('hot') ||
+            lowerTag.contains('gấp') ||
+            lowerTag.contains('urgent');
 
     Color bgColor;
     Color borderColor;
     Color textColor;
+    Color iconColor;
     IconData icon;
 
     if (isWarning) {
       bgColor = const Color(0xFFFF6C6C).withOpacity(isDarkMode ? 0.22 : 0.14);
       borderColor = const Color(0xFFFF6C6C).withOpacity(0.35);
       textColor = isDarkMode ? Colors.white : const Color(0xFF9F1239);
+      iconColor = textColor;
       icon = Icons.warning_amber_rounded;
     } else if (isHot) {
       bgColor = const Color(0xFFFFB020).withOpacity(isDarkMode ? 0.20 : 0.14);
       borderColor = const Color(0xFFFFB020).withOpacity(0.35);
       textColor = isDarkMode ? Colors.white : const Color(0xFF92400E);
+      iconColor = textColor;
       icon = Icons.local_fire_department_rounded;
     } else {
       bgColor = isDarkMode
@@ -140,6 +146,9 @@ class _ForumTabState extends State<ForumTab> {
           : const Color(0xFFF1F5F9);
       borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
       textColor = isDarkMode ? Colors.white70 : const Color(0xFF344054);
+
+      iconColor = const Color(0xFF306CFE);
+
       icon = Icons.tag_rounded;
     }
 
@@ -153,14 +162,18 @@ class _ForumTabState extends State<ForumTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Color(0xFF306CFE)),
+          Icon(
+            icon,
+            size: 14,
+            color: iconColor,
+          ),
           const SizedBox(width: 4),
           Text(
             tagText,
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
               fontSize: 12,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: textColor,
             ),
           ),
