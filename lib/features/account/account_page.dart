@@ -280,62 +280,41 @@ class AccountPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              if (isVerified)
+          if (isVerified)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
-                    vertical: 7,
+                    vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF6797E1).withOpacity(0.14),
+                    color: const Color(0xFF6797E1).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: const Color(0xFF6797E1).withOpacity(0.25),
-                    ),
                   ),
-                  child: const Text(
-                    'Đã xác thực ✅',
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      color: Color(0xFF6797E1),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.white.withOpacity(0.06)
-                      : const Color(0xFFF1F5F9),
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+                  child: Row(
+                    children: const [
+                      Icon(
+                        Icons.verified_rounded,
+                        size: 16,
+                        color: Color(0xFF6797E1),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Đã xác thực',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          color: Color(0xFF6797E1),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Text(
-                  'Tài khoản MyUni',
-                  style: TextStyle(
-                    fontFamily: 'Encode Sans Expanded',
-                    color: isDarkMode
-                        ? Colors.white70
-                        : const Color(0xFF344054),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
+              ],
+            ),
         ],
       ),
     );
