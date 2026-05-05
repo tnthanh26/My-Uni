@@ -217,7 +217,7 @@ class ReviewTab extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       _buildInfoChip(
-                        icon: Icons.school_rounded,
+                        icon: Icons.tag_rounded,
                         label: "Review",
                         isDarkMode: isDarkMode,
                       ),

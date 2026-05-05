@@ -666,35 +666,43 @@ class OfficialTab extends StatelessWidget {
     required bool isDarkMode,
     required bool isEvent,
   }) {
+    final String label = isEvent ? "Sự kiện" : "Tin chính thức";
+
+    final Color bgColor = isEvent
+        ? const Color(0xFF66ACFE).withOpacity(isDarkMode ? 0.20 : 0.14)
+        : (isDarkMode ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9));
+
+    final Color borderColor = isEvent
+        ? const Color(0xFF66ACFE).withOpacity(0.35)
+        : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0));
+
+    final Color textColor = isEvent
+        ? (isDarkMode ? Colors.white : const Color(0xFF1D4F91))
+        : (isDarkMode ? Colors.white70 : const Color(0xFF344054));
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isEvent
-            ? const Color(0xFF66ACFE).withOpacity(isDarkMode ? 0.20 : 0.14)
-            : (isDarkMode ? Colors.white10 : const Color(0xFFF1F5F9)),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isEvent
-              ? const Color(0xFF66ACFE).withOpacity(0.30)
-              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
-        ),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: borderColor),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            isEvent ? Icons.event : Icons.campaign_outlined,
-            size: 14,
-            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+            Icons.tag_rounded,
+            size: 13,
+            color: textColor,
           ),
-          const SizedBox(width: 5),
+          const SizedBox(width: 4),
           Text(
-            isEvent ? "Sự kiện" : "Tin chính thức",
+            label,
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+              color: textColor,
             ),
           ),
         ],

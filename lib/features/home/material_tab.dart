@@ -356,7 +356,7 @@ class MaterialTab extends StatelessWidget {
                     runSpacing: 8,
                     children: [
                       _buildInfoChip(
-                        icon: Icons.folder_open_rounded,
+                        icon: Icons.tag_rounded,
                         label: isImage ? "Hình ảnh" : "Tài liệu",
                         isDarkMode: isDarkMode,
                       ),
