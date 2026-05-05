@@ -15,32 +15,6 @@ class OfficialTab extends StatelessWidget {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) return;
   }
 
-  Widget _getDynamicIcons(dynamic titleData, dynamic summaryData) {
-    String title = titleData?.toString().toLowerCase() ?? "";
-    String summary = summaryData?.toString().toLowerCase() ?? "";
-    String text = "$title $summary";
-
-    List<String> icons = [];
-
-    if (text.contains('thông báo') || text.contains('quy định')) icons.add("📢");
-    if (text.contains('học bổng') || text.contains('scholarship')) icons.add("🎓");
-    if (text.contains('cuộc thi') || text.contains('contest') || text.contains('giải thưởng')) icons.add("🏆");
-    if (text.contains('tuyển dụng') || text.contains('việc làm') || text.contains('intern')) icons.add("💼");
-    if (text.contains('công nghệ') || text.contains('tech') || text.contains('it')) icons.add("💻");
-    if (text.contains('thể thao') || text.contains('bóng đá')) icons.add("⚽");
-    if (text.contains('nghệ thuật') || text.contains('văn nghệ') || text.contains('âm nhạc')) icons.add("🎨♫");
-    if (text.contains('lễ tốt nghiệp') || text.contains('graduation')) icons.add("📜");
-    if (text.contains('hội thảo') || text.contains('seminar') || text.contains('workshop') || text.contains('talkshow')) icons.add("🎤");
-    if (text.contains('y tế') || text.contains('khám chữa bệnh') || text.contains('bảo hiểm y tế')) icons.add("🏥");
-
-    if (icons.isEmpty) icons.add("📌");
-
-    return Text(
-      "${icons.join(" ")} ",
-      style: const TextStyle(fontSize: 18),
-    );
-  }
-
   bool _checkIsEvent(dynamic titleData, dynamic summaryData) {
     String title = titleData?.toString().toLowerCase() ?? "";
     String summary = summaryData?.toString().toLowerCase() ?? "";
@@ -370,11 +344,11 @@ class OfficialTab extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
+                                      mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Expanded(
+                                        Flexible(
                                           child: Text(
-                                            data['department']?.toString() ??
-                                                'HCMUS News',
+                                            data['department']?.toString() ?? 'HCMUS News',
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
@@ -387,14 +361,12 @@ class OfficialTab extends StatelessWidget {
                                             ),
                                           ),
                                         ),
-                                        if (isEvent) ...[
-                                          const SizedBox(width: 4),
-                                          const Icon(
-                                            Icons.verified_rounded,
-                                            color: Color(0xFF66ACFE),
-                                            size: 17,
-                                          ),
-                                        ],
+                                        const SizedBox(width: 4),
+                                        const Icon(
+                                          Icons.verified_rounded,
+                                          color: Color(0xFF66ACFE),
+                                          size: 16,
+                                        ),
                                       ],
                                     ),
                                     const SizedBox(height: 2),
@@ -410,12 +382,6 @@ class OfficialTab extends StatelessWidget {
                                     ),
                                   ],
                                 ),
-                              ),
-                              Icon(
-                                Icons.more_horiz,
-                                color: isDarkMode
-                                    ? Colors.white38
-                                    : const Color(0xFF777777),
                               ),
                             ],
                           ),
@@ -459,29 +425,16 @@ class OfficialTab extends StatelessWidget {
 
                         Padding(
                           padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
-                          child: RichText(
-                            text: TextSpan(
-                              children: [
-                                WidgetSpan(
-                                  alignment: PlaceholderAlignment.middle,
-                                  child: _getDynamicIcons(
-                                    data['title'],
-                                    data['summary'],
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: data['title']?.toString() ?? '',
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 17,
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF1F2937),
-                                    height: 1.35,
-                                  ),
-                                ),
-                              ],
+                          child: Text(
+                            data['title']?.toString() ?? '',
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.w700,
+                              fontSize: 17,
+                              color: isDarkMode
+                                  ? Colors.white
+                                  : const Color(0xFF1F2937),
+                              height: 1.35,
                             ),
                           ),
                         ),
@@ -570,26 +523,6 @@ class OfficialTab extends StatelessWidget {
                                   ),
                                 ),
                               ],
-                            ),
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(8),
-                            onTap: goToDetail,
-                            child: const Padding(
-                              padding: EdgeInsets.symmetric(vertical: 4),
-                              child: Text(
-                                "Xem thêm...",
-                                style: TextStyle(
-                                  fontFamily: 'Encode Sans Expanded',
-                                  fontSize: 13,
-                                  color: Color(0xFF5893D8),
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
                             ),
                           ),
                         ),

@@ -1168,16 +1168,31 @@ class _PostDetailPageState extends State<PostDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
-                  color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                        color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
+                      ),
+                    ),
+                  ),
+                  if (isOfficial) ...[
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.verified_rounded,
+                      color: Color(0xFF66ACFE),
+                      size: 16,
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 2),
               Text(
