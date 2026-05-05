@@ -680,6 +680,10 @@ class OfficialTab extends StatelessWidget {
         ? (isDarkMode ? Colors.white : const Color(0xFF1D4F91))
         : (isDarkMode ? Colors.white70 : const Color(0xFF344054));
 
+    final Color iconColor = isEvent
+        ? const Color(0xFF5893D8)
+        : const Color(0xFF306CFE);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -693,7 +697,7 @@ class OfficialTab extends StatelessWidget {
           Icon(
             Icons.tag_rounded,
             size: 13,
-            color: textColor,
+            color: iconColor,
           ),
           const SizedBox(width: 4),
           Text(
@@ -857,7 +861,7 @@ class OfficialTab extends StatelessWidget {
                                 ),
                                 const SizedBox(width: 6),
                                 Text(
-                                  'Bài viết nổi bật dành cho bạn',
+                                  'Sự kiện có thể bạn quan tâm',
                                   style: TextStyle(
                                     fontFamily: 'Encode Sans Expanded',
                                     fontSize: 11,

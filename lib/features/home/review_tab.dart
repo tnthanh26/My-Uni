@@ -42,7 +42,11 @@ class ReviewTab extends StatelessWidget {
     required IconData icon,
     required String label,
     required bool isDarkMode,
+    Color? iconColor,
   }) {
+    final Color textColor =
+    isDarkMode ? Colors.white70 : const Color(0xFF344054);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
@@ -60,7 +64,7 @@ class ReviewTab extends StatelessWidget {
           Icon(
             icon,
             size: 13,
-            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+            color: iconColor ?? textColor,
           ),
           const SizedBox(width: 5),
           Text(
@@ -69,7 +73,7 @@ class ReviewTab extends StatelessWidget {
               fontFamily: 'Encode Sans Expanded',
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+              color: textColor,
             ),
           ),
         ],
@@ -220,6 +224,7 @@ class ReviewTab extends StatelessWidget {
                         icon: Icons.tag_rounded,
                         label: "Review",
                         isDarkMode: isDarkMode,
+                        iconColor: const Color(0xFF306CFE),
                       ),
                       if (semester.isNotEmpty)
                         _buildInfoChip(
