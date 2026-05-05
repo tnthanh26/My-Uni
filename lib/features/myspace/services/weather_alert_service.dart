@@ -67,7 +67,7 @@ class WeatherAlertService {
         shouldShow: true,
         level: WeatherAlertLevel.thunderstorm,
         title: 'Có khả năng giông mưa',
-        subtitle: 'Khung giờ học $timeRange có thể có giông, nên đi sớm và mang áo mưa.',
+        subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
       );
@@ -78,7 +78,7 @@ class WeatherAlertService {
         shouldShow: true,
         level: WeatherAlertLevel.heavyRain,
         title: 'Có thể mưa lớn trong giờ học',
-        subtitle: 'Khung $timeRange ở trường có nguy cơ mưa cao.',
+        subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
       );
@@ -89,7 +89,7 @@ class WeatherAlertService {
         shouldShow: true,
         level: WeatherAlertLevel.lightRain,
         title: 'Có khả năng mưa',
-        subtitle: 'Trong khung $timeRange có thể có mưa rải rác.',
+        subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
       );

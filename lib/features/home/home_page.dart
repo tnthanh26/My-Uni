@@ -371,24 +371,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(String assetPath, String label, int index) {
-    bool isSelected = _selectedIndex == index;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return BottomNavigationBarItem(
-      icon: SvgPicture.asset(
-        assetPath,
-        width: 28,
-        height: 28,
-        colorFilter: ColorFilter.mode(
-          isSelected ? const Color(0xFF457EC0) : (isDarkMode ? Colors.white38 : const Color(0xFF8E8E93)),
-          BlendMode.srcIn,
-        ),
-      ),
-      label: label,
-    );
-  }
-
   Widget _buildGuestAccountScreen(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 

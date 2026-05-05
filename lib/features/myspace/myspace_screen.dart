@@ -780,9 +780,13 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.celebration, color: Colors.orangeAccent, size: 20),
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: Image.asset(
+              'assets/images/welcome.png',
+              fit: BoxFit.contain,
+            ),
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -793,18 +797,18 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   color: Colors.white,
                   fontSize: 13,
                   height: 1.45,
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w500,
                 ),
                 children: [
                   const TextSpan(text: 'Hôm nay bạn có '),
                   TextSpan(
                     text: '$todayClassesCount lớp học',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const TextSpan(text: ' và '),
                   TextSpan(
                     text: '$activeDeadlinesCount deadline',
-                    style: const TextStyle(fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontWeight: FontWeight.w700),
                   ),
                   const TextSpan(text: ' cần giải quyết.'),
                 ],
@@ -1475,13 +1479,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         children: [
           Row(
             children: [
-              Icon(Icons.celebration, color: Colors.orangeAccent, size: 20),
+              SizedBox(
+                width: 20,
+                height: 20,
+                child: Image.asset(
+                  'assets/images/welcome.png',
+                  fit: BoxFit.contain,
+                ),
+              ),
               SizedBox(width: 8),
-              Text("Chào bạn tui!",
+              Text("Chào bạn!",
                   style: TextStyle(
                       color: Colors.white,
                       fontSize: 13,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w700,
                       fontFamily: 'Poppins')
               ),
             ],
@@ -1493,14 +1504,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 color: Colors.white,
                 fontSize: 12,
                 fontFamily: 'Poppins',
-                fontWeight: FontWeight.w400, // Độ đậm cơ bản cho cả câu
+                fontWeight: FontWeight.w500, // Độ đậm cơ bản cho cả câu
               ),
               children: [
                 const TextSpan(text: "Hôm nay bạn có "),
                 TextSpan(
                   text: "$todayClassesCount lớp học",
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600, // In đậm con số lớp học
+                    fontWeight: FontWeight.w700, // In đậm con số lớp học
                     fontSize: 14, // Có thể tăng size nhẹ để nổi bật hơn
                   ),
                 ),
@@ -1508,7 +1519,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 TextSpan(
                   text: "$pendingDeadlinesCount deadline",
                   style: const TextStyle(
-                    fontWeight: FontWeight.w600, // In đậm con số deadline
+                    fontWeight: FontWeight.w700, // In đậm con số deadline
                     fontSize: 14,
                   ),
                 ),

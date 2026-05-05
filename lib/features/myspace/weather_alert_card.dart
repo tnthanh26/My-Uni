@@ -41,8 +41,8 @@ class WeatherAlertCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 40,
-            height: 40,
+            width: 32,
+            height: 32,
             child: Image.asset(
               'assets/images/rain_icon.png',
               fit: BoxFit.contain,
