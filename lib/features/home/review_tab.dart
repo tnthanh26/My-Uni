@@ -206,12 +206,6 @@ class ReviewTab extends StatelessWidget {
                           ],
                         ),
                       ),
-                      Icon(
-                        Icons.more_horiz,
-                        color: isDarkMode
-                            ? Colors.white38
-                            : const Color(0xFF777777),
-                      ),
                     ],
                   ),
                 ),
