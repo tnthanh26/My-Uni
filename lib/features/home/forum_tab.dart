@@ -153,14 +153,14 @@ class _ForumTabState extends State<ForumTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: textColor),
+          Icon(icon, size: 14, color: Color(0xFF306CFE)),
           const SizedBox(width: 4),
           Text(
             tagText,
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
               color: textColor,
             ),
           ),
