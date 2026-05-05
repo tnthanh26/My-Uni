@@ -82,7 +82,7 @@ class OfficialTab extends StatelessWidget {
       return 'assets/images/announcement.jpg';
     }
     if (text.contains('y tế') || text.contains('khám chữa bệnh')) {
-      return 'assets/images/health.png';
+      return 'assets/images/health.jpg';
     }
 
     return 'assets/images/news.png';
