@@ -18,7 +18,12 @@ class ModLoginPage extends StatelessWidget {
 
         final String? email = user.email;
 
-        if (email == 'nhatthanhtran2606@gmail.com') {
+        const allowedAdmins = [
+          'nhatthanhtran2606@gmail.com',
+          'huynhhuuhau01@gmail.com',
+        ];
+
+        if (allowedAdmins.contains(email)) {
 
           if (context.mounted) {
             context.go('/mod');
