@@ -112,7 +112,6 @@ class _ModDashboardState extends State<ModDashboard> {
                             ),
                           ),
                           const Spacer(),
-                          const Icon(Icons.notifications_none, color: Colors.grey),
                         ],
                       ),
                       const SizedBox(height: 20),
