@@ -118,7 +118,7 @@ class LocalStorageHelper {
     final String? data = prefs.getString(_scheduleKey);
 
     if (data == null || data == '[]') {
-      return _defaultSchedule; // Trả về đúng mẫu bạn đưa
+      return [];
     }
 
     final List<dynamic> decoded = jsonDecode(data);
@@ -132,8 +132,6 @@ class LocalStorageHelper {
       color: Color(item['colorValue']),
     )).toList();
   }
-
-
 
   static Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
     final prefs = await SharedPreferences.getInstance();

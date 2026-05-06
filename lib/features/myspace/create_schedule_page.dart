@@ -281,7 +281,6 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     }
   }
 
-  // Cập nhật hàm _saveSchedule
   Future<void> _saveSchedule() async {
     if (_subjectController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
