@@ -464,7 +464,11 @@ class _MyEventTabState extends State<MyEventTab>
                     Padding(
                       padding: const EdgeInsets.only(bottom: 14),
                       child: Text(
-                        'Bạn đang có $count sự kiện sắp diễn ra',
+                        isListView
+                            ? 'Bạn đang có $count sự kiện sắp diễn ra'
+                            : DateUtils.isSameDay(_selectedDay, DateTime.now())
+                            ? 'Hôm nay có $count sự kiện sắp diễn ra'
+                            : 'Ngày này có $count sự kiện sắp diễn ra',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
@@ -782,11 +786,14 @@ class _MyEventTabState extends State<MyEventTab>
           const SizedBox(width: 32),
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.all(15),
+              margin: const EdgeInsets.only(right: 28),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 6,
+              ),
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: _cardShadow(isDarkMode),
               ),
               child: Column(
@@ -807,7 +814,7 @@ class _MyEventTabState extends State<MyEventTab>
                       _buildMoreMenu(ev, isDarkMode),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       Icon(
@@ -828,7 +835,7 @@ class _MyEventTabState extends State<MyEventTab>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerRight,
                     child: ElevatedButton(
@@ -841,13 +848,13 @@ class _MyEventTabState extends State<MyEventTab>
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        minimumSize: const Size(82, 34),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        minimumSize: const Size(74, 28),
                       ),
                       child: const Text(
                         'Chi tiết',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: 11,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
