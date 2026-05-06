@@ -5,7 +5,7 @@ import 'models/myspace_models.dart';
 
 class MySpaceFirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
-  final String? userId = FirebaseAuth.instance.currentUser?.uid;
+  String? get userId => FirebaseAuth.instance.currentUser?.uid;
 
   // Collection reference dành riêng cho từng User
   CollectionReference get _deadlineRef =>
@@ -69,13 +69,18 @@ class MySpaceFirebaseService {
       'room': s.room,
       'weekday': s.weekday,
       'colorValue': s.color.value,
-    });
+      'updatedAt': FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 
   Future<List<StudyClass>> getSchedule() async {
     if (userId == null) return [];
     try {
-      final snapshot = await _scheduleRef.get();
+      final snapshot = await _scheduleRef
+          .orderBy('weekday')
+          .orderBy('start')
+          .get();
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return StudyClass(
@@ -158,6 +163,58 @@ class MySpaceFirebaseService {
       debugPrint("Error fetching auto deadline config: $e");
       return null;
     }
+  }
+
+  Stream<List<StudyClass>> scheduleStream() {
+    if (userId == null) return Stream.value([]);
+
+    return _scheduleRef.snapshots().map((snapshot) {
+      final list = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+
+        return StudyClass(
+          id: doc.id,
+          name: data['name'] ?? '',
+          start: data['start'] ?? '',
+          end: data['end'] ?? '',
+          room: data['room'] ?? '',
+          weekday: data['weekday'] ?? 2,
+          color: Color(data['colorValue'] ?? 0xFF5893D8),
+        );
+      }).toList();
+
+      list.sort((a, b) {
+        final dayCompare = a.weekday.compareTo(b.weekday);
+        if (dayCompare != 0) return dayCompare;
+        return a.start.compareTo(b.start);
+      });
+
+      return list;
+    });
+  }
+
+  Stream<List<Deadline>> deadlineStream() {
+    if (userId == null) return Stream.value([]);
+
+    return _deadlineRef
+        .orderBy('dueDate')
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return Deadline(
+          id: doc.id,
+          title: data['title'] ?? '',
+          description: data['description'] ?? '',
+          dueDate: DateTime.parse(data['dueDate']),
+          dueTime: TimeOfDay(
+            hour: data['dueTimeHour'] ?? 0,
+            minute: data['dueTimeMinute'] ?? 0,
+          ),
+          isCompleted: data['isCompleted'] ?? false,
+        );
+      }).toList();
+    });
   }
 
 }

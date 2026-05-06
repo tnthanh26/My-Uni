@@ -15,6 +15,7 @@ import './services/weather_service.dart';
 import './models/weather_models.dart';
 import 'weather_alert_card.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 // Màu sắc và thông số chuẩn từ thiết kế Figma
 const Color hcmusBlueAccent = Color(0xFF5893D8);
@@ -40,6 +41,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   AutoDeadlineConfig? _autoDeadlineConfig;
   String _userUniversity = '';
   Future<WeatherAlertResult>? _weatherFuture;
+  StreamSubscription<List<StudyClass>>? _scheduleSub;
+  StreamSubscription<List<Deadline>>? _deadlineSub;
 
   @override
   void initState() {
@@ -48,13 +51,24 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     // Khởi tạo TabController cho phần Detail
     _tabController = TabController(length: 2, vsync: this);
 
-    _loadData();
+    _loadInitialMetaData();
+
+    _listenScheduleRealtime();
+    _listenDeadlineRealtime();
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
         setState(() {});
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _deadlineSub?.cancel();
+    _scheduleSub?.cancel();
+    _tabController.dispose();
+    super.dispose();
   }
 
   void _prepareWeatherFuture() {
@@ -95,23 +109,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   // Thêm services vào class
   final MySpaceFirebaseService _firebaseService = MySpaceFirebaseService();
 
-  Future<void> _loadData() async {
-    // 1. Lấy dữ liệu từ Local Storage trước để UI hiện ra ngay lập tức
-    final localDls = await LocalStorageHelper.getDeadlines();
-    final localSch = await LocalStorageHelper.getSchedule();
+  Future<void> _loadInitialMetaData() async {
     final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
+    final currentUser = FirebaseAuth.instance.currentUser;
+
     final localAutoConfig = await LocalStorageHelper.getAutoDeadlineConfig(
       emailAddress: currentUserEmail,
     );
-    final currentUser = FirebaseAuth.instance.currentUser;
 
-    setState(() {
-      mockDeadlines = localDls;
-      mockSchedule = localSch;
-      _autoDeadlineConfig = localAutoConfig;
-    });
+    if (mounted) {
+      setState(() {
+        _autoDeadlineConfig = localAutoConfig;
+      });
+    }
 
-    // 2. Sau đó đồng bộ từ Firebase (Nếu có mạng)
     try {
       if (currentUser != null) {
         final userDoc = await FirebaseFirestore.instance
@@ -128,60 +139,83 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         }
       }
 
-      _prepareWeatherFuture();
-
-      final remoteDls = await _firebaseService.getDeadlines();
-
-      if (remoteDls.isEmpty && localDls.isNotEmpty) {
-        // TRƯỜNG HỢP CỦA BẠN: Firebase trống nhưng máy có dữ liệu mẫu
-        // => Đẩy ngược dữ liệu mẫu lên Firebase
-        await _firebaseService.syncAllDeadlines(localDls);
-      } else if (remoteDls.isNotEmpty) {
-        // Nếu Firebase đã có dữ liệu, cập nhật lại UI
-        setState(() {
-          mockDeadlines = remoteDls;
-        });
-        await LocalStorageHelper.saveDeadlines(remoteDls);
-      }
-
-      final remoteSch = await _firebaseService.getSchedule();
-
-      if (remoteSch.isEmpty && localSch.isNotEmpty) {
-        // TRƯỜNG HỢP CỦA BẠN: Firebase trống nhưng máy có dữ liệu mẫu
-        // => Đẩy ngược dữ liệu mẫu lên Firebase
-        await _firebaseService.syncAllSchedule(localSch);
-      } else if (remoteSch.isNotEmpty) {
-        // Nếu Firebase đã có dữ liệu, cập nhật lại UI
-        setState(() {
-          mockSchedule = remoteSch;
-        });
-        await LocalStorageHelper.saveSchedule(remoteSch);
-      }
-
       final remoteAutoConfig = await _firebaseService.getAutoDeadlineConfig();
+
       if (remoteAutoConfig != null) {
         final mergedConfig = remoteAutoConfig.copyWith(
           emailAddress: remoteAutoConfig.emailAddress.trim().isEmpty
               ? currentUserEmail
               : remoteAutoConfig.emailAddress,
         );
-        setState(() {
-          _autoDeadlineConfig = mergedConfig;
-        });
+
+        if (mounted) {
+          setState(() {
+            _autoDeadlineConfig = mergedConfig;
+          });
+        }
+
         await LocalStorageHelper.saveAutoDeadlineConfig(mergedConfig);
-      } else if ((localAutoConfig.emailAddress.isNotEmpty ||
-          localAutoConfig.allowedSenders.isNotEmpty ||
-          localAutoConfig.subjectKeywords.isNotEmpty ||
-          localAutoConfig.permissionRequested) &&
-          _firebaseService.userId != null) {
-        await _firebaseService.saveAutoDeadlineConfig(localAutoConfig);
       }
     } catch (e) {
-      debugPrint("Firebase Sync Error: $e");
+      debugPrint("Firebase metadata load error: $e");
     }
   }
 
+  void _listenScheduleRealtime() {
+    _scheduleSub?.cancel();
 
+    _scheduleSub = _firebaseService.scheduleStream().listen(
+          (remoteSch) async {
+        if (!mounted) return;
+
+        setState(() {
+          mockSchedule = remoteSch;
+        });
+
+        await LocalStorageHelper.saveSchedule(remoteSch);
+
+        _prepareWeatherFuture();
+
+        if (mounted) setState(() {});
+      },
+      onError: (e) async {
+        debugPrint("Schedule stream error: $e");
+
+        final localSch = await LocalStorageHelper.getSchedule();
+        if (!mounted) return;
+
+        setState(() {
+          mockSchedule = localSch;
+        });
+      },
+    );
+  }
+
+  void _listenDeadlineRealtime() {
+    _deadlineSub?.cancel();
+
+    _deadlineSub = _firebaseService.deadlineStream().listen(
+          (remoteDls) async {
+        if (!mounted) return;
+
+        setState(() {
+          mockDeadlines = remoteDls;
+        });
+
+        await LocalStorageHelper.saveDeadlines(remoteDls);
+      },
+      onError: (e) async {
+        debugPrint("Deadline stream error: $e");
+
+        final localDls = await LocalStorageHelper.getDeadlines();
+        if (!mounted) return;
+
+        setState(() {
+          mockDeadlines = localDls;
+        });
+      },
+    );
+  }
 
   void _toggleDeadline(String id) async {
     final index = mockDeadlines.indexWhere((d) => d.id == id);
@@ -251,7 +285,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   context,
                   MaterialPageRoute(builder: (context) => const CreateDeadlinesPage()),
                 );
-                if (result == true) _loadData(); // QUAN TRỌNG: Load lại sau khi tạo
+                if (result == true) _loadInitialMetaData(); // QUAN TRỌNG: Load lại sau khi tạo
               },
             ),
             ListTile(
@@ -263,7 +297,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   context,
                   MaterialPageRoute(builder: (context) => const CreateSchedulePage()),
                 );
-                if (result == true) _loadData(); // QUAN TRỌNG: Load lại sau khi tạo
+                if (result == true) _loadInitialMetaData(); // QUAN TRỌNG: Load lại sau khi tạo
               },
             ),
           ],
@@ -727,16 +761,35 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   // --- DASHBOARD CONTENT (3.1) ---
   DateTime _combineTodayAndTime(String time) {
     final now = DateTime.now();
+    final input = time.trim().toUpperCase();
 
-    final parsedTime = DateFormat('h:mm a').parse(time.trim());
+    DateTime parsedTime;
 
-    return DateTime(
-      now.year,
-      now.month,
-      now.day,
-      parsedTime.hour,
-      parsedTime.minute,
-    );
+    try {
+      if (input.contains('AM') || input.contains('PM')) {
+        parsedTime = DateFormat('h:mm a').parse(input);
+      } else {
+        parsedTime = DateFormat('HH:mm').parse(input);
+      }
+
+      return DateTime(
+        now.year,
+        now.month,
+        now.day,
+        parsedTime.hour,
+        parsedTime.minute,
+      );
+    } catch (e) {
+      debugPrint('Cannot parse schedule time: $time, error: $e');
+
+      return DateTime(
+        now.year,
+        now.month,
+        now.day,
+        0,
+        0,
+      );
+    }
   }
 
   String? _mapUniversityToCampusId(String university) {
@@ -1255,7 +1308,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         builder: (context) => CreateDeadlinesPage(deadline: deadline),
       ),
     );
-    if (result == true) _loadData(); // Load lại sau khi sửa
+    if (result == true) _loadInitialMetaData(); // Load lại sau khi sửa
   }
 
   void _editSchedule(StudyClass schedule) async {
@@ -1265,7 +1318,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         builder: (context) => CreateSchedulePage(schedule: schedule),
       ),
     );
-    if (result == true) _loadData(); // Tải lại dữ liệu sau khi sửa
+    if (result == true) _loadInitialMetaData(); // Tải lại dữ liệu sau khi sửa
   }
 
   void _showDeadlineActionMenu(Deadline d) {

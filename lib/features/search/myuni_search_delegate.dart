@@ -427,7 +427,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     selectedHashtags.where((t) => t != 'Tất cả').toList();
     final String tagParam = activeTags.isEmpty ? '' : activeTags.join(',');
 
-    final uri = Uri.parse('http://34.21.194.185:8080/search').replace(
+    final uri = Uri.parse('http://34.124.203.96:8080/search').replace(
       queryParameters: {
         'query': cleanQuery,
         'scope': scopeString,
