@@ -44,11 +44,11 @@ class _OtpPageState extends State<OtpPage> {
           .collection('users')
           .doc(userCredential.user!.uid)
           .set({
-        'displayName': "${userData['firstName']} ${userData['lastName']}",
-        'firstName': userData['firstName'],
-        'lastName': userData['lastName'],
+        'displayName': userData['displayName'],
         'email': email,
         'university': userData['university'],
+        'studentId': userData['studentId'],
+        'cohort': userData['cohort'],
 
         // field chưa có thì để rỗng/null để EditProfilePage cập nhật sau
         'faculty': null,
