@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import 'edit_profile_page.dart';
 import 'change_password_page.dart';
 import 'utilities_page.dart';
@@ -320,6 +321,169 @@ class AccountPage extends StatelessWidget {
     );
   }
 
+  void _showStudentQrDialog(
+      BuildContext context, {
+        required bool isDarkMode,
+        required String qrData,
+        required String name,
+        required String studentId,
+        required String faculty,
+        required String cohort,
+        required String university,
+      }) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor:
+        isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF6797E1).withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(
+                  Icons.badge_outlined,
+                  color: Color(0xFF6797E1),
+                  size: 28,
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              Text(
+                'Thẻ sinh viên MyUni',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color:
+                  isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFFE5E7EB),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: QrImageView(
+                  data: qrData,
+                  version: QrVersions.auto,
+                  size: 200,
+                  backgroundColor: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              Text(
+                name,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color:
+                  isDarkMode ? Colors.white : const Color(0xFF111827),
+                ),
+              ),
+
+              const SizedBox(height: 6),
+
+              Text(
+                'MSSV: $studentId',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF6797E1),
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                faculty,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDarkMode
+                      ? Colors.white60
+                      : const Color(0xFF667085),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                '$cohort • $university',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12,
+                  color: isDarkMode
+                      ? Colors.white38
+                      : const Color(0xFF98A2B3),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Đóng',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF6797E1),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -361,6 +525,9 @@ class AccountPage extends StatelessWidget {
           builder: (context, snapshot) {
             String name = "Người dùng MyUni";
             String faculty = "Chưa cập nhật khoa";
+            String studentId = "Chưa cập nhật MSSV";
+            String university = "Chưa cập nhật trường";
+            String cohort = "Chưa cập nhật niên khóa";
             String? photoBase64;
             bool isVerified = false;
 
@@ -368,9 +535,24 @@ class AccountPage extends StatelessWidget {
               var data = snapshot.data!.data() as Map<String, dynamic>;
               name = data['displayName'] ?? "Người dùng";
               faculty = data['faculty'] ?? "Chưa cập nhật khoa";
+              studentId = data['studentId'] ?? "Chưa cập nhật MSSV";
+              university = data['university'] ?? "Chưa cập nhật trường";
+              cohort = data['cohort'] ?? "Chưa cập nhật niên khóa";
               photoBase64 = data['photoUrl'];
               isVerified = data['isVerified'] ?? false;
             }
+
+            final qrData = jsonEncode({
+              'type': 'myuni_student_qr',
+              'version': 1,
+              'displayName': name,
+              'studentId': studentId,
+              'faculty': faculty,
+              'cohort': cohort,
+              'university': university,
+              'isVerified': isVerified,
+              'generatedAt': DateTime.now().toIso8601String(),
+            });
 
             return SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
@@ -391,6 +573,24 @@ class AccountPage extends StatelessWidget {
                   _buildSettingsGroup(
                     isDarkMode: isDarkMode,
                     children: [
+                      _buildAccountItem(
+                        context,
+                        icon: Icons.qr_code_2_rounded,
+                        title: 'Thẻ sinh viên MyUni',
+                        onTap: () {
+                          _showStudentQrDialog(
+                            context,
+                            isDarkMode: isDarkMode,
+                            qrData: qrData,
+                            name: name,
+                            studentId: studentId,
+                            faculty: faculty,
+                            cohort: cohort,
+                            university: university,
+                          );
+                        },
+                      ),
+                      _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.key_outlined,

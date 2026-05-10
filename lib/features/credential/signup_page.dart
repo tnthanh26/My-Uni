@@ -14,18 +14,20 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isObscured = true;
   bool _isLoading = false;
 
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _displayNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String? _selectedUniversity;
+  final _studentIdController = TextEditingController();
+  final _cohortController = TextEditingController();
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _displayNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _studentIdController.dispose();
+    _cohortController.dispose();
     super.dispose();
   }
 
@@ -66,7 +68,14 @@ class _SignUpPageState extends State<SignUpPage> {
   Future<void> _handleSignUp() async {
     final email = _emailController.text.trim();
 
-    if (email.isEmpty || _passwordController.text.isEmpty || _selectedUniversity == null) {
+    if (
+    _displayNameController.text.trim().isEmpty ||
+        email.isEmpty ||
+        _passwordController.text.isEmpty ||
+        _selectedUniversity == null ||
+        _studentIdController.text.trim().isEmpty ||
+        _cohortController.text.trim().isEmpty
+    ) {
       _showSnackBar('Vui lòng điền đầy đủ thông tin', isError: true);
       return;
     }
@@ -90,10 +99,11 @@ class _SignUpPageState extends State<SignUpPage> {
             'email': email,
             'otpCode': otpCode,
             'userData': {
-              'firstName': _firstNameController.text.trim(),
-              'lastName': _lastNameController.text.trim(),
+              'displayName': _displayNameController.text.trim(),
               'password': _passwordController.text.trim(),
               'university': _selectedUniversity,
+              'studentId': _studentIdController.text.trim(),
+              'cohort': _cohortController.text.trim(),
             }
           },
         );
@@ -155,23 +165,17 @@ class _SignUpPageState extends State<SignUpPage> {
             ),
             const SizedBox(height: 40),
 
-            // Các trường nhập liệu sử dụng Widget dùng chung
             _buildInputContainer(
               isDarkMode: isDarkMode,
               child: TextFormField(
-                controller: _firstNameController,
+                controller: _displayNameController,
+                textCapitalization: TextCapitalization.words,
                 style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                decoration: _inputDecoration('Tên', Icons.person_outline, isDarkMode),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            _buildInputContainer(
-              isDarkMode: isDarkMode,
-              child: TextFormField(
-                controller: _lastNameController,
-                style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                decoration: _inputDecoration('Họ', Icons.people_outline, isDarkMode),
+                decoration: _inputDecoration(
+                  'Họ và tên',
+                  Icons.person_outline,
+                  isDarkMode,
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -225,6 +229,40 @@ class _SignUpPageState extends State<SignUpPage> {
                 onChanged: (val) => setState(() => _selectedUniversity = val),
               ),
             ),
+            const SizedBox(height: 16),
+
+            _buildInputContainer(
+              isDarkMode: isDarkMode,
+              child: TextFormField(
+                controller: _studentIdController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+                decoration: _inputDecoration(
+                  'Mã số sinh viên',
+                  Icons.badge_outlined,
+                  isDarkMode,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            _buildInputContainer(
+              isDarkMode: isDarkMode,
+              child: TextFormField(
+                controller: _cohortController,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black,
+                ),
+                decoration: _inputDecoration(
+                  'Niên khóa',
+                  Icons.school_outlined,
+                  isDarkMode,
+                  hintText: 'VD: 2022 - 2026',
+                ),
+              ),
+            ),
 
             const SizedBox(height: 50),
 
@@ -252,7 +290,6 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  // Widget bọc ngoài để tạo shadow và bo góc đồng nhất
   Widget _buildInputContainer({required Widget child, required bool isDarkMode}) {
     return Container(
       decoration: BoxDecoration(
@@ -264,10 +301,24 @@ class _SignUpPageState extends State<SignUpPage> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon, bool isDarkMode, {Widget? suffix}) {
+  InputDecoration _inputDecoration(
+      String label,
+      IconData icon,
+      bool isDarkMode, {
+        Widget? suffix,
+        String? hintText,
+      }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey[600], fontSize: 14),
+      hintText: hintText,
+      hintStyle: TextStyle(
+        color: isDarkMode ? Colors.white38 : Colors.grey[500],
+        fontSize: 14,
+      ),
+      labelStyle: TextStyle(
+        color: isDarkMode ? Colors.white60 : Colors.grey[600],
+        fontSize: 14,
+      ),
       prefixIcon: Icon(icon, color: isDarkMode ? Colors.white60 : Colors.grey),
       suffixIcon: suffix,
       border: InputBorder.none,

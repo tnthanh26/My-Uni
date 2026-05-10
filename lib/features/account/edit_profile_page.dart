@@ -18,6 +18,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
   final _emailController = TextEditingController();
+  final _studentIdController = TextEditingController();
+  final _cohortController = TextEditingController();
 
   String? selectedFaculty;
   String? _currentPhotoBase64;
@@ -44,6 +46,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
     _phoneController.dispose();
     _dobController.dispose();
     _emailController.dispose();
+    _studentIdController.dispose();
+    _cohortController.dispose();
     super.dispose();
   }
 
@@ -65,6 +69,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
           if (faculties.contains(data['faculty'])) {
             selectedFaculty = data['faculty'];
           }
+          _studentIdController.text = data['studentId'] ?? '';
+          _cohortController.text = data['cohort'] ?? '';
         });
       }
     } catch (e) {
@@ -112,6 +118,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'dob': _dobController.text.trim(),
         'faculty': selectedFaculty,
         'photoUrl': finalPhotoBase64,
+        'studentId': _studentIdController.text.trim(),
+        'cohort': _cohortController.text.trim(),
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -243,52 +251,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 contentPadding: EdgeInsets.zero,
                 isDense: true,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStaticFieldCard(
-      BuildContext context, {
-        required IconData icon,
-        required String label,
-        required String value,
-      }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6797E1).withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: const Color(0xFF6797E1), size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white : Colors.black87,
-              ),
-            ),
-          ),
-          Text(
-            value,
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 14,
-              color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
             ),
           ),
         ],
@@ -516,20 +478,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             isDarkMode ? Colors.white : const Color(0xFF1F2937),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Điều chỉnh ảnh đại diện, thông tin liên hệ và khoa của bạn.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.5,
-                            color: isDarkMode
-                                ? Colors.white60
-                                : const Color(0xFF667085),
-                          ),
-                        ),
                       ],
                     ),
                   ),
@@ -583,11 +531,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     children: [
                       _buildDropdownFieldCard(context, 'Khoa'),
                       _buildDivider(isDarkMode),
-                      _buildStaticFieldCard(
+                      _buildTextFieldCard(
+                        context,
+                        icon: Icons.badge_outlined,
+                        label: 'MSSV',
+                        controller: _studentIdController,
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildTextFieldCard(
                         context,
                         icon: Icons.school_outlined,
                         label: 'Niên khóa',
-                        value: '2022 - 2026',
+                        controller: _cohortController,
+                        hint: '2022 - 2026',
                       ),
                     ],
                   ),
