@@ -15,6 +15,7 @@ import 'features/services/notification_service.dart';
 import 'app_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_uni/web_mod/mod_dashboard.dart';
+import 'package:my_uni/web_mod/collaborator_dashboard.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:my_uni/web_mod/mod_login_page.dart';
@@ -62,18 +63,51 @@ void main() async {
 // --- PHẦN 2: CẤU HÌNH APP ---
 final GoRouter _webRouter = GoRouter(
   initialLocation: '/mod-login',
-  refreshListenable: GoRouterRefreshStream(FirebaseAuth.instance.authStateChanges()),
+  refreshListenable: GoRouterRefreshStream(
+    FirebaseAuth.instance.authStateChanges(),
+  ),
   redirect: (context, state) {
     final user = FirebaseAuth.instance.currentUser;
-    // Email moderator của bạn
-    final isLoggedIn = user != null && user.email == 'nhatthanhtran2606@gmail.com';
-    final isGoingToLogin = state.matchedLocation == '/mod-login';
+    final email = user?.email;
 
-    if (!isLoggedIn && !isGoingToLogin) {
+    const allowedAdmins = [
+      'nhatthanhtran2606@gmail.com',
+      'huynhhuuhau01@gmail.com',
+    ];
+
+    const allowedCollaborators = [
+      'trannhatthanha2@gmail.com',
+    ];
+
+    final isAdmin = email != null && allowedAdmins.contains(email);
+    final isCollaborator =
+        email != null && allowedCollaborators.contains(email);
+
+    final location = state.matchedLocation;
+
+    final isLoginPage = location == '/mod-login';
+    final isModPage = location == '/mod';
+    final isCollaboratorPage = location == '/collaborator';
+
+    if (user == null) {
+      return isLoginPage ? null : '/mod-login';
+    }
+
+    if (!isAdmin && !isCollaborator) {
+      FirebaseAuth.instance.signOut();
       return '/mod-login';
     }
 
-    if (isLoggedIn && isGoingToLogin) {
+    if (isLoginPage) {
+      if (isAdmin) return '/mod';
+      if (isCollaborator) return '/collaborator';
+    }
+
+    if (isModPage && !isAdmin) {
+      return '/collaborator';
+    }
+
+    if (isCollaboratorPage && !isCollaborator) {
       return '/mod';
     }
 
@@ -81,12 +115,16 @@ final GoRouter _webRouter = GoRouter(
   },
   routes: [
     GoRoute(
+      path: '/mod-login',
+      builder: (context, state) => const ModLoginPage(),
+    ),
+    GoRoute(
       path: '/mod',
       builder: (context, state) => const ModDashboard(),
     ),
     GoRoute(
-      path: '/mod-login',
-      builder: (context, state) => const ModLoginPage(),
+      path: '/collaborator',
+      builder: (context, state) => const CollaboratorDashboard(),
     ),
   ],
 );
