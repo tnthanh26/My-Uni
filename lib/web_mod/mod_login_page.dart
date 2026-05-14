@@ -23,16 +23,23 @@ class ModLoginPage extends StatelessWidget {
           'huynhhuuhau01@gmail.com',
         ];
 
-        if (allowedAdmins.contains(email)) {
+        const allowedCollaborators = [
+          'trannhatthanha2@gmail.com',
+        ];
 
+        if (allowedAdmins.contains(email)) {
           if (context.mounted) {
             context.go('/mod');
+          }
+        } else if (allowedCollaborators.contains(email)) {
+          if (context.mounted) {
+            context.go('/collaborator');
           }
         } else {
           await FirebaseAuth.instance.signOut();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Tài khoản không có quyền quản lý!")),
+              const SnackBar(content: Text("Tài khoản không có quyền truy cập!")),
             );
           }
         }

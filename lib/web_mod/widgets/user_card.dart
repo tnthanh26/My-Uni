@@ -57,72 +57,92 @@ class UserCard extends StatelessWidget {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- HEADER ---
+
+            // HEADER
             Row(
               children: [
                 CircleAvatar(
-                  radius: 26,
+                  radius: 21,
                   backgroundColor: const Color(0xFFEAF2FF),
                   backgroundImage: avatarProvider,
                   child: avatarProvider == null
-                      ? const Icon(Icons.person_outline, color: Colors.blueAccent)
+                      ? const Icon(
+                    Icons.person_outline,
+                    color: Colors.blueAccent,
+                    size: 19,
+                  )
                       : null,
                 ),
-                const SizedBox(width: 14),
+
+                const SizedBox(width: 11),
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
                           color: Color(0xFF1A1F37),
                           fontFamily: 'Nunito',
                         ),
                       ),
-                      const SizedBox(height: 4),
+
+                      const SizedBox(height: 1),
+
                       Text(
                         email,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           color: Colors.grey[600],
-                          fontSize: 13,
+                          fontSize: 12,
                           fontFamily: 'Nunito',
                         ),
                       ),
                     ],
                   ),
                 ),
+
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     statusText,
                     style: TextStyle(
                       color: statusColor,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 11,
                       fontFamily: 'Nunito',
                     ),
                   ),
@@ -130,54 +150,95 @@ class UserCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 10),
 
-            // --- INFO ---
+            // INFO
             Wrap(
-              spacing: 10,
-              runSpacing: 10,
+              spacing: 7,
+              runSpacing: 7,
               children: [
-                ModUserInfoChip(icon: Icons.school_outlined, label: university),
-                ModUserInfoChip(icon: Icons.apartment_outlined, label: faculty),
-                if (phone.toString().trim().isNotEmpty)
-                  ModUserInfoChip(icon: Icons.phone_outlined, label: phone),
-                ModUserInfoChip(icon: Icons.warning_amber_rounded, label: "Vi phạm: $violationCount"),
-                ModUserInfoChip(icon: Icons.lock_clock_outlined, label: "Đã khóa: $suspensionCount"),
-                if (lastBanReason.toString().trim().isNotEmpty)
-                  ModUserInfoChip(icon: Icons.info_outline, label: "Lý do: $lastBanReason"),
+                ModUserInfoChip(
+                  icon: Icons.school_outlined,
+                  label: university,
+                ),
+
+                ModUserInfoChip(
+                  icon: Icons.apartment_outlined,
+                  label: faculty,
+                ),
+
+                ModUserInfoChip(
+                  icon: Icons.warning_amber_rounded,
+                  label: "$violationCount VP",
+                ),
+
+                ModUserInfoChip(
+                  icon: Icons.lock_clock_outlined,
+                  label: "$suspensionCount khóa",
+                ),
               ],
             ),
 
-            const SizedBox(height: 22),
-            const Divider(),
-            const SizedBox(height: 12),
+            if (lastBanReason.toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 8),
 
-            // --- ACTION ---
+              Text(
+                "Lý do khóa gần nhất: $lastBanReason",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11.5,
+                  color: Colors.grey[700],
+                  fontStyle: FontStyle.italic,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ],
+
+            const SizedBox(height: 10),
+
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: Colors.grey.withOpacity(0.25),
+            ),
+
+            const SizedBox(height: 10),
+
+            // ACTIONS
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                ModActionButton(
-                  icon: Icons.history_outlined,
-                  label: "XEM HOẠT ĐỘNG",
-                  color: Colors.blueGrey,
-                  onPressed: onViewActivity,
+                SizedBox(
+                  width: 140,
+                  height: 38,
+                  child: ModActionButton(
+                    icon: Icons.history_outlined,
+                    label: "Hoạt động",
+                    color: Colors.blueGrey,
+                    onPressed: onViewActivity,
+                  ),
                 ),
-                const SizedBox(width: 12),
 
-                if (status == 'active')
-                  ModActionButton(
+                const SizedBox(width: 10),
+
+                SizedBox(
+                  width: 120,
+                  height: 38,
+                  child: status == 'active'
+                      ? ModActionButton(
                     icon: Icons.lock_outline,
-                    label: "KHÓA TÀI KHOẢN",
+                    label: "Khóa",
                     color: Colors.orange,
                     onPressed: onSuspend,
                   )
-                else
-                  ModActionButton(
+                      : ModActionButton(
                     icon: Icons.lock_open_outlined,
-                    label: "MỞ KHÓA",
+                    label: "Mở khóa",
                     color: Colors.green,
                     onPressed: onRestore,
                   ),
+                ),
               ],
             ),
           ],
