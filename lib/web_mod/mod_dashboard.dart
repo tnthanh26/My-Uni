@@ -747,32 +747,108 @@ class _ModDashboardState extends State<ModDashboard> {
           color: Colors.white.withOpacity(0.05),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              child: Icon(Icons.person, color: Colors.white),
+            Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.blueAccent,
+                  child: Icon(Icons.person, color: Colors.white),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        user?.displayName ?? "Moderator",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                      Text(
+                        user?.email ?? "",
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 10,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    user?.displayName ?? "Moderator",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      fontFamily: 'Nunito',
+
+            const SizedBox(height: 14),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final bool? confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text(
+                        "Đăng xuất?",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      content: const Text(
+                        "Bạn có chắc muốn đăng xuất khỏi tài khoản Moderator?",
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text("Hủy"),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text(
+                            "Đăng xuất",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
                     ),
+                  );
+
+                  if (confirm != true) return;
+
+                  await FirebaseAuth.instance.signOut();
+
+                  if (mounted) {
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/',
+                          (route) => false,
+                    );
+                  }
+                },
+                icon: const Icon(
+                  Icons.logout_rounded,
+                  size: 18,
+                  color: Colors.redAccent,
+                ),
+                label: const Text(
+                  "Đăng xuất",
+                  style: TextStyle(
+                    color: Colors.redAccent,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Nunito',
                   ),
-                  Text(
-                    user?.email ?? "",
-                    style: const TextStyle(color: Colors.grey, fontSize: 10),
-                    overflow: TextOverflow.ellipsis,
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(
+                    color: Colors.redAccent.withOpacity(0.35),
                   ),
-                ],
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
               ),
             ),
           ],
