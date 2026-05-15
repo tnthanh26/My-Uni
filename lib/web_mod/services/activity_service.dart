@@ -73,38 +73,51 @@ class ActivityService {
         .snapshots();
   }
 
-  static Future<void> addAttendanceFromQr({
+  static Future<bool> addAttendanceFromQr({
     required String activityId,
     required Map<String, dynamic> studentData,
   }) async {
     final checker = _auth.currentUser;
 
-    final uid = studentData['uid'];
-    final studentId = studentData['studentId'];
+    final uid = studentData['uid']?.toString();
+    final studentId = studentData['studentId']?.toString();
 
-    if (uid == null && studentId == null) {
+    if ((uid == null || uid.isEmpty) && (studentId == null || studentId.isEmpty)) {
       throw Exception('QR thiếu uid hoặc MSSV.');
     }
 
-    final docId = uid ?? studentId;
+    final docId = (uid != null && uid.isNotEmpty) ? uid : studentId!;
 
-    await attendanceRef(activityId).doc(docId).set({
-      'uid': uid,
-      'studentId': studentId,
-      'displayName': studentData['displayName'] ?? '',
-      'faculty': studentData['faculty'] ?? '',
-      'cohort': studentData['cohort'] ?? '',
-      'university': studentData['university'] ?? '',
-      'isVerified': studentData['isVerified'] ?? false,
-      'checkedInAt': FieldValue.serverTimestamp(),
-      'checkedInBy': checker?.uid,
-      'checkedInByEmail': checker?.email,
-      'checkInMethod': 'student_qr',
-    }, SetOptions(merge: true));
+    final activityDoc = _activities.doc(activityId);
+    final attendanceDoc = attendanceRef(activityId).doc(docId);
 
-    await _activities.doc(activityId).update({
-      'attendanceCount': FieldValue.increment(1),
-      'updatedAt': FieldValue.serverTimestamp(),
+    return _firestore.runTransaction<bool>((transaction) async {
+      final attendanceSnapshot = await transaction.get(attendanceDoc);
+
+      if (attendanceSnapshot.exists) {
+        return false;
+      }
+
+      transaction.set(attendanceDoc, {
+        'uid': uid,
+        'studentId': studentId,
+        'displayName': studentData['displayName'] ?? '',
+        'faculty': studentData['faculty'] ?? '',
+        'cohort': studentData['cohort'] ?? '',
+        'university': studentData['university'] ?? '',
+        'isVerified': studentData['isVerified'] ?? false,
+        'checkedInAt': FieldValue.serverTimestamp(),
+        'checkedInBy': checker?.uid,
+        'checkedInByEmail': checker?.email,
+        'checkInMethod': 'student_qr',
+      });
+
+      transaction.update(activityDoc, {
+        'attendanceCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      return true;
     });
   }
 }

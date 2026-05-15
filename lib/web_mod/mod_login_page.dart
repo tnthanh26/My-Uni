@@ -8,6 +8,9 @@ class ModLoginPage extends StatelessWidget {
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     try {
       GoogleAuthProvider googleProvider = GoogleAuthProvider();
+      googleProvider.setCustomParameters({
+        'prompt': 'select_account',
+      });
 
       // 1. Thực hiện đăng nhập
       UserCredential userCredential = await FirebaseAuth.instance.signInWithPopup(googleProvider);

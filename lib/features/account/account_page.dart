@@ -545,6 +545,7 @@ class AccountPage extends StatelessWidget {
             final qrData = jsonEncode({
               'type': 'myuni_student_qr',
               'version': 1,
+              'uid': user?.uid,
               'displayName': name,
               'studentId': studentId,
               'faculty': faculty,
