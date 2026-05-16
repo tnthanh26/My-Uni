@@ -60,6 +60,11 @@ class LocalStorageHelper {
     ),
   ];
 
+  static Future<void> clearAutoDeadlineConfig() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_autoDeadlineConfigKey);
+  }
+
   // --- LƯU DEADLINES ---
   static Future<void> saveDeadlines(List<Deadline> deadlines) async {
     final prefs = await SharedPreferences.getInstance();
@@ -135,34 +140,38 @@ class LocalStorageHelper {
 
   static Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
     final prefs = await SharedPreferences.getInstance();
+
     final encodedData = jsonEncode({
       'isEnabled': config.isEnabled,
       'provider': config.provider,
-      'emailAddress': config.emailAddress,
-      'allowedSenders': config.allowedSenders,
-      'subjectKeywords': config.subjectKeywords,
-      'onlyUnread': config.onlyUnread,
-      'includeAttachments': config.includeAttachments,
+      'moodleUrl': config.moodleUrl,
       'permissionRequested': config.permissionRequested,
       'permissionGranted': config.permissionGranted,
       'updatedAt': config.updatedAt?.toIso8601String(),
     });
+
     await prefs.setString(_autoDeadlineConfigKey, encodedData);
   }
 
-  static Future<AutoDeadlineConfig> getAutoDeadlineConfig({String emailAddress = ''}) async {
+  static Future<AutoDeadlineConfig> getAutoDeadlineConfig({
+    String moodleUrl = '',
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final String? data = prefs.getString(_autoDeadlineConfigKey);
 
     if (data == null || data.trim().isEmpty) {
-      return AutoDeadlineConfig.empty(emailAddress: emailAddress);
+      return AutoDeadlineConfig.empty(moodleUrl: moodleUrl);
     }
 
-    final Map<String, dynamic> decoded = Map<String, dynamic>.from(jsonDecode(data));
-    return AutoDeadlineConfig.fromMap(decoded).copyWith(
-      emailAddress: (decoded['emailAddress'] == null || (decoded['emailAddress'] as String).trim().isEmpty)
-          ? emailAddress
-          : decoded['emailAddress'],
+    final Map<String, dynamic> decoded =
+    Map<String, dynamic>.from(jsonDecode(data));
+
+    final config = AutoDeadlineConfig.fromMap(decoded);
+
+    final String savedMoodleUrl = config.moodleUrl.trim();
+
+    return config.copyWith(
+      moodleUrl: savedMoodleUrl.isEmpty ? moodleUrl : savedMoodleUrl,
     );
   }
 

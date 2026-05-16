@@ -8,6 +8,7 @@ class Deadline {
   final String? description;
   final DateTime dueDate;
   final TimeOfDay dueTime;
+  final bool isMoodleSynced;
   bool isCompleted;
 
   Deadline({
@@ -17,6 +18,7 @@ class Deadline {
     required this.dueDate,
     required this.dueTime,
     this.isCompleted = false,
+    this.isMoodleSynced = false,
   });
 
   // Chuyển từ Object sang Map để đẩy lên Firebase
@@ -29,6 +31,7 @@ class Deadline {
       'dueTimeMinute': dueTime.minute,
       'isCompleted': isCompleted,
       'updatedAt': FieldValue.serverTimestamp(),
+      'isMoodleSynced': isMoodleSynced,
     };
   }
 }
@@ -68,11 +71,7 @@ class StudyClass {
 class AutoDeadlineConfig {
   final bool isEnabled;
   final String provider;
-  final String emailAddress;
-  final List<String> allowedSenders;
-  final List<String> subjectKeywords;
-  final bool onlyUnread;
-  final bool includeAttachments;
+  final String moodleUrl;
   final bool permissionRequested;
   final bool permissionGranted;
   final DateTime? updatedAt;
@@ -80,25 +79,17 @@ class AutoDeadlineConfig {
   const AutoDeadlineConfig({
     required this.isEnabled,
     required this.provider,
-    required this.emailAddress,
-    required this.allowedSenders,
-    required this.subjectKeywords,
-    required this.onlyUnread,
-    required this.includeAttachments,
+    required this.moodleUrl,
     required this.permissionRequested,
     required this.permissionGranted,
     this.updatedAt,
   });
 
-  factory AutoDeadlineConfig.empty({String emailAddress = ''}) {
+  factory AutoDeadlineConfig.empty({String moodleUrl = ''}) {
     return AutoDeadlineConfig(
       isEnabled: false,
-      provider: 'gmail',
-      emailAddress: emailAddress,
-      allowedSenders: const [],
-      subjectKeywords: const [],
-      onlyUnread: true,
-      includeAttachments: false,
+      provider: 'moodle',
+      moodleUrl: moodleUrl,
       permissionRequested: false,
       permissionGranted: false,
       updatedAt: null,
@@ -108,11 +99,7 @@ class AutoDeadlineConfig {
   AutoDeadlineConfig copyWith({
     bool? isEnabled,
     String? provider,
-    String? emailAddress,
-    List<String>? allowedSenders,
-    List<String>? subjectKeywords,
-    bool? onlyUnread,
-    bool? includeAttachments,
+    String? moodleUrl,
     bool? permissionRequested,
     bool? permissionGranted,
     DateTime? updatedAt,
@@ -120,11 +107,7 @@ class AutoDeadlineConfig {
     return AutoDeadlineConfig(
       isEnabled: isEnabled ?? this.isEnabled,
       provider: provider ?? this.provider,
-      emailAddress: emailAddress ?? this.emailAddress,
-      allowedSenders: allowedSenders ?? this.allowedSenders,
-      subjectKeywords: subjectKeywords ?? this.subjectKeywords,
-      onlyUnread: onlyUnread ?? this.onlyUnread,
-      includeAttachments: includeAttachments ?? this.includeAttachments,
+      moodleUrl: moodleUrl ?? this.moodleUrl,
       permissionRequested: permissionRequested ?? this.permissionRequested,
       permissionGranted: permissionGranted ?? this.permissionGranted,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -135,11 +118,7 @@ class AutoDeadlineConfig {
     return {
       'isEnabled': isEnabled,
       'provider': provider,
-      'emailAddress': emailAddress,
-      'allowedSenders': allowedSenders,
-      'subjectKeywords': subjectKeywords,
-      'onlyUnread': onlyUnread,
-      'includeAttachments': includeAttachments,
+      'moodleUrl': moodleUrl,
       'permissionRequested': permissionRequested,
       'permissionGranted': permissionGranted,
       'updatedAt': updatedAt != null
@@ -151,6 +130,7 @@ class AutoDeadlineConfig {
   factory AutoDeadlineConfig.fromMap(Map<String, dynamic> map) {
     final dynamic rawUpdatedAt = map['updatedAt'];
     DateTime? parsedUpdatedAt;
+
     if (rawUpdatedAt is Timestamp) {
       parsedUpdatedAt = rawUpdatedAt.toDate();
     } else if (rawUpdatedAt is String && rawUpdatedAt.isNotEmpty) {
@@ -159,12 +139,9 @@ class AutoDeadlineConfig {
 
     return AutoDeadlineConfig(
       isEnabled: map['isEnabled'] ?? false,
-      provider: map['provider'] ?? 'gmail',
-      emailAddress: map['emailAddress'] ?? '',
-      allowedSenders: List<String>.from(map['allowedSenders'] ?? const []),
-      subjectKeywords: List<String>.from(map['subjectKeywords'] ?? const []),
-      onlyUnread: map['onlyUnread'] ?? true,
-      includeAttachments: map['includeAttachments'] ?? false,
+      provider: map['provider'] ?? 'moodle',
+      moodleUrl: map['moodleUrl'] ?? '',
+
       permissionRequested: map['permissionRequested'] ?? false,
       permissionGranted: map['permissionGranted'] ?? false,
       updatedAt: parsedUpdatedAt,
