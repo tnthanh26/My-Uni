@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 import 'post_action_row.dart';
+import 'official_content_helper.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -329,79 +330,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
     await _sendCommentNotification(content);
   }
 
-  String _getOfficialImageByContent(Map<String, dynamic> data) {
-    String title = data['title']?.toString().toLowerCase() ?? "";
-    String summary = data['summary']?.toString().toLowerCase() ?? "";
-    String text = "$title $summary";
-
-    if (text.contains('học bổng') || text.contains('scholarship')) {
-      return 'assets/images/scholarship.jpg';
-    }
-    if (text.contains('tuyển dụng') ||
-        text.contains('việc làm') ||
-        text.contains('intern') ||
-        text.contains('thực tập')) {
-      return 'assets/images/job.jpg';
-    }
-    if (text.contains('hội thảo') ||
-        text.contains('seminar') ||
-        text.contains('workshop') ||
-        text.contains('talkshow')) {
-      return 'assets/images/seminar.jpg';
-    }
-    if (text.contains('thể thao') ||
-        text.contains('bóng đá') ||
-        text.contains('giải đấu')) {
-      return 'assets/images/sport.jpg';
-    }
-    if (text.contains('công nghệ') ||
-        text.contains('tech') ||
-        text.contains('lập trình')) {
-      return 'assets/images/tech.jpg';
-    }
-    if (text.contains('nghệ thuật') ||
-        text.contains('văn nghệ') ||
-        text.contains('âm nhạc')) {
-      return 'assets/images/art.jpg';
-    }
-    if (text.contains('lễ tốt nghiệp') || text.contains('graduation')) {
-      return 'assets/images/graduation.jpg';
-    }
-    if (text.contains('cuộc thi') ||
-        text.contains('contest') ||
-        text.contains('giải thưởng')) {
-      return 'assets/images/contest.jpg';
-    }
-    if (text.contains('thông báo') || text.contains('quy định')) {
-      return 'assets/images/announcement.jpg';
-    }
-    if (text.contains('y tế') || text.contains('khám chữa bệnh')) {
-      return 'assets/images/health.jpg';
-    }
-
-    return 'assets/images/news.png';
-  }
-
-  bool _isOfficialEvent(Map<String, dynamic> data) {
-    String title = data['title']?.toString().toLowerCase() ?? "";
-    String summary = data['summary']?.toString().toLowerCase() ?? "";
-    List<String> keywords = [
-      'seminar',
-      'talkshow',
-      'hội thảo',
-      'cuộc thi',
-      'chào tân sinh viên',
-      'ngày hội',
-      'lễ tốt nghiệp',
-      'workshop',
-      'sự kiện',
-      'mời tham gia',
-      'đăng ký tham gia'
-    ];
-    String content = "$title $summary";
-    return keywords.any((k) => content.contains(k));
-  }
-
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -540,8 +468,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildOfficialUI(Map<String, dynamic> data) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isEvent = _isOfficialEvent(data);
-    final String imagePath = _getOfficialImageByContent(data);
+    final bool isEvent = OfficialContentHelper.isOfficialEvent(
+      data['title'],
+      data['summary'],
+    );
+
+    final String imagePath = OfficialContentHelper.getOfficialImageByContent(
+      data['title'],
+      data['summary'],
+    );
 
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 12, 10, 10),

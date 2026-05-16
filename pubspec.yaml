@@ -115,6 +115,8 @@ flutter:
   - assets/images/logoApp.png
   - assets/images/logoSplash.png
   - assets/images/MyUni.png
+  - assets/images/no_deadline_meme.gif
+  - assets/images/no_class_meme.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
