@@ -45,12 +45,34 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   void initState() {
     super.initState();
     if (widget.schedule != null) {
-      _subjectController.text = widget.schedule!.name;
-      _locationController.text = widget.schedule!.room;
-      _selectedColor = widget.schedule!.color;
-      _selectedWeekday = _weekdays[widget.schedule!.weekday - 2];
-      // Cập nhật các biến thời gian và thứ từ widget.schedule
-      // VD: _selectedWeekday = _getWeekdayString(widget.schedule!.weekday);
+      final schedule = widget.schedule!;
+
+      _subjectController.text = schedule.name;
+      _locationController.text = schedule.room;
+      _selectedColor = schedule.color;
+      _selectedWeekday = _weekdays[schedule.weekday - 2];
+
+      _startTime = _parseScheduleTime(schedule.start);
+      _endTime = _parseScheduleTime(schedule.end);
+    }
+  }
+
+  TimeOfDay _parseScheduleTime(String time) {
+    final input = time.trim().toUpperCase();
+
+    try {
+      DateTime parsed;
+
+      if (input.contains('AM') || input.contains('PM')) {
+        parsed = DateFormat('h:mm a').parse(input);
+      } else {
+        parsed = DateFormat('HH:mm').parse(input);
+      }
+
+      return TimeOfDay(hour: parsed.hour, minute: parsed.minute);
+    } catch (e) {
+      debugPrint('Cannot parse schedule time: $time, error: $e');
+      return const TimeOfDay(hour: 7, minute: 30);
     }
   }
 

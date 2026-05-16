@@ -1,0 +1,65 @@
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+
+class MoodleService {
+  static Future<String?> connectAndGetToken({
+    required String moodleUrl,
+    required String username,
+    required String password,
+  }) async {
+    try {
+      final cleanedUrl = moodleUrl.trim().replaceAll(RegExp(r'/$'), '');
+
+      final response = await http.post(
+        Uri.parse('$cleanedUrl/login/token.php'),
+        body: {
+          'username': username,
+          'password': password,
+          'service': 'moodle_mobile_app',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      debugPrint('MOODLE TOKEN RESPONSE: $data');
+
+      if (data['token'] != null) {
+        return data['token'];
+      }
+
+      return null;
+    } catch (e) {
+      debugPrint('MOODLE CONNECT ERROR: $e');
+      return null;
+    }
+  }
+
+  static Future<List<dynamic>> fetchUpcomingEvents({
+    required String moodleUrl,
+    required String token,
+  }) async {
+    try {
+      final cleanedUrl = moodleUrl.trim().replaceAll(RegExp(r'/$'), '');
+
+      final response = await http.post(
+        Uri.parse('$cleanedUrl/webservice/rest/server.php'),
+        body: {
+          'wstoken': token,
+          'wsfunction': 'core_calendar_get_calendar_upcoming_view',
+          'moodlewsrestformat': 'json',
+        },
+      );
+
+      final data = jsonDecode(response.body);
+
+      debugPrint('MOODLE EVENTS RESPONSE: $data');
+
+      return data['events'] ?? [];
+    } catch (e) {
+      debugPrint('FETCH MOODLE EVENTS ERROR: $e');
+      return [];
+    }
+  }
+}
