@@ -12,8 +12,11 @@ import 'package:my_uni/models/notification_model.dart';
 import './services/myspace_weather_coordinator.dart';
 import './services/weather_alert_service.dart';
 import './services/weather_service.dart';
+import './services/moodle_service.dart';
+import './services/moodle_token_storage.dart';
 import './models/weather_models.dart';
 import 'weather_alert_card.dart';
+import 'myspace_deadline_section.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
@@ -110,11 +113,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   final MySpaceFirebaseService _firebaseService = MySpaceFirebaseService();
 
   Future<void> _loadInitialMetaData() async {
-    final currentUserEmail = FirebaseAuth.instance.currentUser?.email ?? '';
     final currentUser = FirebaseAuth.instance.currentUser;
 
     final localAutoConfig = await LocalStorageHelper.getAutoDeadlineConfig(
-      emailAddress: currentUserEmail,
+      moodleUrl: '',
     );
 
     if (mounted) {
@@ -143,9 +145,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
       if (remoteAutoConfig != null) {
         final mergedConfig = remoteAutoConfig.copyWith(
-          emailAddress: remoteAutoConfig.emailAddress.trim().isEmpty
-              ? currentUserEmail
-              : remoteAutoConfig.emailAddress,
+          moodleUrl: remoteAutoConfig.moodleUrl.trim(),
         );
 
         if (mounted) {
@@ -153,6 +153,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             _autoDeadlineConfig = mergedConfig;
           });
         }
+
+        await _maybeSyncMoodleDeadlines();
 
         await LocalStorageHelper.saveAutoDeadlineConfig(mergedConfig);
       }
@@ -197,12 +199,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     _deadlineSub = _firebaseService.deadlineStream().listen(
           (remoteDls) async {
         if (!mounted) return;
+        final cleanedDeadlines = await _cleanupExpiredDeadlines(remoteDls);
+        if (!mounted) return;
 
         setState(() {
-          mockDeadlines = remoteDls;
+          mockDeadlines = cleanedDeadlines;
         });
 
-        await LocalStorageHelper.saveDeadlines(remoteDls);
+        await LocalStorageHelper.saveDeadlines(cleanedDeadlines);
       },
       onError: (e) async {
         debugPrint("Deadline stream error: $e");
@@ -215,6 +219,36 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         });
       },
     );
+  }
+
+  Future<List<Deadline>> _cleanupExpiredDeadlines(List<Deadline> deadlines) async {
+    final now = DateTime.now();
+    final remainingDeadlines = <Deadline>[];
+
+    for (final deadline in deadlines) {
+      final deadlineDateTime = DateTime(
+        deadline.dueDate.year,
+        deadline.dueDate.month,
+        deadline.dueDate.day,
+        deadline.dueTime.hour,
+        deadline.dueTime.minute,
+      );
+
+      final daysOverdue = now.difference(deadlineDateTime).inDays;
+
+      final shouldDelete =
+          (deadline.isCompleted && daysOverdue >= 1) ||
+              (!deadline.isCompleted && daysOverdue >= 3);
+
+      if (shouldDelete) {
+        await _firebaseService.deleteDeadline(deadline.id);
+        debugPrint('Deleted expired deadline: ${deadline.title}');
+      } else {
+        remainingDeadlines.add(deadline);
+      }
+    }
+
+    return remainingDeadlines;
   }
 
   void _toggleDeadline(String id) async {
@@ -306,15 +340,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  // --- UI HELPER ---
-
-  List<String> _splitCommaSeparated(String input) {
-    return input
-        .split(',')
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toList();
-  }
+  //Auto deadline code
 
   Future<void> _saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
     final normalized = config.copyWith(updatedAt: DateTime.now());
@@ -334,321 +360,93 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Future<void> _showAutoDeadlineConfigSheet() async {
-    final baseConfig = _autoDeadlineConfig ?? AutoDeadlineConfig.empty(
-      emailAddress: FirebaseAuth.instance.currentUser?.email ?? '',
+    await showAutoDeadlineConfigSheet(
+      context,
+      currentConfig: _autoDeadlineConfig,
+      onSave: _saveAutoDeadlineConfig,
+      onSyncNow: () => _maybeSyncMoodleDeadlines(force: true),
     );
+  }
 
-    final emailController = TextEditingController(text: baseConfig.emailAddress);
-    final senderController = TextEditingController(
-      text: baseConfig.allowedSenders.join(', '),
-    );
-    final keywordController = TextEditingController(
-      text: baseConfig.subjectKeywords.join(', '),
-    );
+  Future<void> _maybeSyncMoodleDeadlines({bool force = false}) async {
+    final config = _autoDeadlineConfig;
 
-    bool isEnabled = baseConfig.isEnabled;
-    String provider = baseConfig.provider;
-    bool onlyUnread = baseConfig.onlyUnread;
-    bool includeAttachments = baseConfig.includeAttachments;
-    bool permissionRequested = baseConfig.permissionRequested;
-    bool permissionGranted = baseConfig.permissionGranted;
-    bool showAdvancedOptions = false;
+    if (config == null ||
+        !config.isEnabled ||
+        config.moodleUrl.trim().isEmpty) {
+      debugPrint('Moodle sync skipped: config missing/disabled.');
+      return;
+    }
 
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 16,
-                right: 16,
-                top: 16,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-              ),
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-                ),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'Auto-update deadline',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Poppins',
-                                color: isDarkMode ? Colors.white : Colors.black87,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: Icon(
-                              Icons.close_rounded,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Mới là phần UI + lưu cấu hình. Chưa đọc mail thật cho tới khi mình nối email_listener/OAuth backend.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SwitchListTile.adaptive(
-                        value: isEnabled,
-                        contentPadding: EdgeInsets.zero,
-                        activeThumbColor: hcmusBlueAccent,
-                        title: const Text(
-                          'Bật tự động cập nhật deadline',
-                          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: const Text(
-                          'Sau này hệ thống sẽ quét email hợp lệ và gợi ý/tạo deadline tự động.',
-                          style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-                        ),
-                        onChanged: (value) => setModalState(() => isEnabled = value),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildConfigLabel('Loại email cần đọc'),
-                      const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        initialValue: provider,
-                        decoration: _configInputDecoration('Chọn nhà cung cấp email'),
-                        items: const [
-                          DropdownMenuItem(value: 'gmail', child: Text('Gmail')),
-                          DropdownMenuItem(value: 'outlook', child: Text('Outlook / Microsoft')),
-                          DropdownMenuItem(value: 'other', child: Text('Khác')),
-                        ],
-                        onChanged: (value) {
-                          if (value != null) {
-                            setModalState(() => provider = value);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      _buildConfigLabel('Email sẽ dùng để đồng bộ'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        decoration: _configInputDecoration('vd: hoshi@student.edu.vn'),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildConfigLabel('Tự đọc mail từ ai'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: senderController,
-                        maxLines: 2,
-                        decoration: _configInputDecoration(
-                          'vd: daotao@school.edu.vn, lecturer@hcmus.edu.vn',
-                        ),
-                      ),
-                      /*
-                      const SizedBox(height: 14),
-                      _buildConfigLabel('Từ khóa tiêu đề / nội dung ưu tiên'),
-                      const SizedBox(height: 8),
-                      TextField(
-                        controller: keywordController,
-                        maxLines: 2,
-                        decoration: _configInputDecoration(
-                          'vd: deadline, assignment, quiz, submission, exam',
-                        ),
-                      ),
+    final lastSync = config.updatedAt;
 
-                      const SizedBox(height: 10),
-                      TextButton(
-                        onPressed: () => setModalState(() => showAdvancedOptions = !showAdvancedOptions),
-                        child: Text(
-                          showAdvancedOptions ? 'Ẩn tùy chọn nâng cao' : 'Tùy chọn nâng cao',
-                          style: TextStyle(
-                            color: hcmusBlueAccent,
-                            fontFamily: 'Poppins',
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+    if (!force &&
+        lastSync != null &&
+        DateTime.now().difference(lastSync).inHours < 12) {
+      debugPrint('Moodle sync skipped: cooldown active.');
+      return;
+    }
 
-                      if (_showAdvancedOptions) ...[
-                        CheckboxListTile(
-                          value: onlyUnread,
-                          contentPadding: EdgeInsets.zero,
-                          activeColor: hcmusBlueAccent,
-                          title: const Text('Ưu tiên chỉ đọc email chưa đọc', style: TextStyle(fontFamily: 'Poppins')),
-                          onChanged: (value) => setModalState(() => onlyUnread = value ?? true),
-                        ),
-                        CheckboxListTile(
-                          value: includeAttachments,
-                          contentPadding: EdgeInsets.zero,
-                          activeColor: hcmusBlueAccent,
-                          title: const Text('Cho phép xét cả email có file đính kèm', style: TextStyle(fontFamily: 'Poppins')),
-                          onChanged: (value) => setModalState(() => includeAttachments = value ?? false),
-                        ),
-                      ],
-                       */
-                      const SizedBox(height: 8),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? const Color(0xFF23262B) : const Color(0xFFF5F8FF),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFDCE7FF)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  permissionGranted ? Icons.verified_rounded : Icons.lock_outline_rounded,
-                                  size: 18,
-                                  color: permissionGranted ? hcmusTeal : Colors.orange,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  permissionGranted ? 'Quyền truy cập: đã cấp' : 'Quyền truy cập: chưa cấp',
-                                  style: const TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Nút này mới là bước xin phép/gợi ý UX. OAuth thật sẽ nối ở bước sau.',
-                              style: TextStyle(fontFamily: 'Poppins', fontSize: 12),
-                            ),
-                            const SizedBox(height: 10),
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                setModalState(() {
-                                  permissionRequested = true;
-                                  permissionGranted = false;
-                                });
-                                ScaffoldMessenger.of(this.context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Đã ghi nhận yêu cầu cấp quyền. Bước OAuth thật sẽ nối sau.'),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.mark_email_read_outlined),
-                              label: Text(
-                                permissionRequested ? 'Yêu cầu cấp quyền lại' : 'Yêu cầu cấp quyền',
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: hcmusBlueAccent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onPressed: () async {
-                            final email = emailController.text.trim();
-                            if (email.isEmpty) {
-                              ScaffoldMessenger.of(this.context).showSnackBar(
-                                const SnackBar(content: Text('Điền email trước đã.')),
-                              );
-                              return;
-                            }
+    final token = await MoodleTokenStorage.getToken();
 
-                            final config = AutoDeadlineConfig(
-                              isEnabled: isEnabled,
-                              provider: provider,
-                              emailAddress: email,
-                              allowedSenders: _splitCommaSeparated(senderController.text),
-                              subjectKeywords: _splitCommaSeparated(keywordController.text),
-                              onlyUnread: onlyUnread,
-                              includeAttachments: includeAttachments,
-                              permissionRequested: permissionRequested,
-                              permissionGranted: permissionGranted,
-                              updatedAt: DateTime.now(),
-                            );
+    if (token == null || token.trim().isEmpty) {
+      debugPrint('Moodle sync skipped: missing token.');
+      return;
+    }
 
-                            await _saveAutoDeadlineConfig(config);
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          },
-                          child: const Text(
-                            'Lưu cấu hình',
-                            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+    try {
+      debugPrint('Moodle sync started for: ${config.moodleUrl}');
+
+      final events = await MoodleService.fetchUpcomingEvents(
+        moodleUrl: config.moodleUrl,
+        token: token,
+      );
+
+      debugPrint('Fetched Moodle events: ${events.length}');
+
+      for (final event in events) {
+        final int? timestamp = event['timestart'];
+
+        if (timestamp == null) continue;
+
+        final DateTime dateTime =
+        DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
+
+        final rawDescription = cleanHtml(
+          (event['description'] ?? '').toString(),
+        ).trim();
+
+        final deadline = Deadline(
+          id: 'moodle_${event['id']}',
+          title: (event['name'] ?? 'Untitled Moodle Event').toString(),
+          description: rawDescription.isNotEmpty
+              ? rawDescription
+              : 'Deadline được lấy từ Moodle',
+          dueDate: dateTime,
+          dueTime: TimeOfDay.fromDateTime(dateTime),
+          isCompleted: false,
+          isMoodleSynced: true,
         );
-      },
-    );
+
+        debugPrint('CREATED DEADLINE: ${deadline.title}');
+
+        await _firebaseService.saveDeadline(deadline);
+      }
+
+      final updatedConfig = config.copyWith(
+        updatedAt: DateTime.now(),
+      );
+
+      await _saveAutoDeadlineConfig(updatedConfig);
+
+      debugPrint('Moodle sync completed.');
+    } catch (e) {
+      debugPrint('Moodle sync error: $e');
+    }
   }
 
-  Widget _buildConfigLabel(String text) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        fontFamily: 'Poppins',
-        color: isDarkMode ? Colors.white : Colors.black87,
-      ),
-    );
-  }
-
-  InputDecoration _configInputDecoration(String hintText) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return InputDecoration(
-      hintText: hintText,
-      hintStyle: TextStyle(
-        fontFamily: 'Poppins',
-        fontSize: 13,
-        color: isDarkMode ? Colors.white54 : null,
-      ),
-      filled: true,
-      fillColor: isDarkMode ? const Color(0xFF23262B) : const Color(0xFFF8FAFD),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3)),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3)),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(color: hcmusBlueAccent, width: 1.4),
-      ),
-    );
+  String cleanHtml(String html) {
+    return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
   }
 
   void _showSuccessSnackBar(String title) {
@@ -946,17 +744,82 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           ),
 
           const SizedBox(height: 25),
-          _buildDeadlineSectionHeader(),
-          ...top3Deadlines.map((d) => _buildDeadlineCardFigma(d)),
+
+          MySpaceDeadlineSection(
+            autoDeadlineConfig: _autoDeadlineConfig,
+            deadlines: top3Deadlines,
+            onOpenAutoConfig: _showAutoDeadlineConfigSheet,
+            onOpenDetail: () => _navigateToDetail(0),
+            onToggleDeadline: _toggleDeadline,
+            onDeleteDeadline: _deleteDeadline,
+          ),
+
+          if (top3Deadlines.isEmpty) _buildEmptyStateMeme(type: 'deadline'),
 
           const SizedBox(height: 25),
           _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1)),
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
 
+          if (todayClasses.isEmpty)
+            _buildEmptyStateMeme(type: 'class'),
+
           const SizedBox(height: 80),
         ],
       ),
+    );
+  }
+
+  Widget _buildEmptyStateMeme({
+    required String type,
+  }) {
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    String imagePath;
+    String title;
+
+    switch (type) {
+      case 'deadline':
+        imagePath = 'assets/images/no_deadline_meme.gif';
+        title = 'Hết deadline rồi quẩy thôi!';
+        break;
+
+      case 'class':
+        imagePath = 'assets/images/no_class_meme.png';
+        title = 'Nay rãnh thì đi chơi hông người đẹp?';
+        break;
+
+      default:
+        imagePath = 'assets/images/no_class_meme.png';
+        title = 'Trống trơn';
+    }
+
+    return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Column(
+          children: [
+            Image.asset(
+              imagePath,
+              height: 120,
+              fit: BoxFit.contain,
+            ),
+
+            const SizedBox(height: 10),
+
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xFF1E293B),
+              ),
+            ),
+          ],
+        ),
     );
   }
 
@@ -1021,7 +884,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               child: TabBarView(
                 controller: _tabController,
                 children: [
-                  _buildDeadlineDetailList(),
+                  MySpaceDeadlineDetailList(
+                    deadlines: mockDeadlines,
+                    selectedWeekday: selectedWeekday,
+                    currentWeek: _getCurrentWeekDays(),
+                    onToggleDeadline: _toggleDeadline,
+                    onDeleteDeadline: _deleteDeadline,
+                    onEditDeadline: _editDeadline,
+                  ),
                   _buildScheduleDetailList(),
                 ],
               ),
@@ -1170,136 +1040,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildDeadlineDetailList() {
-    final currentWeek = _getCurrentWeekDays();
-    final selectedDate = currentWeek.firstWhere((d) => d['value'] == selectedWeekday)['fullDate'] as DateTime;
 
-    // Lọc list dùng chung
-    final filteredDeadlines = mockDeadlines.where((d) =>
-    d.dueDate.year == selectedDate.year &&
-        d.dueDate.month == selectedDate.month &&
-        d.dueDate.day == selectedDate.day
-    ).toList();
 
-    if (filteredDeadlines.isEmpty) {
-      return Center(child: Text("Không có deadline cho ngày này!", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87)));
-    }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: filteredDeadlines.length,
-      itemBuilder: (context, index) => _buildDeadlineDetailCard(filteredDeadlines[index]),
-    );
-  }
-
-  Widget _buildDeadlineDetailCard(Deadline d) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 15, left: 20, right: 20), // Thêm margin để card nằm giữa màn hình
-      height: 94,
-      child: Stack(
-        children: [
-          // 1. Rectangle 1044 (Background)
-          Container(
-            width: double.infinity,
-            height: 94,
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 32,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-          ),
-
-          // 2. Nộp file pdf trên moodle (Sub-text)
-          Positioned(
-            left: 14, // Tính toán lại: 61px (Figma) - 47px (Card left) = 14px
-            top: 16,  // 359px - 343px = 16px
-            child: Text(
-              "Nộp file pdf trên moodle",
-              style: TextStyle(
-                fontFamily: 'Lexend Deca',
-                fontSize: 11,
-                color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C),
-              ),
-            ),
-          ),
-
-          // 3. Bài tập CS101 (Title)
-          Positioned(
-            left: 14, // 61px - 47px = 14px
-            top: 38,  // 381px - 343px = 38px
-            child: Text(
-              d.title,
-              style: TextStyle(
-                fontFamily: 'Lexend Deca',
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-                color: isDarkMode ? Colors.white : const Color(0xFF24252C),
-                decoration: d.isCompleted ? TextDecoration.lineThrough : null,
-              ),
-            ),
-          ),
-
-          // 4. Icon Time Circle & Time Text (10:00 AM)
-          Positioned(
-            left: 14,
-            top: 64, // 407px - 343px = 64px
-            child: Row(
-              children: [
-                const Icon(Icons.access_time_filled, size: 14, color: hcmusBlueAccent),
-                const SizedBox(width: 6),
-                Text(
-                  "${d.dueTime.hour}:${d.dueTime.minute.toString().padLeft(2, '0')}",
-                  style: const TextStyle(
-                    fontFamily: 'Lexend Deca',
-                    fontSize: 11,
-                    color: hcmusBlueAccent,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // 5. Ba chấm (Icons.more_horiz)
-          Positioned(
-            right: 18, // Ước lượng vị trí gần checkbox
-            top: 12,
-            child: GestureDetector(
-              onTap: () => _showDeadlineActionMenu(d),
-              child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20),
-            ),
-          ),
-
-          // 6. Ellipse 132 (Checkbox)
-          Positioned(
-            right: 15, // 343px là left tuyệt đối, nên để right cho linh hoạt
-            top: 55,   // 402px - 343px = 59px (điều chỉnh nhẹ cho cân đối)
-            child: GestureDetector(
-              onTap: () => _toggleDeadline(d.id),
-              child: Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: d.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1),
-                ),
-                child: d.isCompleted
-                    ? const Icon(Icons.check, color: Colors.white, size: 16)
-                    : null,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   void _editDeadline(Deadline deadline) async {
     final result = await Navigator.push(
@@ -1321,66 +1064,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     if (result == true) _loadInitialMetaData(); // Tải lại dữ liệu sau khi sửa
   }
 
-  void _showDeadlineActionMenu(Deadline d) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Tiêu đề để biết đang thao tác với deadline nào
-              Text(
-                  d.title,
-                  style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white70 : Colors.grey,
-                      fontFamily: 'Lexend Deca'
-                  )
-              ),
-              Divider(color: isDarkMode ? Colors.white12 : null),
 
-              // Lựa chọn CHỈNH SỬA - Đã được cập nhật logic
-              ListTile(
-                leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent),
-                title: const Text("Chỉnh sửa deadline",
-                    style: TextStyle(fontFamily: 'Lexend Deca')),
-                onTap: () {
-                  Navigator.pop(context); // Đóng Menu trước
-                  _editDeadline(d);       // Gọi hàm điều hướng sang trang Create (kèm dữ liệu)
-                },
-              ),
-
-              // Lựa chọn XÓA - Màu đỏ khẩn cấp
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)),
-                title: const Text(
-                  "Xóa deadline",
-                  style: TextStyle(
-                      color: Color(0xFFDC2626),
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Lexend Deca'
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context); // Đóng Menu trước
-                  _deleteDeadline(d.id);  // Gọi hàm xóa
-                },
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
   Widget _buildScheduleDetailList() {
     final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
@@ -1585,69 +1269,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildDeadlineSectionHeader() {
-    final config = _autoDeadlineConfig;
-    final bool isEnabled = config?.isEnabled ?? false;
-    final bool permissionRequested = config?.permissionRequested ?? false;
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'Deadlines',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87),
-          ),
-        ),
-        GestureDetector(
-          onTap: _showAutoDeadlineConfigSheet,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: isEnabled ? (isDarkMode ? const Color(0xFF1D3557) : const Color(0xFFE7F1FF)) : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isEnabled ? hcmusBlueAccent : Colors.transparent,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 15,
-                  color: isEnabled ? hcmusBlueAccent : (isDarkMode ? Colors.white60 : Colors.black54),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isEnabled ? 'Auto-update ON' : 'Auto-update',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                    color: isEnabled ? hcmusBlueAccent : (isDarkMode ? Colors.white : Colors.black87),
-                  ),
-                ),
-                if (permissionRequested && !isEnabled) ...[
-                  const SizedBox(width: 6),
-                  const Icon(Icons.access_time_rounded, size: 14, color: Colors.orange),
-                ],
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => _navigateToDetail(0),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
-            child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSectionHeaderFigma(String title, VoidCallback onPressed) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -1668,138 +1290,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  Map<String, dynamic> _getTimeLeft(Deadline deadline) {
-    final now = DateTime.now();
-    final deadlineDateTime = DateTime(
-      deadline.dueDate.year,
-      deadline.dueDate.month,
-      deadline.dueDate.day,
-      deadline.dueTime.hour,
-      deadline.dueTime.minute,
-    );
 
-    final difference = deadlineDateTime.difference(now);
 
-    if (difference.isNegative) {
-      return {"text": "Quá trễ rùi", "color": const Color(0xFFDC2626)};
-    }
 
-    int days = difference.inDays;
-    int hours = difference.inHours % 24;
-    int minutes = difference.inMinutes % 60;
-
-    String timeText = "";
-    if (days > 0) {
-      timeText += "$days ngày $hours giờ";
-    } else if (hours > 0) {
-      timeText += "$hours giờ $minutes phút";
-    } else {
-      timeText += "$minutes phút";
-    }
-
-    // LOGIC MÀU SẮC THEO YÊU CẦU:
-    // Đỏ: < 1 ngày (DC2626)
-    // Cam: < 3 ngày (EA580C)
-    // Xanh: Còn lại (448E58)
-    Color textColor;
-    if (difference.inDays < 1) {
-      textColor = const Color(0xFFDC2626);
-    } else if (difference.inDays < 3) {
-      textColor = const Color(0xFFEA580C);
-    } else {
-      textColor = const Color(0xFF448E58);
-    }
-
-    return {"text": timeText, "color": textColor};
-  }
-
-  Widget _buildDeadlineCardFigma(Deadline deadline) {
-    final timeLeftData = _getTimeLeft(deadline);
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Container(
-      height: 50,
-      margin: const EdgeInsets.only(top: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 3, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => _toggleDeadline(deadline.id),
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: deadline.isCompleted ? hcmusBlueAccent : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1),
-              ),
-              child: deadline.isCompleted ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
-            ),
-          ),
-          const SizedBox(width: 12),
-          // 1. Title (Bài tập CS101)
-          Expanded(
-            child: Text(
-                deadline.title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontFamily: 'Poppins',
-                  color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                  // Thêm gạch ngang nếu xong
-                  decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
-                )
-            ),
-          ),
-
-          SizedBox(
-            width: 100, // Độ rộng cố định đủ cho chuỗi "Còn 2 ngày 16 giờ"
-            child: RichText(
-              textAlign: TextAlign.left,
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: 10,
-                  fontFamily: 'Poppins',
-                  color: isDarkMode ? Colors.white70 : const Color(0xFF0F172A),
-                ),
-                children: [
-                  if (timeLeftData["color"] != const Color(0xFFDC2626))
-                    const TextSpan(text: "Còn "),
-                  TextSpan(
-                    text: timeLeftData["text"].replaceAll("còn ", ""),
-                    style: TextStyle(
-                      color: timeLeftData["color"],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          SizedBox(
-            width: 18, // Cố định chiều rộng vùng này
-            child: Align(
-              alignment: Alignment.centerRight, // Căn icon về bên phải trong vùng 32px
-              child: deadline.isCompleted
-                  ? IconButton(
-                constraints: const BoxConstraints(),
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.remove_circle_outline, color: Color(0xFFDC2626), size: 18),
-                onPressed: () => _deleteDeadline(deadline.id),
-              )
-                  : const SizedBox.shrink(), // Khi chưa xong, vùng 32px vẫn tồn tại nhưng trống
-            ), // Nếu chưa xong thì để trống nhưng SizedBox cha vẫn giữ 32px
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildCalendarStripFigma() {
     final List<Map<String, dynamic>> currentWeek = _getCurrentWeekDays();

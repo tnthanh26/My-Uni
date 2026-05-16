@@ -56,6 +56,7 @@ dependencies:
   permission_handler: ^12.0.1
   go_router: ^17.2.1
   qr_flutter: ^4.1.0
+  flutter_secure_storage: ^9.2.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -113,6 +114,8 @@ flutter:
   - assets/images/logoApp.png
   - assets/images/logoSplash.png
   - assets/images/MyUni.png
+  - assets/images/no_deadline_meme.gif
+  - assets/images/no_class_meme.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
