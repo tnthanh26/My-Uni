@@ -205,9 +205,9 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               ],
             ),
           ),
-          // Minimize button — now a subtle icon container
+          // Report button
           GestureDetector(
-            onTap: () {},
+            onTap: () => _showReportDialog(context),
             child: Container(
               width: 36,
               height: 36,
@@ -216,13 +216,107 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
-                Icons.remove_circle_outline,
+                Icons.report_problem_rounded,
                 color: Colors.white,
-                size: 20,
+                size: 18,
               ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showReportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          title: Row(
+            children: [
+              const Icon(Icons.feedback_rounded, color: Color(0xFF5893D8)),
+              const SizedBox(width: 10),
+              Text(
+                'Báo cáo lỗi chatbot',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Bạn gặp vấn đề gì với câu trả lời của Ú Em?',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _buildReportOption(context, 'Chatbot trả lời sai kiến thức', isDarkMode),
+              _buildReportOption(context, 'Không nhận được câu trả lời', isDarkMode),
+              _buildReportOption(context, 'Nội dung không phù hợp', isDarkMode),
+              _buildReportOption(context, 'Lỗi khác...', isDarkMode),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontFamily: 'Poppins')),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildReportOption(BuildContext context, String title, bool isDarkMode) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        onTap: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Cảm ơn bạn! Báo cáo "$title" đã được gửi.'),
+              backgroundColor: const Color(0xFF5893D8),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: isDarkMode ? Colors.white10 : Colors.black12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
+            ],
+          ),
+        ),
       ),
     );
   }
