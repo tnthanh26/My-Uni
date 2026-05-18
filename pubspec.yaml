@@ -99,6 +99,7 @@ flutter:
   - assets/icons/space.svg
   - assets/icons/account.svg
   - assets/icons/home.svg
+  - assets/icons/trash.svg
   - assets/images/rain_icon.png
   - assets/images/announcement.jpg
   - assets/images/contest.jpg

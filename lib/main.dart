@@ -13,6 +13,7 @@ import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'firebase_options.dart';
 import 'features/services/notification_service.dart';
 import 'app_provider.dart';
+import 'theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:my_uni/web_mod/mod_dashboard.dart';
 import 'package:my_uni/web_mod/collaborator_dashboard.dart';
@@ -141,8 +142,8 @@ class MyUniApp extends StatelessWidget {
         routerConfig: _webRouter,
         title: 'MyUni Moderator',
         debugShowCheckedModeBanner: false,
-        theme: _buildTheme(Brightness.light),
-        darkTheme: _buildTheme(Brightness.dark),
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
         themeMode: appProvider.themeMode,
       );
     }
@@ -164,22 +165,10 @@ class MyUniApp extends StatelessWidget {
         ),
 
       },
-      theme: _buildTheme(Brightness.light),
-      darkTheme: _buildTheme(Brightness.dark),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       themeMode: appProvider.themeMode,
       locale: appProvider.locale,
-    );
-  }
-
-  ThemeData _buildTheme(Brightness brightness) {
-    return ThemeData(
-      useMaterial3: true,
-      brightness: brightness,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF5893D8),
-        brightness: brightness,
-      ),
-      scaffoldBackgroundColor: brightness == Brightness.light ? Colors.white : null,
     );
   }
 }
