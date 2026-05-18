@@ -20,7 +20,6 @@ import 'myspace_deadline_section.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
-// Màu sắc và thông số chuẩn từ thiết kế Figma
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusTeal = Color(0xFF279E95);
 const Color hcmusGreyBg = Color(0xFFF2F6FF);
@@ -496,10 +495,51 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     return time.toString();
   }
 
+  DateTime _focusedDate = DateTime.now();
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _focusedDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Theme(
+          data: isDarkMode ? ThemeData.dark().copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: hcmusBlueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF1C1C1E),
+              onSurface: Colors.white,
+            ),
+            dialogBackgroundColor: const Color(0xFF1C1C1E),
+          ) : ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: hcmusBlueAccent,
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black87,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != _focusedDate) {
+      setState(() {
+        _focusedDate = picked;
+        // Cập nhật selectedWeekday để khớp với ngày vừa chọn
+        selectedWeekday = picked.weekday + 1;
+      });
+    }
+  }
+
   // Hàm tính toán ngày trong tuần (Giữ nguyên logic cũ của bạn)
   List<Map<String, dynamic>> _getCurrentWeekDays() {
-    DateTime now = DateTime.now();
-    DateTime monday = now.subtract(Duration(days: now.weekday - 1));
+    DateTime referenceDate = _focusedDate;
+    // Tìm ngày thứ 2 của tuần chứa referenceDate
+    DateTime monday = referenceDate.subtract(Duration(days: referenceDate.weekday - 1));
     return List.generate(7, (index) {
       DateTime day = monday.add(Duration(days: index));
       return {
@@ -550,7 +590,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           ? FloatingActionButton(
         onPressed: () => _showCreateOptions(context),
         backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
-        child: const Icon(Icons.add, size: 35, color: Colors.white),
+        child: const Icon(Icons.add, size: 36, color: Colors.white),
       )
           : null,
     );
@@ -622,8 +662,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         borderRadius: BorderRadius.circular(6),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 8,
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 4,
             offset: const Offset(0, 4),
           ),
         ],
@@ -748,6 +788,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           MySpaceDeadlineSection(
             autoDeadlineConfig: _autoDeadlineConfig,
             deadlines: top3Deadlines,
+            totalDeadlinesCount: mockDeadlines.length,
             onOpenAutoConfig: _showAutoDeadlineConfigSheet,
             onOpenDetail: () => _navigateToDetail(0),
             onToggleDeadline: _toggleDeadline,
@@ -844,7 +885,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         // 2. Nội dung thực tế (Lịch, Toggle, List)
         Column(
           children: [
-            // Header của Detail (Tháng 2, 2026)
+            // Header của Detail (Tháng X, Y)
             Padding(
               padding: const EdgeInsets.all(8),
               child: Row(
@@ -859,12 +900,27 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ),
                   Expanded(
                     child: Center(
-                      child: Text(
-                        "Tháng 2, 2026",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: isDarkMode ? Colors.white : Colors.black87,
+                      child: GestureDetector(
+                        onTap: () => _selectDate(context),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(width: 2),
+                            Text(
+                              "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                              color: isDarkMode ? Colors.white : Colors.black54,
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1202,11 +1258,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: hcmusBlueAccent.withValues(alpha: 0.3),
-            blurRadius: 8,
+            color: Color(0xFF000000).withValues(alpha: 0.25),
+            blurRadius: 4,
             offset: Offset(0, 4),
           ),
         ],
@@ -1216,6 +1272,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         children: [
           Row(
             children: [
+              /*
               SizedBox(
                 width: 20,
                 height: 20,
@@ -1225,6 +1282,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 ),
               ),
               SizedBox(width: 8),
+              */
               Text("Chào bạn!",
                   style: TextStyle(
                       color: Colors.white,
@@ -1248,7 +1306,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 TextSpan(
                   text: "$todayClassesCount lớp học",
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700, // In đậm con số lớp học
+                    fontWeight: FontWeight.w800, // In đậm con số lớp học
                     fontSize: 14, // Có thể tăng size nhẹ để nổi bật hơn
                   ),
                 ),
@@ -1256,7 +1314,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 TextSpan(
                   text: "$pendingDeadlinesCount deadline",
                   style: const TextStyle(
-                    fontWeight: FontWeight.w700, // In đậm con số deadline
+                    fontWeight: FontWeight.w800, // In đậm con số deadline
                     fontSize: 14,
                   ),
                 ),
@@ -1276,7 +1334,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87)),
+        Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87)),
         GestureDetector(
           onTap: onPressed,
           child: Container(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import './models/myspace_models.dart';
 import './services/moodle_service.dart';
@@ -7,9 +8,86 @@ import './services/moodle_token_storage.dart';
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusLightGrey = Color(0xFFEFEFEF);
 
+class AutoUpdateToggle extends StatelessWidget {
+  final bool isEnabled;
+  final VoidCallback onTap;
+
+  const AutoUpdateToggle({
+    super.key,
+    required this.isEnabled,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const double width = 117;
+    const double height = 34;
+    const double knobSize = 27;
+    const Color offColor = Color(0xFF545454);
+    const Color onColor = hcmusBlueAccent;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: isEnabled ? onColor : offColor,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Stack(
+          children: [
+            // Label
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: isEnabled ? 10 : 36,
+              top: 8,
+              child: const Text(
+                'Auto-update',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+            // Knob
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 200),
+              left: isEnabled ? (width - knobSize - 4) : 4,
+              top: 3,
+              child: Container(
+                width: knobSize,
+                height: knobSize,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  isEnabled ? 'ON' : 'OFF',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 8,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class MySpaceDeadlineSection extends StatelessWidget {
   final AutoDeadlineConfig? autoDeadlineConfig;
   final List<Deadline> deadlines;
+  final int totalDeadlinesCount; // New property
   final VoidCallback onOpenAutoConfig;
   final VoidCallback onOpenDetail;
   final ValueChanged<String> onToggleDeadline;
@@ -19,6 +97,7 @@ class MySpaceDeadlineSection extends StatelessWidget {
     super.key,
     required this.autoDeadlineConfig,
     required this.deadlines,
+    required this.totalDeadlinesCount, // New property
     required this.onOpenAutoConfig,
     required this.onOpenDetail,
     required this.onToggleDeadline,
@@ -27,6 +106,15 @@ class MySpaceDeadlineSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final int extraCount = totalDeadlinesCount - deadlines.length;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    debugPrint('=== DEBUG DEADLINE COUNT ===');
+    debugPrint('Tổng số lượng deadline (totalDeadlinesCount): $totalDeadlinesCount');
+    debugPrint('Số lượng hiển thị (deadlines.length): ${deadlines.length}');
+    debugPrint('Số lượng còn ẩn lại (extraCount): $extraCount');
+    debugPrint('============================');
+
     return Column(
       children: [
         _DeadlineSectionHeader(
@@ -41,6 +129,37 @@ class MySpaceDeadlineSection extends StatelessWidget {
             onDeleteDeadline: onDeleteDeadline,
           ),
         ),
+        if (totalDeadlinesCount > deadlines.length)
+          Padding(
+            padding: const EdgeInsets.only(top: 20, bottom: 2),
+              child: Center(
+                child: GestureDetector(
+                  onTap: onOpenDetail,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'và ${totalDeadlinesCount - deadlines.length} deadline khác',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontFamily: 'Poppins',
+                          fontWeight: FontWeight.w500,
+                          color: isDarkMode
+                              ? Color(0xFFFFFFFF)
+                              : Color(0xFF404349),
+                        ),
+                      ),
+                      const SizedBox(width: 3),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 10,
+                        color: isDarkMode ? Color(0xFFFFFFFF) : const Color(0xFF334155),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
       ],
     );
   }
@@ -491,6 +610,7 @@ Future<void> showAutoDeadlineConfigSheet(
     },
   );
 }
+
 class _DeadlineSectionHeader extends StatelessWidget {
   final AutoDeadlineConfig? config;
   final VoidCallback onOpenAutoConfig;
@@ -515,59 +635,15 @@ class _DeadlineSectionHeader extends StatelessWidget {
             'Deadlines',
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               fontFamily: 'Poppins',
               color: isDarkMode ? Colors.white : Colors.black87,
             ),
           ),
         ),
-        GestureDetector(
+        AutoUpdateToggle(
+          isEnabled: isEnabled,
           onTap: onOpenAutoConfig,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: isEnabled
-                  ? (isDarkMode
-                  ? const Color(0xFF1D3557)
-                  : const Color(0xFFE7F1FF))
-                  : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isEnabled ? hcmusBlueAccent : Colors.transparent,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.auto_awesome_rounded,
-                  size: 15,
-                  color: isEnabled
-                      ? hcmusBlueAccent
-                      : (isDarkMode ? Colors.white60 : Colors.black54),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  isEnabled ? 'Auto-update ON' : 'Auto-update',
-                  style: TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    fontFamily: 'Poppins',
-                    color: isEnabled
-                        ? hcmusBlueAccent
-                        : (isDarkMode ? Colors.white : Colors.black87),
-                  ),
-                ),
-                if (permissionRequested && !isEnabled) ...[
-                  const SizedBox(width: 6),
-                  const Icon(
-                    Icons.access_time_rounded,
-                    size: 14,
-                    color: Colors.orange,
-                  ),
-                ],
-              ],
-            ),
-          ),
         ),
         const SizedBox(width: 8),
         GestureDetector(
@@ -634,7 +710,7 @@ class _DeadlineCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDarkMode ? Colors.white54 : Colors.black,
-                  width: 1,
+                  width: 2,
                 ),
               ),
               child: deadline.isCompleted
@@ -688,10 +764,14 @@ class _DeadlineCard extends StatelessWidget {
                   ? IconButton(
                 constraints: const BoxConstraints(),
                 padding: EdgeInsets.zero,
-                icon: const Icon(
-                  Icons.remove_circle_outline,
-                  color: Color(0xFFDC2626),
-                  size: 18,
+                icon: SvgPicture.asset(
+                  'assets/icons/trash.svg',
+                  width: 18,
+                  height: 18,
+                  colorFilter: const ColorFilter.mode(
+                    Color(0xFFFF6666),
+                    BlendMode.srcIn,
+                  ),
                 ),
                 onPressed: () => onDeleteDeadline(deadline.id),
               )
