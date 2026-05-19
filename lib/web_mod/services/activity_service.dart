@@ -13,10 +13,29 @@ class ActivityService {
   }
 
   static Stream<QuerySnapshot<Map<String, dynamic>>> getMyActivities() {
-    final uid = _auth.currentUser?.uid;
+    final user = _auth.currentUser;
 
-    return _activities
-        .where('createdBy', isEqualTo: uid)
+    if (user == null) {
+      return const Stream.empty();
+    }
+
+    final uid = user.uid;
+    final email = user.email;
+
+    Query<Map<String, dynamic>> query = _activities;
+
+    if (email != null && email.isNotEmpty) {
+      query = query.where(
+        Filter.or(
+          Filter('createdBy', isEqualTo: uid),
+          Filter('createdByEmail', isEqualTo: email),
+        ),
+      );
+    } else {
+      query = query.where('createdBy', isEqualTo: uid);
+    }
+
+    return query
         .orderBy('createdAt', descending: true)
         .snapshots();
   }

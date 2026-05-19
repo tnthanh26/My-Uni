@@ -70,7 +70,7 @@ class ModLoginPage extends StatelessWidget {
               // Sử dụng đúng Icon từ hình ảnh
               const Icon(Icons.shield_outlined, size: 80, color: Colors.blueAccent),
               const SizedBox(height: 20),
-              const Text("MYUNI MODERATOR PORTAL",
+              const Text("MYUNI MANAGEMENT PORTAL",
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
               const SizedBox(height: 10),
               const Text("Vui lòng đăng nhập để tiếp tục",
