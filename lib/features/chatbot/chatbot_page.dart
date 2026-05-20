@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:my_uni/theme/app_colors.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -458,7 +459,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? primaryColor.withOpacity(0.12)
+                    ? AppColors.surfaceDark
                     : primaryColor.withOpacity(0.08),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
@@ -466,12 +467,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   bottomLeft: Radius.circular(18),
                   bottomRight: Radius.circular(18),
                 ),
+                border: isDarkMode ? Border.all(color: Colors.white10) : null,
               ),
               child: MarkdownBody(
                 data: msg.text,
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(
-                    color: isDarkMode ? const Color(0xFFE2E8F8) : const Color(0xFF1A1F35),
+                    color: isDarkMode ? Colors.white.withOpacity(0.9) : const Color(0xFF1A1F35),
                     fontSize: 14,
                     height: 1.5,
                   ),
@@ -514,6 +516,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   bottomLeft: Radius.circular(18),
                   bottomRight: Radius.circular(18),
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Text(
                 msg.text,
@@ -542,17 +551,22 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
           color: isDarkMode
-              ? Colors.white.withOpacity(0.06)
+              ? AppColors.surfaceDark
               : Colors.white,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(
             color: _inputFocused
-                ? primaryColor.withOpacity(0.5)
-                : isDarkMode
-                ? Colors.white.withOpacity(0.08)
-                : Colors.black.withOpacity(0.07),
+                ? primaryColor
+                : (isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.07)),
             width: 1.2,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -569,14 +583,14 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   autocorrect: true,
                   enableSuggestions: true,
                   style: TextStyle(
-                    color: isDarkMode ? const Color(0xFFE2E8F8) : const Color(0xFF1A1F35),
+                    color: isDarkMode ? Colors.white : const Color(0xFF1A1F35),
                     fontSize: 14,
                   ),
                   decoration: InputDecoration(
                     hintText: "Hỏi Ú Em điều gì đó...",
                     hintStyle: TextStyle(
                       color: isDarkMode
-                          ? Colors.white.withOpacity(0.25)
+                          ? Colors.white24
                           : Colors.black.withOpacity(0.3),
                       fontSize: 14,
                     ),
@@ -598,6 +612,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 decoration: BoxDecoration(
                   color: primaryColor,
                   borderRadius: BorderRadius.circular(19),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryColor.withOpacity(0.4),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: const Icon(
                   Icons.send_rounded,
