@@ -65,47 +65,27 @@ class OfficialTab extends StatelessWidget {
     final String label = isEvent ? "Sự kiện" : "Tin chính thức";
 
     final Color bgColor = isEvent
-        ? const Color(0xFF66ACFE).withOpacity(isDarkMode ? 0.20 : 0.14)
-        : (isDarkMode ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9));
-
-    final Color borderColor = isEvent
-        ? const Color(0xFF66ACFE).withOpacity(0.35)
-        : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0));
+        ? (isDarkMode ? const Color(0xFF1E3A8A).withOpacity(0.3) : const Color(0xFFE0F2FE))
+        : (isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9));
 
     final Color textColor = isEvent
-        ? (isDarkMode ? Colors.white : const Color(0xFF1D4F91))
-        : (isDarkMode ? Colors.white70 : const Color(0xFF344054));
-
-    final Color iconColor = isEvent
-        ? const Color(0xFF5893D8)
-        : const Color(0xFF306CFE);
+        ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
+        : (isDarkMode ? Colors.white70 : const Color(0xFF475569));
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(8),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.tag_rounded,
-            size: 13,
-            color: iconColor,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
-          ),
-        ],
+      child: Text(
+        "#$label",
+        style: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: textColor,
+        ),
       ),
     );
   }
@@ -116,32 +96,52 @@ class OfficialTab extends StatelessWidget {
     required bool isInterested,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: isInterested
-              ? (isDarkMode ? Colors.white12 : const Color(0xFFF3F4F6))
-              : const Color(0xFF9BC9FF).withOpacity(isDarkMode ? 0.35 : 0.80),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
             color: isInterested
-                ? (isDarkMode ? Colors.white10 : const Color(0xFFE5E7EB))
-                : const Color(0xFF66ACFE).withOpacity(0.45),
+                ? (isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                : const Color(0xFF5893D8),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isInterested || isDarkMode
+                ? []
+                : [
+              BoxShadow(
+                color: const Color(0xFF5893D8).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ),
-        child: Text(
-          isInterested ? 'Đã quan tâm' : 'Quan tâm',
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: isInterested
-                ? (isDarkMode ? Colors.white54 : Colors.grey[700])
-                : (isDarkMode ? Colors.white : const Color(0xFF1D4F91)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isInterested ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                size: 16,
+                color: isInterested
+                    ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
+                    : Colors.white,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isInterested ? 'Đã quan tâm' : 'Quan tâm',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isInterested
+                      ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
+                      : Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -179,12 +179,15 @@ class OfficialTab extends StatelessWidget {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           itemCount: snapshot.data!.docs.length + 1,
           itemBuilder: (context, index) {
             if (index == 0) {
-              return DailyDigestCard(
-                isDarkMode: isDarkMode,
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 24),
+                child: DailyDigestCard(
+                  isDarkMode: isDarkMode,
+                ),
               );
             }
 
@@ -213,29 +216,22 @@ class OfficialTab extends StatelessWidget {
             );
 
             return Container(
-              margin: const EdgeInsets.only(bottom: 18),
+              margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: isEvent
-                      ? const Color(0xFF66ACFE).withOpacity(isDarkMode ? 0.20 : 0.22)
-                      : (isDarkMode
-                      ? Colors.white10
-                      : const Color(0xFFE9EEF3)),
-                ),
+                color: isDarkMode ? const Color(0xFF1C1F26) : Colors.white,
+                borderRadius: BorderRadius.circular(24),
                 boxShadow: isDarkMode
                     ? []
                     : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.045),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 24,
+                    offset: const Offset(0, 8),
                   ),
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(24),
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
@@ -247,29 +243,34 @@ class OfficialTab extends StatelessWidget {
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
+                              horizontal: 16,
+                              vertical: 10,
                             ),
-                            color: const Color(0xFF66ACFE).withOpacity(
-                              isDarkMode ? 0.18 : 0.10,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isDarkMode
+                                    ? [const Color(0xFF1E3A8A).withOpacity(0.3), const Color(0xFF1E40AF).withOpacity(0.1)]
+                                    : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE).withOpacity(0.5)],
+                              ),
                             ),
                             child: Row(
                               children: [
                                 const Icon(
-                                  Icons.auto_awesome,
+                                  Icons.tips_and_updates_rounded,
                                   size: 16,
-                                  color: Color(0xFF5893D8),
+                                  color: Color(0xFF3B82F6),
                                 ),
-                                const SizedBox(width: 6),
+                                const SizedBox(width: 8),
                                 Text(
-                                  'Sự kiện có thể bạn quan tâm',
+                                  'Sự kiện nổi bật dành cho bạn',
                                   style: TextStyle(
                                     fontFamily: 'Encode Sans Expanded',
                                     fontSize: 11,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w800,
+                                    letterSpacing: 0.3,
                                     color: isDarkMode
-                                        ? Colors.white70
-                                        : const Color(0xFF356DA8),
+                                        ? const Color(0xFF93C5FD)
+                                        : const Color(0xFF1E40AF),
                                   ),
                                 ),
                               ],
@@ -277,17 +278,26 @@ class OfficialTab extends StatelessWidget {
                           ),
 
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                          padding: const EdgeInsets.all(16),
                           child: Row(
                             children: [
-                              CircleAvatar(
-                                radius: 22,
-                                backgroundColor: Colors.white,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(2.0),
-                                  child: Image.asset(
-                                    'assets/images/logo.png',
-                                    fit: BoxFit.contain,
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDarkMode ? Colors.white12 : const Color(0xFFF1F5F9),
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 20,
+                                  backgroundColor: Colors.white,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(3.0),
+                                    child: Image.asset(
+                                      'assets/images/logo.png',
+                                      fit: BoxFit.contain,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -306,18 +316,19 @@ class OfficialTab extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontFamily: 'Encode Sans Expanded',
-                                              fontWeight: FontWeight.w700,
+                                              fontWeight: FontWeight.w800,
                                               fontSize: 14,
+                                              letterSpacing: -0.2,
                                               color: isDarkMode
                                                   ? Colors.white
-                                                  : const Color(0xFF2C2C2C),
+                                                  : const Color(0xFF1E293B),
                                             ),
                                           ),
                                         ),
                                         const SizedBox(width: 4),
                                         const Icon(
                                           Icons.verified_rounded,
-                                          color: Color(0xFF66ACFE),
+                                          color: Color(0xFF3B82F6),
                                           size: 16,
                                         ),
                                       ],
@@ -327,10 +338,11 @@ class OfficialTab extends StatelessWidget {
                                       data['publishedDateText']?.toString() ?? '',
                                       style: TextStyle(
                                         fontFamily: 'Encode Sans Expanded',
-                                        fontSize: 12,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
                                         color: isDarkMode
-                                            ? Colors.white60
-                                            : const Color(0xFF667085),
+                                            ? Colors.white54
+                                            : const Color(0xFF64748B),
                                       ),
                                     ),
                                   ],
@@ -341,7 +353,7 @@ class OfficialTab extends StatelessWidget {
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -377,24 +389,25 @@ class OfficialTab extends StatelessWidget {
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                           child: Text(
                             data['title']?.toString() ?? '',
                             style: TextStyle(
                               fontFamily: 'Encode Sans Expanded',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
                               color: isDarkMode
                                   ? Colors.white
-                                  : const Color(0xFF1F2937),
-                              height: 1.35,
+                                  : const Color(0xFF0F172A),
+                              height: 1.3,
+                              letterSpacing: -0.4,
                             ),
                           ),
                         ),
 
                         if (summary.isNotEmpty)
                           Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                             child: Text(
                               summary,
                               maxLines: 3,
@@ -402,30 +415,30 @@ class OfficialTab extends StatelessWidget {
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 13,
-                                height: 1.5,
+                                height: 1.6,
                                 color: isDarkMode
                                     ? Colors.white70
-                                    : const Color(0xFF667085),
+                                    : const Color(0xFF475569),
                               ),
                             ),
                           ),
 
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
                           child: ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(18),
                             child: Stack(
                               children: [
                                 Image.asset(
                                   imagePath,
                                   width: double.infinity,
-                                  height: 220,
+                                  height: 200,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return Image.asset(
                                       'assets/images/news.png',
                                       width: double.infinity,
-                                      height: 220,
+                                      height: 200,
                                       fit: BoxFit.cover,
                                     );
                                   },
@@ -437,48 +450,19 @@ class OfficialTab extends StatelessWidget {
                                         begin: Alignment.topCenter,
                                         end: Alignment.bottomCenter,
                                         colors: [
-                                          Colors.black.withOpacity(0.05),
-                                          Colors.black.withOpacity(0.30),
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.4),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: 12,
-                                  right: 12,
-                                  bottom: 12,
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.45),
-                                          borderRadius:
-                                          BorderRadius.circular(20),
-                                        ),
-                                        child: Text(
-                                          isEvent
-                                              ? 'Xem thông tin sự kiện'
-                                              : 'Xem nội dung chính thức',
-                                          style: const TextStyle(
-                                            fontFamily: 'Encode Sans Expanded',
-                                            color: Colors.white,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
+
+                        const SizedBox(height: 8),
 
                         PostActionRow(
                           docId: docId,
@@ -488,31 +472,37 @@ class OfficialTab extends StatelessWidget {
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(14, 6, 14, 16),
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                           child: SizedBox(
                             width: double.infinity,
-                            height: 42,
-                            child: OutlinedButton(
+                            height: 48,
+                            child: ElevatedButton(
                               onPressed: () =>
                                   _launchURL(data['link']?.toString() ?? ''),
-                              style: OutlinedButton.styleFrom(
-                                side: const BorderSide(
-                                  color: Color(0xFF5893D8),
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
+                              style: ElevatedButton.styleFrom(
+                                elevation: 0,
                                 backgroundColor: isDarkMode
-                                    ? Colors.white.withOpacity(0.02)
-                                    : const Color(0xFFF8FBFF),
-                              ),
-                              child: const Text(
-                                'Xem chi tiết bài viết',
-                                style: TextStyle(
-                                  color: Color(0xFF5893D8),
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'Encode Sans Expanded',
+                                    ? Colors.white.withOpacity(0.05)
+                                    : const Color(0xFFF1F5F9),
+                                foregroundColor: const Color(0xFF5893D8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
+                              ),
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    'Xem chi tiết bài viết',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Icon(Icons.open_in_new_rounded, size: 16),
+                                ],
                               ),
                             ),
                           ),

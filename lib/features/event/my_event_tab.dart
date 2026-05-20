@@ -326,7 +326,7 @@ class _MyEventTabState extends State<MyEventTab>
           style: TextStyle(color: _primaryTextColor(isDarkMode)),
         ),
         content: Text(
-          "Bạn có chắc chắn muốn xóa sự kiện '${ev.title}' không?",
+          "Bạn có chắc muốn xóa sự kiện '${ev.title}' không?",
           style: TextStyle(color: _secondaryTextColor(isDarkMode)),
         ),
         actions: [
@@ -576,7 +576,7 @@ class _MyEventTabState extends State<MyEventTab>
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: events.length,
-      itemBuilder: (context, i) => _buildLargeEventCard(events[i], isDarkMode),
+      itemBuilder: (context, i) => _buildLargeEventCard(events[i], isDarkMode, i),
     );
   }
 
@@ -753,114 +753,154 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
+  Color _getVintageColor(int index, bool isDarkMode) {
+    final List<Color> lightVintage = [
+      const Color(0xFFFDF1E6), // Peach
+      const Color(0xFFEBF2E8), // Mint
+      const Color(0xFFE8EEF1), // Mist
+      const Color(0xFFF5E9F2), // Lavender
+      const Color(0xFFFAF3DD), // Cream
+    ];
+
+    final List<Color> darkVintage = [
+      const Color(0xFF2D2A26),
+      const Color(0xFF262D27),
+      const Color(0xFF262A2D),
+      const Color(0xFF2D262B),
+      const Color(0xFF2D2C26),
+    ];
+
+    return isDarkMode
+        ? darkVintage[index % darkVintage.length]
+        : lightVintage[index % lightVintage.length];
+  }
+
   Widget _buildTimelineRow(bool isDarkMode, EventModel ev, int index) {
-    final Color cardBg = isDarkMode
-        ? (index.isEven
-        ? const Color(0xFF243127)
-        : const Color(0xFF353225))
-        : (index.isEven
-        ? const Color(0xFFE9F7EA)
-        : const Color(0xFFFFF7D6));
+    final Color vintageBg = _getVintageColor(index, isDarkMode);
+    final List<Color> accentColors = [
+      Colors.brown,
+      Colors.teal,
+      Colors.indigo,
+      Colors.deepOrange,
+      Colors.blueGrey,
+    ];
+    final Color accentColor = accentColors[index % accentColors.length];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.only(bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Time Column
           SizedBox(
-            width: 110,
-            child: Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Center(
-                child: Text(
+            width: 80,
+            child: Column(
+              children: [
+                Text(
                   DateFormat('HH:mm').format(ev.dateTime),
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 18,
                     color: _primaryTextColor(isDarkMode),
                   ),
                 ),
-              ),
+                Text(
+                  ev.dateTime.hour < 12 ? 'SÁNG' : 'CHIỀU',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: _secondaryTextColor(isDarkMode),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 32),
+          const SizedBox(width: 24),
+          // Event Card
           Expanded(
             child: Container(
-              margin: const EdgeInsets.only(right: 28),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 6,
-              ),
+              margin: const EdgeInsets.only(right: 16),
               decoration: BoxDecoration(
-                color: cardBg,
-                borderRadius: BorderRadius.circular(16),
+                color: vintageBg,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.05)
+                      : accentColor.withOpacity(0.1),
+                ),
                 boxShadow: _cardShadow(isDarkMode),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: IntrinsicHeight(
+                  child: Row(
                     children: [
+                      // Accent Strip
+                      Container(width: 5, color: accentColor.withOpacity(0.4)),
                       Expanded(
-                        child: Text(
-                          ev.title,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            color: _primaryTextColor(isDarkMode),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      ev.title,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: _primaryTextColor(isDarkMode),
+                                      ),
+                                    ),
+                                  ),
+                                  _buildMoreMenu(ev, isDarkMode),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.location_on_rounded,
+                                    size: 16,
+                                    color: _secondaryTextColor(isDarkMode),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      ev.location,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: _secondaryTextColor(isDarkMode),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              GestureDetector(
+                                onTap: () => _showEventDetailsBottomSheet(
+                                    context, ev, isDarkMode),
+                                child: Text(
+                                  'Xem chi tiết',
+                                  style: TextStyle(
+                                    color: accentColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                      _buildMoreMenu(ev, isDarkMode),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.location_on_rounded,
-                        size: 18,
-                        color: _secondaryTextColor(isDarkMode),
-                      ),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          ev.location,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: _secondaryTextColor(isDarkMode),
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          _showEventDetailsBottomSheet(context, ev, isDarkMode),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: figmaDetailBtn,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        minimumSize: const Size(74, 28),
-                      ),
-                      child: const Text(
-                        'Chi tiết',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
@@ -869,121 +909,187 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildLargeEventCard(EventModel ev, bool isDarkMode) {
+  Widget _buildLargeEventCard(EventModel ev, bool isDarkMode, int index) {
+    final Color vintageBg = _getVintageColor(index, isDarkMode);
     final diff = ev.dateTime.difference(DateTime.now());
 
-    final String timeText = diff.isNegative
+    final String timeStatus = diff.isNegative
         ? 'Đang diễn ra'
         : (diff.inDays > 0
-        ? 'Còn ${diff.inDays} ngày nữa'
-        : (diff.inHours > 0
-        ? 'Còn ${diff.inHours} giờ nữa'
-        : 'Còn ${diff.inMinutes} phút nữa'));
+            ? 'Trong ${diff.inDays} ngày'
+            : (diff.inHours > 0
+                ? 'Trong ${diff.inHours} giờ'
+                : 'Trong ${diff.inMinutes} phút'));
+
+    final Color statusColor = diff.isNegative
+        ? Colors.redAccent
+        : (diff.inDays == 0 ? Colors.orangeAccent : figmaSelectionBlue);
 
     return Container(
-      constraints: const BoxConstraints(minHeight: 160),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        image: const DecorationImage(
-          image: AssetImage('assets/images/background.jpg'),
-          fit: BoxFit.cover,
-          opacity: 0.65,
-          colorFilter: ColorFilter.mode(
-            Colors.black45,
-            BlendMode.darken,
-          ),
+        color: vintageBg,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.05)
+              : Colors.black.withOpacity(0.05),
         ),
         boxShadow: _cardShadow(isDarkMode),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isDarkMode
-                ? Colors.white.withOpacity(0.08)
-                : Colors.transparent,
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    ev.title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+      child: InkWell(
+        onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
+        borderRadius: BorderRadius.circular(24),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Date Badge
+              Container(
+                width: 60,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.05)
+                      : Colors.white.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.1)
+                        : Colors.black.withOpacity(0.05),
                   ),
                 ),
-                _buildMoreMenu(ev, isDarkMode),
-              ],
-            ),
-            const SizedBox(height: 14),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                timeText,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Text(
-                  DateFormat('MMM d, yyyy').format(ev.dateTime),
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const Spacer(),
-                InkWell(
-                  onTap: () =>
-                      _showEventDetailsBottomSheet(context, ev, isDarkMode),
-                  borderRadius: BorderRadius.circular(10),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: figmaDetailBtn,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'Chi tiết',
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      DateFormat('MMM').format(ev.dateTime).toUpperCase(),
                       style: TextStyle(
-                        color: Colors.white,
+                        color: isDarkMode ? Colors.white70 : Colors.brown,
                         fontWeight: FontWeight.bold,
+                        fontSize: 12,
                       ),
                     ),
-                  ),
+                    Text(
+                      DateFormat('dd').format(ev.dateTime),
+                      style: TextStyle(
+                        color: _primaryTextColor(isDarkMode),
+                        fontWeight: FontWeight.w900,
+                        fontSize: 22,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(width: 16),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            ev.title,
+                            style: TextStyle(
+                              color: _primaryTextColor(isDarkMode),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                        _buildMoreMenu(ev, isDarkMode),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time_rounded,
+                          size: 14,
+                          color: _secondaryTextColor(isDarkMode),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('HH:mm').format(ev.dateTime),
+                          style: TextStyle(
+                            color: _secondaryTextColor(isDarkMode),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 14,
+                          color: _secondaryTextColor(isDarkMode),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            ev.location,
+                            style: TextStyle(
+                              color: _secondaryTextColor(isDarkMode),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: statusColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            timeStatus,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          'Chi tiết',
+                          style: TextStyle(
+                            color: figmaDetailBtn,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildMoreMenu(EventModel ev, bool isDarkMode) {
-    final bool whiteIcon = isListView;
-
     return PopupMenuButton<String>(
       color: _surfaceColor(isDarkMode),
       icon: Icon(
         Icons.more_vert,
-        color: whiteIcon ? Colors.white : _secondaryTextColor(isDarkMode),
+        color: _secondaryTextColor(isDarkMode),
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
