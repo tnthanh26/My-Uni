@@ -188,16 +188,20 @@ class AttendancePage extends StatelessWidget {
               ),
               const SizedBox(height: 18),
               Wrap(
-                spacing: 12,
-                runSpacing: 10,
+                spacing: 14,
+                runSpacing: 12,
                 children: [
                   SizedBox(
-                    height: 44,
+                    height: 46,
+                    width: 220,
                     child: ElevatedButton.icon(
                       onPressed: isActive
-                          ? () => _openStudentQrScanner(context, selectedActivityId!)
+                          ? () => _openStudentQrScanner(
+                        context,
+                        selectedActivityId!,
+                      )
                           : null,
-                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
                       label: Text(
                         isActive ? 'Quét QR sinh viên' : 'Check-in đã đóng',
                       ),
@@ -206,19 +210,46 @@ class AttendancePage extends StatelessWidget {
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: Colors.grey.shade300,
                         disabledForegroundColor: Colors.grey.shade600,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
+
                   SizedBox(
-                    height: 44,
+                    height: 46,
+                    width: 200,
                     child: OutlinedButton.icon(
                       onPressed: () => _exportAttendanceCsv(
                         context,
                         selectedActivityId!,
                         activityData,
                       ),
-                      icon: const Icon(Icons.download_rounded),
+                      icon: const Icon(Icons.download_rounded, size: 20),
                       label: const Text('Xuất danh sách'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.blueAccent,
+                        side: BorderSide(
+                          color: Colors.blueAccent.withOpacity(0.35),
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                     ),
                   ),
                 ],
