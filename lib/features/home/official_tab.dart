@@ -58,35 +58,6 @@ class OfficialTab extends StatelessWidget {
     }
   }
 
-  Future<void> _openDigestPostDetail(
-      BuildContext context,
-      String postId,
-      ) async {
-    if (postId.trim().isEmpty) return;
-
-    final doc = await FirebaseFirestore.instance
-        .collection('official_news')
-        .doc(postId)
-        .get();
-
-    if (!doc.exists || doc.data() == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không tìm thấy bài viết gốc')),
-      );
-      return;
-    }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostDetailPage(
-          docId: postId,
-          initialPostData: doc.data()!,
-        ),
-      ),
-    );
-  }
-
   Widget _buildCategoryChip({
     required bool isDarkMode,
     required bool isEvent,

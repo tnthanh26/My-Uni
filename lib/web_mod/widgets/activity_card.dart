@@ -19,7 +19,9 @@ class ActivityCard extends StatelessWidget {
 
   String _formatDate(dynamic value) {
     if (value is! Timestamp) return 'Chưa có thời gian';
+
     final date = value.toDate();
+
     return '${date.day.toString().padLeft(2, '0')}/'
         '${date.month.toString().padLeft(2, '0')}/'
         '${date.year} '
@@ -29,10 +31,11 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = data['status'] ?? 'active';
+    final status = (data['status'] ?? 'active').toString();
     final isActive = status == 'active';
 
     return Container(
+      width: double.infinity,
       margin: const EdgeInsets.only(bottom: 18),
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -50,27 +53,33 @@ class ActivityCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
+          SizedBox(
             width: 52,
             height: 52,
-            decoration: BoxDecoration(
-              color: isActive
-                  ? Colors.green.withOpacity(0.12)
-                  : Colors.grey.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(
-              Icons.event_available_rounded,
-              color: isActive ? Colors.green : Colors.grey,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: isActive
+                    ? Colors.green.withOpacity(0.12)
+                    : Colors.grey.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Icon(
+                Icons.event_available_rounded,
+                color: isActive ? Colors.green : Colors.grey,
+              ),
             ),
           ),
           const SizedBox(width: 16),
+
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  data['title'] ?? 'Hoạt động không tên',
+                  (data['title'] ?? 'Hoạt động không tên').toString(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontFamily: 'Nunito',
                     fontSize: 18,
@@ -80,7 +89,7 @@ class ActivityCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  data['description'] ?? '',
+                  (data['description'] ?? '').toString(),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -93,53 +102,87 @@ class ActivityCard extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 8,
                   children: [
-                    _chip(Icons.location_on_outlined, data['location'] ?? 'Chưa có địa điểm'),
-                    _chip(Icons.schedule_rounded, _formatDate(data['startTime'])),
-                    _chip(Icons.people_alt_outlined, '${data['attendanceCount'] ?? 0} đã check-in'),
-                    _chip(Icons.star_border_rounded, '${data['trainingPoint'] ?? 0} ĐRL'),
+                    _chip(
+                      Icons.location_on_outlined,
+                      (data['location'] ?? 'Chưa có địa điểm').toString(),
+                    ),
+                    _chip(
+                      Icons.schedule_rounded,
+                      _formatDate(data['startTime']),
+                    ),
+                    _chip(
+                      Icons.people_alt_outlined,
+                      '${data['attendanceCount'] ?? 0} đã check-in',
+                    ),
+                    _chip(
+                      Icons.star_border_rounded,
+                      '${data['trainingPoint'] ?? 0} ĐRL',
+                    ),
                   ],
                 ),
               ],
             ),
           ),
+
           const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  isActive ? 'Đang mở' : 'Đã đóng',
-                  style: TextStyle(
-                    fontFamily: 'Nunito',
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: isActive ? Colors.green : Colors.grey,
+
+          SizedBox(
+            width: 145,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isActive
+                          ? Colors.green.withOpacity(0.1)
+                          : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      isActive ? 'Đang mở' : 'Đã đóng',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? Colors.green : Colors.grey,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              ElevatedButton.icon(
-                onPressed: onOpen,
-                icon: const Icon(Icons.list_alt_rounded, size: 18),
-                label: const Text('Chi tiết'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  foregroundColor: Colors.white,
+                const SizedBox(height: 14),
+
+                SizedBox(
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: onOpen,
+                    icon: const Icon(Icons.list_alt_rounded, size: 18),
+                    label: const Text('Chi tiết'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: isActive ? onClose : onReopen,
-                child: Text(isActive ? 'Đóng check-in' : 'Mở lại'),
-              ),
-            ],
+
+                const SizedBox(height: 8),
+
+                SizedBox(
+                  height: 38,
+                  child: TextButton(
+                    onPressed: isActive ? onClose : onReopen,
+                    child: Text(isActive ? 'Đóng check-in' : 'Mở lại'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -160,6 +203,7 @@ class ActivityCard extends StatelessWidget {
           const SizedBox(width: 5),
           Text(
             label,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Nunito',
               fontSize: 12,

@@ -187,32 +187,39 @@ class AttendancePage extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 18),
-              Row(
+              Wrap(
+                spacing: 12,
+                runSpacing: 10,
                 children: [
-                  ElevatedButton.icon(
-                    onPressed: isActive
-                        ? () => _openStudentQrScanner(context, selectedActivityId!)
-                        : null,
-                    icon: const Icon(Icons.qr_code_scanner_rounded),
-                    label: Text(
-                      isActive ? 'Quét QR sinh viên' : 'Check-in đã đóng',
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.grey.shade300,
-                      disabledForegroundColor: Colors.grey.shade600,
+                  SizedBox(
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: isActive
+                          ? () => _openStudentQrScanner(context, selectedActivityId!)
+                          : null,
+                      icon: const Icon(Icons.qr_code_scanner_rounded),
+                      label: Text(
+                        isActive ? 'Quét QR sinh viên' : 'Check-in đã đóng',
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        disabledBackgroundColor: Colors.grey.shade300,
+                        disabledForegroundColor: Colors.grey.shade600,
+                      ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  OutlinedButton.icon(
-                    onPressed: () => _exportAttendanceCsv(
-                      context,
-                      selectedActivityId!,
-                      activityData,
+                  SizedBox(
+                    height: 44,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _exportAttendanceCsv(
+                        context,
+                        selectedActivityId!,
+                        activityData,
+                      ),
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Xuất danh sách'),
                     ),
-                    icon: const Icon(Icons.download_rounded),
-                    label: const Text('Xuất danh sách'),
                   ),
                 ],
               ),
