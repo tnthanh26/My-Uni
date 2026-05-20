@@ -401,7 +401,27 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         token: token,
       );
 
+      if (events == null) {
+        debugPrint('Moodle sync failed: events is null.');
+        return;
+      }
+
       debugPrint('Fetched Moodle events: ${events.length}');
+
+      // Xử lý xóa các deadline đã bị xóa trên Moodle
+      final fetchedMoodleIds = events.map((e) => 'moodle_${e['id']}').toSet();
+      final currentDeadlines = await _firebaseService.getDeadlines();
+      final localMoodleDeadlines = currentDeadlines.where((d) => d.isMoodleSynced).toList();
+
+      for (final localD in localMoodleDeadlines) {
+        if (!fetchedMoodleIds.contains(localD.id)) {
+          // Nếu deadline còn trong tương lai nhưng không còn trong danh sách sắp tới của Moodle -> Xóa
+          if (localD.dueDate.isAfter(DateTime.now())) {
+            debugPrint('Xóa deadline Moodle vì không còn tồn tại trên Moodle: ${localD.title}');
+            await _firebaseService.deleteDeadline(localD.id);
+          }
+        }
+      }
 
       for (final event in events) {
         final int? timestamp = event['timestart'];
@@ -797,7 +817,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
           if (top3Deadlines.isEmpty) _buildEmptyStateMeme(type: 'deadline'),
 
-          const SizedBox(height: 25),
+          const SizedBox(height: 20),
           _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1)),
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),

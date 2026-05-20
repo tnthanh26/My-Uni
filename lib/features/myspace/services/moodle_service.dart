@@ -36,7 +36,7 @@ class MoodleService {
     }
   }
 
-  static Future<List<dynamic>> fetchUpcomingEvents({
+  static Future<List<dynamic>?> fetchUpcomingEvents({
     required String moodleUrl,
     required String token,
   }) async {
@@ -52,14 +52,24 @@ class MoodleService {
         },
       );
 
+      if (response.statusCode != 200) {
+        debugPrint('FETCH MOODLE EVENTS ERROR: status code ${response.statusCode}');
+        return null;
+      }
+
       final data = jsonDecode(response.body);
 
       debugPrint('MOODLE EVENTS RESPONSE: $data');
 
-      return data['events'] ?? [];
+      if (data is Map && data.containsKey('exception')) {
+        debugPrint('MOODLE API EXCEPTION: ${data['message']}');
+        return null;
+      }
+
+      return data['events'] as List<dynamic>?;
     } catch (e) {
       debugPrint('FETCH MOODLE EVENTS ERROR: $e');
-      return [];
+      return null;
     }
   }
 }
