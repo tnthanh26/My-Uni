@@ -12,16 +12,14 @@
   - `credential/`: Auth flows (Login, Register).
   - `home/`: Dashboard, news, and daily overview.
   - `event/`: Discovery (`discover_event_tab.dart`), categories (Tech, Art, Graduation, etc.).
-  - `myspace/`: Student workspace.
-    - `models/`: `myspace_models.dart`, `weather_models.dart`.
-    - `services/`: Weather coordination, local storage.
-    - `myspace_screen.dart`: UI for schedule and deadlines.
+  - `myspace/`: Student workspace (schedule, deadlines, weather coordination).
   - `chatbot/`: AI assistant integration.
   - `notification/`: Push & local notification management.
+  - `search/`: Course reviews and project-wide search.
   - `account/`: Profile management.
-  - `services/`: Global services like Firebase and HTTP.
+  - `services/`: Feature-specific services (content, notification).
 - `lib/models/`: Global data entities.
-- `lib/web_mod/`: Web-specific modules or integrations.
+- `lib/web_mod/`: Moderation and collaboration dashboards for web/admin usage.
 - `main.dart`: Entry point.
 - `app_provider.dart`: Global State management (Provider).
 - `splash_screen.dart`: Initial loading screen.
@@ -36,9 +34,10 @@
 - **Media/Files:** `image_picker`, `flutter_image_compress`, `file_picker`, `open_filex`.
 - **System:** `permission_handler`, `path_provider`, `url_launcher`.
 - **Notifications:** `flutter_local_notifications`, `firebase_messaging`, `timezone`.
+- **Scanning:** `mobile_scanner` (QR code scanning).
 
 ## 🎨 Assets & Resources
-- **Icons:** SVG format in `assets/icons/` (event, chat, space, account, home).
+- **Icons:** SVG format in `assets/icons/` (event, chat, space, account, home, trash).
 - **Images:** `assets/images/`
   - Themes: `hcmus_bg.png`, `background.jpg`.
   - Event categories: tech, art, sport, job, scholarship, etc.

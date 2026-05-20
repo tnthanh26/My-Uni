@@ -27,6 +27,7 @@ class MySpaceFirebaseService {
       'dueTimeHour': d.dueTime.hour,
       'dueTimeMinute': d.dueTime.minute,
       'isCompleted': d.isCompleted,
+      'isMoodleSynced': d.isMoodleSynced,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -47,6 +48,7 @@ class MySpaceFirebaseService {
             minute: data['dueTimeMinute'] ?? 0,
           ),
           isCompleted: data['isCompleted'] ?? false,
+          isMoodleSynced: data['isMoodleSynced'] ?? false,
         );
       }).toList();
     } catch (e) {
@@ -118,6 +120,7 @@ class MySpaceFirebaseService {
         'dueTimeHour': d.dueTime.hour,
         'dueTimeMinute': d.dueTime.minute,
         'isCompleted': d.isCompleted,
+        'isMoodleSynced': d.isMoodleSynced,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
@@ -212,6 +215,7 @@ class MySpaceFirebaseService {
             minute: data['dueTimeMinute'] ?? 0,
           ),
           isCompleted: data['isCompleted'] ?? false,
+          isMoodleSynced: data['isMoodleSynced'] ?? false,
         );
       }).toList();
     });
