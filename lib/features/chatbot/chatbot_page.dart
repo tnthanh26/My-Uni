@@ -72,7 +72,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     _scrollToBottom();
 
     try {
-      final url = Uri.parse('http://34.142.157.91:8000/chat');
+      final url = Uri.parse('http://34.87.17.94:8000/chat');
 
       final response = await http.post(
         url,
