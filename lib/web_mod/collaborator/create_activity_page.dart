@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/activity_service.dart';
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 
 class CreateActivityPage extends StatefulWidget {
   const CreateActivityPage({
@@ -19,9 +21,11 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
   final _locationController = TextEditingController();
   final _organizerController = TextEditingController();
   final _pointController = TextEditingController(text: '5');
+  final _studentIdsController = TextEditingController();
 
   DateTime _startTime = DateTime.now();
   DateTime _endTime = DateTime.now().add(const Duration(hours: 2));
+  bool _requiresRegistration = false;
 
   @override
   void dispose() {
@@ -30,7 +34,70 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     _locationController.dispose();
     _organizerController.dispose();
     _pointController.dispose();
+    _studentIdsController.dispose();
     super.dispose();
+  }
+
+  void _pickFile() {
+    final uploadInput = html.FileUploadInputElement();
+    uploadInput.accept = '.txt,.csv';
+    uploadInput.click();
+
+    uploadInput.onChange.listen((e) {
+      final files = uploadInput.files;
+      if (files != null && files.isNotEmpty) {
+        final file = files[0];
+        final reader = html.FileReader();
+
+        reader.onLoadEnd.listen((e) {
+          final content = reader.result as String;
+          _parseAndAddIds(content);
+        });
+
+        reader.readAsText(file);
+      }
+    });
+  }
+
+  void _parseAndAddIds(String content) {
+    // Sử dụng Regex để tìm tất cả các chuỗi số có độ dài từ 7 đến 11 ký tự (định dạng MSSV phổ biến)
+    // Cách này giúp nhặt MSSV ra khỏi CSV, Excel copy-paste hoặc TXT lộn xộn mà không quan tâm định dạng cột
+    final matches = RegExp(r'\b\d{7,11}\b').allMatches(content);
+    final ids = matches
+        .map((m) => m.group(0)!)
+        .toSet() // Dùng Set để loại bỏ trùng lặp ngay từ đầu
+        .toList();
+
+    if (ids.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không tìm thấy chuỗi số nào giống MSSV (7-11 chữ số) trong file.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      final currentText = _studentIdsController.text.trim();
+      final currentIds = currentText.split(RegExp(r'[\n\r, ]+')).toSet();
+      
+      // Chỉ thêm những ID chưa có trong danh sách hiện tại
+      final newIds = ids.where((id) => !currentIds.contains(id)).toList();
+      
+      if (newIds.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Tất cả MSSV trong file đã có trong danh sách.')),
+        );
+        return;
+      }
+
+      final separator = currentText.isEmpty ? '' : '\n';
+      _studentIdsController.text = '$currentText$separator${newIds.join('\n')}';
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Đã trích xuất thêm ${ids.length} MSSV từ file.')),
+    );
   }
 
   @override
@@ -109,6 +176,71 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
               ],
             ),
 
+            const SizedBox(height: 22),
+
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE9EEF3)),
+              ),
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text(
+                      'Yêu cầu đăng ký trước',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Chỉ sinh viên trong danh sách mới được điểm danh tự động.',
+                      style: TextStyle(fontFamily: 'Nunito'),
+                    ),
+                    value: _requiresRegistration,
+                    onChanged: (val) => setState(() => _requiresRegistration = val),
+                    activeColor: Colors.blueAccent,
+                  ),
+                  if (_requiresRegistration) ...[
+                    const Divider(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Danh sách MSSV đăng ký',
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        TextButton.icon(
+                          onPressed: _pickFile,
+                          icon: const Icon(Icons.upload_file_rounded, size: 18),
+                          label: const Text('Chọn file danh sách (.txt, .csv)'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _studentIdsController,
+                      maxLines: 6,
+                      decoration: InputDecoration(
+                        hintText: 'Nhập hoặc dán danh sách MSSV, mỗi mã một dòng...',
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFE9EEF3)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
             const SizedBox(height: 28),
 
             SizedBox(
@@ -141,12 +273,27 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     final organizer = _organizerController.text.trim();
     final point = int.tryParse(_pointController.text.trim()) ?? 0;
 
+    final registeredIds = _studentIdsController.text
+        .split(RegExp(r'[\n\r,]+'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList();
+
     if (title.isEmpty || location.isEmpty || organizer.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
             'Vui lòng nhập đủ tên, địa điểm và đơn vị tổ chức.',
           ),
+        ),
+      );
+      return;
+    }
+
+    if (_requiresRegistration && registeredIds.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vui lòng nhập danh sách sinh viên đăng ký.'),
         ),
       );
       return;
@@ -171,14 +318,18 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       trainingPoint: point,
       startTime: _startTime,
       endTime: _endTime,
+      requiresRegistration: _requiresRegistration,
+      registeredStudentIds: registeredIds,
     );
 
     _titleController.clear();
     _descriptionController.clear();
     _locationController.clear();
     _organizerController.clear();
+    _studentIdsController.clear();
 
     _pointController.text = '5';
+    setState(() => _requiresRegistration = false);
 
     if (!mounted) return;
 
