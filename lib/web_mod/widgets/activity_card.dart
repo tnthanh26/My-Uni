@@ -7,6 +7,8 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback onOpen;
   final VoidCallback onClose;
   final VoidCallback onReopen;
+  final VoidCallback onDelete;
+  final VoidCallback? onViewRegisteredList;
 
   const ActivityCard({
     super.key,
@@ -15,6 +17,8 @@ class ActivityCard extends StatelessWidget {
     required this.onOpen,
     required this.onClose,
     required this.onReopen,
+    required this.onDelete,
+    this.onViewRegisteredList,
   });
 
   String _formatDate(dynamic value) {
@@ -33,90 +37,145 @@ class ActivityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = (data['status'] ?? 'active').toString();
     final isActive = status == 'active';
+    final requiresReg = data['requiresRegistration'] == true;
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 18),
-      padding: const EdgeInsets.all(22),
+      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE9EEF3)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFE4E7EC)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Column(
         children: [
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: isActive
-                    ? Colors.green.withOpacity(0.12)
-                    : Colors.grey.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Icon(
-                Icons.event_available_rounded,
-                color: isActive ? Colors.green : Colors.grey,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  (data['title'] ?? 'Hoạt động không tên').toString(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontFamily: 'Nunito',
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1F37),
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? const Color(0xFFECFDF3)
+                            : const Color(0xFFF2F4F7),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        isActive
+                            ? Icons.event_available_rounded
+                            : Icons.event_busy_rounded,
+                        color: isActive
+                            ? const Color(0xFF027A48)
+                            : const Color(0xFF475467),
+                        size: 22,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  data['title']?.toString() ??
+                                      'Hoạt động không tên',
+                                  style: const TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF101828),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+
+                              if (requiresReg)
+                                _statusBadge(
+                                  'YÊU CẦU ĐĂNG KÝ',
+                                  const Color(0xFFEFF8FF),
+                                  const Color(0xFF175CD3),
+                                ),
+
+                              const SizedBox(width: 8),
+
+                              _statusBadge(
+                                isActive ? 'ĐANG MỞ' : 'ĐÃ ĐÓNG',
+                                isActive
+                                    ? const Color(0xFFECFDF3)
+                                    : const Color(0xFFF2F4F7),
+                                isActive
+                                    ? const Color(0xFF027A48)
+                                    : const Color(0xFF475467),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Tổ chức bởi: ${data['organizerName']?.toString() ?? 'N/A'}',
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
+
+                const SizedBox(height: 12),
+
                 Text(
-                  (data['description'] ?? '').toString(),
+                  data['description']?.toString() ?? '',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontFamily: 'Nunito',
-                    color: Color(0xFF667085),
+                    fontSize: 14,
+                    height: 1.5,
+                    color: Color(0xFF475467),
                   ),
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 16),
+
                 Wrap(
                   spacing: 10,
                   runSpacing: 8,
                   children: [
-                    _chip(
+                    _compactChip(
                       Icons.location_on_outlined,
-                      (data['location'] ?? 'Chưa có địa điểm').toString(),
+                      data['location']?.toString() ?? 'Chưa cập nhật',
                     ),
-                    _chip(
-                      Icons.schedule_rounded,
+                    _compactChip(
+                      Icons.calendar_today_outlined,
                       _formatDate(data['startTime']),
                     ),
-                    _chip(
-                      Icons.people_alt_outlined,
-                      '${data['attendanceCount'] ?? 0} đã check-in',
+                    _compactChip(
+                      Icons.people_outline_rounded,
+                      '${data['attendanceCount']?.toString() ?? '0'} check-in',
                     ),
-                    _chip(
-                      Icons.star_border_rounded,
-                      '${data['trainingPoint'] ?? 0} ĐRL',
+                    _compactChip(
+                      Icons.stars_outlined,
+                      '${data['trainingPoint']?.toString() ?? '0'} ĐRL',
                     ),
                   ],
                 ),
@@ -124,64 +183,101 @@ class ActivityCard extends StatelessWidget {
             ),
           ),
 
-          const SizedBox(width: 16),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                alignment: WrapAlignment.end,
+                children: [
+                  if (requiresReg && onViewRegisteredList != null)
+                    IntrinsicWidth(
+                      child: OutlinedButton.icon(
+                        onPressed: onViewRegisteredList,
+                        icon: const Icon(Icons.how_to_reg_rounded, size: 15),
+                        label: const Text('DS đăng ký'),
+                        style: OutlinedButton.styleFrom(
+                          fixedSize: const Size.fromHeight(36),
+                          foregroundColor: const Color(0xFF344054),
+                          side: const BorderSide(color: Color(0xFFD0D5DD)),
+                          backgroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                    ),
 
-          SizedBox(
-            width: 145,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isActive
-                          ? Colors.green.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: Text(
-                      isActive ? 'Đang mở' : 'Đã đóng',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: isActive ? Colors.green : Colors.grey,
+                  IntrinsicWidth(
+                    child: ElevatedButton.icon(
+                      onPressed: onOpen,
+                      icon: const Icon(Icons.analytics_rounded, size: 15),
+                      label: const Text('Chi tiết'),
+                      style: ElevatedButton.styleFrom(
+                        fixedSize: const Size.fromHeight(36),
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        textStyle: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
 
-                SizedBox(
-                  height: 40,
-                  child: ElevatedButton.icon(
-                    onPressed: onOpen,
-                    icon: const Icon(Icons.list_alt_rounded, size: 18),
-                    label: const Text('Chi tiết'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                  TextButton.icon(
+                    onPressed: isActive ? onClose : onReopen,
+                    icon: Icon(
+                      isActive
+                          ? Icons.lock_outline_rounded
+                          : Icons.lock_open_rounded,
+                      size: 16,
+                    ),
+                    label: Text(
+                      isActive ? 'Đóng' : 'Mở lại',
+                    ),
+                    style: TextButton.styleFrom(
+                      foregroundColor: isActive
+                          ? const Color(0xFFB44431)
+                          : const Color(0xFF027A48),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 10,
+                      ),
+                      textStyle: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
-                ),
 
-                const SizedBox(height: 8),
-
-                SizedBox(
-                  height: 38,
-                  child: TextButton(
-                    onPressed: isActive ? onClose : onReopen,
-                    child: Text(isActive ? 'Đóng check-in' : 'Mở lại'),
+                  IconButton(
+                    onPressed: onDelete,
+                    icon: const Icon(
+                      Icons.delete_outline_rounded,
+                      color: Color(0xFFD92D20),
+                      size: 20,
+                    ),
+                    tooltip: 'Xóa',
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -189,26 +285,65 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  Widget _chip(IconData icon, String label) {
+  Widget _statusBadge(
+      String label,
+      Color bgColor,
+      Color textColor,
+      ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 4,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F7FA),
-        borderRadius: BorderRadius.circular(999),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          fontSize: 10,
+          fontWeight: FontWeight.w800,
+          color: textColor,
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _compactChip(
+      IconData icon,
+      String label,
+      ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 8,
+        vertical: 4,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFFEAECF0),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: const Color(0xFF667085)),
-          const SizedBox(width: 5),
+          Icon(
+            icon,
+            size: 13,
+            color: const Color(0xFF667085),
+          ),
+          const SizedBox(width: 6),
           Text(
             label,
-            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontFamily: 'Nunito',
               fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF667085),
+              fontWeight: FontWeight.w500,
+              color: Color(0xFF475467),
             ),
           ),
         ],

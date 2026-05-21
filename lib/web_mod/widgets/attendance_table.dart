@@ -1,11 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import '../services/activity_service.dart';
 
 class AttendanceTable extends StatefulWidget {
+  final String activityId;
   final List<QueryDocumentSnapshot<Map<String, dynamic>>> docs;
 
   const AttendanceTable({
     super.key,
+    required this.activityId,
     required this.docs,
   });
 
@@ -15,11 +18,83 @@ class AttendanceTable extends StatefulWidget {
 
 class _AttendanceTableState extends State<AttendanceTable> {
   final ScrollController _horizontalController = ScrollController();
+  bool _isDeleting = false;
 
   @override
   void dispose() {
     _horizontalController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showDeleteConfirmation(
+    BuildContext context,
+    String docId,
+    String studentName,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.redAccent),
+            SizedBox(width: 10),
+            Text(
+              'Xác nhận xóa',
+              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text.rich(
+          TextSpan(
+            text: 'Bạn có chắc chắn muốn xóa điểm danh của sinh viên ',
+            children: [
+              TextSpan(
+                text: studentName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const TextSpan(text: '? Hành động này không thể hoàn tác.'),
+            ],
+          ),
+          style: const TextStyle(fontFamily: 'Nunito', fontSize: 15),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Xóa ngay'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true) {
+      setState(() => _isDeleting = true);
+      try {
+        await ActivityService.deleteAttendance(widget.activityId, docId);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã xóa điểm danh sinh viên.')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi khi xóa: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isDeleting = false);
+      }
+    }
   }
 
   String _formatTime(dynamic value) {
@@ -126,8 +201,8 @@ class _AttendanceTableState extends State<AttendanceTable> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final tableWidth = constraints.maxWidth < 1180
-            ? 1180.0
+        final tableWidth = constraints.maxWidth < 1100
+            ? 1100.0
             : constraints.maxWidth;
 
         return Container(
@@ -147,7 +222,7 @@ class _AttendanceTableState extends State<AttendanceTable> {
           clipBehavior: Clip.antiAlias,
           child: Scrollbar(
             controller: _horizontalController,
-            thumbVisibility: constraints.maxWidth < 1180,
+            thumbVisibility: constraints.maxWidth < 1100,
             radius: const Radius.circular(999),
             child: SingleChildScrollView(
               controller: _horizontalController,
@@ -155,8 +230,8 @@ class _AttendanceTableState extends State<AttendanceTable> {
               child: SizedBox(
                 width: tableWidth,
                 child: DataTable(
-                  columnSpacing: 26,
-                  horizontalMargin: 26,
+                  columnSpacing: 12,
+                  horizontalMargin: 16,
                   headingRowHeight: 68,
                   dataRowMinHeight: 74,
                   dataRowMaxHeight: 74,
@@ -177,21 +252,39 @@ class _AttendanceTableState extends State<AttendanceTable> {
                     DataColumn(label: Text('Niên khóa')),
                     DataColumn(label: Text('Thời gian check-in')),
                     DataColumn(label: Text('Trạng thái')),
+                    DataColumn(label: Text('Thao tác')),
                   ],
                   rows: widget.docs.map((doc) {
                     final data = doc.data();
 
                     return DataRow(
                       cells: [
-                        DataCell(_textCell(data['displayName'] ?? '', width: 210)),
-                        DataCell(_textCell(data['studentId'] ?? '', width: 130)),
-                        DataCell(_textCell(data['faculty'] ?? 'Chưa cập nhật khoa', width: 230)),
-                        DataCell(_textCell(data['cohort'] ?? '', width: 130)),
-                        DataCell(_textCell(_formatTime(data['checkedInAt']), width: 190)),
+                        DataCell(_textCell(data['displayName'] ?? '', width: 180)),
+                        DataCell(_textCell(data['studentId'] ?? '', width: 100)),
+                        DataCell(_textCell(data['faculty'] ?? 'Chưa cập nhật khoa', width: 180)),
+                        DataCell(_textCell(data['cohort'] ?? '', width: 100)),
+                        DataCell(_textCell(_formatTime(data['checkedInAt']), width: 170)),
                         DataCell(
                           Align(
                             alignment: Alignment.centerLeft,
                             child: _statusChip(),
+                          ),
+                        ),
+                        DataCell(
+                          IconButton(
+                            onPressed: _isDeleting
+                                ? null
+                                : () => _showDeleteConfirmation(
+                                      context,
+                                      doc.id,
+                                      data['displayName'] ?? 'Sinh viên',
+                                    ),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Colors.redAccent,
+                              size: 22,
+                            ),
+                            tooltip: 'Xóa điểm danh',
                           ),
                         ),
                       ],

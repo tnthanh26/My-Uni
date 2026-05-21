@@ -1,8 +1,6 @@
 import 'dart:convert';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import '../file_helper_stub.dart'
 if (dart.library.html) '../file_helper_web.dart';
 import '../services/activity_service.dart';
@@ -272,7 +270,10 @@ class AttendancePage extends StatelessWidget {
                     final docs = snapshot.data?.docs ?? [];
 
                     return SingleChildScrollView(
-                      child: AttendanceTable(docs: docs),
+                      child: AttendanceTable(
+                        activityId: selectedActivityId!,
+                        docs: docs,
+                      ),
                     );
                   },
                 ),
@@ -311,107 +312,11 @@ class AttendancePage extends StatelessWidget {
       return;
     }
 
-    final result = await showDialog<Map<String, dynamic>>(
+    await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const StudentQrScannerDialog(),
-    );
-
-    if (result == null) return;
-
-    try {
-      final isNewCheckIn = await ActivityService.addAttendanceFromQr(
+      builder: (_) => StudentQrScannerDialog(
         activityId: activityId,
-        studentData: result,
-      );
-
-      if (!context.mounted) return;
-
-      if (isNewCheckIn) {
-        _showCheckInResultDialog(
-          context: context,
-          title: 'Điểm danh thành công',
-          icon: Icons.check_circle_rounded,
-          iconColor: Colors.green,
-          activityId: activityId,
-          studentData: result,
-        );
-      } else {
-        _showCheckInResultDialog(
-          context: context,
-          title: 'Sinh viên đã điểm danh trước đó',
-          icon: Icons.info_rounded,
-          iconColor: Colors.orange,
-          activityId: activityId,
-          studentData: result,
-        );
-      }
-    } catch (e) {
-      if (!context.mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể ghi nhận điểm danh: $e')),
-      );
-    }
-  }
-
-  void _showCheckInResultDialog({
-    required BuildContext context,
-    required String title,
-    required IconData icon,
-    required Color iconColor,
-    required String activityId,
-    required Map<String, dynamic> studentData,
-  }) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Row(
-          children: [
-            Icon(icon, color: iconColor),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontFamily: 'Nunito',
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Họ tên: ${studentData['displayName'] ?? ''}'),
-            Text('MSSV: ${studentData['studentId'] ?? ''}'),
-            Text('Khoa: ${studentData['faculty'] ?? ''}'),
-            Text('Niên khóa: ${studentData['cohort'] ?? ''}'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Đóng'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _openStudentQrScanner(context, activityId);
-            },
-            icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
-            label: const Text('Quét tiếp'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ],
       ),
     );
   }
