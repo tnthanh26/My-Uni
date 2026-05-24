@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/activity_service.dart';
-// ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+import 'dart:convert';
+import 'package:file_picker/file_picker.dart';
 
 class CreateActivityPage extends StatefulWidget {
   const CreateActivityPage({
@@ -38,25 +38,28 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     super.dispose();
   }
 
-  void _pickFile() {
-    final uploadInput = html.FileUploadInputElement();
-    uploadInput.accept = '.txt,.csv';
-    uploadInput.click();
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['txt', 'csv'],
+      withData: true,
+    );
 
-    uploadInput.onChange.listen((e) {
-      final files = uploadInput.files;
-      if (files != null && files.isNotEmpty) {
-        final file = files[0];
-        final reader = html.FileReader();
+    if (result == null || result.files.isEmpty) return;
 
-        reader.onLoadEnd.listen((e) {
-          final content = reader.result as String;
-          _parseAndAddIds(content);
-        });
+    final fileBytes = result.files.first.bytes;
 
-        reader.readAsText(file);
-      }
-    });
+    if (fileBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Không đọc được nội dung file.'),
+        ),
+      );
+      return;
+    }
+
+    final content = utf8.decode(fileBytes);
+    _parseAndAddIds(content);
   }
 
   void _parseAndAddIds(String content) {
