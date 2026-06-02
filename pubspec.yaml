@@ -95,12 +95,6 @@ flutter:
   - assets/images/logo.png
   - assets/images/Ads_template.png
   - assets/images/hcmus_bg.png
-  - assets/icons/event.svg
-  - assets/icons/chat.svg
-  - assets/icons/space.svg
-  - assets/icons/account.svg
-  - assets/icons/home.svg
-  - assets/icons/trash.svg
   - assets/images/rain_icon.png
   - assets/images/announcement.jpg
   - assets/images/contest.jpg
@@ -118,6 +112,13 @@ flutter:
   - assets/images/MyUni.png
   - assets/images/no_deadline_meme.gif
   - assets/images/no_class_meme.png
+
+  - assets/icons/event.svg
+  - assets/icons/chat.svg
+  - assets/icons/space.svg
+  - assets/icons/account.svg
+  - assets/icons/home.svg
+  - assets/icons/trash.svg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

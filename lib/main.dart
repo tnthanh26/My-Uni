@@ -179,47 +179,92 @@ class MyUniHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = const Color(0xFF5893D8);
+    // Lấy màu từ AppTheme hoặc AppColors để đồng bộ
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 32.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                const SizedBox(height: 20),
+                
+                // Logo
                 SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: Image.asset(
-                    'assets/images/logoApp.png',
-                    fit: BoxFit.contain,
+                  width: 140,
+                  height: 140,
+                  child: Hero(
+                    tag: 'app_logo', // Thêm Hero animation nếu cần sau này
+                    child: Image.asset(
+                      'assets/images/logoApp.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                const Text(
-                  'Chào mừng bạn đến với MyUni!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                
+                const SizedBox(height: 40),
+                
+                // Tiêu đề
+                Text(
+                  'Chào mừng bạn đến với',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? Colors.white70 : Colors.black54,
+                  ),
                 ),
-                const SizedBox(height: 50),
+                const SizedBox(height: 8),
+                Text(
+                  'MyUni',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w800,
+                    color: primaryColor,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
 
-                _buildButton(
-                    context,
-                    'Đăng nhập',
-                    primaryColor,
-                        () => Navigator.pushNamed(context, '/login'),
-                    isOutlined: false
+                // Tagline nhỏ
+                Text(
+                  'Your Campus. Your Way.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: isDark ? Colors.white54 : Colors.black45,
+                  ),
                 ),
+
+                const SizedBox(height: 60),
+
+                // Nút Đăng nhập (Primary)
+                _buildButton(
+                  context,
+                  'Đăng nhập',
+                  primaryColor,
+                  () => Navigator.pushNamed(context, '/login'),
+                  isOutlined: false,
+                ),
+                
                 const SizedBox(height: 16),
+                
+                // Nút Đăng ký (Secondary/Outlined)
                 _buildButton(
-                    context,
-                    'Đăng ký tài khoản',
-                    primaryColor,
-                        () => Navigator.pushNamed(context, '/signup'),
-                    isOutlined: true
+                  context,
+                  'Đăng ký tài khoản',
+                  primaryColor,
+                  () => Navigator.pushNamed(context, '/signup'),
+                  isOutlined: true,
                 ),
+                
+                const SizedBox(height: 40),
               ],
             ),
           ),
@@ -228,28 +273,60 @@ class MyUniHomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildButton(BuildContext context, String text, Color color, VoidCallback onPressed, {required bool isOutlined}) {
+  Widget _buildButton(
+    BuildContext context, 
+    String text, 
+    Color color, 
+    VoidCallback onPressed, 
+    {required bool isOutlined, IconData? icon}
+  ) {
     return SizedBox(
       width: double.infinity,
-      height: 55,
+      height: 56,
       child: isOutlined
           ? OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: color, width: 2),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        ),
-        child: Text(text, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-      )
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                foregroundColor: color,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 22),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    text, 
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)
+                  ),
+                ],
+              ),
+            )
           : ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        ),
-        child: Text(text, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ),
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 22),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    text, 
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }
