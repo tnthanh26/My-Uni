@@ -270,6 +270,39 @@ class _MyPostsPageState extends State<MyPostsPage>
                 color: isDarkMode ? Colors.white70 : Colors.black54,
               ),
             ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => isForum
+                        ? const CreatePostPage()
+                        : const CreateMaterialPage(),
+                  ),
+                );
+              },
+              icon: Icon(
+                isForum ? Icons.add_comment_rounded : Icons.upload_file_rounded,
+                size: 20,
+              ),
+              label: Text(
+                isForum ? "Tạo bài đăng ngay" : "Tải tài liệu lên",
+                style: const TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF5893D8),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                elevation: 0,
+              ),
+            ),
           ],
         ),
       ),
@@ -379,46 +412,6 @@ class _MyPostsPageState extends State<MyPostsPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: isForum
-                        ? const Color(0xFF5893D8).withOpacity(
-                      isDarkMode ? 0.16 : 0.10,
-                    )
-                        : const Color(0xFF8B5CF6).withOpacity(
-                      isDarkMode ? 0.16 : 0.10,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        isForum ? Icons.forum_outlined : Icons.menu_book_rounded,
-                        size: 16,
-                        color: isForum
-                            ? const Color(0xFF5893D8)
-                            : const Color(0xFF8B5CF6),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isForum ? "Bài viết diễn đàn" : "Tài liệu của bạn",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : (isForum
-                              ? const Color(0xFF356DA8)
-                              : const Color(0xFF6D28D9)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                   child: Row(

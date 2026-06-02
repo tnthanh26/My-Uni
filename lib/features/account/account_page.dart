@@ -180,16 +180,25 @@ class AccountPage extends StatelessWidget {
     required String? photoBase64,
     required bool isVerified,
   }) {
-    ImageProvider avatarProvider;
+    ImageProvider? avatarProvider;
+    Widget? avatarChild;
 
     if (photoBase64 != null && photoBase64.isNotEmpty) {
       try {
         avatarProvider = MemoryImage(base64Decode(photoBase64));
       } catch (_) {
-        avatarProvider = const AssetImage('assets/images/cat_avatar.jpg');
+        avatarChild = Icon(
+          Icons.person,
+          size: 52,
+          color: isDarkMode ? Colors.white54 : Colors.grey,
+        );
       }
     } else {
-      avatarProvider = const AssetImage('assets/images/cat_avatar.jpg');
+      avatarChild = Icon(
+        Icons.person,
+        size: 52,
+        color: isDarkMode ? Colors.white54 : Colors.grey,
+      );
     }
 
     return Container(
@@ -220,6 +229,7 @@ class AccountPage extends StatelessWidget {
                 backgroundColor:
                 isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
                 backgroundImage: avatarProvider,
+                child: avatarChild,
               ),
               Positioned(
                 right: 0,

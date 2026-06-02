@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
+import '../../utils/formatters.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -34,8 +36,7 @@ class _SignUpPageState extends State<SignUpPage> {
   bool _isValidStudentEmail(String email) {
     final trimmedEmail = email.trim().toLowerCase();
     final allowedEmails = [
-      'nhatthanhtran2606@gmail.com',
-      'trannhatthanha2@gmail.com',
+      'nhatthanhtest2002@gmail.com',
     ];
 
     if (allowedEmails.contains(trimmedEmail)) {
@@ -262,6 +263,8 @@ class _SignUpPageState extends State<SignUpPage> {
               isDarkMode: isDarkMode,
               child: TextFormField(
                 controller: _cohortController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [CohortInputFormatter()],
                 style: TextStyle(
                   color: isDarkMode ? Colors.white : Colors.black,
                 ),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:my_uni/features/home/post_detail_page.dart';
 
 class DiscoverEventTab extends StatelessWidget {
   final bool useNestedScrollOverlap;
@@ -79,7 +80,7 @@ class DiscoverEventTab extends StatelessWidget {
     } else {
       await docRef.set({
         'title': data['title'] ?? 'Sự kiện sinh viên',
-        'date': data['date'] ?? 'Xem chi tiết',
+        'date': data['date'] ?? 'Xem chi tiết bài viết',
         'department': data['department'] ?? 'Cơ sở HCMUS',
         'summary': data['summary'] ?? '',
         'link': data['link'] ?? '',
@@ -220,165 +221,226 @@ class DiscoverEventTab extends StatelessWidget {
         border: Border.all(color: _borderColor(isDark)),
         boxShadow: _shadow(isDark),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-            child: Stack(
-              children: [
-                Image.asset(
-                  'assets/images/news.png',
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.black.withOpacity(0.15),
-                          Colors.black.withOpacity(0.4),
-                        ],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'MỚI',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('users')
-                        .doc(user?.uid ?? 'guest')
-                        .collection('interested_events')
-                        .doc(docId)
-                        .snapshots(),
-                    builder: (context, favSnapshot) {
-                      final bool isInterested =
-                          favSnapshot.hasData && favSnapshot.data!.exists;
-
-                      return ElevatedButton(
-                        onPressed: () =>
-                            _toggleInterest(context, docId, data),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                          isInterested ? Colors.grey : detailBlue,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          minimumSize: const Size(0, 34),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Text(
-                          isInterested ? 'Đã lưu' : 'Quan tâm',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PostDetailPage(
+                docId: docId,
+                initialPostData: data,
+              ),
             ),
+          );
+        },
+        borderRadius: BorderRadius.circular(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(22)),
+              child: Stack(
+                children: [
+                  Image.asset(
+                    'assets/images/news.png',
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.black.withOpacity(0.15),
+                            Colors.black.withOpacity(0.4),
+                          ],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'MỚI',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10,
+                    right: 10,
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(user?.uid ?? 'guest')
+                          .collection('interested_events')
+                          .doc(docId)
+                          .snapshots(),
+                      builder: (context, favSnapshot) {
+                        final bool isInterested =
+                            favSnapshot.hasData && favSnapshot.data!.exists;
+
+                        return ElevatedButton(
+                          onPressed: () =>
+                              _toggleInterest(context, docId, data),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isInterested ? Colors.grey : detailBlue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            minimumSize: const Size(0, 34),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            isInterested ? 'Đã lưu' : 'Quan tâm',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (data['hashtags'] != null &&
+                      (data['hashtags'] as List).isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: (data['hashtags'] as List)
+                            .map((tag) => _buildTagChip(tag, isDark))
+                            .toList(),
+                      ),
+                    ),
+                  Text(
+                    data['title']?.toString() ?? 'Sự kiện sinh viên',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: _primaryText(isDark),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: _secondarySurface(isDark),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _borderColor(isDark)),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.access_time_rounded,
+                              size: 16,
+                              color: primaryBlue,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                data['date']?.toString() ?? 'Xem chi tiết bài viết',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: _secondaryText(isDark),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 16,
+                              color: primaryBlue,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                data['department']?.toString() ??
+                                    'Cơ sở HCMUS',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: _secondaryText(isDark),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTagChip(dynamic tag, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.tag_rounded,
+            size: 14,
+            color: Color(0xFF306CFE),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data['title']?.toString() ?? 'Sự kiện sinh viên',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: _primaryText(isDark),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _secondarySurface(isDark),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: _borderColor(isDark)),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time_rounded,
-                            size: 16,
-                            color: primaryBlue,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              data['date']?.toString() ?? 'Chưa có thời gian',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: _secondaryText(isDark),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 16,
-                            color: primaryBlue,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              data['department']?.toString() ?? 'Cơ sở HCMUS',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: _secondaryText(isDark),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+          const SizedBox(width: 5),
+          Text(
+            tag.toString(),
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white70 : const Color(0xFF344054),
             ),
           ),
         ],

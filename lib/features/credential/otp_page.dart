@@ -54,7 +54,7 @@ class _OtpPageState extends State<OtpPage> {
         'faculty': null,
         'phone': '',
         'dob': '',
-        'photoUrl': '',
+        'photoUrl': '', // Để trống để UI hiển thị icon mặc định
 
         // field hệ thống
         'status': 'active',
