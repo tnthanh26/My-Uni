@@ -32,11 +32,21 @@ class _SignUpPageState extends State<SignUpPage> {
   }
 
   bool _isValidStudentEmail(String email) {
+    final trimmedEmail = email.trim().toLowerCase();
+    final allowedEmails = [
+      'nhatthanhtran2606@gmail.com',
+      'trannhatthanha2@gmail.com',
+    ];
+
+    if (allowedEmails.contains(trimmedEmail)) {
+      return true;
+    }
+
     final emailRegex = RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
     );
 
-    return emailRegex.hasMatch(email.trim().toLowerCase());
+    return emailRegex.hasMatch(trimmedEmail);
   }
 
   Future<void> _sendOTPEmail(String email, String otp) async {
