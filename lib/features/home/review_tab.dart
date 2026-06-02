@@ -131,38 +131,6 @@ class ReviewTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFCB45).withOpacity(
-                      isDarkMode ? 0.14 : 0.10,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.rate_review_rounded,
-                        size: 16,
-                        color: Color(0xFFC98A00),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Đánh giá môn học",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF946200),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                   child: Row(

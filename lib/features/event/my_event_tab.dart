@@ -722,7 +722,7 @@ class _MyEventTabState extends State<MyEventTab>
                           ? [
                         Padding(
                           padding:
-                          const EdgeInsets.only(top: 50, left: 100),
+                          const EdgeInsets.only(top: 50, left: 146),
                           child: Text(
                             'Không có sự kiện',
                             style: TextStyle(
@@ -787,13 +787,13 @@ class _MyEventTabState extends State<MyEventTab>
     final Color accentColor = accentColors[index % accentColors.length];
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(left: 16, bottom: 24),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Time Column
           SizedBox(
-            width: 80,
+            width: 110,
             child: Column(
               children: [
                 Text(
@@ -816,7 +816,7 @@ class _MyEventTabState extends State<MyEventTab>
               ],
             ),
           ),
-          const SizedBox(width: 24),
+          const SizedBox(width: 20),
           // Event Card
           Expanded(
             child: Container(

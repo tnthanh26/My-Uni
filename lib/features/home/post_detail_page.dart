@@ -371,6 +371,46 @@ class _PostDetailPageState extends State<PostDetailPage> {
     await _sendCommentNotification(content);
   }
 
+  Future<void> _toggleInterest() async {
+    if (_user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng đăng nhập để lưu sự kiện")),
+      );
+      return;
+    }
+
+    final docRef = _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('interested_events')
+        .doc(widget.docId);
+
+    final docSnapshot = await docRef.get();
+    final data = widget.initialPostData;
+
+    if (docSnapshot.exists) {
+      await docRef.delete();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã bỏ quan tâm")),
+      );
+    } else {
+      await docRef.set({
+        'title': data['title'] ?? 'Sự kiện sinh viên',
+        'date': data['date'] ?? 'Xem chi tiết',
+        'department': data['department'] ?? 'Cơ sở HCMUS',
+        'summary': data['summary'] ?? '',
+        'link': data['link'] ?? '',
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã thêm vào mục Đã quan tâm")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -542,40 +582,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isEvent)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF66ACFE).withOpacity(
-                  isDarkMode ? 0.18 : 0.10,
-                ),
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(22),
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.auto_awesome,
-                    size: 16,
-                    color: Color(0xFF5893D8),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Thông báo nổi bật",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF356DA8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
             child: _buildAuthorRow(
@@ -599,6 +605,59 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ],
             ),
           ),
+          if (data['hashtags'] != null) ...[
+            const SizedBox(height: 14),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: (data['hashtags'] as List)
+                    .map(
+                      (t) => Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.white10
+                          : const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.tag_rounded,
+                          size: 14,
+                          color: Color(0xFF306CFE),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          t.toString(),
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF344054),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                    .toList(),
+              ),
+            ),
+          ],
           const SizedBox(height: 14),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -665,6 +724,58 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                     ),
                   ),
+                  if (isEvent)
+                    Positioned(
+                      top: 12,
+                      right: 12,
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream: _firestore
+                            .collection('users')
+                            .doc(_user?.uid ?? 'guest')
+                            .collection('interested_events')
+                            .doc(widget.docId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          final bool isInterested =
+                              snapshot.hasData && snapshot.data!.exists;
+
+                          return ElevatedButton.icon(
+                            onPressed: _toggleInterest,
+                            icon: Icon(
+                              isInterested
+                                  ? Icons.check_circle_rounded
+                                  : Icons.add_circle_outline_rounded,
+                              size: 16,
+                            ),
+                            label: Text(
+                              isInterested ? "Đã quan tâm" : "Quan tâm",
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Encode Sans Expanded',
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: isInterested
+                                  ? Colors.white.withOpacity(0.25)
+                                  : const Color(0xFF5794F3),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: isInterested
+                                    ? const BorderSide(color: Colors.white70)
+                                    : BorderSide.none,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1013,16 +1124,27 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             : const Color(0xFFE2E8F0),
                       ),
                     ),
-                    child: Text(
-                      "#$t",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode
-                            ? Colors.white70
-                            : const Color(0xFF344054),
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.tag_rounded,
+                          size: 14,
+                          color: Color(0xFF306CFE),
+                        ),
+                        const SizedBox(width: 5),
+                        Text(
+                          t.toString(),
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF344054),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 )
@@ -1080,10 +1202,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
+          const Icon(
+            Icons.tag_rounded,
             size: 14,
-            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+            color: Color(0xFF306CFE),
           ),
           const SizedBox(width: 5),
           Text(

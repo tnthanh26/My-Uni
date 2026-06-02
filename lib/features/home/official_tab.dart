@@ -73,19 +73,35 @@ class OfficialTab extends StatelessWidget {
         : (isDarkMode ? Colors.white70 : const Color(0xFF475569));
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        "#$label",
-        style: TextStyle(
-          fontFamily: 'Encode Sans Expanded',
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: textColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isEvent
+              ? const Color(0xFF66ACFE).withOpacity(0.35)
+              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.tag_rounded,
+            size: 14,
+            color: Color(0xFF306CFE),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+        ],
       ),
     );
   }

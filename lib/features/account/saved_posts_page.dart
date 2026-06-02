@@ -479,7 +479,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
               padding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFF5893D8).withOpacity(
+                color: const Color(0xFF8B5CF6).withOpacity(
                   isDarkMode ? 0.16 : 0.10,
                 ),
               ),
@@ -488,7 +488,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   const Icon(
                     Icons.forum_outlined,
                     size: 16,
-                    color: Color(0xFF5893D8),
+                    color: Color(0xFF8B5CF6),
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -499,7 +499,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       fontWeight: FontWeight.w700,
                       color: isDarkMode
                           ? Colors.white70
-                          : const Color(0xFF356DA8),
+                          : const Color(0xFF6D28D9),
                     ),
                   ),
                 ],
@@ -1121,95 +1121,94 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           ),
         ),
         centerTitle: true,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(110),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFCB45).withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.bookmark_rounded,
-                        color: Color(0xFFFFCB45),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        "Nơi lưu lại những nội dung bạn muốn xem lại sau",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF344054),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.white.withOpacity(0.05)
-                      : const Color(0xFFF0F0F0),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: TabBar(
-                  controller: _tabController,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  dividerColor: Colors.transparent,
-                  indicator: BoxDecoration(
-                    borderRadius: BorderRadius.circular(30),
-                    color: const Color(0xFF5893D8),
-                  ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor:
-                  isDarkMode ? Colors.white38 : const Color(0xFF777777),
-                  labelStyle: const TextStyle(
-                    fontFamily: 'Encode Sans Expanded',
-                    fontWeight: FontWeight.bold,
-                  ),
-                  tabs: const [
-                    Tab(text: "Diễn đàn chung"),
-                    Tab(text: "Khóa học"),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildSavedList("general"),
-          _buildSavedList("course"),
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white10
+                    : const Color(0xFFE9EEF3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFCB45).withOpacity(0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.bookmark_rounded,
+                    color: Color(0xFFFFCB45),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    "Nơi lưu lại những nội dung bạn muốn xem lại sau",
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isDarkMode
+                          ? Colors.white70
+                          : const Color(0xFF344054),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? Colors.white.withOpacity(0.05)
+                  : const Color(0xFFF0F0F0),
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              indicator: BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                color: const Color(0xFF5893D8),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor:
+              isDarkMode ? Colors.white38 : const Color(0xFF777777),
+              labelStyle: const TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontWeight: FontWeight.bold,
+              ),
+              tabs: const [
+                Tab(text: "Diễn đàn chung"),
+                Tab(text: "Khóa học"),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildSavedList("general"),
+                _buildSavedList("course"),
+              ],
+            ),
+          ),
         ],
       ),
     );

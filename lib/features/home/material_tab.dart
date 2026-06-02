@@ -270,38 +270,6 @@ class MaterialTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: double.infinity,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5893D8).withOpacity(
-                      isDarkMode ? 0.16 : 0.10,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.menu_book_rounded,
-                        size: 16,
-                        color: Color(0xFF5893D8),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Tài liệu học tập",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF356DA8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                   child: Row(
