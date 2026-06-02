@@ -127,7 +127,6 @@ class NotificationService {
             importance: Importance.max,
             priority: Priority.max,
             icon: '@mipmap/ic_launcher',
-            // FIX LỖI GIỜ HIỂN THỊ SAI:
             showWhen: true,
             when: scheduled.millisecondsSinceEpoch,
           ),

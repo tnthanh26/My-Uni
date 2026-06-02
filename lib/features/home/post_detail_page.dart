@@ -2,6 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 import 'post_action_row.dart';
@@ -46,6 +49,44 @@ class _PostDetailPageState extends State<PostDetailPage> {
   void dispose() {
     _commentController.dispose();
     super.dispose();
+  }
+
+  Future<void> _handleOpenFile(
+      BuildContext context,
+      String base64Data,
+      String fileName,
+      ) async {
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Đang chuẩn bị tài liệu..."),
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/$fileName';
+      final file = File(filePath);
+
+      await file.writeAsBytes(base64Decode(base64Data));
+      final result = await OpenFilex.open(filePath);
+
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Không có ứng dụng để mở loại file này: ${result.message}",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi: $e")),
+        );
+      }
+    }
   }
 
   void _showReportOptions() {
@@ -854,49 +895,56 @@ class _PostDetailPageState extends State<PostDetailPage> {
             if ((data['content'] ?? '').toString().trim().isNotEmpty)
               const SizedBox(height: 18),
             if (data['fileData'] != null)
-              data['isImage'] == true
-                  ? ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Image.memory(
-                  base64Decode(data['fileData']),
-                  width: double.infinity,
-                  fit: BoxFit.contain,
+              GestureDetector(
+                onTap: () => _handleOpenFile(
+                  context,
+                  data['fileData'],
+                  data['fileName'] ?? (data['isImage'] == true ? 'image.png' : 'document.pdf'),
                 ),
-              )
-                  : Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.white.withOpacity(0.04)
-                      : const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFEAEFF5),
+                child: data['isImage'] == true
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.memory(
+                    base64Decode(data['fileData']),
+                    width: double.infinity,
+                    fit: BoxFit.contain,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.description_rounded,
-                      color: Color(0xFF5893D8),
-                      size: 34,
+                )
+                    : Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.04)
+                        : const Color(0xFFF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isDarkMode
+                          ? Colors.white10
+                          : const Color(0xFFEAEFF5),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        data['fileName'] ?? 'document.pdf',
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.white
-                              : Colors.black87,
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.description_rounded,
+                        color: Color(0xFF5893D8),
+                        size: 34,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          data['fileName'] ?? 'document.pdf',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode
+                                ? Colors.white
+                                : Colors.black87,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
           ],

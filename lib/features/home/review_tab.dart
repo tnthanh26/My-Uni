@@ -278,34 +278,6 @@ class ReviewTab extends StatelessWidget {
                   ),
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                  child: InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              PostDetailPage(docId: docId, initialPostData: data),
-                        ),
-                      );
-                    },
-                    borderRadius: BorderRadius.circular(8),
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4),
-                      child: Text(
-                        "Xem thêm",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          color: Color(0xFF5893D8),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                Padding(
                   padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                   child: Container(
                     decoration: BoxDecoration(

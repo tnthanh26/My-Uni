@@ -181,11 +181,21 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     if (value == null || value.isEmpty) {
                       return 'Vui lòng nhập email';
                     }
+                    final trimmedValue = value.trim().toLowerCase();
+                    final allowedEmails = [
+                      'nhatthanhtran2606@gmail.com',
+                      'trannhatthanha2@gmail.com',
+                    ];
+
+                    if (allowedEmails.contains(trimmedValue)) {
+                      return null;
+                    }
+
                     final RegExp emailRegex = RegExp(
                       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
                     );
 
-                    if (!emailRegex.hasMatch(value.trim())) {
+                    if (!emailRegex.hasMatch(trimmedValue)) {
                       return 'Vui lòng sử dụng email sinh viên (.edu.vn)';
                     }
                     return null;
