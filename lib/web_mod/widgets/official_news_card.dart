@@ -25,26 +25,26 @@ class OfficialNewsCard extends StatelessWidget {
     final authorName = data['authorName'] ?? 'Official';
     final authorId = data['authorId'] ?? '';
     final authorAvatar = data['authorAvatar'] ?? '';
-    final date = data['date'] ?? '';
+    final date = data['publishedDateText'] ?? '';
     final link = data['link'] ?? '';
     final likeCount = data['likeCount'] ?? 0;
     final commentCount = data['commentCount'] ?? 0;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(13),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           )
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -54,14 +54,18 @@ class OfficialNewsCard extends StatelessWidget {
                 authorAvatar.toString().trim().isNotEmpty
                     ? CircleAvatar(
                   backgroundImage: NetworkImage(authorAvatar),
-                  radius: 22,
+                  radius: 16,
                 )
                     : const CircleAvatar(
                   backgroundColor: Color(0xFFEAF2FF),
-                  radius: 22,
-                  child: Icon(Icons.campaign_outlined, color: Colors.blueAccent),
+                  radius: 16,
+                  child: Icon(
+                    Icons.campaign_outlined,
+                    color: Colors.blueAccent,
+                    size: 18,
+                  ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -70,7 +74,7 @@ class OfficialNewsCard extends StatelessWidget {
                         authorName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 14,
                           fontFamily: 'Nunito',
                         ),
                       ),
@@ -78,7 +82,7 @@ class OfficialNewsCard extends StatelessWidget {
                         authorId.isNotEmpty ? authorId : department,
                         style: TextStyle(
                           color: Colors.grey[600],
-                          fontSize: 12,
+                          fontSize: 11,
                           fontFamily: 'Nunito',
                         ),
                       ),
@@ -86,17 +90,17 @@ class OfficialNewsCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.blueAccent.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(18),
                   ),
                   child: const Text(
                     "OFFICIAL NEWS",
                     style: TextStyle(
                       color: Colors.blueAccent,
                       fontWeight: FontWeight.bold,
-                      fontSize: 12,
+                      fontSize: 11,
                       fontFamily: 'Nunito',
                     ),
                   ),
@@ -104,7 +108,7 @@ class OfficialNewsCard extends StatelessWidget {
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 12),
 
             /// TITLE
             Text(
@@ -112,18 +116,19 @@ class OfficialNewsCard extends StatelessWidget {
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 color: Color(0xFF1A1F37),
-                fontSize: 20,
+                fontSize: 16,
+                height: 1.35,
                 fontFamily: 'Nunito',
               ),
             ),
 
-            const SizedBox(height: 10),
+            const SizedBox(height: 8),
 
             /// DEPARTMENT
             if (department.toString().trim().isNotEmpty) ...[
               Row(
                 children: [
-                  const Icon(Icons.apartment, size: 16, color: Colors.blueGrey),
+                  const Icon(Icons.apartment, size: 14, color: Colors.blueGrey),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -131,8 +136,27 @@ class OfficialNewsCard extends StatelessWidget {
                       style: const TextStyle(
                         color: Colors.blueGrey,
                         fontFamily: 'Nunito',
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+            ],
+
+            /// DATE
+            if (date.toString().trim().isNotEmpty) ...[
+              Row(
+                children: [
+                  const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
+                  const SizedBox(width: 6),
+                  Text(
+                    date,
+                    style: TextStyle(
+                      color: Colors.grey[700],
+                      fontSize: 12,
+                      fontFamily: 'Nunito',
                     ),
                   ),
                 ],
@@ -140,31 +164,14 @@ class OfficialNewsCard extends StatelessWidget {
               const SizedBox(height: 8),
             ],
 
-            /// DATE
-            if (date.toString().trim().isNotEmpty) ...[
-              Row(
-                children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: Colors.grey),
-                  const SizedBox(width: 6),
-                  Text(
-                    date,
-                    style: TextStyle(
-                      color: Colors.grey[700],
-                      fontSize: 13,
-                      fontFamily: 'Nunito',
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-            ],
-
             /// SUMMARY
             Text(
               summary,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 15,
-                height: 1.5,
+                fontSize: 14,
+                height: 1.4,
                 color: Color(0xFF4A4A4A),
                 fontFamily: 'Nunito',
               ),
@@ -172,23 +179,23 @@ class OfficialNewsCard extends StatelessWidget {
 
             /// LINK
             if (link.toString().trim().isNotEmpty) ...[
-              const SizedBox(height: 14),
+              const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.link, color: Colors.blueAccent, size: 18),
+                    const Icon(Icons.link, color: Colors.blueAccent, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: SelectableText(
                         link,
                         style: const TextStyle(
                           color: Colors.blueAccent,
-                          fontSize: 13,
+                          fontSize: 12,
                           fontFamily: 'Nunito',
                         ),
                       ),
@@ -198,40 +205,52 @@ class OfficialNewsCard extends StatelessWidget {
               ),
             ],
 
-            const SizedBox(height: 18),
+            const SizedBox(height: 12),
 
             /// STATS
             Row(
               children: [
                 ModStatChip(icon: Icons.favorite_border, label: "$likeCount lượt thích"),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 ModStatChip(icon: Icons.chat_bubble_outline, label: "$commentCount bình luận"),
               ],
             ),
 
-            const SizedBox(height: 24),
-            const Divider(),
             const SizedBox(height: 12),
+            const Divider(height: 1),
+            const SizedBox(height: 10),
 
             /// ACTION
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ModActionButton(
-                  icon: Icons.edit_outlined,
-                  label: "SỬA BÀI",
-                  color: Colors.orange,
-                  onPressed: onEdit,
-                ),
-                const SizedBox(width: 12),
-                ModActionButton(
-                  icon: Icons.delete_sweep,
-                  label: "XÓA BÀI",
-                  color: Colors.redAccent,
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
+            SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                alignment: WrapAlignment.end,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  SizedBox(
+                    width: 104,
+                    height: 34,
+                    child: ModActionButton(
+                      icon: Icons.edit_outlined,
+                      label: "SỬA BÀI",
+                      color: Colors.orange,
+                      onPressed: onEdit,
+                    ),
+                  ),
+                  SizedBox(
+                    width: 104,
+                    height: 34,
+                    child: ModActionButton(
+                      icon: Icons.delete_sweep,
+                      label: "XÓA BÀI",
+                      color: Colors.redAccent,
+                      onPressed: onDelete,
+                    ),
+                  ),
+                ],
+              ),
+            )
           ],
         ),
       ),

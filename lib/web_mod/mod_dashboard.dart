@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -11,9 +13,8 @@ import 'services/mod_notification_service.dart';
 import 'services/user_moderation_service.dart';
 import 'services/user_activity_service.dart';
 import 'services/post_moderation_service.dart';
-import 'dart:convert';
 import 'file_helper_stub.dart'
-if (dart.library.html) 'file_helper_web.dart';
+    if (dart.library.html) 'file_helper_web.dart';
 
 class ModDashboard extends StatefulWidget {
   const ModDashboard({super.key});
@@ -120,7 +121,7 @@ class _ModDashboardState extends State<ModDashboard> {
                         Row(
                           children: List.generate(
                             _filterLabels.length,
-                                (index) => _buildFilterTab(index),
+                            (index) => _buildFilterTab(index),
                           ),
                         )
                       else if (_isOfficialNews)
@@ -185,7 +186,15 @@ class _ModDashboardState extends State<ModDashboard> {
   Widget _buildFilterTab(int index) {
     bool isSelected = _filterStatusIndex == index;
     return GestureDetector(
-      onTap: () => setState(() => _filterStatusIndex = index),
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (_filterStatusIndex == index) return;
+        Timer(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            setState(() => _filterStatusIndex = index);
+          }
+        });
+      },
       child: Container(
         margin: const EdgeInsets.only(right: 32),
         padding: const EdgeInsets.only(bottom: 12),
@@ -227,11 +236,19 @@ class _ModDashboardState extends State<ModDashboard> {
 
   Widget _buildMenuItem(int index, IconData icon, String title) {
     bool isSelected = _selectedCollIndex == index;
-    return InkWell(
-      onTap: () => setState(() {
-        _selectedCollIndex = index;
-        _filterStatusIndex = 0;
-      }),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        if (_selectedCollIndex == index) return;
+        Timer(const Duration(milliseconds: 50), () {
+          if (mounted) {
+            setState(() {
+              _selectedCollIndex = index;
+              _filterStatusIndex = 0;
+            });
+          }
+        });
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -264,20 +281,16 @@ class _ModDashboardState extends State<ModDashboard> {
           .orderBy('lastUpdated', descending: true);
 
       return StreamBuilder<QuerySnapshot>(
+        key: const ValueKey('users-stream-stable'),
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _buildErrorState(snapshot.error.toString());
-          }
+          if (snapshot.hasError) return _buildErrorState(snapshot.error.toString());
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
+          final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
           final allDocs = snapshot.data?.docs ?? [];
 
+          // Local filtering based on keyword
           final keyword = _userSearchKeyword.trim().toLowerCase();
-
           final docs = keyword.isEmpty
               ? allDocs
               : allDocs.where((doc) {
@@ -287,18 +300,26 @@ class _ModDashboardState extends State<ModDashboard> {
             return name.contains(keyword) || email.contains(keyword);
           }).toList();
 
-          if (docs.isEmpty) {
-            return _buildEmptyState(customText: "Chưa có người dùng nào!");
+          if (docs.isEmpty && !isLoading) {
+            return _buildEmptyState(customText: keyword.isEmpty ? "Chưa có người dùng nào!" : "Không tìm thấy người dùng phù hợp!");
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(32),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              final uid = docs[index].id;
-              return _buildUserCard(uid, data);
-            },
+          return Stack(
+            children: [
+              ListView.builder(
+                key: const PageStorageKey('users-list-stable'),
+                padding: const EdgeInsets.all(32),
+                cacheExtent: 2500,
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final uid = docs[index].id;
+                  return _buildUserCard(uid, data);
+                },
+              ),
+              if (isLoading)
+                const Center(child: CircularProgressIndicator()),
+            ],
           );
         },
       );
@@ -307,34 +328,43 @@ class _ModDashboardState extends State<ModDashboard> {
     if (_isOfficialNews) {
       final query = FirebaseFirestore.instance
           .collection('official_news')
-          .orderBy('timestamp', descending: true);
+          .orderBy('publishedAt', descending: true);
 
       return StreamBuilder<QuerySnapshot>(
+        key: const ValueKey('official-news-stream-stable'),
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _buildErrorState(snapshot.error.toString());
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+          if (snapshot.hasError) return _buildErrorState(snapshot.error.toString());
 
+          final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
           final docs = snapshot.data?.docs ?? [];
-          if (docs.isEmpty) return _buildEmptyState(customText: "Không có thông báo chính thức nào!");
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(32),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final data = docs[index].data() as Map<String, dynamic>;
-              final docId = docs[index].id;
-              return OfficialNewsCard(
-                docId: docId,
-                data: data,
-                onEdit: () => _handleEditOfficialNews(docId, data),
-                onDelete: () => _handleDeleteOfficialNews(docId),
-              );
-            },
+          if (docs.isEmpty && !isLoading) {
+            return _buildEmptyState(customText: "Không có thông báo chính thức nào!");
+          }
+
+          return Stack(
+            children: [
+              ListView.builder(
+                key: const PageStorageKey('official-news-list-stable'),
+                padding: const EdgeInsets.all(32),
+                cacheExtent: 2500,
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final data = docs[index].data() as Map<String, dynamic>;
+                  final docId = docs[index].id;
+                  return OfficialNewsCard(
+                    key: ValueKey(docId),
+                    docId: docId,
+                    data: data,
+                    onEdit: () => _handleEditOfficialNews(docId, data),
+                    onDelete: () => _handleDeleteOfficialNews(docId),
+                  );
+                },
+              ),
+              if (isLoading)
+                const Center(child: CircularProgressIndicator()),
+            ],
           );
         },
       );
@@ -348,35 +378,49 @@ class _ModDashboardState extends State<ModDashboard> {
     }
 
     return StreamBuilder<QuerySnapshot>(
-      stream: query.orderBy('updatedAt', descending: true).snapshots(),
+      key: ValueKey('posts-stream-$_selectedCollIndex-$_filterStatusIndex'),
+      stream: query.orderBy('timestamp', descending: true).snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
+          debugPrint("🔥 FIRESTORE INDEX ERROR:");
+          debugPrint(snapshot.error.toString());
+
           return _buildErrorState(snapshot.error.toString());
         }
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+
+        final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final docs = snapshot.data?.docs ?? [];
+
+        if (docs.isEmpty && !isLoading) {
+          return _buildEmptyState();
         }
 
-        final docs = snapshot.data!.docs;
-        if (docs.isEmpty) return _buildEmptyState();
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(32),
-          itemCount: docs.length,
-          itemBuilder: (context, index) {
-            final data = docs[index].data() as Map<String, dynamic>;
-            final docId = docs[index].id;
-            return PostCard(
-              docId: docId,
-              data: data,
-              collection: _collections[_selectedCollIndex],
-              onApprove: () => _handleApprovePost(docId, data),
-              onDelete: () => _handleDeletePost(docId, data),
-              onRestore: () => _handleRestorePost(docId, data),
-              onDismissReport: () => _handleDismissReport(docId, data),
-              onViewMaterial: () => _viewMaterial(data),
-            );
-          },
+        return Stack(
+          children: [
+            ListView.builder(
+              key: PageStorageKey('posts-list-$_selectedCollIndex-$_filterStatusIndex'),
+              padding: const EdgeInsets.all(32),
+              cacheExtent: 2500,
+              itemCount: docs.length,
+              itemBuilder: (context, index) {
+                final data = docs[index].data() as Map<String, dynamic>;
+                final docId = docs[index].id;
+                return PostCard(
+                  key: ValueKey(docId),
+                  docId: docId,
+                  data: data,
+                  collection: _collections[_selectedCollIndex],
+                  onApprove: () => _handleApprovePost(docId, data),
+                  onDelete: () => _handleDeletePost(docId, data),
+                  onRestore: () => _handleRestorePost(docId, data),
+                  onDismissReport: () => _handleDismissReport(docId, data),
+                  onViewMaterial: () => _viewMaterial(data),
+                );
+              },
+            ),
+            if (isLoading)
+              const Center(child: CircularProgressIndicator()),
+          ],
         );
       },
     );
@@ -384,6 +428,7 @@ class _ModDashboardState extends State<ModDashboard> {
 
   Widget _buildUserCard(String uid, Map<String, dynamic> data) {
     return UserCard(
+      key: ValueKey(uid),
       uid: uid,
       data: data,
       onSuspend: () => _handleSuspendUser(uid, data),
@@ -613,7 +658,7 @@ class _ModDashboardState extends State<ModDashboard> {
     final summaryController = TextEditingController(text: data['summary'] ?? '');
     final departmentController = TextEditingController(text: data['department'] ?? '');
     final linkController = TextEditingController(text: data['link'] ?? '');
-    final dateController = TextEditingController(text: data['date'] ?? '');
+    final dateController = TextEditingController(text: data['publishedDateText'] ?? '');
 
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -678,7 +723,7 @@ class _ModDashboardState extends State<ModDashboard> {
       'summary': summaryController.text.trim(),
       'department': departmentController.text.trim(),
       'link': linkController.text.trim(),
-      'date': dateController.text.trim(),
+      'publishedDateText': dateController.text.trim(),
     });
 
     if (mounted) {
@@ -823,7 +868,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   if (mounted) {
                     Navigator.of(context).pushNamedAndRemoveUntil(
                       '/',
-                          (route) => false,
+                      (route) => false,
                     );
                   }
                 },
