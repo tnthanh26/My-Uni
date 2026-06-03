@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
                                     backgroundColor: Colors.white,
                                     child: Padding(
                                       padding: const EdgeInsets.all(3.0),
-                                      child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
+                                      child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
