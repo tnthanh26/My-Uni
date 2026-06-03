@@ -16,9 +16,10 @@ class WeatherAlertCard extends StatelessWidget {
 
     final _WeatherCardStyle style = _getStyle(alert.level, isDarkMode);
 
+
     return Container(
-      height: 92,
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 92), // Dùng minHeight thay vì height
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
@@ -38,20 +39,21 @@ class WeatherAlertCard extends StatelessWidget {
         ],
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center, // Căn giữa theo chiều dọc
         children: [
           SizedBox(
-            width: 32,
-            height: 32,
+            width: 30,
+            height: 30,
             child: Image.asset(
               'assets/images/rain_icon.png',
               fit: BoxFit.contain,
             ),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Thu gọn column
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
@@ -60,21 +62,21 @@ class WeatherAlertCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: style.titleColor,
-                    fontSize: 13.5,
+                    fontSize: 12.5, // Giảm nhẹ font size
                     fontWeight: FontWeight.w700,
                     height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text(
                   alert.subtitle,
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: style.subtitleColor,
-                    fontSize: 11.5,
+                    fontSize: 11, // Giảm nhẹ font size
                     fontWeight: FontWeight.w500,
-                    height: 1.25,
+                    height: 1.2,
                   ),
                 ),
               ],

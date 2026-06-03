@@ -671,8 +671,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         mockDeadlines.where((d) => !d.isCompleted).length;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      height: 92,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      constraints: const BoxConstraints(minHeight: 92),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDarkMode
@@ -691,13 +691,18 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 20,
-            height: 20,
-            child: Image.asset(
-              'assets/images/welcome.png',
-              fit: BoxFit.contain,
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            /*
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: Image.asset(
+                'assets/images/welcome.png',
+                fit: BoxFit.contain,
+              ),
             ),
+             */
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -706,8 +711,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   color: Colors.white,
-                  fontSize: 13,
-                  height: 1.45,
+                  fontSize: 13, // Giảm nhẹ font size để an toàn hơn
+                  height: 1.4,
                   fontWeight: FontWeight.w500,
                 ),
                 children: [
@@ -758,14 +763,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     final campusId = _mapUniversityToCampusId(_userUniversity);
 
-    debugPrint('=== TOP BANNER DEBUG ===');
-    debugPrint('_userUniversity: $_userUniversity');
-    debugPrint('campusId: $campusId');
-    debugPrint('todayClasses length: ${todayClasses.length}');
-    for (final c in todayClasses) {
-      debugPrint('class: ${c.name} ${c.start} - ${c.end}');
-    }
-
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -776,29 +773,28 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           FutureBuilder<WeatherAlertResult>(
             future: _weatherFuture ?? Future.value(WeatherAlertResult.none()),
             builder: (context, snapshot) {
-              debugPrint('snapshot.connectionState: ${snapshot.connectionState}');
-              debugPrint('snapshot.hasError: ${snapshot.hasError}');
-              debugPrint('snapshot.error: ${snapshot.error}');
-
               final result = snapshot.data ?? WeatherAlertResult.none();
-              debugPrint('result.shouldShow: ${result.shouldShow}');
-              debugPrint('result.title: ${result.title}');
 
               if (snapshot.connectionState == ConnectionState.waiting ||
                   !result.shouldShow) {
                 return _buildWelcomeBannerFigma();
               }
 
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildCompactSummaryBanner(),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: WeatherAlertCard(alert: result),
-                  ),
-                ],
+              return IntrinsicHeight( // Giúp 2 thẻ cao bằng nhau mượt mà
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      flex: 5,
+                      child: _buildCompactSummaryBanner(),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 5,
+                      child: WeatherAlertCard(alert: result),
+                    ),
+                  ],
+                ),
               );
             },
           ),
@@ -1189,7 +1185,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                     radius: 18,
                     child: Padding(
                       padding: const EdgeInsets.all(4.0),
-                      child: Image.asset('assets/images/logoApp1.png', fit: BoxFit.contain),
+                      child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
                     ),
                   ),
                   const SizedBox(width: 12),
