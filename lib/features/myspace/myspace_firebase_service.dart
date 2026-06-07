@@ -7,7 +7,6 @@ class MySpaceFirebaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   String? get userId => FirebaseAuth.instance.currentUser?.uid;
 
-  // Collection reference dành riêng cho từng User
   CollectionReference get _deadlineRef =>
       _db.collection('users').doc(userId).collection('deadlines');
 
@@ -28,6 +27,8 @@ class MySpaceFirebaseService {
       'dueTimeMinute': d.dueTime.minute,
       'isCompleted': d.isCompleted,
       'isMoodleSynced': d.isMoodleSynced,
+      'reminders': d.reminders,
+      'notificationIds': d.notificationIds,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -38,18 +39,7 @@ class MySpaceFirebaseService {
       final snapshot = await _deadlineRef.get();
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return Deadline(
-          id: doc.id,
-          title: data['title'] ?? '',
-          description: data['description'] ?? '',
-          dueDate: DateTime.parse(data['dueDate']),
-          dueTime: TimeOfDay(
-            hour: data['dueTimeHour'] ?? 0,
-            minute: data['dueTimeMinute'] ?? 0,
-          ),
-          isCompleted: data['isCompleted'] ?? false,
-          isMoodleSynced: data['isMoodleSynced'] ?? false,
-        );
+        return _mapDataToDeadline(doc.id, data);
       }).toList();
     } catch (e) {
       debugPrint("Error fetching deadlines: $e");
@@ -87,10 +77,10 @@ class MySpaceFirebaseService {
         final data = doc.data() as Map<String, dynamic>;
         return StudyClass(
           id: doc.id,
-          name: data['name'] ?? '',
-          start: data['start'] ?? '',
-          end: data['end'] ?? '',
-          room: data['room'] ?? '',
+          name: data['name']?.toString() ?? '',
+          start: data['start']?.toString() ?? '',
+          end: data['end']?.toString() ?? '',
+          room: data['room']?.toString() ?? '',
           weekday: data['weekday'] ?? 2,
           color: Color(data['colorValue'] ?? 0xFF5893D8),
         );
@@ -105,11 +95,9 @@ class MySpaceFirebaseService {
     await _scheduleRef.doc(id).delete();
   }
 
-  // Hàm này giúp đẩy toàn bộ danh sách cục bộ lên Firebase nếu cần
   Future<void> syncAllDeadlines(List<Deadline> localDeadlines) async {
     if (userId == null || localDeadlines.isEmpty) return;
 
-    // Sử dụng WriteBatch để đẩy nhiều dữ liệu cùng lúc cho nhanh
     final batch = _db.batch();
     for (var d in localDeadlines) {
       final docRef = _deadlineRef.doc(d.id);
@@ -121,14 +109,14 @@ class MySpaceFirebaseService {
         'dueTimeMinute': d.dueTime.minute,
         'isCompleted': d.isCompleted,
         'isMoodleSynced': d.isMoodleSynced,
+        'reminders': d.reminders,
+        'notificationIds': d.notificationIds,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
     await batch.commit();
-    debugPrint("Đã đồng bộ thành công ${localDeadlines.length} deadlines lên Firebase.");
   }
 
-  // Hàm đồng bộ toàn bộ lịch học (Schedule) lên Firebase
   Future<void> syncAllSchedule(List<StudyClass> localSchedule) async {
     if (userId == null || localSchedule.isEmpty) return;
 
@@ -146,7 +134,6 @@ class MySpaceFirebaseService {
       });
     }
     await batch.commit();
-    debugPrint("Đã đồng bộ thành công ${localSchedule.length} môn học lên Firebase.");
   }
 
   Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
@@ -170,57 +157,65 @@ class MySpaceFirebaseService {
 
   Stream<List<StudyClass>> scheduleStream() {
     if (userId == null) return Stream.value([]);
-
     return _scheduleRef.snapshots().map((snapshot) {
       final list = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-
         return StudyClass(
           id: doc.id,
-          name: data['name'] ?? '',
-          start: data['start'] ?? '',
-          end: data['end'] ?? '',
-          room: data['room'] ?? '',
+          name: data['name']?.toString() ?? '',
+          start: data['start']?.toString() ?? '',
+          end: data['end']?.toString() ?? '',
+          room: data['room']?.toString() ?? '',
           weekday: data['weekday'] ?? 2,
           color: Color(data['colorValue'] ?? 0xFF5893D8),
         );
       }).toList();
-
       list.sort((a, b) {
         final dayCompare = a.weekday.compareTo(b.weekday);
         if (dayCompare != 0) return dayCompare;
         return a.start.compareTo(b.start);
       });
-
       return list;
     });
   }
 
   Stream<List<Deadline>> deadlineStream() {
     if (userId == null) return Stream.value([]);
-
     return _deadlineRef
         .orderBy('dueDate')
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
-        return Deadline(
-          id: doc.id,
-          title: data['title'] ?? '',
-          description: data['description'] ?? '',
-          dueDate: DateTime.parse(data['dueDate']),
-          dueTime: TimeOfDay(
-            hour: data['dueTimeHour'] ?? 0,
-            minute: data['dueTimeMinute'] ?? 0,
-          ),
-          isCompleted: data['isCompleted'] ?? false,
-          isMoodleSynced: data['isMoodleSynced'] ?? false,
-        );
+        return _mapDataToDeadline(doc.id, data);
       }).toList();
     });
   }
 
+  Deadline _mapDataToDeadline(String id, Map<String, dynamic> data) {
+    DateTime parsedDate = DateTime.now();
+    try {
+      final rawDate = data['dueDate'];
+      if (rawDate is String) {
+        parsedDate = DateTime.parse(rawDate);
+      } else if (rawDate is Timestamp) {
+        parsedDate = rawDate.toDate();
+      }
+    } catch (_) {}
+
+    return Deadline(
+      id: id,
+      title: data['title']?.toString() ?? 'Không tên',
+      description: data['description']?.toString() ?? '',
+      dueDate: parsedDate,
+      dueTime: TimeOfDay(
+        hour: data['dueTimeHour'] ?? 0,
+        minute: data['dueTimeMinute'] ?? 0,
+      ),
+      isCompleted: data['isCompleted'] ?? false,
+      isMoodleSynced: data['isMoodleSynced'] ?? false,
+      reminders: List<String>.from(data['reminders'] ?? []),
+      notificationIds: List<int>.from(data['notificationIds'] ?? []),
+    );
+  }
 }
-
-

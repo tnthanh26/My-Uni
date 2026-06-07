@@ -10,6 +10,8 @@ class Deadline {
   final TimeOfDay dueTime;
   final bool isMoodleSynced;
   bool isCompleted;
+  final List<String> reminders;
+  final List<int> notificationIds;
 
   Deadline({
     required this.id,
@@ -19,6 +21,8 @@ class Deadline {
     required this.dueTime,
     this.isCompleted = false,
     this.isMoodleSynced = false,
+    this.reminders = const [],
+    this.notificationIds = const [],
   });
 
   // Chuyển từ Object sang Map để đẩy lên Firebase
@@ -32,6 +36,8 @@ class Deadline {
       'isCompleted': isCompleted,
       'updatedAt': FieldValue.serverTimestamp(),
       'isMoodleSynced': isMoodleSynced,
+      'reminders': reminders,
+      'notificationIds': notificationIds,
     };
   }
 }
