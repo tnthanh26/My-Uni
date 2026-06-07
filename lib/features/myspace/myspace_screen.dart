@@ -240,6 +240,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               (!deadline.isCompleted && daysOverdue >= 3);
 
       if (shouldDelete) {
+        for (var nid in deadline.notificationIds) {
+          await NotificationService.cancelNotification(nid);
+        }
         await _firebaseService.deleteDeadline(deadline.id);
         debugPrint('Deleted expired deadline: ${deadline.title}');
       } else {
@@ -266,19 +269,27 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _deleteDeadline(String id) async {
-    setState(() {
-      mockDeadlines.removeWhere((d) => d.id == id);
-    });
-    // Lưu trạng thái mới vào máy
-    await LocalStorageHelper.saveDeadlines(mockDeadlines);
+    final index = mockDeadlines.indexWhere((d) => d.id == id);
+    if (index != -1) {
+      final deadline = mockDeadlines[index];
+      for (var nid in deadline.notificationIds) {
+        await NotificationService.cancelNotification(nid);
+      }
+      
+      setState(() {
+        mockDeadlines.removeAt(index);
+      });
+      // Lưu trạng thái mới vào máy
+      await LocalStorageHelper.saveDeadlines(mockDeadlines);
 
-    // Nếu có mạng thì xóa trên Firebase
-    await _firebaseService.deleteDeadline(id);
+      // Nếu có mạng thì xóa trên Firebase
+      await _firebaseService.deleteDeadline(id);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã xóa deadline thành công!")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã xóa deadline thành công!")),
+        );
+      }
     }
   }
 

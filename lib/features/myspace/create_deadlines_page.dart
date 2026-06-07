@@ -3,6 +3,22 @@ import 'myspace_firebase_service.dart';
 import 'package:intl/intl.dart';
 import 'local_storage_helper.dart';
 import 'models/myspace_models.dart';
+import '../services/notification_service.dart';
+
+class ReminderControllerGroup {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  String unit;
+
+  ReminderControllerGroup({required String value, required this.unit})
+      : controller = TextEditingController(text: value),
+        focusNode = FocusNode();
+
+  void dispose() {
+    controller.dispose();
+    focusNode.dispose();
+  }
+}
 
 class CreateDeadlinesPage extends StatefulWidget {
   final Deadline? deadline;
@@ -18,6 +34,8 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
 
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0);
+  
+  final List<ReminderControllerGroup> _reminderGroups = [];
 
   // --- HẰNG SỐ MÀU SẮC THEO CSS ---
   static const Color headerBg = Color(0xFF545454);
@@ -33,9 +51,38 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
       _descController.text = widget.deadline!.description ?? '';
       _selectedDate = widget.deadline!.dueDate;
       _selectedTime = widget.deadline!.dueTime;
+      
+      for (String r in widget.deadline!.reminders) {
+        final parts = r.split(' ');
+        if (parts.length >= 2) {
+          _reminderGroups.add(ReminderControllerGroup(value: parts[0], unit: parts[1]));
+        }
+      }
+    } else {
+      _reminderGroups.add(ReminderControllerGroup(value: '30', unit: 'phút'));
+    }
+
+    // Lắng nghe focus cho các ô nhập số
+    for (var group in _reminderGroups) {
+      group.focusNode.addListener(_onFocusChange);
     }
   }
 
+  void _onFocusChange() {
+    setState(() {}); // Rebuild để cập nhật màu border khi focus
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    for (var group in _reminderGroups) {
+      group.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color scaffoldBg = isDarkMode ? const Color(0xFF121212) : Colors.white;
@@ -44,12 +91,12 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     final Color primaryText = isDarkMode ? Colors.white : Colors.black;
     final Color secondaryText = isDarkMode ? Colors.white70 : borderGrey;
     final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
+    
     return Scaffold(
       backgroundColor: scaffoldBg,
-      // Status bar giả lập theo Figma (40px)
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : headerBg,
-        elevation: 4, // Tương đương box-shadow trong CSS
+        elevation: 4,
         leadingWidth: 80,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
@@ -61,7 +108,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _saveDeadline, // Gọi hàm đã sửa ở trên
+            onPressed: _saveDeadline,
             child: const Text('Lưu',
                 style: TextStyle(
                     color: accentBlue,
@@ -75,13 +122,12 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            const SizedBox(height: 16), // Padding trên cùng
+            const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 1. Tên Deadline (Gạch chân)
                   TextField(
                     controller: _titleController,
                     style: TextStyle(fontSize: 20, color: primaryText),
@@ -94,7 +140,6 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 2. Ô chọn Ngày và Giờ (Rectangle 470)
                   Container(
                     width: double.infinity,
                     height: 77,
@@ -105,7 +150,6 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
-                        // Cánh trái: Calendar
                         Expanded(
                           child: InkWell(
                             onTap: _selectDate,
@@ -121,7 +165,6 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                             ),
                           ),
                         ),
-                        // Cánh phải: Time
                         InkWell(
                           onTap: _selectTime,
                           child: Row(
@@ -140,47 +183,170 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                   ),
                   const SizedBox(height: 24),
 
-                  // 3. Đặt lời nhắc (Rectangle 470)
-                  Container(
-                    width: double.infinity,
-                    height: 77,
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
-                      children: [
-                        Icon(Icons.alarm_outlined, size: 24, color: primaryText),
-                        const SizedBox(width: 12),
-                        Text('Đặt lời nhắc',
-                            style: TextStyle(color: secondaryText, fontSize: 20, fontFamily: 'Encode Sans Expanded')),
-                      ],
+                  Text('Lời nhắc',
+                      style: TextStyle(fontSize: 15, color: primaryText, fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
+                  
+                  // Modern Inline Reminders - Unified Containers
+                  ..._reminderGroups.asMap().entries.map((entry) {
+                    int idx = entry.key;
+                    var group = entry.value;
+                    bool hasFocus = group.focusNode.hasFocus;
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: borderColor.withOpacity(0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.notifications_active_outlined, size: 20, color: accentBlue),
+                            const SizedBox(width: 16),
+                            
+                            // Unified Number Input Box
+                            Container(
+                              width: 55,
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: hasFocus ? accentBlue : borderColor.withOpacity(0.1),
+                                  width: hasFocus ? 1.5 : 1,
+                                ),
+                              ),
+                              child: TextField(
+                                controller: group.controller,
+                                focusNode: group.focusNode,
+                                keyboardType: TextInputType.number,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+                                decoration: const InputDecoration(
+                                  isDense: true,
+                                  border: InputBorder.none,
+                                  enabledBorder: OutlineInputBorder(borderSide: BorderSide.none),
+                                  focusedBorder: OutlineInputBorder(borderSide: BorderSide.none),
+                                  contentPadding: EdgeInsets.zero,
+                                  filled: false,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            
+                            // Unified Unit Box
+                            Container(
+                              width: 100,
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: borderColor.withOpacity(0.1),
+                                  width: 1,
+                                ),
+                              ),
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: group.unit,
+                                  icon: Icon(Icons.expand_more_rounded, color: secondaryText, size: 18),
+                                  alignment: Alignment.center,
+                                  style: TextStyle(color: primaryText, fontSize: 16, fontFamily: 'Urbanist', fontWeight: FontWeight.w500),
+                                  items: ['phút', 'giờ', 'ngày', 'tuần'].map((String val) {
+                                    return DropdownMenuItem<String>(
+                                      value: val,
+                                      alignment: Alignment.center,
+                                      child: Text(val),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    if (newValue != null) {
+                                      setState(() => group.unit = newValue);
+                                    }
+                                  },
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            IconButton(
+                              visualDensity: VisualDensity.compact,
+                              icon: const Icon(Icons.close_rounded, color: Colors.redAccent, size: 24),
+                              onPressed: () {
+                                setState(() {
+                                  _reminderGroups[idx].dispose();
+                                  _reminderGroups.removeAt(idx);
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+
+                  // "Thêm lời nhắc" text link
+                  InkWell(
+                    onTap: () {
+                      setState(() {
+                        final newGroup = ReminderControllerGroup(value: '30', unit: 'phút');
+                        newGroup.focusNode.addListener(_onFocusChange);
+                        _reminderGroups.add(newGroup);
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.add_rounded, color: accentBlue, size: 22),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Thêm lời nhắc',
+                            style: TextStyle(
+                              color: accentBlue,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Urbanist',
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
+
                   const SizedBox(height: 30),
 
-                  // 4. Phần Nội dung
-                  Text('Nội dung',
-                      style: TextStyle(fontSize: 15, color: primaryText, fontFamily: 'Encode Sans Expanded')),
-                  const SizedBox(height: 8),
+                  Text('Ghi chú',
+                      style: TextStyle(fontSize: 15, color: primaryText, fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 12),
                   Container(
                     width: double.infinity,
-                    height: 214,
                     decoration: BoxDecoration(
                       color: surfaceBg,
-                      border: Border.all(color: borderColor),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    padding: const EdgeInsets.all(12),
                     child: TextField(
                       controller: _descController,
                       maxLines: 8,
-                      style: TextStyle(color: primaryText),
+                      style: TextStyle(color: primaryText, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Chi tiết về deadlines',
-                        hintStyle: TextStyle(color: secondaryText, fontSize: 15, fontFamily: 'Encode Sans Expanded'),
-                        border: InputBorder.none,
+                        hintText: 'Có note gì thì ghi ngắn gọn ở đây nhe...',
+                        hintStyle: TextStyle(color: borderGrey, fontSize: 15, fontFamily: 'Encode Sans Expanded'),
+                        contentPadding: const EdgeInsets.all(12),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: borderColor.withOpacity(0.3)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: headerBg),
+                        ),
                       ),
                     ),
                   ),
@@ -193,7 +359,6 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     );
   }
 
-  // Logic chọn ngày/giờ giữ nguyên như cũ
   Future<void> _selectDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -214,7 +379,6 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
 
   Future<void> _saveDeadline() async {
     if (_titleController.text.isEmpty) {
-      // Có thể thêm thông báo lỗi nếu tiêu đề trống
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên deadline')),
       );
@@ -222,54 +386,80 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     }
 
     try {
-      // --- THAY THẾ FIREBASE BẰNG LOCAL STORAGE TẠM THỜI ---
+      final DateTime finalDateTime = DateTime(
+        _selectedDate.year, _selectedDate.month, _selectedDate.day,
+        _selectedTime.hour, _selectedTime.minute,
+      );
 
-      // 1. Lấy danh sách hiện có (đã bao gồm mock data nếu máy trống)
+      // Hủy thông báo cũ
+      if (widget.deadline != null) {
+        for (var nid in widget.deadline!.notificationIds) {
+          await NotificationService.cancelNotification(nid);
+        }
+      }
+
+      List<int> newNotificationIds = [];
+      List<String> reminderStrings = [];
+      
+      for (var group in _reminderGroups) {
+        if (group.controller.text.isEmpty) continue;
+        
+        int val = int.tryParse(group.controller.text) ?? 0;
+        String unit = group.unit;
+        reminderStrings.add('$val $unit');
+
+        int minutesBefore = 0;
+        if (unit.contains('phút')) minutesBefore = val;
+        else if (unit.contains('giờ')) minutesBefore = val * 60;
+        else if (unit.contains('ngày')) minutesBefore = val * 1440;
+        else if (unit.contains('tuần')) minutesBefore = val * 10080;
+
+        DateTime notificationTime = finalDateTime.subtract(Duration(minutes: minutesBefore));
+        if (notificationTime.isAfter(DateTime.now())) {
+          int nid = (finalDateTime.millisecondsSinceEpoch + minutesBefore).remainder(100000000);
+          await NotificationService.scheduleNotification(
+            id: nid,
+            title: "Nhắc nhở Deadline: ${_titleController.text}",
+            body: "Deadline của bạn sẽ đến hạn vào lúc ${DateFormat('HH:mm dd/MM').format(finalDateTime)}",
+            scheduledDate: notificationTime,
+          );
+          newNotificationIds.add(nid);
+        }
+      }
+
       List<Deadline> currentDeadlines = await LocalStorageHelper.getDeadlines();
-
-      // 2. Xác định ID:
-      // Nếu widget.deadline != null (đang sửa) -> lấy ID cũ.
-      // Nếu widget.deadline == null (tạo mới) -> tạo ID mới bằng timestamp.
       final String targetId = widget.deadline?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
 
-      // 3. Tạo đối tượng Deadline đã cập nhật
       final updatedDeadline = Deadline(
         id: targetId,
         title: _titleController.text,
         description: _descController.text,
         dueDate: _selectedDate,
         dueTime: _selectedTime,
-        isCompleted: widget.deadline?.isCompleted ?? false, // Giữ nguyên trạng thái hoàn thành cũ nếu đang sửa
+        isCompleted: widget.deadline?.isCompleted ?? false,
+        reminders: reminderStrings,
+        notificationIds: newNotificationIds,
       );
 
-      // 4. KIỂM TRA: LÀ SỬA HAY THÊM MỚI?
       if (widget.deadline != null) {
-        // Tìm vị trí của phần tử cũ trong danh sách dựa trên ID
         int index = currentDeadlines.indexWhere((d) => d.id == targetId);
-
         if (index != -1) {
-          // Nếu tìm thấy, GHI ĐÈ vào vị trí cũ
           currentDeadlines[index] = updatedDeadline;
         } else {
-          // Trường hợp hy hữu (id không còn tồn tại), thêm mới
           currentDeadlines.add(updatedDeadline);
         }
       } else {
-        // Nếu là tạo mới hoàn toàn, THÊM vào cuối danh sách
         currentDeadlines.add(updatedDeadline);
       }
 
-      // 5. Lưu danh sách đã sửa đổi trở lại vào LocalStorage
       await LocalStorageHelper.saveDeadlines(currentDeadlines);
       await MySpaceFirebaseService().saveDeadline(updatedDeadline);
 
-      // 6. Quay lại màn hình trước và thông báo thành công
       if (mounted) {
-        Navigator.pop(context, true); // Trả về true để MySpaceScreen biết cần refresh
+        Navigator.pop(context, true);
       }
-
     } catch (e) {
-      print("Lỗi lưu deadline cục bộ: $e");
+      debugPrint("Lỗi lưu deadline: $e");
     }
   }
 }

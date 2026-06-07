@@ -77,6 +77,9 @@ class LocalStorageHelper {
         'dueTimeHour': d.dueTime.hour,
         'dueTimeMinute': d.dueTime.minute,
         'isCompleted': d.isCompleted,
+        'isMoodleSynced': d.isMoodleSynced,
+        'reminders': d.reminders,
+        'notificationIds': d.notificationIds,
       }).toList(),
     );
     await prefs.setString(_deadlineKey, encodedData);
@@ -104,18 +107,29 @@ class LocalStorageHelper {
     final String? data = prefs.getString(_deadlineKey);
 
     if (data == null || data == '[]') {
-      return _defaultDeadlines; // Trả về đúng mẫu bạn đưa
+      return _defaultDeadlines;
     }
 
-    final List<dynamic> decoded = jsonDecode(data);
-    return decoded.map((item) => Deadline(
-      id: item['id'],
-      title: item['title'],
-      description: item['description'] ?? "",
-      dueDate: DateTime.parse(item['dueDate']),
-      dueTime: TimeOfDay(hour: item['dueTimeHour'], minute: item['dueTimeMinute']),
-      isCompleted: item['isCompleted'] ?? false,
-    )).toList();
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.map((item) => Deadline(
+        id: item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        title: item['title']?.toString() ?? 'Không tên',
+        description: item['description']?.toString() ?? "",
+        dueDate: item['dueDate'] != null ? DateTime.parse(item['dueDate']) : DateTime.now(),
+        dueTime: TimeOfDay(
+          hour: item['dueTimeHour'] ?? 0, 
+          minute: item['dueTimeMinute'] ?? 0
+        ),
+        isCompleted: item['isCompleted'] ?? false,
+        isMoodleSynced: item['isMoodleSynced'] ?? false,
+        reminders: List<String>.from(item['reminders'] ?? []),
+        notificationIds: List<int>.from(item['notificationIds'] ?? []),
+      )).toList();
+    } catch (e) {
+      debugPrint("Error parsing deadlines from storage: $e");
+      return _defaultDeadlines;
+    }
   }
 
   static Future<List<StudyClass>> getSchedule() async {
@@ -126,16 +140,21 @@ class LocalStorageHelper {
       return [];
     }
 
-    final List<dynamic> decoded = jsonDecode(data);
-    return decoded.map((item) => StudyClass(
-      id: item['id'],
-      name: item['name'],
-      start: item['start'],
-      end: item['end'],
-      room: item['room'],
-      weekday: item['weekday'],
-      color: Color(item['colorValue']),
-    )).toList();
+    try {
+      final List<dynamic> decoded = jsonDecode(data);
+      return decoded.map((item) => StudyClass(
+        id: item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+        name: item['name']?.toString() ?? 'Môn học mới',
+        start: item['start']?.toString() ?? '07:00',
+        end: item['end']?.toString() ?? '09:00',
+        room: item['room']?.toString() ?? 'Phòng học',
+        weekday: item['weekday'] ?? 2,
+        color: Color(item['colorValue'] ?? 0xFF5893D8),
+      )).toList();
+    } catch (e) {
+      debugPrint("Error parsing schedule from storage: $e");
+      return [];
+    }
   }
 
   static Future<void> saveAutoDeadlineConfig(AutoDeadlineConfig config) async {
@@ -163,16 +182,18 @@ class LocalStorageHelper {
       return AutoDeadlineConfig.empty(moodleUrl: moodleUrl);
     }
 
-    final Map<String, dynamic> decoded =
-    Map<String, dynamic>.from(jsonDecode(data));
+    try {
+      final Map<String, dynamic> decoded = Map<String, dynamic>.from(jsonDecode(data));
+      final config = AutoDeadlineConfig.fromMap(decoded);
+      final String savedMoodleUrl = config.moodleUrl.trim();
 
-    final config = AutoDeadlineConfig.fromMap(decoded);
-
-    final String savedMoodleUrl = config.moodleUrl.trim();
-
-    return config.copyWith(
-      moodleUrl: savedMoodleUrl.isEmpty ? moodleUrl : savedMoodleUrl,
-    );
+      return config.copyWith(
+        moodleUrl: savedMoodleUrl.isEmpty ? moodleUrl : savedMoodleUrl,
+      );
+    } catch (e) {
+      debugPrint("Error parsing auto config from storage: $e");
+      return AutoDeadlineConfig.empty(moodleUrl: moodleUrl);
+    }
   }
 
   // --- RESET DATA ---
