@@ -39,22 +39,33 @@ class AutoUpdateToggle extends StatelessWidget {
         child: Stack(
           alignment: Alignment.center,
           children: [
+            // Text Layer
             AnimatedAlign(
               duration: const Duration(milliseconds: 200),
-              alignment: isEnabled ? const Alignment(-0.7, 0) : const Alignment(0.7, 0),
+              alignment: isEnabled ? Alignment.centerLeft : Alignment.centerRight,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Text(
-                  'Auto-update',
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                padding: EdgeInsets.only(
+                  left: isEnabled ? 8 : 4,
+                  right: isEnabled ? 4 : 8,
+                ),
+                child: SizedBox(
+                  width: width - knobSize - 12,
+                  child: Text(
+                    'Auto-update',
+                    textAlign: isEnabled ? TextAlign.left : TextAlign.right,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
             ),
+            // Knob Layer
             AnimatedAlign(
               duration: const Duration(milliseconds: 200),
               alignment: isEnabled ? Alignment.centerRight : Alignment.centerLeft,
@@ -86,6 +97,7 @@ class AutoUpdateToggle extends StatelessWidget {
     );
   }
 }
+
 
 class MySpaceDeadlineSection extends StatelessWidget {
   final AutoDeadlineConfig? autoDeadlineConfig;
@@ -189,7 +201,12 @@ class MySpaceDeadlineDetailList extends StatelessWidget {
       return d.dueDate.year == selectedDate.year &&
           d.dueDate.month == selectedDate.month &&
           d.dueDate.day == selectedDate.day;
-    }).toList();
+    }).toList()
+      ..sort((a, b) {
+        final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+        final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+        return aTime.compareTo(bTime);
+      });
 
     if (filteredDeadlines.isEmpty) {
       return Center(
