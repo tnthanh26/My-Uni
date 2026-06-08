@@ -244,25 +244,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              Builder(
-                builder: (context) {
-                  final tabController = DefaultTabController.of(context);
-                  return AnimatedBuilder(
-                    animation: tabController,
-                    builder: (context, child) {
-                      if (tabController.index == 0) {
-                        return SliverToBoxAdapter(
-                          child: Container(
-                            color: Colors.transparent,
-                            child: _buildPromoBanner(),
-                          ),
-                        );
-                      }
-                      return const SliverToBoxAdapter(child: SizedBox.shrink());
-                    },
-                  );
-                },
-              ),
             ];
           },
           body: TabBarView(
@@ -272,24 +253,6 @@ class _HomePageState extends State<HomePage> {
               ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
               MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
             ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPromoBanner() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: AspectRatio(
-        aspectRatio: 391 / 73,
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/Ads_template.png'),
-              fit: BoxFit.fill,
-            ),
           ),
         ),
       ),
