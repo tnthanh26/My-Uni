@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../utils/formatters.dart';
 import '../services/content_service.dart';
 
 class CreateReviewPage extends StatefulWidget {
@@ -17,17 +19,10 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   late TextEditingController _courseController;
   late TextEditingController _teacherController;
   late TextEditingController _contentController;
-  late String _selectedSemester;
+  late TextEditingController _semesterOnlyController;
+  late TextEditingController _schoolYearController;
   late int _rating;
   bool _isSubmitting = false;
-
-  final List<String> _semesters = [
-    'HK2 2025-2026',
-    'HK1 2025-2026',
-    'HK3 2024-2025',
-    'HK2 2024-2025',
-    'HK1 2024-2025'
-  ];
 
   @override
   void initState() {
@@ -35,17 +30,33 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
     _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
-    _selectedSemester = widget.existingData?['semester'] ?? 'HK2 2025-2026';
     _rating = widget.existingData?['rating'] ?? 0;
+
+    String initialSemester = '2';
+    String initialYear = '2025-2026';
+
+    if (widget.existingData?['semester'] != null) {
+      final semStr = widget.existingData!['semester'].toString();
+      final regExp = RegExp(r'HK(\d)\s+(.*)');
+      final match = regExp.firstMatch(semStr);
+      if (match != null) {
+        initialSemester = match.group(1) ?? '2';
+        initialYear = match.group(2) ?? '2025-2026';
+      }
+    }
+    _semesterOnlyController = TextEditingController(text: initialSemester);
+    _schoolYearController = TextEditingController(text: initialYear);
   }
 
   Future<void> _submitReview() async {
-    if (_courseController.text.isEmpty || _rating == 0) {
+    if (_courseController.text.isEmpty || _rating == 0 || _semesterOnlyController.text.isEmpty || _schoolYearController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vui lòng nhập tên môn và chọn số sao"))
+          const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn số sao"))
       );
       return;
     }
+
+    final fullSemester = "HK${_semesterOnlyController.text.trim()} ${_schoolYearController.text.trim()}";
 
     // Gom tất cả văn bản lại để quét một lượt
     String combinedText = "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
@@ -74,10 +85,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
 
 
       if (widget.docId != null) {
-        // 1. Nếu là SỬA: Chỉ gửi những trường user được phép sửa theo Rules
-        // Không gửi 'status', 'authorId', 'isReported', 'reportCount' vì Rules sẽ chặn Owner sửa các trường này
         final updateData = {
-          'semester': _selectedSemester,
+          'semester': fullSemester,
           'courseName': _courseController.text.trim(),
           'teacherName': _teacherController.text.trim(),
           'rating': _rating,
@@ -91,10 +100,9 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
             .update(updateData);
 
       } else {
-        // 2. Nếu là TẠO MỚI: Gửi đầy đủ các trường khởi tạo
         final reviewData = {
           'authorId': user.uid,
-          'semester': _selectedSemester,
+          'semester': fullSemester,
           'courseName': _courseController.text.trim(),
           'teacherName': _teacherController.text.trim(),
           'rating': _rating,
@@ -216,8 +224,14 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionLabel(context, "Học kỳ"),
-              _buildDropdown(context),
+              Row(
+                children: [
+                  Expanded(flex: 2, child: _buildSectionLabel(context, "Học kỳ")),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 3, child: _buildSectionLabel(context, "Năm học")),
+                ],
+              ),
+              _buildSemesterInput(context),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Khóa học"),
@@ -301,38 +315,35 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     );
   }
 
-  Widget _buildDropdown(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButtonFormField<String>(
-          value: _selectedSemester,
-          dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-          icon: Icon(Icons.keyboard_arrow_down, color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E), size: 24),
-          items: _semesters.map((s) => DropdownMenuItem(
-              value: s,
-              child: Text(s, style: TextStyle(color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)))
-          )).toList(),
-          onChanged: (v) => setState(() => _selectedSemester = v!),
-          decoration: const InputDecoration(
-            contentPadding: EdgeInsets.fromLTRB(8, 0, 0, 8),
-            border: InputBorder.none,
-          ),
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-            color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+  Widget _buildSemesterInput(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildUnderlineTextField(
+            context,
+            _semesterOnlyController,
+            "Học kỳ (1/2/3)",
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
+            keyboardType: TextInputType.number,
           ),
         ),
-      ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: _buildUnderlineTextField(
+            context,
+            _schoolYearController,
+            "Năm học (2024-2025)",
+            inputFormatters: [SchoolYearInputFormatter()],
+            keyboardType: TextInputType.number,
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint) {
+  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint, {List<TextInputFormatter>? inputFormatters, TextInputType? keyboardType}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.only(left: 8),
@@ -341,6 +352,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       ),
       child: TextField(
         controller: ctrl,
+        inputFormatters: inputFormatters,
+        keyboardType: keyboardType,
         style: TextStyle(
           fontFamily: 'Encode Sans Expanded',
           fontSize: 15,
@@ -354,7 +367,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
             color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8),
+          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
         ),
       ),
     );

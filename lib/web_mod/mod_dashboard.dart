@@ -447,17 +447,22 @@ class _ModDashboardState extends State<ModDashboard> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: Text(fileName, style: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (data['isImage'] == true)
-              Image.memory(base64Decode(base64str))
-            else ...[
-              const Icon(Icons.picture_as_pdf, size: 80, color: Colors.redAccent),
-              const SizedBox(height: 16),
-              const Text("Đây là tài liệu định dạng PDF/File.", textAlign: TextAlign.center),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (data['isImage'] == true)
+                Image.memory(
+                  base64Decode(base64str),
+                  fit: BoxFit.contain,
+                )
+              else ...[
+                const Icon(Icons.picture_as_pdf, size: 80, color: Colors.redAccent),
+                const SizedBox(height: 16),
+                const Text("Đây là tài liệu định dạng PDF/File.", textAlign: TextAlign.center),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),

@@ -250,8 +250,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-                color: isDarkMode ? Colors.white10 : Colors.white,
+                color: inputBg,
               ),
               child: TextField(
                 controller: _descController,

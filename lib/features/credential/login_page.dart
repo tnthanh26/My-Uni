@@ -176,45 +176,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 40),
-
-                // Guest Login Button
-                ElevatedButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, '/home'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDarkMode
-                        ? Colors.blueGrey[800]
-                        : Colors.grey[600],
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      side: isDarkMode
-                          ? BorderSide(color: Colors.white.withOpacity(0.05))
-                          : BorderSide.none,
-                    ),
-                    elevation: isDarkMode ? 0 : 3,
-                    shadowColor: isDarkMode
-                        ? Colors.transparent
-                        : Colors.brown.withOpacity(0.3),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.person_search_rounded, size: 22, color: Colors.white),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'Tiếp tục với tư cách Khách',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 10),
               ],
             ),
           ),

@@ -706,57 +706,6 @@ class _MyPostsPageState extends State<MyPostsPage>
       ),
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-              ),
-              boxShadow: isDarkMode
-                  ? []
-                  : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
-                  blurRadius: 14,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF5893D8).withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.inventory_2_outlined,
-                    color: Color(0xFF5893D8),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    "Quản lý bài viết và tài liệu bạn đã tạo",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF344054),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,

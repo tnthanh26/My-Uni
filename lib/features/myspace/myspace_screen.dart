@@ -855,7 +855,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
       case 'class':
         imagePath = 'assets/images/no_class_meme.png';
-        title = 'Nay rãnh thì đi chơi hông người đẹp?';
+        title = 'Nay rảnh thì đi chơi hông người đẹp?';
         break;
 
       default:

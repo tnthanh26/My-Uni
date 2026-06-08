@@ -411,6 +411,56 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
+  Future<void> _toggleSavePost({
+    required BuildContext context,
+    required String docId,
+    required Map<String, dynamic> data,
+  }) async {
+    if (_user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng đăng nhập để lưu bài viết")),
+      );
+      return;
+    }
+    final docRef = _firestore
+        .collection('users')
+        .doc(_user!.uid)
+        .collection('saved_posts')
+        .doc(docId);
+    try {
+      final docSnapshot = await docRef.get();
+      if (docSnapshot.exists) {
+        await docRef.delete();
+        if (context.mounted) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text("Đã bỏ lưu bài viết")));
+        }
+      } else {
+        final Map<String, dynamic> saveData = Map.from(data);
+
+        String saveType = 'general';
+        if (_collectionPath == 'course_reviews' ||
+            _collectionPath == 'study_materials') {
+          saveType = 'course';
+        }
+
+        saveData['saveType'] = saveType;
+        saveData['savedAt'] = FieldValue.serverTimestamp();
+        saveData['originalDocId'] = docId;
+        await docRef.set(saveData);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")));
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -490,9 +540,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         child: PostActionRow(
                           docId: widget.docId,
                           data: widget.initialPostData,
-                          onSave: (id, data) {},
+                          onSave: (id, data) => _toggleSavePost(
+                            context: context,
+                            docId: id,
+                            data: data,
+                          ),
                           collectionPath: _collectionPath,
                           onLike: _sendLikeNotification,
+                          isInDetail: true,
                         ),
                       ),
                     ),

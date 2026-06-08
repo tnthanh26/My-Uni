@@ -13,7 +13,6 @@ import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'animated_bottom_nav.dart';
 
 class HomePage extends StatefulWidget {
@@ -33,12 +32,8 @@ class _HomePageState extends State<HomePage> {
     required String saveType,
   }) async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Vui lòng đăng nhập để lưu bài viết")),
-      );
-      return;
-    }
+    if (user == null) return;
+
     final docRef = FirebaseFirestore.instance
         .collection('users')
         .doc(user.uid)
@@ -303,16 +298,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final bool isGuest = user == null;
-    final guestScreen = _buildGuestAccountScreen(context);
-
     final List<Widget> pages = [
-      isGuest ? guestScreen : _buildMainHomeContent(),
-      isGuest ? guestScreen : const EventPage(),
-      isGuest ? guestScreen : const ChatbotPage(),
-      isGuest ? guestScreen : const MySpaceScreen(),
-      isGuest ? guestScreen : const AccountPage(),
+      _buildMainHomeContent(),
+      const EventPage(),
+      const ChatbotPage(),
+      const MySpaceScreen(),
+      const AccountPage(),
     ];
 
     return Scaffold(
@@ -336,27 +327,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      /*
-      child: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.transparent,
-        currentIndex: _selectedIndex,
-        selectedItemColor: const Color(0xFF457EC0),
-        unselectedItemColor: isDarkMode ? Colors.white38 : const Color(0xFF8E8E93),
-        selectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
-        unselectedLabelStyle: const TextStyle(fontSize: 10, fontFamily: 'Inter', letterSpacing: 0.3),
-        elevation: 0,
-        onTap: _onItemTapped,
-        items: [
-          _buildNavItem('assets/icons/home.svg', 'Home', 0),
-          _buildNavItem('assets/icons/event.svg', 'Sự kiện', 1),
-          _buildNavItem('assets/icons/chat.svg', 'Hỏi Đáp', 2),
-          _buildNavItem('assets/icons/space.svg', 'Góc nhỏ', 3),
-          _buildNavItem('assets/icons/account.svg', 'Tài Khoản', 4),
-        ],
-      ),
-      */
-      // Thay thế bottom nav có animation
       child: AnimatedBottomNav(
          currentIndex: _selectedIndex,
          onTap: _onItemTapped,
@@ -367,37 +337,6 @@ class _HomePageState extends State<HomePage> {
            AnimatedNavItem(icon: 'assets/icons/space.svg',   label: 'Góc nhỏ'),
            AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài Khoản'),
          ],
-      ),
-    );
-  }
-
-  Widget _buildGuestAccountScreen(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.account_circle_outlined, size: 100, color: isDarkMode ? Colors.white30 : Colors.grey),
-          const SizedBox(height: 20),
-          Text(
-              'Chế độ khách',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black
-              )
-          ),
-          const SizedBox(height: 30),
-          ElevatedButton(
-            onPressed: () => Navigator.pushNamed(context, '/login'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF457EC0),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            ),
-            child: const Text('Đăng nhập ngay', style: TextStyle(color: Colors.white)),
-          )
-        ],
       ),
     );
   }

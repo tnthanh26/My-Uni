@@ -304,7 +304,7 @@ class UtilitiesPage extends StatelessWidget {
       ),
       body: Column(
         children: [
-          _buildTopIntro(isDarkMode),
+          const SizedBox(height: 12),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance

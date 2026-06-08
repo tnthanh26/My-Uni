@@ -9,6 +9,7 @@ class PostActionRow extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
   final String collectionPath;
   final VoidCallback? onLike;
+  final bool isInDetail;
 
   const PostActionRow({
     super.key,
@@ -17,6 +18,7 @@ class PostActionRow extends StatelessWidget {
     required this.onSave,
     required this.collectionPath,
     this.onLike,
+    this.isInDetail = false,
   });
 
   Future<void> _sendNotification({
@@ -153,6 +155,7 @@ class PostActionRow extends StatelessWidget {
   }
 
   void _navigateToDetail(BuildContext context) {
+    if (isInDetail) return;
     Navigator.push(
       context,
       MaterialPageRoute(
