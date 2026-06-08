@@ -74,6 +74,16 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _prepareWeatherFuture() {
+    final now = DateTime.now();
+    final todayWeekday = now.weekday + 1;
+
+    // CHỈ hiển thị cảnh báo thời tiết nếu user đang xem ngày hôm nay thực tế
+    if (selectedWeekday != todayWeekday) {
+      _weatherFuture = Future.value(WeatherAlertResult.none());
+      if (mounted) setState(() {});
+      return;
+    }
+
     final todayClasses =
     mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
 
@@ -93,8 +103,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       return ScheduleItem(
         id: c.id,
         title: c.name,
-        startTime: _combineTodayAndTime(c.start),
-        endTime: _combineTodayAndTime(c.end),
+        startTime: _combineDateAndTime(DateTime.now(), c.start),
+        endTime: _combineDateAndTime(DateTime.now(), c.end),
         campusId: campusId,
         room: c.room,
       );
@@ -628,8 +638,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   // --- DASHBOARD CONTENT (3.1) ---
-  DateTime _combineTodayAndTime(String time) {
-    final now = DateTime.now();
+  DateTime _combineDateAndTime(DateTime date, String time) {
     final input = time.trim().toUpperCase();
 
     DateTime parsedTime;
@@ -642,9 +651,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       }
 
       return DateTime(
-        now.year,
-        now.month,
-        now.day,
+        date.year,
+        date.month,
+        date.day,
         parsedTime.hour,
         parsedTime.minute,
       );
@@ -652,9 +661,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       debugPrint('Cannot parse schedule time: $time, error: $e');
 
       return DateTime(
-        now.year,
-        now.month,
-        now.day,
+        date.year,
+        date.month,
+        date.day,
         0,
         0,
       );
