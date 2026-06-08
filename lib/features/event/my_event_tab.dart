@@ -243,22 +243,23 @@ class _MyEventTabState extends State<MyEventTab>
               ev.location,
               isDarkMode,
             ),
-            _buildDetailRow(
-              Icons.description_rounded,
-              'Mô tả',
-              ev.description?.trim().isNotEmpty == true
-                  ? ev.description!
-                  : 'Không có mô tả',
-              isDarkMode,
-            ),
-            _buildDetailRow(
-              Icons.add_alert_rounded,
-              'Nhắc nhở',
-              ev.reminder?.trim().isNotEmpty == true
-                  ? ev.reminder!
-                  : 'Không có nhắc nhở',
-              isDarkMode,
-            ),
+            if (ev.description?.trim().isNotEmpty == true)
+              _buildDetailRow(
+                Icons.description_rounded,
+                'Mô tả',
+                ev.description!,
+                isDarkMode,
+              ),
+            if (ev.reminder != null &&
+                ev.reminder != 'Không' &&
+                ev.reminder != 'Đặt lời nhắc' &&
+                ev.reminder!.trim().isNotEmpty)
+              _buildDetailRow(
+                Icons.add_alert_rounded,
+                'Nhắc nhở',
+                ev.reminder!,
+                isDarkMode,
+              ),
           ],
         ),
       ),

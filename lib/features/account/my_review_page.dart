@@ -460,61 +460,10 @@ class MyReviewsPage extends StatelessWidget {
           color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
         ),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(62),
-          child: Column(
-            children: [
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFCB45).withOpacity(0.14),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.rate_review_rounded,
-                        color: Color(0xFFC98A00),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        "Quản lý toàn bộ review bạn đã viết",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF344054),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-                height: 1,
-              ),
-            ],
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            height: 1,
           ),
         ),
       ),

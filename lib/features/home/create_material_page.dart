@@ -4,8 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
+import '../../utils/formatters.dart';
 import '../services/content_service.dart';
 
 class CreateMaterialPage extends StatefulWidget {
@@ -22,15 +24,14 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   late TextEditingController _courseController;
   late TextEditingController _teacherController;
   late TextEditingController _contentController;
-  String _selectedSemester = 'HK1 2025-2026';
+  late TextEditingController _semesterOnlyController;
+  late TextEditingController _schoolYearController;
 
   File? _attachedFile;
   String? _fileName;
   String? _existingFileData;
   bool _isImage = false;
   bool _isSubmitting = false;
-
-  final List<String> _semesters = ['HK1 2025-2026', 'HK3 2024-2025', 'HK2 2024-2025', 'HK1 2024-2025'];
 
   @override
   void initState() {
@@ -39,12 +40,26 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
 
+    String initialSemester = '2';
+    String initialYear = '2025-2026';
+
     if (widget.existingData != null) {
-      _selectedSemester = widget.existingData!['semester'] ?? _semesters[0];
       _fileName = widget.existingData!['fileName'];
       _isImage = widget.existingData!['isImage'] ?? false;
       _existingFileData = widget.existingData!['fileData'];
+
+      if (widget.existingData!['semester'] != null) {
+        final semStr = widget.existingData!['semester'].toString();
+        final regExp = RegExp(r'HK(\d)\s+(.*)');
+        final match = regExp.firstMatch(semStr);
+        if (match != null) {
+          initialSemester = match.group(1) ?? '2';
+          initialYear = match.group(2) ?? '2025-2026';
+        }
+      }
     }
+    _semesterOnlyController = TextEditingController(text: initialSemester);
+    _schoolYearController = TextEditingController(text: initialYear);
   }
 
   @override
@@ -52,6 +67,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     _courseController.dispose();
     _teacherController.dispose();
     _contentController.dispose();
+    _semesterOnlyController.dispose();
+    _schoolYearController.dispose();
     super.dispose();
   }
 
@@ -87,10 +104,12 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       return;
     }
 
-    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập tên môn và chọn file")));
+    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null) || _semesterOnlyController.text.isEmpty || _schoolYearController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn file")));
       return;
     }
+
+    final fullSemester = "HK${_semesterOnlyController.text.trim()} ${_schoolYearController.text.trim()}";
 
     // Quét cả tên môn, mô tả và tên file đính kèm
     String combinedText = "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
@@ -127,7 +146,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
       // --- 1. TẠO MAP CHỨA CÁC TRƯỜNG DÙNG CHUNG CHO CẢ EDIT VÀ CREATE ---
       final Map<String, dynamic> commonData = {
-        'semester': _selectedSemester,
+        'semester': fullSemester,
         'courseName': _courseController.text.trim(),
         'teacherName': _teacherController.text.trim(),
         'content': _contentController.text.trim(),
@@ -138,14 +157,12 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       };
 
       if (widget.docId != null) {
-        // Chỉ gửi commonData. KHÔNG gửi status, isReported, authorId... để tránh bị Security Rules chặn
         await FirebaseFirestore.instance
             .collection('study_materials')
             .doc(widget.docId)
             .update(commonData);
 
       } else {
-        // Copy commonData và bổ sung các trường khởi tạo ban đầu + thông tin Author
         final Map<String, dynamic> materialData = Map<String, dynamic>.from(commonData);
 
         final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
@@ -264,8 +281,14 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionLabel(context, "Học kỳ"),
-              _buildDropdown(context),
+              Row(
+                children: [
+                  Expanded(flex: 2, child: _buildSectionLabel(context, "Học kỳ")),
+                  const SizedBox(width: 16),
+                  Expanded(flex: 3, child: _buildSectionLabel(context, "Năm học")),
+                ],
+              ),
+              _buildSemesterInput(context),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Khóa học"),
@@ -376,7 +399,35 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     );
   }
 
-  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint) {
+  Widget _buildSemesterInput(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          flex: 2,
+          child: _buildUnderlineTextField(
+            context,
+            _semesterOnlyController,
+            "Học kỳ (1/2/3)",
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
+            keyboardType: TextInputType.number,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          flex: 3,
+          child: _buildUnderlineTextField(
+            context,
+            _schoolYearController,
+            "Năm học (2024-2025)",
+            inputFormatters: [SchoolYearInputFormatter()],
+            keyboardType: TextInputType.number,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint, {List<TextInputFormatter>? inputFormatters, TextInputType? keyboardType}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
@@ -384,43 +435,14 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       ),
       child: TextField(
         controller: ctrl,
+        inputFormatters: inputFormatters,
+        keyboardType: keyboardType,
         style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)),
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93)),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButtonFormField<String>(
-          value: _selectedSemester,
-          dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-          icon: Icon(Icons.keyboard_arrow_down, color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E), size: 24),
-          items: _semesters.map((s) => DropdownMenuItem(
-              value: s,
-              child: Text(s, style: TextStyle(color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)))
-          )).toList(),
-          onChanged: (v) => setState(() => _selectedSemester = v!),
-          decoration: const InputDecoration(
-            contentPadding: EdgeInsets.fromLTRB(8, 0, 0, 8),
-            border: InputBorder.none,
-          ),
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            fontWeight: FontWeight.w500,
-            fontSize: 15,
-            color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
-          ),
         ),
       ),
     );

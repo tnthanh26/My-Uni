@@ -55,14 +55,31 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         password: _currentPasswordController.text.trim(),
       );
 
-      await user.reauthenticateWithCredential(credential);
+      // Thêm timeout 10 giây để tránh việc xoay quá lâu nếu mạng chậm hoặc Firebase treo
+      await user.reauthenticateWithCredential(credential).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw FirebaseAuthException(
+          code: 'timeout',
+          message: 'Hết thời gian yêu cầu. Vui lòng kiểm tra lại mạng.',
+        ),
+      );
       await user.updatePassword(_newPasswordController.text.trim());
 
       if (mounted) {
-        _showSnackBar('Cập nhật mật khẩu thành công!');
-        Navigator.pop(context);
+        _showSnackBar('Cập nhật mật khẩu thành công! Vui lòng đăng nhập lại.', isError: false);
+        
+        // Đăng xuất để đảm bảo an toàn
+        await FirebaseAuth.instance.signOut();
+        
+        if (mounted) {
+          // Điều hướng về trang login và xóa toàn bộ stack cũ
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        }
       }
     } on FirebaseAuthException catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       String message = 'Đã xảy ra lỗi không xác định';
       debugPrint("Firebase Auth Error: ${e.code}");
 
@@ -80,8 +97,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       }
 
       _showSnackBar(message, isError: true);
+      return; // Dừng lại ở đây, không để chạy xuống finally nữa để chắc chắn
     } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       _showSnackBar('Lỗi hệ thống: $e', isError: true);
+      return;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

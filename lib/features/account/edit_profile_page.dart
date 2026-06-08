@@ -28,6 +28,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
   File? _imageFile;
   bool _isLoading = false;
 
+  // Variables to track initial state for change detection
+  String _initialName = '';
+  String _initialPhone = '';
+  String _initialDob = '';
+  String? _initialFaculty;
+  String _initialStudentId = '';
+  String _initialCohort = '';
+  String? _initialPhotoBase64;
+
   final List<String> faculties = [
     'Công nghệ thông tin',
     'Hệ thống thông tin',
@@ -40,6 +49,47 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  bool _hasChanges() {
+    return _nameController.text != _initialName ||
+        _phoneController.text != _initialPhone ||
+        _dobController.text != _initialDob ||
+        selectedFaculty != _initialFaculty ||
+        _studentIdController.text != _initialStudentId ||
+        _cohortController.text != _initialCohort ||
+        _imageFile != null ||
+        _currentPhotoBase64 != _initialPhotoBase64;
+  }
+
+  Future<bool> _onWillPop() async {
+    if (!_hasChanges()) return true;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Thoát mà không lưu?',
+          style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+        ),
+        content: const Text(
+          'Bạn có những thay đổi chưa được lưu. Bạn có chắc chắn muốn thoát?',
+          style: TextStyle(fontFamily: 'Nunito'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Ở lại', style: TextStyle(color: Color(0xFF296ED8))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Thoát', style: TextStyle(color: Color(0xFF736B67))),
+          ),
+        ],
+      ),
+    );
+
+    return result ?? false;
   }
 
   @override
@@ -78,6 +128,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           _studentIdController.text = data['studentId'] ?? '';
           _cohortController.text = data['cohort'] ?? '';
+
+          // Initialize variables for change detection
+          _initialName = _nameController.text;
+          _initialPhone = _phoneController.text;
+          _initialDob = _dobController.text;
+          _initialFaculty = selectedFaculty;
+          _initialStudentId = _studentIdController.text;
+          _initialCohort = _cohortController.text;
+          _initialPhotoBase64 = _currentPhotoBase64;
         });
       }
     } catch (e) {
@@ -94,6 +153,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (pickedFile != null) {
       setState(() => _imageFile = File(pickedFile.path));
     }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _imageFile = null;
+      _currentPhotoBase64 = null;
+    });
   }
 
   Future<void> _saveProfile() async {
@@ -135,9 +201,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }, SetOptions(merge: true));
 
       if (mounted) {
+        // Reset initial values after saving to avoid "unsaved changes" dialog when popping
+        setState(() {
+          _initialName = _nameController.text.trim();
+          _initialPhone = _phoneController.text.trim();
+          _initialDob = _dobController.text.trim();
+          _initialFaculty = selectedFaculty;
+          _initialStudentId = _studentIdController.text.trim();
+          _initialCohort = _cohortController.text.trim();
+          _initialPhotoBase64 = finalPhotoBase64;
+          _imageFile = null;
+          _currentPhotoBase64 = finalPhotoBase64;
+        });
+
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cập nhật hồ sơ thành công!')),
+          const SnackBar(
+            content: Text('Cập nhật hồ sơ thành công!'),
+            duration: Duration(seconds: 1),
+          ),
         );
       }
     } catch (e) {
@@ -465,19 +547,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final avatarProvider = _buildAvatarProvider();
 
-    return Scaffold(
-      backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: isDarkMode ? Colors.white : Colors.black,
-            size: 20,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+
+        final shouldPop = await _onWillPop();
+        if (shouldPop && context.mounted) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
+        backgroundColor:
+        isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+        appBar: AppBar(
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: isDarkMode ? Colors.white : Colors.black,
+              size: 20,
+            ),
+            onPressed: () async {
+              final shouldPop = await _onWillPop();
+              if (shouldPop && context.mounted) {
+                Navigator.pop(context);
+              }
+            },
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
+          title: Text(
           'Chỉnh sửa hồ sơ',
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
@@ -580,6 +677,32 @@ class _EditProfilePageState extends State<EditProfilePage> {
                                 ),
                               ),
                             ),
+                            if (avatarProvider != null)
+                              Positioned(
+                                left: 0,
+                                bottom: 0,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(99),
+                                  onTap: _removeImage,
+                                  child: Container(
+                                    width: 34,
+                                    height: 34,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF6C6C),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.delete_outline_rounded,
+                                      color: Colors.white,
+                                      size: 17,
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                         const SizedBox(height: 12),
@@ -705,7 +828,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
               ),
             ),
         ],
-      ),
+      ),)
     );
   }
 }

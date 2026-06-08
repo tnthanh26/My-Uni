@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'create_community_event_page.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
@@ -36,66 +35,6 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   void dispose() {
     _tabController.dispose();
     super.dispose();
-  }
-
-  void _showCreateEventMenu(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (BuildContext context) => Dialog(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            _buildMenuOption(
-              context,
-              icon: Icons.school_rounded,
-              label: 'Cộng Đồng',
-              isDarkMode: isDarkMode,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const CommunityEventPage()));
-              },
-            ),
-            const SizedBox(width: 20),
-            _buildMenuOption(
-              context,
-              icon: Icons.person_rounded,
-              label: 'Cá Nhân',
-              isDarkMode: isDarkMode,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const CreatePersonalEventPage()));
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMenuOption(BuildContext context, {required IconData icon, required String label, required bool isDarkMode, required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 140, height: 140,
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 15, offset: const Offset(0, 8))],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: primaryBrown),
-            const SizedBox(height: 12),
-            Text(label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white : Colors.black87)),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildFixedHeader(BuildContext context) {
@@ -218,7 +157,10 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
       backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
       floatingActionButton: _showFab
           ? FloatingActionButton(
-        onPressed: () => _showCreateEventMenu(context),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const CreatePersonalEventPage()),
+        ),
         backgroundColor: primaryBrown,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),

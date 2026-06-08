@@ -315,7 +315,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -326,59 +326,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 fontSize: 30,
                 fontWeight: FontWeight.bold,
                 color: isDarkMode ? Colors.white : Colors.black,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-                ),
-                boxShadow: isDarkMode
-                    ? []
-                    : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 14,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF6797E1).withOpacity(0.14),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(
-                      Icons.settings_rounded,
-                      color: Color(0xFF6797E1),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Tùy chỉnh giao diện, quản lý quyền truy cập và các liên kết hỗ trợ của ứng dụng.',
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        height: 1.5,
-                        color: isDarkMode
-                            ? Colors.white70
-                            : const Color(0xFF344054),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
             const SizedBox(height: 22),

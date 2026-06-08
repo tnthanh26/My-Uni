@@ -385,7 +385,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                         : Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
-                        "Nhấn để thêm\nẢnh/Tài liệu",
+                        "Nhấn để thêm Ảnh",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',

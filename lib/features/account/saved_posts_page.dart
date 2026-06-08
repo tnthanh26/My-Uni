@@ -1124,53 +1124,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       ),
       body: Column(
         children: [
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(16, 8, 16, 10),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: 12,
-            ),
-            decoration: BoxDecoration(
-              color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: isDarkMode
-                    ? Colors.white10
-                    : const Color(0xFFE9EEF3),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFFCB45).withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.bookmark_rounded,
-                    color: Color(0xFFFFCB45),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    "Nơi lưu lại những nội dung bạn muốn xem lại sau",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF344054),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const SizedBox(height: 12),
           Container(
             margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             decoration: BoxDecoration(
