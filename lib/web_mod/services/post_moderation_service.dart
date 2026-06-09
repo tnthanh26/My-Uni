@@ -53,4 +53,45 @@ class PostModerationService {
       'reportCount': 0,
     });
   }
+
+  static Future<void> deleteComment({
+    required String collection,
+    required String postId,
+    required String commentId,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+    
+    // Find replies
+    final repliesSnapshot = await firestore
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .where('parentCommentId', isEqualTo: commentId)
+        .get();
+
+    final batch = firestore.batch();
+
+    // Delete the comment
+    final commentRef = firestore
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId);
+    
+    batch.delete(commentRef);
+
+    // Delete replies
+    for (var doc in repliesSnapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    // Decrement commentCount on the post
+    int totalToDelete = 1 + repliesSnapshot.docs.length;
+    final postRef = firestore.collection(collection).doc(postId);
+    batch.update(postRef, {
+      'commentCount': FieldValue.increment(-totalToDelete),
+    });
+
+    await batch.commit();
+  }
 }

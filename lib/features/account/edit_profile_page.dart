@@ -774,6 +774,8 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         icon: Icons.badge_outlined,
                         label: 'MSSV',
                         controller: _studentIdController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       ),
                       _buildDivider(isDarkMode),
                       _buildTextFieldCard(

@@ -31,7 +31,7 @@ class ModActionButton extends StatelessWidget {
         backgroundColor: color,
         foregroundColor: Colors.white,
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),

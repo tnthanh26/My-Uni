@@ -9,6 +9,7 @@ import 'widgets/user_card.dart';
 import 'widgets/post_card.dart';
 import 'widgets/official_news_card.dart';
 import 'widgets/user_activity_dialog.dart';
+import 'widgets/mod_comment_dialog.dart';
 import 'services/mod_notification_service.dart';
 import 'services/user_moderation_service.dart';
 import 'services/user_activity_service.dart';
@@ -415,6 +416,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   onRestore: () => _handleRestorePost(docId, data),
                   onDismissReport: () => _handleDismissReport(docId, data),
                   onViewMaterial: () => _viewMaterial(data),
+                  onViewComments: () => _handleViewComments(docId, _collections[_selectedCollIndex]),
                 );
               },
             ),
@@ -423,6 +425,16 @@ class _ModDashboardState extends State<ModDashboard> {
           ],
         );
       },
+    );
+  }
+
+  void _handleViewComments(String postId, String collection) {
+    showDialog(
+      context: context,
+      builder: (ctx) => ModCommentDialog(
+        collection: collection,
+        postId: postId,
+      ),
     );
   }
 

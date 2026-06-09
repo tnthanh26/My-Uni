@@ -194,9 +194,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     required String label,
     required bool isDarkMode,
     Color? customColor,
+    Color? customIconColor,
   }) {
-    final Color iconColor = customColor ??
+    final Color textColor = customColor ??
         (isDarkMode ? Colors.white70 : const Color(0xFF344054));
+    final Color iconColor = customIconColor ?? textColor;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -220,7 +222,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
               fontFamily: 'Encode Sans Expanded',
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: iconColor,
+              color: textColor,
             ),
           ),
         ],
@@ -575,8 +577,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       .map(
                         (tag) => _buildInfoChip(
                       icon: Icons.tag_rounded,
-                      label: '#$tag',
+                      label: tag,
                       isDarkMode: isDarkMode,
+                      customIconColor: const Color(0xFF306CFE),
                     ),
                   )
                       .toList(),

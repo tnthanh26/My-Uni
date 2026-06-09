@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'department_contacts_page.dart';
 
 class UtilitiesPage extends StatelessWidget {
   const UtilitiesPage({super.key});
@@ -39,6 +40,8 @@ class UtilitiesPage extends StatelessWidget {
         return Icons.account_balance_wallet_outlined;
       case 'handbook':
         return Icons.menu_book_outlined;
+      case 'department_contacts':
+        return Icons.support_agent_rounded;
       default:
         return Icons.link_rounded;
     }
@@ -58,63 +61,29 @@ class UtilitiesPage extends StatelessWidget {
         return 'Học phí & thanh toán';
       case 'handbook':
         return 'Sổ tay sinh viên';
+      case 'department_contacts':
+        return 'Thông tin liên hệ';
       default:
         return title;
     }
   }
 
-  Widget _buildTopIntro(bool isDarkMode) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+  void _handleUtilityTap({
+    required BuildContext context,
+    required String iconName,
+    required String url,
+  }) {
+    if (iconName.toLowerCase() == 'department_contacts') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const DepartmentContactsPage(),
         ),
-        boxShadow: isDarkMode
-            ? []
-            : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: const Color(0xFF6797E1).withOpacity(0.14),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Icon(
-              Icons.grid_view_rounded,
-              color: Color(0xFF6797E1),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Truy cập nhanh các hệ thống cần thiết cho sinh viên chỉ với một chạm.',
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.5,
-                color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+      return;
+    }
+
+    _launchURL(context, url);
   }
 
   Widget _buildUtilityCard({
@@ -130,16 +99,18 @@ class UtilitiesPage extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _launchURL(context, url),
+        onTap: () => _handleUtilityTap(
+          context: context,
+          iconName: iconName,
+          url: url,
+        ),
         borderRadius: BorderRadius.circular(22),
         child: Ink(
           decoration: BoxDecoration(
             color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
             borderRadius: BorderRadius.circular(22),
             border: Border.all(
-              color: isDarkMode
-                  ? Colors.white10
-                  : const Color(0xFFE9EEF3),
+              color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
             ),
             boxShadow: isDarkMode
                 ? []
@@ -191,21 +162,22 @@ class UtilitiesPage extends StatelessWidget {
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 12,
                     height: 1.4,
-                    color: isDarkMode
-                        ? Colors.white54
-                        : const Color(0xFF667085),
+                    color:
+                    isDarkMode ? Colors.white54 : const Color(0xFF667085),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Row(
                   children: [
                     Text(
-                      'Mở ngay',
-                      style: TextStyle(
+                      iconName.toLowerCase() == 'department_contacts'
+                          ? 'Xem ngay'
+                          : 'Mở ngay',
+                      style: const TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
-                        color: const Color(0xFF6797E1),
+                        color: Color(0xFF6797E1),
                       ),
                     ),
                     const SizedBox(width: 4),
@@ -273,6 +245,14 @@ class UtilitiesPage extends StatelessWidget {
     );
   }
 
+  Widget _buildLoadingState() {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: Color(0xFF6797E1),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -317,11 +297,7 @@ class UtilitiesPage extends StatelessWidget {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(
-                      color: Color(0xFF6797E1),
-                    ),
-                  );
+                  return _buildLoadingState();
                 }
 
                 final docs = snapshot.data?.docs ?? [];
@@ -332,16 +308,16 @@ class UtilitiesPage extends StatelessWidget {
 
                 return GridView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 14,
                     crossAxisSpacing: 14,
-                    childAspectRatio: 0.95,
+                    childAspectRatio: 0.80,
                   ),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
                     final data = docs[index].data() as Map<String, dynamic>;
+
                     final String title = data['title'] ?? 'N/A';
                     final String url = data['url'] ?? '';
                     final String iconName = data['iconName'] ?? '';
