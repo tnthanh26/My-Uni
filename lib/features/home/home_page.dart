@@ -69,127 +69,123 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  Widget _buildFixedHeader(BuildContext context) {
-    return Stack(
-      children: [
-        // Background Image with Overlay
-        Container(
-          height: 150,
-          width: double.infinity,
-          decoration: const BoxDecoration(
-            image: DecorationImage(
-              image: AssetImage('assets/images/hcmus_bg.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
-          child: Container(color: Colors.black.withOpacity(0.45)),
+  Widget _buildHeaderBackground(BuildContext context) {
+    return Container(
+      height: 150,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage('assets/images/hcmus_bg.png'),
+          fit: BoxFit.cover,
         ),
+      ),
+      child: Container(color: Colors.black.withOpacity(0.45)),
+    );
+  }
 
-        // Logo & HCMUS Text & Notification/Search Capsule - Cố định
-        SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildHeaderForeground(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Cụm trái: Logo + Tên trường
+            Row(
               children: [
-                // Cụm trái: Logo + Tên trường
-                Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 18,
-                      backgroundColor: Colors.white,
-                      child: Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'HCMUS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        fontFamily: 'Nunito',
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Cụm phải: Capsule Search & Notification
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: const Color(0xff545454),
-                    borderRadius: BorderRadius.circular(16),
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
                   ),
-                  child: Row(
-                    children: [
-                      // Nút Search
-                      GestureDetector(
-                        onTap: () {
-                          final tabIndex = DefaultTabController.of(context).index;
-                          showSearch(
-                            context: context,
-                            delegate: MyUniSearchDelegate(
-                              currentScope: [
-                                SearchScope.official,
-                                SearchScope.forum,
-                                SearchScope.review,
-                                SearchScope.material
-                              ][tabIndex],
-                            ),
-                          );
-                        },
-                        child: const Icon(Icons.search, color: Colors.white, size: 24),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text("|", style: TextStyle(color: Colors.white38)),
-                      const SizedBox(width: 8),
-                      // Nút Notification
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => NotificationScreen()),
-                          );
-                        },
-                        child: StreamBuilder<List<MyUniNotification>>(
-                          stream: NotificationService.getNotifications(),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                if (unreadCount > 0)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: CircleAvatar(
-                                      radius: 6,
-                                      backgroundColor: Colors.red,
-                                      child: Text(
-                                        unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                        style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
-                                      ),
-                                    ),
-                                  )
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ],
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'HCMUS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'Nunito',
+                    letterSpacing: 1.2,
                   ),
                 ),
               ],
             ),
-          ),
+
+            // Cụm phải: Capsule Search & Notification
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xff545454),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  // Nút Search
+                  GestureDetector(
+                    onTap: () {
+                      final tabIndex = DefaultTabController.of(context).index;
+                      showSearch(
+                        context: context,
+                        delegate: MyUniSearchDelegate(
+                          currentScope: [
+                            SearchScope.official,
+                            SearchScope.forum,
+                            SearchScope.review,
+                            SearchScope.material
+                          ][tabIndex],
+                        ),
+                      );
+                    },
+                    child: const Icon(Icons.search, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text("|", style: TextStyle(color: Colors.white38)),
+                  const SizedBox(width: 8),
+                  // Nút Notification
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => NotificationScreen()),
+                      );
+                    },
+                    child: StreamBuilder<List<MyUniNotification>>(
+                      stream: NotificationService.getNotifications(),
+                      builder: (context, snapshot) {
+                        final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                            if (unreadCount > 0)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: CircleAvatar(
+                                  radius: 6,
+                                  backgroundColor: Colors.red,
+                                  child: Text(
+                                    unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                    style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              )
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -200,10 +196,10 @@ class _HomePageState extends State<HomePage> {
       length: 4,
       child: Stack(
         children: [
-          // 1. Header cố định (Background + Logo + Search/Notification)
-          _buildFixedHeader(context),
+          // 1. Header Background (Dưới cùng)
+          _buildHeaderBackground(context),
 
-          // 2. Nội dung có thể cuộn (Rounded Body)
+          // 2. Nội dung có thể cuộn (Giữa)
           Column(
             children: [
               // Khoảng trống 102px để lộ phần Logo/Text của Header
@@ -274,6 +270,11 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ],
+          ),
+
+          // 3. Header Foreground (Trên cùng để bấm được)
+          Builder(
+            builder: (headerContext) => _buildHeaderForeground(headerContext),
           ),
         ],
       ),
