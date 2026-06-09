@@ -620,10 +620,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Icons.send_rounded,
-                  color: Colors.white,
-                  size: 18,
+                child: const Padding(
+                  padding: EdgeInsets.only(left: 3),
+                  child: Icon(
+                    Icons.send_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
             ),

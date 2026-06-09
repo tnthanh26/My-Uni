@@ -235,7 +235,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
                         fontSize: 17,
-                        color: Colors.white.withOpacity(0.5),
+                        color: Color(0xFFFFFDFD),
                       ),
                     ),
                   ),

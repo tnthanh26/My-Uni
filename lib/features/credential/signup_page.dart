@@ -247,6 +247,7 @@ class _SignUpPageState extends State<SignUpPage> {
               child: TextFormField(
                 controller: _studentIdController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 style: TextStyle(
                   color: isDarkMode ? Colors.white : Colors.black,
                 ),

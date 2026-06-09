@@ -14,6 +14,7 @@ class PostCard extends StatelessWidget {
     required this.onRestore,
     required this.onDismissReport,
     required this.onViewMaterial,
+    required this.onViewComments,
   });
 
   final String docId;
@@ -25,6 +26,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback onRestore;
   final VoidCallback onDismissReport;
   final VoidCallback onViewMaterial;
+  final VoidCallback onViewComments;
 
   @override
   Widget build(BuildContext context) {
@@ -247,7 +249,7 @@ class PostCard extends StatelessWidget {
                   if (data['status'] != 'hidden') ...[
                     if (isReported)
                       SizedBox(
-                        width: 128,
+                        width: 150,
                         height: 34,
                         child: ModActionButton(
                           icon: Icons.refresh,
@@ -277,9 +279,19 @@ class PostCard extends StatelessWidget {
                           onPressed: onApprove,
                         ),
                       ),
+                    SizedBox(
+                      width: 120,
+                      height: 34,
+                      child: ModActionButton(
+                        icon: Icons.comment_outlined,
+                        label: "BÌNH LUẬN",
+                        color: Colors.blueAccent,
+                        onPressed: onViewComments,
+                      ),
+                    ),
                   ] else
                     SizedBox(
-                      width: 135,
+                      width: 140,
                       height: 34,
                       child: ModActionButton(
                         icon: Icons.restore,
