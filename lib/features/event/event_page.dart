@@ -40,7 +40,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   Widget _buildFixedHeader(BuildContext context) {
     return Stack(
       children: [
-        // Background Image with Gradient Overlay
+        // Background Image with Overlay
         Container(
           height: 150,
           width: double.infinity,
@@ -51,17 +51,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
             ),
           ),
           child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.black.withOpacity(0.5),
-                  Colors.black.withOpacity(0.2),
-                  Colors.transparent,
-                ],
-                begin: Alignment.bottomCenter,
-                end: Alignment.topCenter,
-              ),
-            ),
+            color: Colors.black.withOpacity(0.45),
           ),
         ),
 
