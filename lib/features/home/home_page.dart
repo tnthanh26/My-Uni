@@ -71,7 +71,6 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildFixedHeader(BuildContext context) {
     return Stack(
-      fit: StackFit.expand,
       children: [
         // Background Image with Overlay
         Container(
@@ -89,7 +88,7 @@ class _HomePageState extends State<HomePage> {
         // Logo & HCMUS Text & Notification/Search Capsule - Cố định
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 70),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -199,75 +198,84 @@ class _HomePageState extends State<HomePage> {
 
     return DefaultTabController(
       length: 4,
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: NestedScrollView(
-          headerSliverBuilder: (context, innerBoxIsScrolled) {
-            return [
-              SliverAppBar(
-                expandedHeight: 102.0,
-                pinned: true,
-                elevation: 0,
-                backgroundColor: const Color(0xFF5893D8),
-                automaticallyImplyLeading: false,
-                actions: const [SizedBox.shrink()],
-                flexibleSpace: FlexibleSpaceBar(
-                  collapseMode: CollapseMode.pin,
-                  background: _buildFixedHeader(context),
-                ),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(48),
-                  child: Container(
-                    width: double.infinity,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Theme.of(context).scaffoldBackgroundColor : Colors.white,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
+      child: Stack(
+        children: [
+          // 1. Header cố định (Background + Logo + Search/Notification)
+          _buildFixedHeader(context),
+
+          // 2. Nội dung có thể cuộn (Rounded Body)
+          Column(
+            children: [
+              // Khoảng trống 102px để lộ phần Logo/Text của Header
+              const SizedBox(height: 102),
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
-                    child: TabBar(
-                      isScrollable: true,
-                      tabAlignment: TabAlignment.center,
-                      indicatorSize: TabBarIndicatorSize.tab,
-                      labelPadding: const EdgeInsets.symmetric(horizontal: 20),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      indicator: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        //color: const Color(0xFF5893D8),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
-                          begin: Alignment.centerLeft,
-                          end: Alignment.centerRight,
+                  ),
+                  child: Column(
+                    children: [
+                      // TabBar được đặt ngay đầu Container nội dung
+                      Container(
+                        width: double.infinity,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
+                        ),
+                        child: TabBar(
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.center,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          labelPadding: const EdgeInsets.symmetric(horizontal: 20),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          indicator: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                          ),
+                          labelColor: Colors.white,
+                          unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
+                          labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 16),
+                          unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 12),
+                          dividerColor: Colors.transparent,
+                          tabs: const [
+                            Tab(text: 'Chính Thức'),
+                            Tab(text: 'Diễn Đàn'),
+                            Tab(text: 'Review'),
+                            Tab(text: 'Tài Liệu'),
+                          ],
                         ),
                       ),
-                      labelColor: Colors.white,
-                      unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
-                      labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 16),
-                      unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 12),
-                      dividerColor: Colors.transparent,
-                      tabs: const [
-                        Tab(text: 'Chính Thức'),
-                        Tab(text: 'Diễn Đàn'),
-                        Tab(text: 'Review'),
-                        Tab(text: 'Tài Liệu'),
-                      ],
-                    ),
+                      // Nội dung các Tab
+                      Expanded(
+                        child: TabBarView(
+                          children: [
+                            OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+                            ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
+                            ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+                            MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ];
-          },
-          body: TabBarView(
-            children: [
-              OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-              ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-              ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
-              MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
