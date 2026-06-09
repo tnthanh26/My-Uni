@@ -69,6 +69,131 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  Widget _buildFixedHeader(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Background Image with Overlay
+        Container(
+          height: 150,
+          width: double.infinity,
+          decoration: const BoxDecoration(
+            image: DecorationImage(
+              image: AssetImage('assets/images/hcmus_bg.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Container(color: Colors.black.withOpacity(0.45)),
+        ),
+
+        // Logo & HCMUS Text & Notification/Search Capsule - Cố định
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 70),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // Cụm trái: Logo + Tên trường
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'HCMUS',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Nunito',
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Cụm phải: Capsule Search & Notification
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xff545454),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: [
+                      // Nút Search
+                      GestureDetector(
+                        onTap: () {
+                          final tabIndex = DefaultTabController.of(context).index;
+                          showSearch(
+                            context: context,
+                            delegate: MyUniSearchDelegate(
+                              currentScope: [
+                                SearchScope.official,
+                                SearchScope.forum,
+                                SearchScope.review,
+                                SearchScope.material
+                              ][tabIndex],
+                            ),
+                          );
+                        },
+                        child: const Icon(Icons.search, color: Colors.white, size: 24),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text("|", style: TextStyle(color: Colors.white38)),
+                      const SizedBox(width: 8),
+                      // Nút Notification
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => NotificationScreen()),
+                          );
+                        },
+                        child: StreamBuilder<List<MyUniNotification>>(
+                          stream: NotificationService.getNotifications(),
+                          builder: (context, snapshot) {
+                            final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: CircleAvatar(
+                                      radius: 6,
+                                      backgroundColor: Colors.red,
+                                      child: Text(
+                                        unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                        style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
+                                      ),
+                                    ),
+                                  )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMainHomeContent() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -88,119 +213,7 @@ class _HomePageState extends State<HomePage> {
                 actions: const [SizedBox.shrink()],
                 flexibleSpace: FlexibleSpaceBar(
                   collapseMode: CollapseMode.pin,
-                  background: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Container(
-                        height: 102,
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          image: DecorationImage(
-                            image: AssetImage('assets/images/hcmus_bg.png'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Container(color: Colors.black38),
-                      ),
-                      SafeArea(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 60),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 18,
-                                    backgroundColor: Colors.white,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(3.0),
-                                      child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text(
-                                    'HCMUS',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w800,
-                                      fontFamily: 'Nunito',
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xff545454),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        final tabIndex = DefaultTabController.of(context).index;
-                                        showSearch(
-                                          context: context,
-                                          delegate: MyUniSearchDelegate(
-                                            currentScope: [
-                                              SearchScope.official,
-                                              SearchScope.forum,
-                                              SearchScope.review,
-                                              SearchScope.material
-                                            ][tabIndex],
-                                          ),
-                                        );
-                                      },
-                                      child: const Icon(Icons.search, color: Colors.white, size: 24),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text("|", style: TextStyle(color: Colors.white38)),
-                                    const SizedBox(width: 8),
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => NotificationScreen()),
-                                        );
-                                      },
-                                      child: StreamBuilder<List<MyUniNotification>>(
-                                        stream: NotificationService.getNotifications(),
-                                        builder: (context, snapshot) {
-                                          final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                                          return Stack(
-                                            children: [
-                                              const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                              if (unreadCount > 0)
-                                                Positioned(
-                                                  right: 0,
-                                                  top: 0,
-                                                  child: CircleAvatar(
-                                                    radius: 6,
-                                                    backgroundColor: Colors.red,
-                                                    child: Text(
-                                                      unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                                      style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
-                                                    ),
-                                                  ),
-                                                )
-                                            ],
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  background: _buildFixedHeader(context),
                 ),
                 bottom: PreferredSize(
                   preferredSize: const Size.fromHeight(48),

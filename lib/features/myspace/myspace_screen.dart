@@ -1188,7 +1188,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               fit: BoxFit.cover,
             ),
           ),
-          child: Container(color: Colors.black38),
+          child: Container(color: Colors.black.withOpacity(0.45)),
         ),
 
         // Logo & HCMUS Text & Notification - Cố định
