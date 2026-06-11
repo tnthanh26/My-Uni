@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_uni/app_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -210,6 +209,7 @@ class _SettingsPageState extends State<SettingsPage> {
     required String label,
     String? status,
     VoidCallback? onTap,
+    Widget? trailing,
     bool isDestructive = false,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -261,7 +261,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                 ),
-              Icon(
+              trailing ?? Icon(
                 Icons.chevron_right_rounded,
                 size: 20,
                 color: isDarkMode ? Colors.white24 : Colors.black26,
@@ -335,18 +335,16 @@ class _SettingsPageState extends State<SettingsPage> {
               isDarkMode: isDarkMode,
               children: [
                 _buildSettingItem(
-                  icon: Icons.notifications_none_rounded,
+                  icon: appProvider.notificationsEnabled
+                      ? Icons.notifications_active_outlined
+                      : Icons.notifications_off_outlined,
                   label: 'Thông báo',
-                  onTap: () async {
-                    bool isOpened = await openAppSettings();
-                    if (!isOpened && mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("Không thể mở cài đặt lúc này"),
-                        ),
-                      );
-                    }
-                  },
+                  onTap: () => appProvider.setNotificationsEnabled(!appProvider.notificationsEnabled),
+                  trailing: Switch(
+                    value: appProvider.notificationsEnabled,
+                    onChanged: (val) => appProvider.setNotificationsEnabled(val),
+                    activeColor: const Color(0xFF6797E1),
+                  ),
                 ),
                 _buildDivider(isDarkMode),
                 _buildSettingItem(

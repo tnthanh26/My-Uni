@@ -8,6 +8,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'create_post_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
+import 'poll_widget.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -410,6 +411,12 @@ class _ForumTabState extends State<ForumTab> {
                               padding:
                               const EdgeInsets.fromLTRB(14, 0, 14, 12),
                               child: _buildSafeImage(context, data['imageUrl']),
+                            ),
+
+                          if (data['poll'] != null)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
+                              child: PollWidget(docId: docId, pollData: data['poll']),
                             ),
 
                           Padding(

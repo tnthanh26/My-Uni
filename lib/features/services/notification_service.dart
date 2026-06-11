@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../../models/notification_model.dart';
@@ -17,6 +18,11 @@ class NotificationService {
 
   static final FirebaseFirestore _db = FirebaseFirestore.instance;
   static final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  static Future<bool> _isNotificationsEnabled() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool('notificationsEnabled') ?? true;
+  }
 
   static Future<void> init() async {
     tz_data.initializeTimeZones();
@@ -84,6 +90,8 @@ class NotificationService {
     required String title,
     required String body,
   }) async {
+    if (!await _isNotificationsEnabled()) return;
+
     await _notificationsPlugin.show(
       id: id,
       title: title,
@@ -107,6 +115,8 @@ class NotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
+    if (!await _isNotificationsEnabled()) return;
+
     final location = tz.getLocation('Asia/Ho_Chi_Minh');
     final scheduled = tz.TZDateTime.from(scheduledDate, location);
     final now = tz.TZDateTime.now(location);

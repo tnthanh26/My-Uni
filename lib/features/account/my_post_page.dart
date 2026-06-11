@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:my_uni/features/home/create_post_page.dart';
 import 'package:my_uni/features/home/create_material_page.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
+import 'package:my_uni/features/home/poll_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class MyPostsPage extends StatefulWidget {
@@ -563,6 +564,12 @@ class _MyPostsPageState extends State<MyPostsPage>
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildImagePreview(data['fileData']),
+                  ),
+
+                if (isForum && data['poll'] != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: PollWidget(docId: docId, pollData: data['poll']),
                   ),
 
                 Padding(
