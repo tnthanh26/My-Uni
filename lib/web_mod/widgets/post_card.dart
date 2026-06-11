@@ -28,6 +28,107 @@ class PostCard extends StatelessWidget {
   final VoidCallback onViewMaterial;
   final VoidCallback onViewComments;
 
+  Widget _buildPollPreview(Map<String, dynamic> pollData) {
+    final List<dynamic> options = pollData['options'] ?? [];
+    final Map<String, dynamic> votes = Map<String, dynamic>.from(pollData['votes'] ?? {});
+    final int totalParticipants = votes.length;
+
+    Map<int, int> optionCounts = {};
+    for (var v in votes.values) {
+      if (v is List) {
+        for (var idx in v) {
+          if (idx is int) optionCounts[idx] = (optionCounts[idx] ?? 0) + 1;
+        }
+      } else if (v is int) {
+        optionCounts[v] = (optionCounts[v] ?? 0) + 1;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.poll_outlined, size: 16, color: Colors.blueAccent),
+              const SizedBox(width: 8),
+              const Text(
+                "Khảo sát ý kiến",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const Spacer(),
+              Text(
+                "$totalParticipants người tham gia",
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...options.asMap().entries.map((entry) {
+            int idx = entry.key;
+            String text = entry.value.toString();
+            int count = optionCounts[idx] ?? 0;
+            double percentage = totalParticipants > 0 ? (count / totalParticipants) : 0.0;
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          text,
+                          style: const TextStyle(fontSize: 12, fontFamily: 'Nunito'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      Text(
+                        "${(percentage * 100).toInt()}% ($count)",
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: percentage,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                      minHeight: 6,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     double toxicity = (data['toxicityScore'] ?? 0).toDouble();
@@ -199,6 +300,11 @@ class PostCard extends StatelessWidget {
                 fontFamily: 'Nunito',
               ),
             ),
+
+            if (data['poll'] != null) ...[
+              const SizedBox(height: 16),
+              _buildPollPreview(data['poll']),
+            ],
 
             if (data['imageUrl'] != null && data['imageUrl'] != '') ...[
               const SizedBox(height: 12),

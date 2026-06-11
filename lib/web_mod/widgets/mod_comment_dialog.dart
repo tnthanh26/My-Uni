@@ -1,0 +1,259 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../services/post_moderation_service.dart';
+
+class ModCommentDialog extends StatefulWidget {
+  final String collection;
+  final String postId;
+
+  const ModCommentDialog({
+    super.key,
+    required this.collection,
+    required this.postId,
+  });
+
+  @override
+  State<ModCommentDialog> createState() => _ModCommentDialogState();
+}
+
+class _ModCommentDialogState extends State<ModCommentDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+      ),
+      title: const Row(
+        children: [
+          Icon(Icons.chat_bubble_outline, color: Colors.blueAccent),
+          SizedBox(width: 12),
+          Text(
+            "Danh sách bình luận",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Nunito',
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: 650,
+        height: 500,
+        child: StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection(widget.collection)
+              .doc(widget.postId)
+              .collection('comments')
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Center(
+                child: Text(
+                  "Chưa có bình luận nào.",
+                  style: TextStyle(color: Colors.grey, fontFamily: 'Nunito'),
+                ),
+              );
+            }
+
+            final allDocs = snapshot.data!.docs;
+            final List<QueryDocumentSnapshot> orderedComments = [];
+
+            // 1. Lấy các comment gốc (không có parentCommentId)
+            final rootComments = allDocs.where((doc) {
+              final d = doc.data() as Map<String, dynamic>;
+              return d['parentCommentId'] == null;
+            }).toList();
+
+            // 2. Với mỗi comment gốc, tìm các reply của nó
+            for (var root in rootComments) {
+              orderedComments.add(root);
+              final replies = allDocs.where((doc) {
+                final d = doc.data() as Map<String, dynamic>;
+                return d['parentCommentId'] == root.id;
+              }).toList();
+
+              // Sắp xếp reply theo thời gian tăng dần (cũ đến mới) để dễ theo dõi hội thoại
+              replies.sort((a, b) {
+                final aT = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                final bT = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                if (aT == null || bT == null) return 0;
+                return aT.compareTo(bT);
+              });
+
+              orderedComments.addAll(replies);
+            }
+
+            return ListView.builder(
+              itemCount: orderedComments.length,
+              itemBuilder: (context, index) {
+                final comment = orderedComments[index];
+                final data = comment.data() as Map<String, dynamic>;
+                final bool isReply = data['parentCommentId'] != null;
+
+                return Column(
+                  children: [
+                    Container(
+                      margin: EdgeInsets.only(
+                        left: isReply ? 40 : 0,
+                        top: 6,
+                        bottom: 6,
+                      ),
+                      padding: isReply ? const EdgeInsets.all(12) : const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                      decoration: isReply
+                          ? BoxDecoration(
+                              color: Colors.grey[50],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[200]!),
+                            )
+                          : null,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (isReply)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, right: 8),
+                              child: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey[400]),
+                            ),
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundImage: data['authorAvatar'] != null && data['authorAvatar'] != ''
+                                ? NetworkImage(data['authorAvatar'])
+                                : null,
+                            child: data['authorAvatar'] == null || data['authorAvatar'] == ''
+                                ? const Icon(Icons.person, size: 18)
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          data['authorName'] ?? "Người dùng",
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                            fontFamily: 'Nunito',
+                                          ),
+                                        ),
+                                        if (isReply)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blueAccent.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              "Phản hồi",
+                                              style: TextStyle(
+                                                color: Colors.blueAccent,
+                                                fontSize: 9,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                      onPressed: () => _confirmDeleteComment(comment.id, isReply),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                      tooltip: "Xóa bình luận",
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  data['content'] ?? "",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontFamily: 'Nunito',
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  data['timestamp']?.toDate().toString().substring(0, 16) ?? "",
+                                  style: TextStyle(
+                                    color: Colors.grey[500],
+                                    fontSize: 11,
+                                    fontFamily: 'Nunito',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (!isReply && index < orderedComments.length - 1 && (orderedComments[index + 1].data() as Map)['parentCommentId'] == null)
+                      const Divider(height: 1),
+                  ],
+                );
+              },
+            );
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Đóng"),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmDeleteComment(String commentId, bool isReply) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Xác nhận xóa"),
+        content: Text(isReply
+            ? "Bạn có chắc chắn muốn xóa phản hồi này?"
+            : "Bạn có chắc chắn muốn xóa bình luận này và tất cả phản hồi liên quan?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await PostModerationService.deleteComment(
+          collection: widget.collection,
+          postId: widget.postId,
+          commentId: commentId,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Đã xóa bình luận thành công")),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Lỗi khi xóa bình luận: $e")),
+          );
+        }
+      }
+    }
+  }
+}

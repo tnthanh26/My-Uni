@@ -9,6 +9,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:url_launcher/url_launcher.dart';
 import 'post_action_row.dart';
 import 'official_content_helper.dart';
+import 'poll_widget.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -1299,6 +1300,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   fit: BoxFit.cover,
                 ),
               ),
+            ],
+            if (data['poll'] != null) ...[
+              const SizedBox(height: 18),
+              PollWidget(docId: widget.docId, pollData: data['poll']),
             ],
           ],
         ),

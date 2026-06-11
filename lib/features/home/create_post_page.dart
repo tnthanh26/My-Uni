@@ -31,6 +31,13 @@ class _CreatePostPageState extends State<CreatePostPage> {
   String? _existingImageUrl;
   bool _isSubmitting = false;
 
+  // Poll State
+  bool _isPollEnabled = false;
+  final List<TextEditingController> _pollOptionControllers = [
+    TextEditingController(),
+    TextEditingController(),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -38,7 +45,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
     _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
     _selectedHashtags = List<String>.from(widget.existingData?['hashtags'] ?? []);
     _existingImageUrl = widget.existingData?['imageUrl'];
+    
+    // Load existing poll if editing
+    if (widget.existingData?['poll'] != null) {
+      _isPollEnabled = true;
+      List<dynamic> options = widget.existingData!['poll']['options'] ?? [];
+      _pollOptionControllers.clear();
+      for (var opt in options) {
+        _pollOptionControllers.add(TextEditingController(text: opt.toString()));
+      }
+      if (_pollOptionControllers.length < 2) {
+        while (_pollOptionControllers.length < 2) {
+          _pollOptionControllers.add(TextEditingController());
+        }
+      }
+    }
+    
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _contentController.dispose();
+    for (var controller in _pollOptionControllers) {
+      controller.dispose();
+    }
+    super.dispose();
   }
 
   Future<void> _loadUserData() async {
@@ -71,6 +103,23 @@ class _CreatePostPageState extends State<CreatePostPage> {
     return base64Encode(compressedBytes);
   }
 
+  void _addPollOption() {
+    if (_pollOptionControllers.length < 5) {
+      setState(() {
+        _pollOptionControllers.add(TextEditingController());
+      });
+    }
+  }
+
+  void _removePollOption(int index) {
+    if (_pollOptionControllers.length > 2) {
+      setState(() {
+        _pollOptionControllers[index].dispose();
+        _pollOptionControllers.removeAt(index);
+      });
+    }
+  }
+
   Future<void> _submitPost() async {
     final content = _contentController.text.trim();
 
@@ -79,6 +128,25 @@ class _CreatePostPageState extends State<CreatePostPage> {
           const SnackBar(content: Text("Vui lòng nhập nội dung"))
       );
       return;
+    }
+
+    Map<String, dynamic>? pollData;
+    if (_isPollEnabled) {
+      List<String> options = _pollOptionControllers
+          .map((c) => c.text.trim())
+          .where((t) => t.isNotEmpty)
+          .toList();
+
+      if (options.length < 2) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Vui lòng nhập ít nhất 2 tùy chọn khảo sát"))
+        );
+        return;
+      }
+      pollData = {
+        'options': options,
+        'votes': widget.existingData?['poll']?['votes'] ?? {},
+      };
     }
 
     // Gọi service để lấy danh sách từ vi phạm
@@ -119,6 +187,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         'imageUrl': finalImageBase64,
         'isAnonymous': _isAnonymous,
         'updatedAt': FieldValue.serverTimestamp(),
+        'poll': pollData,
       };
 
       if (widget.docId != null) {
@@ -350,53 +419,133 @@ class _CreatePostPageState extends State<CreatePostPage> {
               ),
               const SizedBox(height: 24),
 
-              // Upload Image
-              GestureDetector(
-                onTap: _pickImage,
-                child: CustomPaint(
-                  painter: DashRectPainter(color: isDarkMode ? Colors.white30 : figmaDashedColor),
-                  child: Container(
-                    width: 130,
-                    height: 130,
-                    alignment: Alignment.center,
-                    child: (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
-                        ? Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: _newImageFile != null
-                              ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
-                              : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
-                        ),
-                        Positioned(
-                          top: 0,
-                          right: 0,
-                          child: GestureDetector(
-                            onTap: () => setState(() { _newImageFile = null; _existingImageUrl = null; }),
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                              child: const Icon(Icons.close, color: Colors.white, size: 14),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                        : Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        "Nhấn để thêm Ảnh",
-                        textAlign: TextAlign.center,
+              // Poll Section Toggle
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.poll_outlined, color: figmaHeaderBlue),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Tạo cuộc khảo sát",
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
-                          fontSize: 12,
-                          color: isDarkMode ? Colors.white38 : figmaDashedColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: _isPollEnabled,
+                    onChanged: (val) => setState(() => _isPollEnabled = val),
+                    activeColor: figmaHeaderBlue,
+                  ),
+                ],
+              ),
+
+              if (_isPollEnabled) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12),
+                  ),
+                  child: Column(
+                    children: [
+                      ..._pollOptionControllers.asMap().entries.map((entry) {
+                        int idx = entry.key;
+                        TextEditingController controller = entry.value;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: controller,
+                                  style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black),
+                                  decoration: InputDecoration(
+                                    hintText: "Lựa chọn ${idx + 1}",
+                                    hintStyle: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white30 : Colors.grey),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                                  ),
+                                ),
+                              ),
+                              if (_pollOptionControllers.length > 2)
+                                IconButton(
+                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
+                                  onPressed: () => _removePollOption(idx),
+                                ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      if (_pollOptionControllers.length < 5)
+                        TextButton.icon(
+                          onPressed: _addPollOption,
+                          icon: const Icon(Icons.add_circle_outline, size: 18),
+                          label: const Text("Thêm lựa chọn"),
+                          style: TextButton.styleFrom(foregroundColor: figmaHeaderBlue),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+
+              // Upload Image
+              if (!_isPollEnabled) // Hide image upload if poll is enabled (optional, or keep both)
+                GestureDetector(
+                  onTap: _pickImage,
+                  child: CustomPaint(
+                    painter: DashRectPainter(color: isDarkMode ? Colors.white30 : figmaDashedColor),
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      alignment: Alignment.center,
+                      child: (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
+                          ? Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(18),
+                            child: _newImageFile != null
+                                ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
+                                : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
+                          ),
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => setState(() { _newImageFile = null; _existingImageUrl = null; }),
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                child: const Icon(Icons.close, color: Colors.white, size: 14),
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                          : Padding(
+                        padding: const EdgeInsets.all(8.0),
+                        child: Text(
+                          "Nhấn để thêm Ảnh",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 12,
+                            color: isDarkMode ? Colors.white38 : figmaDashedColor,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
