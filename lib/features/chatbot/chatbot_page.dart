@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/theme/app_colors.dart';
 
 class ChatbotPage extends StatefulWidget {
@@ -72,11 +73,18 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     _scrollToBottom();
 
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      final idToken = await user?.getIdToken();
+
+      // Placeholder URL cho API mới. Hiện tại vẫn để URL cũ.
       final url = Uri.parse('http://34.21.243.141:8000/chat');
 
       final response = await http.post(
         url,
-        headers: {"Content-Type": "application/json"},
+        headers: {
+          "Content-Type": "application/json",
+          if (idToken != null) "Authorization": "Bearer $idToken",
+        },
         body: jsonEncode({"query": userText}),
       ).timeout(const Duration(seconds: 60));
 
@@ -86,14 +94,22 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         String botAnswer = data['answer'];
         List<dynamic> sources = data['sources'] ?? [];
-
+        /*
         if (sources.isNotEmpty) {
           botAnswer += "\n\n*(Nguồn: Trang ${sources.join(', ')})*";
         }
-
+        */
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: botAnswer, isUser: false));
+        });
+      } else if (response.statusCode == 429) {
+        // Handle Rate Limiting
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        String errorMessage = data['detail'] ?? "Bạn đã hết lượt hỏi trong hôm nay. Hãy quay lại vào ngày mai nhé!";
+        setState(() {
+          _isTyping = false;
+          _messages.add(ChatMessage(text: errorMessage, isUser: false));
         });
       } else {
         throw Exception("Lỗi server: ${response.statusCode}");
