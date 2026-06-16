@@ -6,10 +6,15 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'post_action_row.dart';
 import 'official_content_helper.dart';
 import 'poll_widget.dart';
+import 'create_post_page.dart';
+import 'create_material_page.dart';
+import 'create_review_page.dart';
+import '../services/content_service.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -32,6 +37,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   String? _replyingToId;
   String? _replyingToName;
+
+  // State to track expanded comment threads
+  final Set<String> _expandedComments = {};
 
   String get _collectionPath {
     if (widget.initialPostData.containsKey('link')) return 'official_news';
@@ -99,8 +107,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
       "Khác"
     ];
 
+    bool isOtherSelected = false;
+    TextEditingController customReasonController = TextEditingController();
+
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Theme.of(context).brightness == Brightness.dark
           ? const Color(0xFF1E1E1E)
           : Colors.white,
@@ -108,52 +120,143 @@ class _PostDetailPageState extends State<PostDetailPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 42,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white24 : Colors.black12,
-                  borderRadius: BorderRadius.circular(99),
-                ),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              Text(
-                "Báo cáo bài viết",
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  fontFamily: 'Nunito',
-                  color: isDarkMode ? Colors.white : const Color(0xFF222222),
-                ),
-              ),
-              const SizedBox(height: 10),
-              ...reportReasons.map(
-                    (reason) => ListTile(
-                  leading: const Icon(
-                    Icons.report_problem_outlined,
-                    color: Colors.redAccent,
-                  ),
-                  title: Text(
-                    reason,
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      color: isDarkMode ? Colors.white : Colors.black87,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                    Container(
+                      width: 42,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white24 : Colors.black12,
+                        borderRadius: BorderRadius.circular(99),
+                      ),
                     ),
-                  ),
-                  onTap: () {
-                    Navigator.pop(context);
-                    _submitReport(reason);
-                  },
+                    Text(
+                      "Báo cáo bài viết",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        fontFamily: 'Nunito',
+                        color: isDarkMode ? Colors.white : const Color(0xFF222222),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    ...reportReasons.map(
+                          (reason) => ListTile(
+                        leading: const Icon(
+                          Icons.report_problem_outlined,
+                          color: Colors.redAccent,
+                        ),
+                        title: Text(
+                          reason,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            color: isDarkMode ? Colors.white : Colors.black87,
+                            fontWeight: (reason == "Khác" && isOtherSelected) ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        onTap: () {
+                          if (reason == "Khác") {
+                            setModalState(() {
+                              isOtherSelected = true;
+                            });
+                          } else {
+                            Navigator.pop(context);
+                            _submitReport(reason);
+                          }
+                        },
+                      ),
+                    ),
+                    if (isOtherSelected) ...[
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: customReasonController,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                          fontSize: 14,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: "Vui lòng nhập lý do cụ thể...",
+                          hintStyle: TextStyle(
+                            color: isDarkMode ? Colors.white38 : Colors.grey,
+                            fontSize: 13,
+                          ),
+                          filled: true,
+                          fillColor: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(
+                              color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: const BorderSide(color: Color(0xFF5893D8)),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        ),
+                        maxLines: 3,
+                        minLines: 1,
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            String customReason = customReasonController.text.trim();
+                            if (customReason.isNotEmpty) {
+                              Navigator.pop(context);
+                              _submitReport("Khác: $customReason");
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text("Vui lòng nhập lý do báo cáo")),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5893D8),
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Gửi báo cáo",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
                 ),
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -241,7 +344,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Đã xóa bình luận và ${repliesSnapshot.docs.length} phản hồi",
+              "Đã xóa bình luận",
             ),
           ),
         );
@@ -293,6 +396,96 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 color: Colors.red,
                 fontWeight: FontWeight.bold,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditCommentDialog(Map<String, dynamic> comment) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final TextEditingController editController = TextEditingController(text: comment['content']);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Sửa bình luận",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: TextField(
+          controller: editController,
+          maxLines: 3,
+          minLines: 1,
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: "Nhập nội dung mới...",
+            hintStyle: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF5893D8)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () async {
+              String newContent = editController.text.trim();
+              if (newContent.isEmpty) return;
+
+              // Check for violated words
+              List<String> violations = ContentService.getViolatedWords(newContent);
+              if (violations.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Nội dung chứa từ ngữ không phù hợp: ${violations.join(', ')}")),
+                );
+                return;
+              }
+
+              try {
+                await _firestore
+                    .collection(_collectionPath)
+                    .doc(widget.docId)
+                    .collection('comments')
+                    .doc(comment['id'])
+                    .update({'content': newContent});
+                
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Đã cập nhật bình luận")),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Lỗi: $e")),
+                  );
+                }
+              }
+            },
+            child: const Text(
+              "Lưu",
+              style: TextStyle(color: Color(0xFF5893D8), fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -533,9 +726,89 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
+  void _navigateToEdit() {
+    Widget targetPage;
+    final data = widget.initialPostData;
+    if (_collectionPath == 'study_materials') {
+      targetPage = CreateMaterialPage(docId: widget.docId, existingData: data);
+    } else if (_collectionPath == 'course_reviews') {
+      targetPage = CreateReviewPage(docId: widget.docId, existingData: data);
+    } else {
+      targetPage = CreatePostPage(docId: widget.docId, existingData: data);
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => targetPage),
+    );
+  }
+
+  void _confirmDeletePost() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Xóa bài viết?",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          "Hành động này sẽ xóa vĩnh viễn bài viết của bạn.",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _deletePost();
+            },
+            child: const Text(
+              "Xóa",
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deletePost() async {
+    try {
+      await _firestore.collection(_collectionPath).doc(widget.docId).delete();
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã xóa bài viết thành công")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi khi xóa: $e")),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isOwner = _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -554,7 +827,38 @@ class _PostDetailPageState extends State<PostDetailPage> {
         foregroundColor: isDarkMode ? Colors.white : const Color(0xFF545454),
         elevation: 0,
         actions: [
-          if (_collectionPath != 'official_news')
+          if (isOwner && _collectionPath != 'official_news')
+            PopupMenuButton<String>(
+              onSelected: (val) {
+                if (val == 'edit') _navigateToEdit();
+                if (val == 'delete') _confirmDeletePost();
+              },
+              icon: const Icon(Icons.more_vert_rounded),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                      SizedBox(width: 10),
+                      Text("Chỉnh sửa", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13)),
+                    ],
+                  ),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                      SizedBox(width: 10),
+                      Text("Xóa bài", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: Colors.red)),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else if (_collectionPath != 'official_news')
             IconButton(
               icon: const Icon(
                 Icons.report_gmailerrorred_outlined,
@@ -1503,7 +1807,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               else
                 Column(
                   children: rootComments
-                      .map((comment) => _buildCommentTree(comment, allComments))
+                      .map((comment) => _buildCommentTree(comment, allComments, 0, false))
                       .toList(),
                 ),
             ],
@@ -1516,33 +1820,83 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget _buildCommentTree(
       Map<String, dynamic> comment,
       List<Map<String, dynamic>> allComments,
+      int depth,
+      bool isLast,
       ) {
     var replies =
     allComments.where((c) => c['parentCommentId'] == comment['id']).toList();
+    bool isExpanded = _expandedComments.contains(comment['id']);
 
     return Column(
       children: [
-        _buildSingleCommentWidget(comment),
-        if (replies.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(left: 18),
-            child: Column(
-              children: replies
-                  .map((reply) => _buildCommentTree(reply, allComments))
-                  .toList(),
+        _buildSingleCommentWidget(comment, depth, replies.isNotEmpty, isLast),
+        if (replies.isNotEmpty) ...[
+          if (!isExpanded)
+            Padding(
+              padding: const EdgeInsets.only(left: 48),
+              child: GestureDetector(
+                onTap: () => setState(() => _expandedComments.add(comment['id'])),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Text(
+                    "Xem ${replies.length} phản hồi",
+                    style: const TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 12,
+                      color: Color(0xFF5893D8),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else ...[
+            Padding(
+              // Fix: Only indent the first level. Capping at 36px left padding.
+              padding: EdgeInsets.only(left: depth == 0 ? 36 : 0),
+              child: Column(
+                children: replies.asMap().entries.map((entry) {
+                  return _buildCommentTree(
+                    entry.value, 
+                    allComments, 
+                    depth + 1, 
+                    entry.key == replies.length - 1
+                  );
+                }).toList(),
+              ),
             ),
-          ),
+            Padding(
+              padding: const EdgeInsets.only(left: 48),
+              child: GestureDetector(
+                onTap: () => setState(() => _expandedComments.remove(comment['id'])),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 6),
+                  child: Text(
+                    "Ẩn bớt",
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 12,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
       ],
     );
   }
 
-  Widget _buildSingleCommentWidget(Map<String, dynamic> comment) {
+  Widget _buildSingleCommentWidget(Map<String, dynamic> comment, int depth, bool hasReplies, bool isLast) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avt = comment['authorAvatar'];
     final bool isCommentOwner = _user?.uid == comment['authorId'];
     final bool isPostOwner =
         _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
+    final bool canEdit = isCommentOwner;
     final bool isAuthor = comment['authorId'] ==
         (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
 
@@ -1552,200 +1906,232 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ? timeago.format((comment['timestamp'] as Timestamp).toDate(), locale: 'vi')
         : 'Vừa xong';
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 18,
-            backgroundColor:
-            isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
-            child: (avt == null || avt.isEmpty)
-                ? Icon(
-              Icons.person,
-              size: 20,
-              color: isDarkMode ? Colors.white38 : Colors.grey,
-            )
-                : ClipOval(
-              child: Image.memory(
-                base64Decode(avt),
-                fit: BoxFit.cover,
-                width: 36,
-                height: 36,
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (depth > 0)
+          Positioned(
+            left: -18,
+            top: -12,
+            bottom: 26, // Stop at middle of avatar
+            child: Container(
+              width: 14,
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(color: Colors.grey.withOpacity(0.25), width: 1.5),
+                  bottom: BorderSide(color: Colors.grey.withOpacity(0.25), width: 1.5),
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(10),
+                ),
               ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.04)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
-                    ),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor:
+                isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
+                child: (avt == null || avt.isEmpty)
+                    ? Icon(
+                  Icons.person,
+                  size: 20,
+                  color: isDarkMode ? Colors.white38 : Colors.grey,
+                )
+                    : ClipOval(
+                  child: Image.memory(
+                    base64Decode(avt),
+                    fit: BoxFit.cover,
+                    width: 36,
+                    height: 36,
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.04)
+                            : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Wrap(
-                              crossAxisAlignment: WrapCrossAlignment.center,
-                              spacing: 6,
-                              runSpacing: 6,
-                              children: [
-                                Text(
-                                  comment['authorName'] ?? 'Người dùng',
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 14,
-                                    color: isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF1F2937),
-                                  ),
-                                ),
-                                if (isAuthor)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF5893D8)
-                                          .withOpacity(isDarkMode ? 0.22 : 0.12),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: const Text(
-                                      "Tác giả",
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Wrap(
+                                  crossAxisAlignment: WrapCrossAlignment.center,
+                                  spacing: 6,
+                                  runSpacing: 6,
+                                  children: [
+                                    Text(
+                                      comment['authorName'] ?? 'Người dùng',
                                       style: TextStyle(
                                         fontFamily: 'Encode Sans Expanded',
                                         fontWeight: FontWeight.w700,
-                                        fontSize: 10,
-                                        color: Color(0xFF5893D8),
+                                        fontSize: 14,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : const Color(0xFF1F2937),
                                       ),
                                     ),
+                                    if (isAuthor)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF5893D8)
+                                              .withOpacity(isDarkMode ? 0.22 : 0.12),
+                                          borderRadius: BorderRadius.circular(999),
+                                        ),
+                                        child: const Text(
+                                          "Tác giả",
+                                          style: TextStyle(
+                                            fontFamily: 'Encode Sans Expanded',
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 10,
+                                            color: Color(0xFF5893D8),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (canDelete || canEdit)
+                                SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: PopupMenuButton<String>(
+                                    padding: EdgeInsets.zero,
+                                    icon: Icon(
+                                      Icons.more_horiz,
+                                      size: 18,
+                                      color: isDarkMode
+                                          ? Colors.white38
+                                          : const Color(0xFF777777),
+                                    ),
+                                    onSelected: (val) {
+                                      if (val == 'delete') _showDeleteConfirmation(comment['id']);
+                                      if (val == 'edit') _showEditCommentDialog(comment);
+                                    },
+                                    itemBuilder: (context) => [
+                                      if (canEdit)
+                                        const PopupMenuItem(
+                                          value: 'edit',
+                                          child: Text("Sửa bình luận"),
+                                        ),
+                                      if (canDelete)
+                                        const PopupMenuItem(
+                                          value: 'delete',
+                                          child: Text(
+                                            "Xóa",
+                                            style: TextStyle(color: Colors.red),
+                                          ),
+                                        ),
+                                    ],
                                   ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            comment['content'] ?? '',
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 14,
+                              height: 1.5,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8, top: 4),
+                      child: Wrap(
+                        spacing: 12,
+                        runSpacing: 4,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          Text(
+                            timeStr,
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 11,
+                              color: isDarkMode ? Colors.white38 : Colors.grey,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () => _toggleCommentLike(comment),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  isLiked ? Icons.favorite : Icons.favorite_border,
+                                  size: 14,
+                                  color: isLiked
+                                      ? Colors.redAccent
+                                      : (isDarkMode ? Colors.white38 : Colors.grey),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  likes.isNotEmpty ? likes.length.toString() : "Thích",
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    color: isLiked
+                                        ? Colors.redAccent
+                                        : (isDarkMode ? Colors.white38 : Colors.grey),
+                                    fontWeight: isLiked ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-                          if (canDelete)
-                            SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: PopupMenuButton<String>(
-                                padding: EdgeInsets.zero,
-                                icon: Icon(
-                                  Icons.more_horiz,
-                                  size: 18,
-                                  color: isDarkMode
-                                      ? Colors.white38
-                                      : const Color(0xFF777777),
-                                ),
-                                onSelected: (val) =>
-                                    _showDeleteConfirmation(comment['id']),
-                                itemBuilder: (context) => const [
-                                  PopupMenuItem(
-                                    value: 'delete',
-                                    child: Text(
-                                      "Xóa",
-                                      style: TextStyle(color: Colors.red),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        comment['content'] ?? '',
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 14,
-                          height: 1.5,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF4B5563),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Wrap(
-                    spacing: 12,
-                    runSpacing: 4,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(
-                        timeStr,
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 11,
-                          color: isDarkMode ? Colors.white38 : Colors.grey,
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => _toggleCommentLike(comment),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isLiked ? Icons.favorite : Icons.favorite_border,
-                              size: 14,
-                              color: isLiked
-                                  ? Colors.redAccent
-                                  : (isDarkMode ? Colors.white38 : Colors.grey),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              likes.isNotEmpty ? likes.length.toString() : "Thích",
+                          GestureDetector(
+                            onTap: () => setState(() {
+                              _replyingToId = comment['id'];
+                              _replyingToName = comment['authorName'];
+                            }),
+                            child: const Text(
+                              "Trả lời",
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 12,
-                                color: isLiked
-                                    ? Colors.redAccent
-                                    : (isDarkMode ? Colors.white38 : Colors.grey),
-                                fontWeight: isLiked ? FontWeight.bold : FontWeight.normal,
+                                color: Color(0xFF5893D8),
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => setState(() {
-                          _replyingToId = comment['id'];
-                          _replyingToName = comment['authorName'];
-                        }),
-                        child: const Text(
-                          "Trả lời",
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 12,
-                            color: Color(0xFF5893D8),
-                            fontWeight: FontWeight.bold,
                           ),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

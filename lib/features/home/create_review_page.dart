@@ -19,8 +19,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   late TextEditingController _courseController;
   late TextEditingController _teacherController;
   late TextEditingController _contentController;
-  late TextEditingController _semesterOnlyController;
   late TextEditingController _schoolYearController;
+  String _selectedSemester = '2';
   late int _rating;
   bool _isSubmitting = false;
 
@@ -44,19 +44,19 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         initialYear = match.group(2) ?? '2025-2026';
       }
     }
-    _semesterOnlyController = TextEditingController(text: initialSemester);
+    _selectedSemester = initialSemester;
     _schoolYearController = TextEditingController(text: initialYear);
   }
 
   Future<void> _submitReview() async {
-    if (_courseController.text.isEmpty || _rating == 0 || _semesterOnlyController.text.isEmpty || _schoolYearController.text.isEmpty) {
+    if (_courseController.text.isEmpty || _rating == 0 || _schoolYearController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn số sao"))
       );
       return;
     }
 
-    final fullSemester = "HK${_semesterOnlyController.text.trim()} ${_schoolYearController.text.trim()}";
+    final fullSemester = "HK$_selectedSemester ${_schoolYearController.text.trim()}";
 
     // Gom tất cả văn bản lại để quét một lượt
     String combinedText = "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
@@ -316,16 +316,40 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   }
 
   Widget _buildSemesterInput(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Expanded(
           flex: 2,
-          child: _buildUnderlineTextField(
-            context,
-            _semesterOnlyController,
-            "Học kỳ (1/2/3)",
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
-            keyboardType: TextInputType.number,
+          child: Container(
+            padding: const EdgeInsets.only(left: 8),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _selectedSemester,
+              dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 15,
+                color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+              ),
+              items: ['1', '2', '3'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text("Học kỳ $value"),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() => _selectedSemester = newValue);
+                }
+              },
+            ),
           ),
         ),
         const SizedBox(width: 16),

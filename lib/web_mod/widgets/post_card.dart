@@ -44,6 +44,9 @@ class PostCard extends StatelessWidget {
       }
     }
 
+    int totalVotes = 0;
+    optionCounts.forEach((key, value) => totalVotes += value);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -54,24 +57,15 @@ class PostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.poll_outlined, size: 16, color: Colors.blueAccent),
-              const SizedBox(width: 8),
-              const Text(
+              Icon(Icons.poll_outlined, size: 16, color: Colors.blueAccent),
+              SizedBox(width: 8),
+              Text(
                 "Khảo sát ý kiến",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 13,
-                  fontFamily: 'Nunito',
-                ),
-              ),
-              const Spacer(),
-              Text(
-                "$totalParticipants người tham gia",
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey,
                   fontFamily: 'Nunito',
                 ),
               ),
@@ -82,7 +76,7 @@ class PostCard extends StatelessWidget {
             int idx = entry.key;
             String text = entry.value.toString();
             int count = optionCounts[idx] ?? 0;
-            double percentage = totalParticipants > 0 ? (count / totalParticipants) : 0.0;
+            double percentage = totalVotes > 0 ? (count / totalVotes) : 0.0;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 8),

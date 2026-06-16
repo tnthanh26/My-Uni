@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:my_uni/models/event_model.dart';
+import 'package:my_uni/features/services/notification_service.dart';
 import 'create_personal_event_page.dart';
 import 'interested_event_tab.dart';
 import 'discover_event_tab.dart';
@@ -36,6 +37,7 @@ class _MyEventTabState extends State<MyEventTab>
   String _listFilter = 'Gần nhất';
 
   Timer? _refreshTimer;
+  bool _isCleaningExpiredEvents = false;
 
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color primaryBrown = Color(0xFF47352E);
@@ -46,6 +48,7 @@ class _MyEventTabState extends State<MyEventTab>
   @override
   void initState() {
     super.initState();
+
     _viewTabController = TabController(length: 2, vsync: this);
     _viewTabController!.addListener(() {
       if (!_viewTabController!.indexIsChanging) {
@@ -53,8 +56,15 @@ class _MyEventTabState extends State<MyEventTab>
       }
     });
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cleanupExpiredPersonalEvents();
+    });
+
     _refreshTimer = Timer.periodic(const Duration(minutes: 1), (timer) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        _cleanupExpiredPersonalEvents();
+        setState(() {});
+      }
     });
   }
 
@@ -94,6 +104,78 @@ class _MyEventTabState extends State<MyEventTab>
       offset: const Offset(0, 6),
     ),
   ];
+
+  Future<void> _cancelNotificationIdsFromData(Map<String, dynamic> data) async {
+    final dynamic oldSingleId = data['notificationId'];
+    if (oldSingleId is int) {
+      await NotificationService.cancelNotification(oldSingleId);
+    }
+
+    final dynamic ids = data['notificationIds'];
+    if (ids is List) {
+      for (final id in ids) {
+        if (id is int && id != oldSingleId) {
+          await NotificationService.cancelNotification(id);
+        }
+      }
+    }
+  }
+
+  Future<void> _cleanupExpiredPersonalEvents() async {
+    if (_isCleaningExpiredEvents) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _isCleaningExpiredEvents = true;
+
+    try {
+      final now = Timestamp.fromDate(DateTime.now());
+
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('personal_events')
+          .where('dateTime', isLessThan: now)
+          .get();
+
+      if (snapshot.docs.isEmpty) return;
+
+      final batch = FirebaseFirestore.instance.batch();
+
+      for (final doc in snapshot.docs) {
+        await _cancelNotificationIdsFromData(doc.data());
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Cleanup expired personal events error: $e');
+    } finally {
+      _isCleaningExpiredEvents = false;
+    }
+  }
+
+  Future<void> _deletePersonalEvent(EventModel ev) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final ref = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('personal_events')
+        .doc(ev.id);
+
+    final doc = await ref.get();
+
+    if (doc.exists && doc.data() != null) {
+      await _cancelNotificationIdsFromData(doc.data()!);
+    } else if (ev.notificationId != null) {
+      await NotificationService.cancelNotification(ev.notificationId!);
+    }
+
+    await ref.delete();
+  }
 
   Stream<List<EventModel>> _getEventsStream() {
     final user = FirebaseAuth.instance.currentUser;
@@ -337,19 +419,19 @@ class _MyEventTabState extends State<MyEventTab>
           ),
           TextButton(
             onPressed: () async {
-              final user = FirebaseAuth.instance.currentUser;
-              if (user != null) {
-                await FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(user.uid)
-                    .collection('personal_events')
-                    .doc(ev.id)
-                    .delete();
+              try {
+                await _deletePersonalEvent(ev);
 
                 if (!mounted) return;
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Đã xóa sự kiện')),
+                );
+              } catch (e) {
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Lỗi xóa sự kiện: $e')),
                 );
               }
             },
@@ -378,7 +460,13 @@ class _MyEventTabState extends State<MyEventTab>
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
                       appBar: AppBar(
-                        title: const Text("Sự kiện Cộng đồng mới", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        title: const Text(
+                          "Sự kiện Cộng đồng mới",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         backgroundColor: const Color(0xFF6797E1),
                         foregroundColor: Colors.white,
                         elevation: 0,
@@ -467,7 +555,8 @@ class _MyEventTabState extends State<MyEventTab>
                       child: Text(
                         isListView
                             ? 'Bạn đang có $count sự kiện sắp diễn ra'
-                            : DateUtils.isSameDay(_selectedDay, DateTime.now())
+                            : DateUtils.isSameDay(
+                            _selectedDay, DateTime.now())
                             ? 'Hôm nay có $count sự kiện sắp diễn ra'
                             : 'Ngày này có $count sự kiện sắp diễn ra',
                         style: TextStyle(
@@ -511,8 +600,7 @@ class _MyEventTabState extends State<MyEventTab>
           AnimatedAlign(
             duration: const Duration(milliseconds: 250),
             curve: Curves.easeInOut,
-            alignment:
-            isListView ? Alignment.centerLeft : Alignment.centerRight,
+            alignment: isListView ? Alignment.centerLeft : Alignment.centerRight,
             child: Container(
               width: 43,
               height: 34,
@@ -577,7 +665,8 @@ class _MyEventTabState extends State<MyEventTab>
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: events.length,
-      itemBuilder: (context, i) => _buildLargeEventCard(events[i], isDarkMode, i),
+      itemBuilder: (context, i) =>
+          _buildLargeEventCard(events[i], isDarkMode, i),
     );
   }
 
@@ -629,9 +718,8 @@ class _MyEventTabState extends State<MyEventTab>
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: isSelected
-                          ? figmaSelectionBlue
-                          : Colors.transparent,
+                      color:
+                      isSelected ? figmaSelectionBlue : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -756,11 +844,11 @@ class _MyEventTabState extends State<MyEventTab>
 
   Color _getVintageColor(int index, bool isDarkMode) {
     final List<Color> lightVintage = [
-      const Color(0xFFFDF1E6), // Peach
-      const Color(0xFFEBF2E8), // Mint
-      const Color(0xFFE8EEF1), // Mist
-      const Color(0xFFF5E9F2), // Lavender
-      const Color(0xFFFAF3DD), // Cream
+      const Color(0xFFFDF1E6),
+      const Color(0xFFEBF2E8),
+      const Color(0xFFE8EEF1),
+      const Color(0xFFF5E9F2),
+      const Color(0xFFFAF3DD),
     ];
 
     final List<Color> darkVintage = [
@@ -792,7 +880,6 @@ class _MyEventTabState extends State<MyEventTab>
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Time Column
           SizedBox(
             width: 110,
             child: Column(
@@ -818,7 +905,6 @@ class _MyEventTabState extends State<MyEventTab>
             ),
           ),
           const SizedBox(width: 20),
-          // Event Card
           Expanded(
             child: Container(
               margin: const EdgeInsets.only(right: 16),
@@ -837,7 +923,6 @@ class _MyEventTabState extends State<MyEventTab>
                 child: IntrinsicHeight(
                   child: Row(
                     children: [
-                      // Accent Strip
                       Container(width: 5, color: accentColor.withOpacity(0.4)),
                       Expanded(
                         child: Padding(
@@ -885,7 +970,10 @@ class _MyEventTabState extends State<MyEventTab>
                               const SizedBox(height: 12),
                               GestureDetector(
                                 onTap: () => _showEventDetailsBottomSheet(
-                                    context, ev, isDarkMode),
+                                  context,
+                                  ev,
+                                  isDarkMode,
+                                ),
                                 child: Text(
                                   'Xem chi tiết',
                                   style: TextStyle(
@@ -917,10 +1005,10 @@ class _MyEventTabState extends State<MyEventTab>
     final String timeStatus = diff.isNegative
         ? 'Đang diễn ra'
         : (diff.inDays > 0
-            ? 'Trong ${diff.inDays} ngày'
-            : (diff.inHours > 0
-                ? 'Trong ${diff.inHours} giờ'
-                : 'Trong ${diff.inMinutes} phút'));
+        ? 'Trong ${diff.inDays} ngày'
+        : (diff.inHours > 0
+        ? 'Trong ${diff.inHours} giờ'
+        : 'Trong ${diff.inMinutes} phút'));
 
     final Color statusColor = diff.isNegative
         ? Colors.redAccent
@@ -946,7 +1034,6 @@ class _MyEventTabState extends State<MyEventTab>
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Date Badge
               Container(
                 width: 60,
                 padding: const EdgeInsets.symmetric(vertical: 12),
@@ -984,7 +1071,6 @@ class _MyEventTabState extends State<MyEventTab>
                 ),
               ),
               const SizedBox(width: 16),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

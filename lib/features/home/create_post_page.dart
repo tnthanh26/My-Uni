@@ -149,15 +149,21 @@ class _CreatePostPageState extends State<CreatePostPage> {
       };
     }
 
+    // Gom tất cả văn bản lại để quét một lượt (bao gồm nội dung và các option của poll)
+    String combinedText = content;
+    if (_isPollEnabled) {
+      combinedText += " ${_pollOptionControllers.map((c) => c.text).join(' ')}";
+    }
+
     // Gọi service để lấy danh sách từ vi phạm
-    List<String> violations = ContentService.getViolatedWords(content);
+    List<String> violations = ContentService.getViolatedWords(combinedText);
     if (violations.isNotEmpty) {
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Yêu cầu sửa nội dung"),
-          content: Text("Nội dung chứa từ ngữ không phù hợp: (${violations.join(', ')}). Vui lòng xóa hoặc sửa lại các từ này để tiếp tục đăng bài."),
+          content: Text("Nội dung hoặc lựa chọn khảo sát chứa từ ngữ không phù hợp: (${violations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),

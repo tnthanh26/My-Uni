@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'create_post_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
@@ -115,67 +116,41 @@ class _ForumTabState extends State<ForumTab> {
 
   Widget _buildTagChip(dynamic tag, bool isDarkMode) {
     final String tagText = tag.toString();
-    final String lowerTag = tagText.toLowerCase();
-
-    final bool isWarning = lowerTag.contains('cảnh báo');
-    final bool isHot =
-        lowerTag.contains('hot') ||
-            lowerTag.contains('gấp') ||
-            lowerTag.contains('urgent');
-
-    Color bgColor;
-    Color borderColor;
-    Color textColor;
-    Color iconColor;
-    IconData icon;
-
-    if (isWarning) {
-      bgColor = const Color(0xFFFF6C6C).withOpacity(isDarkMode ? 0.22 : 0.14);
-      borderColor = const Color(0xFFFF6C6C).withOpacity(0.35);
-      textColor = isDarkMode ? Colors.white : const Color(0xFF9F1239);
-      iconColor = textColor;
-      icon = Icons.warning_amber_rounded;
-    } else if (isHot) {
-      bgColor = const Color(0xFFFFB020).withOpacity(isDarkMode ? 0.20 : 0.14);
-      borderColor = const Color(0xFFFFB020).withOpacity(0.35);
-      textColor = isDarkMode ? Colors.white : const Color(0xFF92400E);
-      iconColor = textColor;
-      icon = Icons.local_fire_department_rounded;
-    } else {
-      bgColor = isDarkMode
-          ? Colors.white.withOpacity(0.06)
-          : const Color(0xFFF1F5F9);
-      borderColor = isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0);
-      textColor = isDarkMode ? Colors.white70 : const Color(0xFF344054);
-
-      iconColor = const Color(0xFF306CFE);
-
-      icon = Icons.tag_rounded;
-    }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: borderColor),
+        color: isDarkMode
+            ? Colors.white10
+            : const Color(0xFFF1F5F9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDarkMode
+              ? Colors.white10
+              : const Color(0xFFE2E8F0),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
+          const Icon(
+            Icons.tag_rounded,
             size: 14,
-            color: iconColor,
+            color: Color(0xFF306CFE),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
           Text(
             tagText,
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: textColor,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: isDarkMode
+                  ? Colors.white70
+                  : const Color(0xFF344054),
             ),
           ),
         ],

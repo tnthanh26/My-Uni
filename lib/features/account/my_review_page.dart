@@ -240,11 +240,6 @@ class MyReviewsPage extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildInfoChip(
-                        icon: Icons.school_rounded,
-                        label: "Review",
-                        isDarkMode: isDarkMode,
-                      ),
                       if (semester.isNotEmpty)
                         _buildInfoChip(
                           icon: Icons.calendar_month_rounded,

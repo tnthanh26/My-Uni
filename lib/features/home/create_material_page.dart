@@ -24,8 +24,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   late TextEditingController _courseController;
   late TextEditingController _teacherController;
   late TextEditingController _contentController;
-  late TextEditingController _semesterOnlyController;
   late TextEditingController _schoolYearController;
+  String _selectedSemester = '2';
 
   File? _attachedFile;
   String? _fileName;
@@ -58,7 +58,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         }
       }
     }
-    _semesterOnlyController = TextEditingController(text: initialSemester);
+    _selectedSemester = initialSemester;
     _schoolYearController = TextEditingController(text: initialYear);
   }
 
@@ -67,7 +67,6 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     _courseController.dispose();
     _teacherController.dispose();
     _contentController.dispose();
-    _semesterOnlyController.dispose();
     _schoolYearController.dispose();
     super.dispose();
   }
@@ -104,12 +103,12 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       return;
     }
 
-    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null) || _semesterOnlyController.text.isEmpty || _schoolYearController.text.isEmpty) {
+    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null) || _schoolYearController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn file")));
       return;
     }
 
-    final fullSemester = "HK${_semesterOnlyController.text.trim()} ${_schoolYearController.text.trim()}";
+    final fullSemester = "HK$_selectedSemester ${_schoolYearController.text.trim()}";
 
     // Quét cả tên môn, mô tả và tên file đính kèm
     String combinedText = "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
@@ -400,16 +399,40 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   }
 
   Widget _buildSemesterInput(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
         Expanded(
           flex: 2,
-          child: _buildUnderlineTextField(
-            context,
-            _semesterOnlyController,
-            "Học kỳ (1/2/3)",
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
-            keyboardType: TextInputType.number,
+          child: Container(
+            padding: const EdgeInsets.only(left: 8),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _selectedSemester,
+              dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(vertical: 8),
+              ),
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 15,
+                color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+              ),
+              items: ['1', '2', '3'].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text("Học kỳ $value"),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() => _selectedSemester = newValue);
+                }
+              },
+            ),
           ),
         ),
         const SizedBox(width: 16),

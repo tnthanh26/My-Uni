@@ -9,7 +9,6 @@ import 'package:my_uni/features/credential/signup_page.dart';
 import 'package:my_uni/features/credential/otp_page.dart';
 import 'package:my_uni/features/credential/forgot_password_page.dart';
 import 'package:my_uni/features/home/home_page.dart';
-import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'firebase_options.dart';
 import 'features/services/notification_service.dart';
 import 'app_provider.dart';
