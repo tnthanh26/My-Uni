@@ -72,7 +72,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     _scrollToBottom();
 
     try {
-      final url = Uri.parse('http://34.21.243.141:8000/chat');
+      final url = Uri.parse('https://34-21-243-141.sslip.io/chat');
 
       final response = await http.post(
         url,
