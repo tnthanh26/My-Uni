@@ -7,6 +7,7 @@ import 'package:my_uni/features/home/create_material_page.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:my_uni/features/home/poll_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:my_uni/utils/custom_timeago_messages.dart';
 
 class MyPostsPage extends StatefulWidget {
   const MyPostsPage({super.key});
@@ -22,7 +23,7 @@ class _MyPostsPageState extends State<MyPostsPage>
   @override
   void initState() {
     super.initState();
-    timeago.setLocaleMessages('vi', timeago.ViMessages());
+    timeago.setLocaleMessages('vi', CustomViMessages());
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -478,13 +479,6 @@ class _MyPostsPageState extends State<MyPostsPage>
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildInfoChip(
-                        icon: isForum
-                            ? Icons.chat_bubble_outline_rounded
-                            : Icons.folder_open_rounded,
-                        label: isForum ? "Diễn đàn" : "Tài liệu",
-                        isDarkMode: isDarkMode,
-                      ),
                       if (!isForum &&
                           (data['semester']?.toString().isNotEmpty == true))
                         _buildInfoChip(
@@ -510,25 +504,36 @@ class _MyPostsPageState extends State<MyPostsPage>
                           ),
                           decoration: BoxDecoration(
                             color: isDarkMode
-                                ? Colors.white.withOpacity(0.06)
+                                ? Colors.white10
                                 : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color: isDarkMode
                                   ? Colors.white10
                                   : const Color(0xFFE2E8F0),
                             ),
                           ),
-                          child: Text(
-                            "#$tag",
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: isDarkMode
-                                  ? Colors.white70
-                                  : const Color(0xFF344054),
-                            ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.tag_rounded,
+                                size: 14,
+                                color: Color(0xFF306CFE),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                tag.toString(),
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : const Color(0xFF344054),
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       }).toList(),

@@ -109,6 +109,52 @@ class NotificationService {
     );
   }
 
+  static Future<void> markAllAsRead() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snapshot.docs) {
+      batch.update(doc.reference, {
+        'isRead': true,
+      });
+    }
+
+    await batch.commit();
+  }
+
+  static Future<void> deleteNotification(String notificationId) async {
+    await FirebaseFirestore.instance
+        .collection('notifications')
+        .doc(notificationId)
+        .delete();
+  }
+
+  static Future<void> deleteAllNotifications() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+
+    await batch.commit();
+  }
+
   static Future<void> scheduleNotification({
     required int id,
     required String title,

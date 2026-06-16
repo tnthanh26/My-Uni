@@ -33,6 +33,34 @@ class NotificationScreen extends StatelessWidget {
             fontFamily: 'Nunito',
           ),
         ),
+        actions: [
+          IconButton(
+            tooltip: "Đọc tất cả",
+            icon: const Icon(
+              Icons.done_all_rounded,
+              color: Color(0xFF5893D8),
+            ),
+            onPressed: () async {
+              await NotificationService.markAllAsRead();
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text("Đã đánh dấu tất cả là đã đọc"),
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
+            tooltip: "Xóa tất cả",
+            icon: const Icon(
+              Icons.delete_outline_rounded,
+              color: Colors.redAccent,
+            ),
+            onPressed: () => _showDeleteAllDialog(context),
+          ),
+        ],
         backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
         centerTitle: true,
@@ -107,8 +135,7 @@ class NotificationScreen extends StatelessWidget {
             );
           }
 
-          final unreadCount =
-              notifications.where((n) => !n.isRead).length;
+          final unreadCount = notifications.where((n) => !n.isRead).length;
 
           return Column(
             children: [
@@ -176,6 +203,7 @@ class NotificationScreen extends StatelessWidget {
                   itemCount: notifications.length,
                   itemBuilder: (context, index) {
                     final noti = notifications[index];
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _buildNotificationItem(context, noti),
@@ -190,7 +218,10 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  void _handleNotificationTap(BuildContext context, MyUniNotification noti) async {
+  void _handleNotificationTap(
+      BuildContext context,
+      MyUniNotification noti,
+      ) async {
     NotificationService.markAsRead(noti.id);
 
     if (noti.relatedPostId != null && noti.collectionPath != null) {
@@ -259,8 +290,7 @@ class NotificationScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor:
-        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -273,7 +303,7 @@ class NotificationScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          "Nội dung này không còn tồn tại hoặc đã bị gỡ bỏ bởi quản trị viên.",
+          "Nội dung này không còn tồn tại hoặc đã bị quản trị viên gỡ bỏ.",
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             color: isDarkMode ? Colors.white70 : Colors.black87,
@@ -290,13 +320,12 @@ class NotificationScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
-              await FirebaseFirestore.instance
-                  .collection('notifications')
-                  .doc(notiId)
-                  .delete();
+
+              await NotificationService.deleteNotification(notiId);
+
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa thông báo.")),
+                  const SnackBar(content: Text("Đã xóa thông báo")),
                 );
               }
             },
@@ -313,7 +342,129 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationItem(BuildContext context, MyUniNotification noti) {
+  void _showDeleteAllDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Xóa tất cả thông báo",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          "Bạn có chắc muốn xóa toàn bộ thông báo không? Hành động này không thể hoàn tác.",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              await NotificationService.deleteAllNotifications();
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Đã xóa tất cả thông báo")),
+                );
+              }
+            },
+            child: const Text(
+              "Xóa tất cả",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteOneDialog(
+      BuildContext context,
+      MyUniNotification noti,
+      ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Xóa thông báo",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: Text(
+          "Bạn có chắc muốn xóa thông báo này không?",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white70 : Colors.black87,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              "Hủy",
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              await NotificationService.deleteNotification(noti.id);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Đã xóa thông báo")),
+                );
+              }
+            },
+            child: const Text(
+              "Xóa",
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotificationItem(
+      BuildContext context,
+      MyUniNotification noti,
+      ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final Color unreadBg = isDarkMode
@@ -381,6 +532,21 @@ class NotificationScreen extends StatelessWidget {
                                 : Colors.grey[600],
                             fontSize: 11,
                             fontFamily: 'Encode Sans Expanded',
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: () => _showDeleteOneDialog(context, noti),
+                          child: Padding(
+                            padding: const EdgeInsets.all(2),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 18,
+                              color: isDarkMode
+                                  ? Colors.white38
+                                  : Colors.grey[500],
+                            ),
                           ),
                         ),
                       ],

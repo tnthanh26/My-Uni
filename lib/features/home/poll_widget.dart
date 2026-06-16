@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:my_uni/utils/poll_utils.dart';
 
 class PollWidget extends StatefulWidget {
   final String docId;
@@ -117,6 +118,12 @@ class _PollWidgetState extends State<PollWidget> {
           }
         }
 
+        int totalVotes = 0;
+        optionCounts.forEach((key, value) => totalVotes += value);
+
+        List<int> counts = options.asMap().keys.map((idx) => optionCounts[idx] ?? 0).toList();
+        List<int> percentages = PollUtils.calculatePercentages(counts);
+
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 12),
           padding: const EdgeInsets.all(16),
@@ -160,33 +167,14 @@ class _PollWidgetState extends State<PollWidget> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    constraints: const BoxConstraints(maxWidth: 100),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF7FAFC),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "$totalParticipants người",
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isDarkMode ? Colors.white38 : Colors.grey[600],
-                      ),
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 20),
               ...options.asMap().entries.map((entry) {
                 int idx = entry.key;
                 String text = entry.value.toString();
-                int count = optionCounts[idx] ?? 0;
-                double percentage = totalParticipants > 0 ? (count / totalParticipants) : 0.0;
+                int percentageValue = percentages[idx];
+                double percentageFactor = totalVotes > 0 ? (optionCounts[idx] ?? 0) / totalVotes : 0.0;
                 bool isSelected = currentUserVotes.contains(idx);
 
                 return GestureDetector(
@@ -216,7 +204,7 @@ class _PollWidgetState extends State<PollWidget> {
                             width: double.infinity,
                             child: FractionallySizedBox(
                               alignment: Alignment.centerLeft,
-                              widthFactor: percentage,
+                              widthFactor: percentageFactor,
                               child: Container(
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
@@ -266,7 +254,7 @@ class _PollWidgetState extends State<PollWidget> {
                             bottom: 0,
                             child: Center(
                               child: Text(
-                                "${(percentage * 100).toInt()}%",
+                                "$percentageValue%",
                                 style: TextStyle(
                                   fontFamily: 'Encode Sans Expanded',
                                   fontSize: 12,

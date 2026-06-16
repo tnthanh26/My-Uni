@@ -420,7 +420,7 @@ class DiscoverEventTab extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
         ),
@@ -439,7 +439,7 @@ class DiscoverEventTab extends StatelessWidget {
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
               fontSize: 11,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w700,
               color: isDark ? Colors.white70 : const Color(0xFF344054),
             ),
           ),

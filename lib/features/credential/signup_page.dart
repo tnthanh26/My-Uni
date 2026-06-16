@@ -78,11 +78,12 @@ class _SignUpPageState extends State<SignUpPage> {
 
   Future<void> _handleSignUp() async {
     final email = _emailController.text.trim();
+    final password = _passwordController.text;
 
     if (
     _displayNameController.text.trim().isEmpty ||
         email.isEmpty ||
-        _passwordController.text.isEmpty ||
+        password.isEmpty ||
         _selectedUniversity == null ||
         _studentIdController.text.trim().isEmpty ||
         _cohortController.text.trim().isEmpty
@@ -93,6 +94,19 @@ class _SignUpPageState extends State<SignUpPage> {
 
     if (!_isValidStudentEmail(email)) {
       _showSnackBar('Chỉ chấp nhận email sinh viên (@...edu.vn)', isError: true);
+      return;
+    }
+
+    if (password.length > 30) {
+      _showSnackBar('Mật khẩu không được vượt quá 30 ký tự', isError: true);
+      return;
+    }
+
+    final hasNumber = RegExp(r'[0-9]').hasMatch(password);
+    final hasSpecialChar = RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password);
+
+    if (!hasNumber && !hasSpecialChar) {
+      _showSnackBar('Mật khẩu phải chứa ít nhất một số hoặc ký tự đặc biệt', isError: true);
       return;
     }
 
@@ -111,7 +125,7 @@ class _SignUpPageState extends State<SignUpPage> {
             'otpCode': otpCode,
             'userData': {
               'displayName': _displayNameController.text.trim(),
-              'password': _passwordController.text.trim(),
+              'password': password.trim(),
               'university': _selectedUniversity,
               'studentId': _studentIdController.text.trim(),
               'cohort': _cohortController.text.trim(),
