@@ -281,7 +281,11 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   }
 
   Future<void> _selectTime(bool isStart) async {
-    final picked = await showTimePicker(context: context, initialTime: isStart ? _startTime : _endTime);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: isStart ? _startTime : _endTime,
+      initialEntryMode: TimePickerEntryMode.inputOnly,
+    );
     if (picked != null) {
       setState(() {
         if (isStart) _startTime = picked;

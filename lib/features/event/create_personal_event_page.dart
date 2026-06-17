@@ -132,6 +132,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
+      initialEntryMode: TimePickerEntryMode.inputOnly,
     );
 
     if (picked != null) {
