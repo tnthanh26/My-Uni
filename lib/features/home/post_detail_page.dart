@@ -808,7 +808,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isOwner = _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+    final bool isOwner = _user?.uid ==
+        (widget.initialPostData['authorId'] ??
+            widget.initialPostData['uploaderId']);
+
+    bool canEditPost = isOwner;
+    if (canEditPost && widget.initialPostData['timestamp'] != null) {
+      try {
+        final Timestamp ts = widget.initialPostData['timestamp'] as Timestamp;
+        final DateTime postTime = ts.toDate();
+        if (DateTime.now().difference(postTime).inHours >= 12) {
+          canEditPost = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking post edit timeframe: $e");
+      }
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -834,25 +849,35 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 if (val == 'delete') _confirmDeletePost();
               },
               icon: const Icon(Icons.more_vert_rounded),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
-                      SizedBox(width: 10),
-                      Text("Chỉnh sửa", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13)),
-                    ],
+                if (canEditPost)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                        SizedBox(width: 10),
+                        Text("Chỉnh sửa",
+                            style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 13)),
+                      ],
+                    ),
                   ),
-                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                      Icon(Icons.delete_outline_rounded,
+                          size: 18, color: Colors.red),
                       SizedBox(width: 10),
-                      Text("Xóa bài", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: Colors.red)),
+                      Text("Xóa bài",
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 13,
+                              color: Colors.red)),
                     ],
                   ),
                 ),
@@ -1927,7 +1952,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
         (widget.initialPostData['authorId'] ??
             widget.initialPostData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
-    final bool canEdit = isCommentOwner;
+    bool canEdit = isCommentOwner;
+
+    if (canEdit && comment['timestamp'] != null) {
+      try {
+        final Timestamp ts = comment['timestamp'] as Timestamp;
+        final DateTime commentTime = ts.toDate();
+        if (DateTime.now().difference(commentTime).inHours >= 12) {
+          canEdit = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking comment edit timeframe: $e");
+      }
+    }
+
     final bool isAuthor = comment['authorId'] ==
         (widget.initialPostData['authorId'] ??
             widget.initialPostData['uploaderId']);
