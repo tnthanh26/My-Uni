@@ -1,14 +1,18 @@
 /* eslint-disable indent */
 import {setGlobalOptions} from "firebase-functions/v2";
 import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
+import * as crypto from "crypto";
 
 admin.initializeApp();
+
+const db = admin.firestore();
 
 setGlobalOptions({maxInstances: 5, region: "asia-southeast1"});
 
 const BLACK_LIST = [
-  "dit", "du", "deo", "dech", "dit me", "dm", "dmm", "dcm", "vcl", "clm"
+  "dit", "du", "deo", "dech", "dit me", "dm", "dmm", "dcm", "vcl", "clm",
   "oc cho", "suc vat", "rac ruoi", "chet di", "cut", "bien di",
   "phan dong", "ba que",
 ];
@@ -109,3 +113,88 @@ export const moderateMaterial = onDocumentCreated(
     return processModeration(event.data, combined);
   }
 );
+
+/**
+ * Chat with Ú Em via Proxy
+ */
+export const chatWithUEm = onCall(async (request) => {
+  // 1. Security Layer: Check authentication
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Bạn cần đăng nhập để hỏi Ú Em.");
+  }
+
+  const uid = request.auth.uid;
+  const query = request.data.query;
+
+  if (!query || typeof query !== "string") {
+    throw new HttpsError("invalid-argument", "Câu hỏi không hợp lệ.");
+  }
+
+  // 2. Toxic Check (Optional but good)
+  const analysis = analyzeContent(query);
+  if (analysis.status === "hidden") {
+    return {
+      answer: "Ú Em từ chối trả lời các câu hỏi có nội dung không phù hợp. Hãy giữ văn minh nhé!",
+      sources: [],
+    };
+  }
+
+  // 3. Rate Limit Layer (10 questions/day)
+  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+  const limitRef = db.collection("usage_limits").doc(uid);
+  const limitDoc = await limitRef.get();
+
+  let count = 0;
+  if (limitDoc.exists) {
+    const data = limitDoc.data();
+    if (data?.lastReset === today) {
+      count = data?.count || 0;
+    }
+  }
+
+  if (count >= 10) {
+    throw new HttpsError("resource-exhausted", "Bạn đã hết 10 lượt hỏi trong hôm nay. Hẹn gặp lại vào ngày mai!");
+  }
+
+  // 4. Caching Layer
+  const queryHash = crypto.createHash("md5").update(query.trim().toLowerCase()).digest("hex");
+  const cacheRef = db.collection("chat_cache").doc(queryHash);
+  const cacheDoc = await cacheRef.get();
+
+  if (cacheDoc.exists) {
+    const cachedData = cacheDoc.data();
+    // Record usage even for cache hit
+    await limitRef.set({count: count + 1, lastReset: today}, {merge: true});
+    return cachedData;
+  }
+
+  // 5. Proxy to Python Server
+  try {
+    const response = await fetch("http://34.21.243.141:8000/chat", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({query: query}),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    // 6. Save to Cache & Update Rate Limit
+    await Promise.all([
+      cacheRef.set({
+        answer: result.answer,
+        sources: result.sources || [],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      }),
+      limitRef.set({count: count + 1, lastReset: today}, {merge: true}),
+    ]);
+
+    return result;
+  } catch (error) {
+    console.error("Chatbot Proxy Error:", error);
+    throw new HttpsError("internal", "Ú Em đang bận hoặc server đang bảo trì. Thử lại sau nhé!");
+  }
+});

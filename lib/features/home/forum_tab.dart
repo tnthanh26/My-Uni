@@ -23,7 +23,7 @@ class _ForumTabState extends State<ForumTab> {
   @override
   void initState() {
     super.initState();
-    timeago.setLocaleMessages('vi', timeago.ViMessages());
+    timeago.setLocaleMessages('vi', CustomViMessages());
   }
 
   Future<void> _viewImage(BuildContext context, String base64Data) async {

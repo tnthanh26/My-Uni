@@ -26,7 +26,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    timeago.setLocaleMessages('vi', timeago.ViMessages());
+    timeago.setLocaleMessages('vi', CustomViMessages());
   }
 
   @override
