@@ -139,7 +139,7 @@ export const chatWithUEm = onCall(async (request) => {
     };
   }
 
-  // 3. Rate Limit Layer (20 questions/day)
+  // 3. Rate Limit Layer (10 questions/day)
   const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
   const limitRef = db.collection("usage_limits").doc(uid);
   const limitDoc = await limitRef.get();
@@ -152,8 +152,8 @@ export const chatWithUEm = onCall(async (request) => {
     }
   }
 
-  if (count >= 20) {
-    throw new HttpsError("resource-exhausted", "Bạn đã hết 20 lượt hỏi trong hôm nay. Hẹn gặp lại vào ngày mai!");
+  if (count >= 10) {
+    throw new HttpsError("resource-exhausted", "Bạn đã hết 10 lượt hỏi trong hôm nay. Hẹn gặp lại vào ngày mai!");
   }
 
   // 4. Caching Layer

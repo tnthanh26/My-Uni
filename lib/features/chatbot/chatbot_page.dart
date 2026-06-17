@@ -26,10 +26,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
   final ScrollController _scrollController = ScrollController();
 
   // ── Palette ────────────────────────────────────────────────
-  // Soft Indigo — swap this one line to change the whole theme:
-  //   Violet Mint : const Color(0xFF7C6FF7)
-  //   Rose Slate  : const Color(0xFFE0607E)
-  final Color primaryColor = const Color(0xFF5B8DEF);
+  final Color primaryColor = AppColors.hcmusBlue;
 
   bool _isTyping = false;
   bool _inputFocused = false;
@@ -40,6 +37,14 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       text: "Chào bạn, mình là **Ú Em** 👋\nMình biết rất nhiều về trường Đại học Khoa học Tự nhiên, hãy hỏi mình nếu có thắc mắc gì nhé!",
       isUser: false,
     ),
+  ];
+
+  final List<String> _suggestedQuestions = [
+    "Điểm rèn luyện",
+    "Học bổng khuyến khích học tập",
+    "Câu lạc bộ học thuật",
+    "Cảnh báo học tập",
+    "Địa chỉ các cơ sở",
   ];
 
   @override
@@ -59,10 +64,9 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     super.dispose();
   }
 
-  Future<void> _handleSendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
-
-    final String userText = _messageController.text;
+  Future<void> _handleSendMessage([String? text]) async {
+    final String userText = text ?? _messageController.text.trim();
+    if (userText.isEmpty) return;
 
     setState(() {
       _messages.add(ChatMessage(text: userText, isUser: true));
@@ -92,20 +96,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         String botAnswer = data['answer'];
-        List<dynamic> sources = data['sources'] ?? [];
-        /*
-        if (sources.isNotEmpty) {
-          botAnswer += "\n\n*(Nguồn: Trang ${sources.join(', ')})*";
-        }
-        */
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: botAnswer, isUser: false));
         });
       } else if (response.statusCode == 429) {
-        // Handle Rate Limiting
         final data = jsonDecode(utf8.decode(response.bodyBytes));
-        String errorMessage = data['detail'] ?? "Bạn đã hết lượt hỏi trong hôm nay. Hãy quay lại vào ngày mai nhé!";
+        String errorMessage = data['detail'] ?? "Bạn đã hết 10 lượt hỏi trong hôm nay. Hãy quay lại vào ngày mai nhé!";
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: errorMessage, isUser: false));
@@ -144,7 +141,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: isDarkMode ? const Color(0xFF0F1117) : const Color(0xFFF7F9FF),
+      backgroundColor: isDarkMode ? AppColors.backgroundDark : AppColors.backgroundLight,
       body: Column(
         children: [
           _buildHeader(isDarkMode),
@@ -160,22 +157,22 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
   Widget _buildHeader(bool isDarkMode) {
     return Container(
       padding: const EdgeInsets.only(top: 56, left: 20, right: 16, bottom: 16),
-      decoration: BoxDecoration(color: primaryColor),
+      decoration: BoxDecoration(
+        color: primaryColor,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          // Avatar with ring
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withOpacity(0.4), width: 2),
-            ),
-            child: CircleAvatar(
-              radius: 24,
-              backgroundColor: Colors.transparent,
-              backgroundImage: const AssetImage('assets/images/chatbot_avt.png'),
-            ),
+          CircleAvatar(
+            radius: 23,
+            backgroundColor: Colors.white.withOpacity(0.1),
+            backgroundImage: const AssetImage('assets/images/chatbot_avt.png'),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -186,7 +183,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   'Ú Em',
                   style: TextStyle(
                     color: Colors.white,
-                    fontSize: 17,
+                    fontSize: 18,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.2,
                   ),
@@ -195,8 +192,8 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 Row(
                   children: [
                     Container(
-                      width: 7,
-                      height: 7,
+                      width: 8,
+                      height: 8,
                       decoration: BoxDecoration(
                         color: const Color(0xFF4ADE80),
                         shape: BoxShape.circle,
@@ -208,12 +205,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                         ],
                       ),
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: 6),
                     Text(
-                      'Trực tuyến',
+                      'Sẵn sàng trợ giúp',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.8),
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -225,16 +223,16 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           GestureDetector(
             onTap: () => _showReportDialog(context),
             child: Container(
-              width: 36,
-              height: 36,
+              width: 38,
+              height: 38,
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
-                Icons.report_problem_rounded,
+                Icons.report_gmailerrorred_rounded,
                 color: Colors.white,
-                size: 18,
+                size: 20,
               ),
             ),
           ),
@@ -253,12 +251,11 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
           title: Row(
             children: [
-              const Icon(Icons.feedback_rounded, color: Color(0xFF5893D8)),
+              const Icon(Icons.feedback_rounded, color: AppColors.hcmusBlue),
               const SizedBox(width: 10),
               Text(
                 'Báo cáo lỗi chatbot',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
                   color: isDarkMode ? Colors.white : Colors.black87,
@@ -272,7 +269,6 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               Text(
                 'Bạn gặp vấn đề gì với câu trả lời của Ú Em?',
                 style: TextStyle(
-                  fontFamily: 'Poppins',
                   fontSize: 14,
                   color: isDarkMode ? Colors.white70 : Colors.black54,
                 ),
@@ -287,7 +283,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy', style: TextStyle(color: Colors.grey, fontFamily: 'Poppins')),
+              child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
             ),
           ],
         );
@@ -304,7 +300,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Cảm ơn bạn! Báo cáo "$title" đã được gửi.'),
-              backgroundColor: const Color(0xFF5893D8),
+              backgroundColor: primaryColor,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -323,7 +319,6 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 child: Text(
                   title,
                   style: TextStyle(
-                    fontFamily: 'Poppins',
                     fontSize: 14,
                     color: isDarkMode ? Colors.white : Colors.black87,
                   ),
@@ -342,7 +337,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF0F1117) : const Color(0xFFF7F9FF),
+        color: isDarkMode ? AppColors.backgroundDark : AppColors.backgroundLight,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -376,8 +371,42 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               },
             ),
           ),
+          _buildQuickReplies(isDarkMode),
           _buildInputSection(isDarkMode),
         ],
+      ),
+    );
+  }
+
+  // ── Quick Replies ──────────────────────────────────────────
+  Widget _buildQuickReplies(bool isDarkMode) {
+    return SizedBox(
+      height: 44,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: _suggestedQuestions.length,
+        itemBuilder: (context, index) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            child: ActionChip(
+              label: Text(
+                _suggestedQuestions[index],
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              backgroundColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
+              side: BorderSide(
+                color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
+              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              onPressed: () => _handleSendMessage(_suggestedQuestions[index]),
+            ),
+          );
+        },
       ),
     );
   }
@@ -569,12 +598,6 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               ? AppColors.surfaceDark
               : Colors.white,
           borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: _inputFocused
-                ? primaryColor
-                : (isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.07)),
-            width: 1.2,
-          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(isDarkMode ? 0.3 : 0.05),
@@ -610,37 +633,38 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                       fontSize: 14,
                     ),
                     border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                     isDense: true,
                   ),
                   onSubmitted: (_) => _handleSendMessage(),
                 ),
               ),
             ),
+
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: _handleSendMessage,
+              onTap: () => _handleSendMessage(),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                width: 38,
-                height: 38,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: primaryColor,
-                  borderRadius: BorderRadius.circular(19),
+                  borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: primaryColor.withOpacity(0.4),
-                      blurRadius: 6,
+                      color: primaryColor.withOpacity(0.3),
+                      blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
                   ],
                 ),
                 child: const Padding(
-                  padding: EdgeInsets.only(left: 3),
+                  padding: EdgeInsets.only(left: 4),
                   child: Icon(
                     Icons.send_rounded,
                     color: Colors.white,
-                    size: 18,
+                    size: 20,
                   ),
                 ),
               ),
@@ -651,3 +675,4 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     );
   }
 }
+
