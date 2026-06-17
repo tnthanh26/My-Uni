@@ -1889,7 +1889,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ] else ...[
             // Depth > 0: Always show sub-replies directly to avoid button clutter
             Padding(
-              padding: const EdgeInsets.only(left: 0),
+              padding: EdgeInsets.only(left: depth < 3 ? 36 : 0),
               child: Column(
                 children: replies.asMap().entries.map((entry) {
                   return _buildCommentTree(
@@ -1942,13 +1942,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        if (depth > 0)
+        if (depth > 0 && depth <= 3)
           Positioned(
             left: -18,
             top: -12,
-            bottom: 26, // Stop at middle of avatar
+            height: 38,
             child: Container(
-              width: 14,
+              width: 18,
               decoration: BoxDecoration(
                 border: Border(
                   left: BorderSide(
@@ -2090,13 +2090,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 2),
                           RichText(
                             text: TextSpan(
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 14,
                                 height: 1.5,
+                                fontWeight: FontWeight.w500,
                                 color: isDarkMode
                                     ? Colors.white70
                                     : const Color(0xFF4B5563),
