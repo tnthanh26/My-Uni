@@ -373,6 +373,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     final picked = await showTimePicker(
       context: context,
       initialTime: _selectedTime,
+      initialEntryMode: TimePickerEntryMode.inputOnly,
     );
     if (picked != null) setState(() => _selectedTime = picked);
   }

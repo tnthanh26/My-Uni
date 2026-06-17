@@ -440,6 +440,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     final time = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(initial),
+      initialEntryMode: TimePickerEntryMode.inputOnly,
     );
 
     if (time == null) return null;

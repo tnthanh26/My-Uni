@@ -1828,82 +1828,115 @@ class _PostDetailPageState extends State<PostDetailPage> {
     bool isExpanded = _expandedComments.contains(comment['id']);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSingleCommentWidget(comment, depth, replies.isNotEmpty, isLast),
+        _buildSingleCommentWidget(comment, depth, replies.isNotEmpty, isLast, allComments),
         if (replies.isNotEmpty) ...[
-          if (!isExpanded)
-            Padding(
-              padding: const EdgeInsets.only(left: 48),
-              child: GestureDetector(
-                onTap: () => setState(() => _expandedComments.add(comment['id'])),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 6),
-                  child: Text(
-                    "Xem ${replies.length} phản hồi",
-                    style: const TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 12,
-                      color: Color(0xFF5893D8),
-                      fontWeight: FontWeight.bold,
+          if (depth == 0) ...[
+            // Root level: Handle expansion toggle
+            if (!isExpanded)
+              Padding(
+                padding: const EdgeInsets.only(left: 48),
+                child: GestureDetector(
+                  onTap: () => setState(() => _expandedComments.add(comment['id'])),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      "Xem ${replies.length} phản hồi",
+                      style: const TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        color: Color(0xFF5893D8),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else ...[
+              Padding(
+                padding: const EdgeInsets.only(left: 36),
+                child: Column(
+                  children: replies.asMap().entries.map((entry) {
+                    return _buildCommentTree(
+                        entry.value,
+                        allComments,
+                        depth + 1,
+                        entry.key == replies.length - 1
+                    );
+                  }).toList(),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 48),
+                child: GestureDetector(
+                  onTap: () => setState(() => _expandedComments.remove(comment['id'])),
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 6),
+                    child: Text(
+                      "Ẩn bớt",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
               ),
-            )
-          else ...[
+            ]
+          ] else ...[
+            // Depth > 0: Always show sub-replies directly to avoid button clutter
             Padding(
-              // Fix: Only indent the first level. Capping at 36px left padding.
-              padding: EdgeInsets.only(left: depth == 0 ? 36 : 0),
+              padding: const EdgeInsets.only(left: 0),
               child: Column(
                 children: replies.asMap().entries.map((entry) {
                   return _buildCommentTree(
-                    entry.value, 
-                    allComments, 
-                    depth + 1, 
-                    entry.key == replies.length - 1
+                      entry.value,
+                      allComments,
+                      depth + 1,
+                      entry.key == replies.length - 1
                   );
                 }).toList(),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.only(left: 48),
-              child: GestureDetector(
-                onTap: () => setState(() => _expandedComments.remove(comment['id'])),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 6),
-                  child: Text(
-                    "Ẩn bớt",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ]
         ],
       ],
     );
   }
 
-  Widget _buildSingleCommentWidget(Map<String, dynamic> comment, int depth, bool hasReplies, bool isLast) {
+  String _getParentAuthorName(
+      String? parentId, List<Map<String, dynamic>> allComments) {
+    if (parentId == null) return "";
+    try {
+      final parent = allComments.firstWhere((c) => c['id'] == parentId);
+      return parent['authorName'] ?? "Người dùng";
+    } catch (e) {
+      return "Người dùng";
+    }
+  }
+
+  Widget _buildSingleCommentWidget(Map<String, dynamic> comment, int depth,
+      bool hasReplies, bool isLast, List<Map<String, dynamic>> allComments) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avt = comment['authorAvatar'];
     final bool isCommentOwner = _user?.uid == comment['authorId'];
-    final bool isPostOwner =
-        _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+    final bool isPostOwner = _user?.uid ==
+        (widget.initialPostData['authorId'] ??
+            widget.initialPostData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
     final bool canEdit = isCommentOwner;
     final bool isAuthor = comment['authorId'] ==
-        (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+        (widget.initialPostData['authorId'] ??
+            widget.initialPostData['uploaderId']);
 
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);
     final String timeStr = comment['timestamp'] != null
-        ? timeago.format((comment['timestamp'] as Timestamp).toDate(), locale: 'vi')
+        ? timeago.format((comment['timestamp'] as Timestamp).toDate(),
+        locale: 'vi')
         : 'Vừa xong';
 
     return Stack(
@@ -1918,8 +1951,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
               width: 14,
               decoration: BoxDecoration(
                 border: Border(
-                  left: BorderSide(color: Colors.grey.withOpacity(0.25), width: 1.5),
-                  bottom: BorderSide(color: Colors.grey.withOpacity(0.25), width: 1.5),
+                  left: BorderSide(
+                      color: Colors.grey.withOpacity(0.25), width: 1.5),
+                  bottom: BorderSide(
+                      color: Colors.grey.withOpacity(0.25), width: 1.5),
                 ),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(10),
@@ -1927,7 +1962,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ),
-
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(
@@ -1965,7 +1999,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             : const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+                          color: isDarkMode
+                              ? Colors.white10
+                              : const Color(0xFFEAEFF5),
                         ),
                       ),
                       child: Column(
@@ -1998,8 +2034,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                         ),
                                         decoration: BoxDecoration(
                                           color: const Color(0xFF5893D8)
-                                              .withOpacity(isDarkMode ? 0.22 : 0.12),
-                                          borderRadius: BorderRadius.circular(999),
+                                              .withOpacity(
+                                              isDarkMode ? 0.22 : 0.12),
+                                          borderRadius:
+                                          BorderRadius.circular(999),
                                         ),
                                         child: const Text(
                                           "Tác giả",
@@ -2028,8 +2066,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                           : const Color(0xFF777777),
                                     ),
                                     onSelected: (val) {
-                                      if (val == 'delete') _showDeleteConfirmation(comment['id']);
-                                      if (val == 'edit') _showEditCommentDialog(comment);
+                                      if (val == 'delete')
+                                        _showDeleteConfirmation(comment['id']);
+                                      if (val == 'edit')
+                                        _showEditCommentDialog(comment);
                                     },
                                     itemBuilder: (context) => [
                                       if (canEdit)
@@ -2051,15 +2091,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             ],
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            comment['content'] ?? '',
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 14,
-                              height: 1.5,
-                              color: isDarkMode
-                                  ? Colors.white70
-                                  : const Color(0xFF4B5563),
+                          RichText(
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 14,
+                                height: 1.5,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : const Color(0xFF4B5563),
+                              ),
+                              children: [
+                                if (depth > 1)
+                                  TextSpan(
+                                    text:
+                                    "@${_getParentAuthorName(comment['parentCommentId'], allComments)} ",
+                                    style: const TextStyle(
+                                      color: Color(0xFF5893D8),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                TextSpan(text: comment['content'] ?? ''),
+                              ],
                             ),
                           ),
                         ],
