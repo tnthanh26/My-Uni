@@ -808,7 +808,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isOwner = _user?.uid == (widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId']);
+    final bool isOwner = _user?.uid ==
+        (widget.initialPostData['authorId'] ??
+            widget.initialPostData['uploaderId']);
+
+    bool canEditPost = isOwner;
+    if (canEditPost && widget.initialPostData['timestamp'] != null) {
+      try {
+        final Timestamp ts = widget.initialPostData['timestamp'] as Timestamp;
+        final DateTime postTime = ts.toDate();
+        if (DateTime.now().difference(postTime).inHours >= 12) {
+          canEditPost = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking post edit timeframe: $e");
+      }
+    }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -834,25 +849,35 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 if (val == 'delete') _confirmDeletePost();
               },
               icon: const Icon(Icons.more_vert_rounded),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
               itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
-                      SizedBox(width: 10),
-                      Text("Chỉnh sửa", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13)),
-                    ],
+                if (canEditPost)
+                  const PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
+                        SizedBox(width: 10),
+                        Text("Chỉnh sửa",
+                            style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 13)),
+                      ],
+                    ),
                   ),
-                ),
                 const PopupMenuItem(
                   value: 'delete',
                   child: Row(
                     children: [
-                      Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                      Icon(Icons.delete_outline_rounded,
+                          size: 18, color: Colors.red),
                       SizedBox(width: 10),
-                      Text("Xóa bài", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: Colors.red)),
+                      Text("Xóa bài",
+                          style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 13,
+                              color: Colors.red)),
                     ],
                   ),
                 ),
@@ -1889,7 +1914,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ] else ...[
             // Depth > 0: Always show sub-replies directly to avoid button clutter
             Padding(
-              padding: const EdgeInsets.only(left: 0),
+              padding: EdgeInsets.only(left: depth < 3 ? 36 : 0),
               child: Column(
                 children: replies.asMap().entries.map((entry) {
                   return _buildCommentTree(
@@ -1927,7 +1952,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
         (widget.initialPostData['authorId'] ??
             widget.initialPostData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
-    final bool canEdit = isCommentOwner;
+    bool canEdit = isCommentOwner;
+
+    if (canEdit && comment['timestamp'] != null) {
+      try {
+        final Timestamp ts = comment['timestamp'] as Timestamp;
+        final DateTime commentTime = ts.toDate();
+        if (DateTime.now().difference(commentTime).inHours >= 12) {
+          canEdit = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking comment edit timeframe: $e");
+      }
+    }
+
     final bool isAuthor = comment['authorId'] ==
         (widget.initialPostData['authorId'] ??
             widget.initialPostData['uploaderId']);
@@ -1942,13 +1980,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        if (depth > 0)
+        if (depth > 0 && depth <= 3)
           Positioned(
             left: -18,
             top: -12,
-            bottom: 26, // Stop at middle of avatar
+            height: 38,
             child: Container(
-              width: 14,
+              width: 18,
               decoration: BoxDecoration(
                 border: Border(
                   left: BorderSide(
@@ -2090,13 +2128,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 ),
                             ],
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 2),
                           RichText(
                             text: TextSpan(
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 14,
                                 height: 1.5,
+                                fontWeight: FontWeight.w500,
                                 color: isDarkMode
                                     ? Colors.white70
                                     : const Color(0xFF4B5563),
