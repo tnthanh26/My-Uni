@@ -291,9 +291,12 @@ class _HomePageState extends State<HomePage> {
       const AccountPage(),
     ];
 
-    return Scaffold(
-      body: IndexedStack(index: _selectedIndex, children: pages),
-      bottomNavigationBar: _buildBottomNav(),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        body: IndexedStack(index: _selectedIndex, children: pages),
+        bottomNavigationBar: _buildBottomNav(),
+      ),
     );
   }
 
