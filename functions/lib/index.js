@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
+exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
 /* eslint-disable indent */
 const v2_1 = require("firebase-functions/v2");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -10,18 +10,29 @@ const crypto = require("crypto");
 admin.initializeApp();
 const db = admin.firestore();
 (0, v2_1.setGlobalOptions)({ maxInstances: 5, region: "asia-southeast1" });
-const BLACK_LIST = [
-    "dit", "du", "deo", "dech", "dit me", "dm", "dmm", "dcm", "vcl", "clm",
-    "oc cho", "suc vat", "rac ruoi", "chet di", "cut", "bien di",
+const UNACCENTED_BLACK_LIST = [
+    "dm", "dmm", "dcm", "clm", "vcl", "vkl", "đm", "đmm", "đcm", "cmn", "cl",
+    "dit me", "djt me", "ditme", "djtme", "địt mẹ", "địt cụ", "dit cu", "địt cụ mày",
+    "du ma", "duma", "du me", "dume", "đụ mẹ", "đụ má",
+    "deo me", "deome", "đéo mẹ", "đéo cụ",
+    "oc cho", "suc vat", "rac ruoi", "chet di", "bien di",
     "phan dong", "ba que",
+    "dit nhau", "djt nhau", "chich nhau",
 ];
-const SENSITIVE_LIST = [
+const ACCENTED_BLACK_LIST = [
+    "địt", "đụ", "đéo", "cút", "lồn", "cặc", "buồi", "đĩ", "chịch", "nện", "phịch",
+];
+const UNACCENTED_SENSITIVE_LIST = [
     "lua dao", "scam", "da cap", "viec nhe luong cao",
     "kiem tien online", "chuyen khoan truoc", "coc truoc",
     "dau tu loi nhuan cao", "cam ket loi nhuan", "keo thom",
     "tay chay", "dinh cong", "bieu tinh", "boc phot",
     "thi ho", "gian lan", "quay cop", "mua diem",
     "chay diem", "fake diem", "lo de",
+    "ca do", "danh bai", "danh bac", "casino", "nha cai",
+];
+const ACCENTED_SENSITIVE_LIST = [
+    "cọc", "kèo", "cò", "lừa", "độ",
 ];
 /**
  * Remove Vietnamese diacritics
@@ -40,6 +51,17 @@ function removeDiacritics(str) {
     return result;
 }
 /**
+ * Helper to match a whole word or phrase in a preprocessed text
+ * @param {string} cleanText preprocessed text
+ * @param {string} targetWord word or phrase to match
+ * @return {boolean} true if found as a whole word/phrase
+ */
+function matchWord(cleanText, targetWord) {
+    const escapedWord = targetWord.replace(/\s+/g, "\\s+");
+    const regex = new RegExp(`(^|\\s)${escapedWord}(\\s|$)`);
+    return regex.test(cleanText);
+}
+/**
  * Check if content is toxic
  * @param {string} text content to check
  * @return {object} status and score
@@ -47,14 +69,24 @@ function removeDiacritics(str) {
 function analyzeContent(text) {
     if (!text)
         return { status: "approved", score: 0 };
-    const normalized = removeDiacritics(text);
-    const cleanText = normalized.replace(/[^a-z0-9\s]/g, "");
-    const isToxic = BLACK_LIST.some((word) => new RegExp(`\\b${word}\\b`).test(cleanText));
-    if (isToxic)
+    // 1. Prepare raw text with Vietnamese characters (replace punctuation with space)
+    const cleanAccented = text.toLowerCase()
+        .replace(/[^a-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ\s]/gi, " ");
+    // 2. Prepare unaccented text (remove diacritics and replace punctuation with space)
+    const normalized = removeDiacritics(text.toLowerCase());
+    const cleanUnaccented = normalized.replace(/[^a-z0-9\s]/gi, " ");
+    // 3. Match against Blacklists
+    const isAccentedToxic = ACCENTED_BLACK_LIST.some((word) => matchWord(cleanAccented, word));
+    const isUnaccentedToxic = UNACCENTED_BLACK_LIST.some((word) => matchWord(cleanUnaccented, word));
+    if (isAccentedToxic || isUnaccentedToxic) {
         return { status: "hidden", score: 1.0 };
-    const isSensitive = SENSITIVE_LIST.some((word) => new RegExp(`\\b${word}\\b`).test(cleanText));
-    if (isSensitive)
+    }
+    // 4. Match against Sensitive lists
+    const isAccentedSensitive = ACCENTED_SENSITIVE_LIST.some((word) => matchWord(cleanAccented, word));
+    const isUnaccentedSensitive = UNACCENTED_SENSITIVE_LIST.some((word) => matchWord(cleanUnaccented, word));
+    if (isAccentedSensitive || isUnaccentedSensitive) {
         return { status: "pending", score: 0.5 };
+    }
     return { status: "approved", score: 0 };
 }
 /**
@@ -176,6 +208,58 @@ exports.chatWithUEm = (0, https_1.onCall)(async (request) => {
     catch (error) {
         console.error("Chatbot Proxy Error:", error);
         throw new https_1.HttpsError("internal", "Ú Em đang bận hoặc server đang bảo trì. Thử lại sau nhé!");
+    }
+});
+/**
+ * Semantic Search via Proxy
+ */
+exports.semanticSearch = (0, https_1.onCall)(async (request) => {
+    // 1. Security Layer: Check authentication
+    if (!request.auth) {
+        throw new https_1.HttpsError("unauthenticated", "Bạn cần đăng nhập để thực hiện tìm kiếm.");
+    }
+    const { query, scope, tag, sort } = request.data;
+    // 2. Fetch Python Server URL from Firestore
+    let serverUrl = "https://34-142-139-17.sslip.io/search";
+    try {
+        const configDoc = await db.collection("system_config").doc("search").get();
+        if (configDoc.exists) {
+            const data = configDoc.data();
+            if (data && data.server_url) {
+                serverUrl = data.server_url;
+            }
+        }
+    }
+    catch (error) {
+        console.error("Error fetching search server URL config:", error);
+    }
+    // 3. Proxy to Python Server (GET request with query params)
+    try {
+        const urlObj = new URL(serverUrl);
+        if (query !== undefined && query !== null) {
+            urlObj.searchParams.append("query", String(query));
+        }
+        if (scope !== undefined && scope !== null) {
+            urlObj.searchParams.append("scope", String(scope));
+        }
+        if (tag !== undefined && tag !== null) {
+            urlObj.searchParams.append("tag", String(tag));
+        }
+        if (sort !== undefined && sort !== null) {
+            urlObj.searchParams.append("sort", String(sort));
+        }
+        const response = await fetch(urlObj.toString(), {
+            method: "GET",
+        });
+        if (!response.ok) {
+            throw new Error(`Search server error: ${response.status}`);
+        }
+        const result = await response.json();
+        return result;
+    }
+    catch (error) {
+        console.error("Semantic Search Proxy Error:", error);
+        throw new https_1.HttpsError("internal", "Tìm kiếm đang gặp sự cố hoặc server đang bảo trì. Thử lại sau nhé!");
     }
 });
 //# sourceMappingURL=index.js.map
