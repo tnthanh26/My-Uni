@@ -288,7 +288,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     child: _isSubmitting
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                      "Lưu",
+                      "Đăng",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
@@ -404,22 +404,47 @@ class _CreatePostPageState extends State<CreatePostPage> {
               // Content Area
               Text("Nội dung", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E))),
               const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
+              SizedBox(
                 height: 219,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93)),
-                ),
                 child: TextField(
                   controller: _contentController,
                   maxLines: null,
-                  style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black),
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 15,
+                    color: isDarkMode
+                        ? Colors.white
+                        : const Color(0xFF1E1E1E),
+                  ),
                   decoration: InputDecoration(
                     hintText: "Vui lòng nhập văn bản",
-                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93)),
-                    border: InputBorder.none,
+                    hintStyle: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 15,
+                      color: isDarkMode
+                          ? Colors.white30
+                          : const Color(0xFF8E8E93),
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white24
+                            : const Color(0xFF8E8E93),
+                      ),
+                    ),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF457EC0),
+                        width: 2,
+                      ),
+                    ),
                   ),
                 ),
               ),

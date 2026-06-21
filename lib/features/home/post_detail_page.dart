@@ -1522,6 +1522,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildForumUI(Map<String, dynamic> data) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isOwner = _user?.uid == data['authorId'];
+    final bool isAnonymous =
+        (data['isAnonymous'] == true) ||
+            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
+    final bool showOwnAnonymousBadge = isOwner && isAnonymous;
     final String timeText = data['timestamp'] != null
         ? timeago.format(
       (data['timestamp'] as Timestamp).toDate(),
@@ -1552,10 +1557,38 @@ class _PostDetailPageState extends State<PostDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildAuthorRow(
-              data['authorName'] ?? 'Sinh viên ẩn danh',
-              timeText,
-              avatarBase64: data['authorAvatar'],
+            Row(
+              children: [
+                Expanded(
+                  child: _buildAuthorRow(
+                    data['authorName'] ?? 'Sinh viên ẩn danh',
+                    timeText,
+                    avatarBase64: data['authorAvatar'],
+                  ),
+                ),
+
+                if (showOwnAnonymousBadge)
+                  Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF5893D8).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      "Của bạn",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF5893D8),
+                      ),
+                    ),
+                  ),
+              ],
             ),
             if (data['hashtags'] != null) ...[
               const SizedBox(height: 16),
@@ -1722,8 +1755,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
       children: [
         CircleAvatar(
           radius: 23,
-          backgroundColor: isDarkMode ? Colors.white10 : Colors.white,
-          child: Padding(
+          backgroundColor:
+          isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
+          child: avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
+              ? CircleAvatar(
+            radius: 21,
+            backgroundImage: MemoryImage(base64Decode(avatarBase64)),
+          )
+              : Padding(
             padding: const EdgeInsets.all(2.0),
             child: avatarWidget,
           ),

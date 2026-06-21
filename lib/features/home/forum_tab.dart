@@ -10,6 +10,7 @@ import 'create_post_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'poll_widget.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -260,6 +261,13 @@ class _ForumTabState extends State<ForumTab> {
               String? avatarData = data['authorAvatar'];
               final String content = data['content']?.toString() ?? '';
 
+              final currentUser = FirebaseAuth.instance.currentUser;
+              final bool isOwner = currentUser?.uid == data['authorId'];
+              final bool isAnonymous =
+                  (data['isAnonymous'] == true) ||
+                      (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
+              final bool showOwnAnonymousBadge = isOwner && isAnonymous;
+
               return Container(
                 margin: const EdgeInsets.only(bottom: 18),
                 decoration: BoxDecoration(
@@ -310,19 +318,43 @@ class _ForumTabState extends State<ForumTab> {
                                     crossAxisAlignment:
                                     CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        data['authorName'] ?? 'Sinh viên ẩn danh',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontFamily:
-                                          'Encode Sans Expanded',
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                          color: isDarkMode
-                                              ? Colors.white
-                                              : const Color(0xFF2C2C2C),
-                                        ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              data['authorName'] ?? 'Sinh viên ẩn danh',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontFamily: 'Encode Sans Expanded',
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 14,
+                                                color: isDarkMode
+                                                    ? Colors.white
+                                                    : const Color(0xFF2C2C2C),
+                                              ),
+                                            ),
+                                          ),
+                                          if (showOwnAnonymousBadge) ...[
+                                            const SizedBox(width: 6),
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFF5893D8).withOpacity(0.12),
+                                                borderRadius: BorderRadius.circular(999),
+                                              ),
+                                              child: const Text(
+                                                "Của bạn",
+                                                style: TextStyle(
+                                                  fontFamily: 'Encode Sans Expanded',
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: Color(0xFF5893D8),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
