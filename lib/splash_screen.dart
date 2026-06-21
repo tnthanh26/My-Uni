@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -103,11 +104,14 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Future<void> _checkAuthAndNavigate() async {
-    // Điều chỉnh lại thời gian chờ khoảng 3.2 giây (như các app lớn)
     await Future.delayed(const Duration(milliseconds: 3200));
 
     if (!mounted || _navigated) return;
-    const route = '/welcome';
+
+    final user = FirebaseAuth.instance.currentUser;
+
+    final route = user == null ? '/welcome' : '/home';
+
     _navigate(route);
   }
 
