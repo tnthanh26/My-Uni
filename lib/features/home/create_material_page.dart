@@ -36,9 +36,12 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   @override
   void initState() {
     super.initState();
-    _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
-    _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
-    _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
+    _courseController =
+        TextEditingController(text: widget.existingData?['courseName'] ?? '');
+    _teacherController =
+        TextEditingController(text: widget.existingData?['teacherName'] ?? '');
+    _contentController =
+        TextEditingController(text: widget.existingData?['content'] ?? '');
 
     String initialSemester = '2';
     String initialYear = '2025-2026';
@@ -58,6 +61,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         }
       }
     }
+
     _selectedSemester = initialSemester;
     _schoolYearController = TextEditingController(text: initialYear);
   }
@@ -75,7 +79,18 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'],
+        allowedExtensions: [
+          'jpg',
+          'jpeg',
+          'png',
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx'
+        ],
         allowMultiple: false,
       );
 
@@ -99,19 +114,28 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng đăng nhập để thực hiện")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng đăng nhập để thực hiện")),
+      );
       return;
     }
 
-    if (_courseController.text.isEmpty || (_attachedFile == null && _existingFileData == null) || _schoolYearController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn file")));
+    if (_courseController.text.isEmpty ||
+        (_attachedFile == null && _existingFileData == null) ||
+        _schoolYearController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Vui lòng nhập đầy đủ thông tin và chọn file"),
+        ),
+      );
       return;
     }
 
-    final fullSemester = "HK$_selectedSemester ${_schoolYearController.text.trim()}";
+    final fullSemester =
+        "HK$_selectedSemester ${_schoolYearController.text.trim()}";
 
-    // Quét cả tên môn, mô tả và tên file đính kèm
-    String combinedText = "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
+    String combinedText =
+        "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
     List<String> violations = ContentService.getViolatedWords(combinedText);
 
     if (violations.isNotEmpty) {
@@ -120,9 +144,14 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Tài liệu không hợp lệ"),
-          content: Text("Tên tài liệu hoặc mô tả chứa từ ngữ vi phạm: (${violations.join(', ')}). Vui lòng chỉnh sửa lại."),
+          content: Text(
+            "Tên tài liệu hoặc mô tả chứa từ ngữ vi phạm: (${violations.join(', ')}). Vui lòng chỉnh sửa lại.",
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Đã hiểu")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Đã hiểu"),
+            ),
           ],
         ),
       );
@@ -130,20 +159,25 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     }
 
     setState(() => _isSubmitting = true);
+
     try {
       String? encodedFileData = _existingFileData;
 
       if (_attachedFile != null) {
         final bytes = await _attachedFile!.readAsBytes();
+
         if (_isImage) {
-          var compressed = await FlutterImageCompress.compressWithList(bytes, quality: 20, minWidth: 500);
+          var compressed = await FlutterImageCompress.compressWithList(
+            bytes,
+            quality: 20,
+            minWidth: 500,
+          );
           encodedFileData = base64Encode(compressed);
         } else {
           encodedFileData = base64Encode(bytes);
         }
       }
 
-      // --- 1. TẠO MAP CHỨA CÁC TRƯỜNG DÙNG CHUNG CHO CẢ EDIT VÀ CREATE ---
       final Map<String, dynamic> commonData = {
         'semester': fullSemester,
         'courseName': _courseController.text.trim(),
@@ -160,15 +194,20 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
             .collection('study_materials')
             .doc(widget.docId)
             .update(commonData);
-
       } else {
-        final Map<String, dynamic> materialData = Map<String, dynamic>.from(commonData);
+        final Map<String, dynamic> materialData =
+        Map<String, dynamic>.from(commonData);
 
-        final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
         final userData = userDoc.data();
 
         materialData['authorId'] = user.uid;
-        materialData['authorName'] = userData?['displayName'] ?? 'Sinh viên MyUni';
+        materialData['authorName'] =
+            userData?['displayName'] ?? 'Sinh viên MyUni';
         materialData['authorAvatar'] = userData?['photoUrl'] ?? '';
         materialData['status'] = 'pending';
         materialData['isToxicChecked'] = false;
@@ -179,16 +218,19 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         materialData['commentCount'] = 0;
         materialData['timestamp'] = FieldValue.serverTimestamp();
 
-        await FirebaseFirestore.instance.collection('study_materials').add(materialData);
+        await FirebaseFirestore.instance
+            .collection('study_materials')
+            .add(materialData);
       }
 
       if (mounted) Navigator.pop(context);
     } catch (e) {
       debugPrint("Lỗi đăng tài liệu: $e");
+
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}"))
+          SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}")),
         );
       }
     }
@@ -198,7 +240,6 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   Widget build(BuildContext context) {
     const Color figmaHeaderBlue = Color(0xFF457EC0);
     const Color figmaDashedColor = Color(0xFF1C95BE);
-    const Color figmaHintColor = Color(0xFF8E8E93);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -228,7 +269,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Text(
+                    child: const Text(
                       "Hủy",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
@@ -250,9 +291,16 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                   GestureDetector(
                     onTap: _isSubmitting ? null : _submitMaterial,
                     child: _isSubmitting
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                         : const Text(
-                      "Lưu",
+                      "Đăng",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
@@ -282,41 +330,76 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
             children: [
               Row(
                 children: [
-                  Expanded(flex: 2, child: _buildSectionLabel(context, "Học kỳ")),
+                  Expanded(
+                    flex: 2,
+                    child: _buildSectionLabel(context, "Học kỳ"),
+                  ),
                   const SizedBox(width: 16),
-                  Expanded(flex: 3, child: _buildSectionLabel(context, "Năm học")),
+                  Expanded(
+                    flex: 3,
+                    child: _buildSectionLabel(context, "Năm học"),
+                  ),
                 ],
               ),
               _buildSemesterInput(context),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Khóa học"),
-              _buildUnderlineTextField(context, _courseController, "Tên môn học"),
+              _buildUnderlineTextField(
+                context,
+                _courseController,
+                "Tên môn học",
+              ),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Giảng viên"),
-              _buildUnderlineTextField(context, _teacherController, "Tên giảng viên"),
+              _buildUnderlineTextField(
+                context,
+                _teacherController,
+                "Tên giảng viên",
+              ),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Nội dung mô tả"),
               const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
+              SizedBox(
                 height: 214,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: isDarkMode ? Colors.white24 : figmaHintColor),
-                ),
                 child: TextField(
                   controller: _contentController,
                   maxLines: null,
-                  style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)),
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 15,
+                    color:
+                    isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+                  ),
                   decoration: InputDecoration(
                     hintText: "Nội dung",
-                    hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white30 : figmaHintColor),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(8),
+                    hintStyle: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 15,
+                      color: isDarkMode
+                          ? Colors.white30
+                          : const Color(0xFF8E8E93),
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white24
+                            : const Color(0xFF8E8E93),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF457EC0),
+                        width: 2,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -325,16 +408,28 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
               _buildSectionLabel(context, "Đính kèm tệp"),
               const SizedBox(height: 10),
               GestureDetector(
-                onTap: (_attachedFile == null && _existingFileData == null) ? _pickFile : null,
+                onTap: (_attachedFile == null && _existingFileData == null)
+                    ? _pickFile
+                    : null,
                 child: CustomPaint(
-                  painter: (_attachedFile == null && _existingFileData == null) ? DashRectPainter(color: isDarkMode ? Colors.white30 : figmaDashedColor) : null,
+                  painter: (_attachedFile == null && _existingFileData == null)
+                      ? DashRectPainter(
+                    color:
+                    isDarkMode ? Colors.white30 : figmaDashedColor,
+                  )
+                      : null,
                   child: Container(
                     width: 130,
                     height: 130,
-                    decoration: (_attachedFile != null || _existingFileData != null)
+                    decoration:
+                    (_attachedFile != null || _existingFileData != null)
                         ? BoxDecoration(
-                        border: Border.all(color: isDarkMode ? Colors.white30 : figmaDashedColor),
-                        borderRadius: BorderRadius.circular(20)
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white30
+                            : figmaDashedColor,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
                     )
                         : null,
                     alignment: Alignment.center,
@@ -356,8 +451,15 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                             }),
                             child: Container(
                               padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                              child: const Icon(Icons.close, color: Colors.white, size: 16),
+                              decoration: const BoxDecoration(
+                                color: Colors.black54,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                                size: 16,
+                              ),
                             ),
                           ),
                         ),
@@ -371,7 +473,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
-                          color: isDarkMode ? Colors.white38 : figmaDashedColor,
+                          color: isDarkMode
+                              ? Colors.white38
+                              : figmaDashedColor,
                         ),
                       ),
                     ),
@@ -387,13 +491,17 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
   Widget _buildSectionLabel(BuildContext context, String text) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Text(
-      text,
-      style: TextStyle(
-        fontFamily: 'Encode Sans Expanded',
-        fontWeight: FontWeight.w400,
-        fontSize: 15,
-        color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E),
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontWeight: FontWeight.w400,
+          fontSize: 15,
+          color: isDarkMode ? Colors.white70 : const Color(0xFF1E1E1E),
+        ),
       ),
     );
   }
@@ -405,16 +513,17 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         Expanded(
           flex: 2,
           child: Container(
-            padding: const EdgeInsets.only(left: 8),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-            ),
+            padding: EdgeInsets.zero,
             child: DropdownButtonFormField<String>(
               value: _selectedSemester,
-              dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              dropdownColor:
+              isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
               ),
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
@@ -450,22 +559,37 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     );
   }
 
-  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint, {List<TextInputFormatter>? inputFormatters, TextInputType? keyboardType}) {
+  Widget _buildUnderlineTextField(
+      BuildContext context,
+      TextEditingController ctrl,
+      String hint, {
+        List<TextInputFormatter>? inputFormatters,
+        TextInputType? keyboardType,
+      }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-      ),
+      padding: const EdgeInsets.only(left: 8),
       child: TextField(
         controller: ctrl,
         inputFormatters: inputFormatters,
         keyboardType: keyboardType,
-        style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E)),
+        style: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 15,
+          color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+        ),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93)),
+          hintStyle: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontSize: 15,
+            color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
+          ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: 8,
+          ),
         ),
       ),
     );
@@ -474,27 +598,49 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   Widget _buildFilePreview(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     if (_attachedFile != null) {
-      if (_isImage) return Image.file(_attachedFile!, width: 120, height: 120, fit: BoxFit.cover);
+      if (_isImage) {
+        return Image.file(
+          _attachedFile!,
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        );
+      }
     } else if (_existingFileData != null) {
-      if (_isImage) return Image.memory(base64Decode(_existingFileData!), width: 120, height: 120, fit: BoxFit.cover);
+      if (_isImage) {
+        return Image.memory(
+          base64Decode(_existingFileData!),
+          width: 120,
+          height: 120,
+          fit: BoxFit.cover,
+        );
+      }
     }
 
     return Container(
-      width: 120, height: 120,
+      width: 120,
+      height: 120,
       color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey[100],
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.description, size: 40, color: Color(0xFF457EC0)),
+          const Icon(
+            Icons.description,
+            size: 40,
+            color: Color(0xFF457EC0),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(
-                _fileName ?? '',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 10, color: isDarkMode ? Colors.white70 : Colors.black87)
+              _fileName ?? '',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 10,
+                color: isDarkMode ? Colors.white70 : Colors.black87,
+              ),
             ),
-          )
+          ),
         ],
       ),
     );

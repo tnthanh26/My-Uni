@@ -27,9 +27,12 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   @override
   void initState() {
     super.initState();
-    _courseController = TextEditingController(text: widget.existingData?['courseName'] ?? '');
-    _teacherController = TextEditingController(text: widget.existingData?['teacherName'] ?? '');
-    _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
+    _courseController =
+        TextEditingController(text: widget.existingData?['courseName'] ?? '');
+    _teacherController =
+        TextEditingController(text: widget.existingData?['teacherName'] ?? '');
+    _contentController =
+        TextEditingController(text: widget.existingData?['content'] ?? '');
     _rating = widget.existingData?['rating'] ?? 0;
 
     String initialSemester = '2';
@@ -49,17 +52,21 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   }
 
   Future<void> _submitReview() async {
-    if (_courseController.text.isEmpty || _rating == 0 || _schoolYearController.text.isEmpty) {
+    if (_courseController.text.isEmpty ||
+        _rating == 0 ||
+        _schoolYearController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin và chọn số sao"))
+        const SnackBar(
+          content: Text("Vui lòng nhập đầy đủ thông tin và chọn số sao"),
+        ),
       );
       return;
     }
 
     final fullSemester = "HK$_selectedSemester ${_schoolYearController.text.trim()}";
 
-    // Gom tất cả văn bản lại để quét một lượt
-    String combinedText = "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
+    String combinedText =
+        "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
     List<String> violations = ContentService.getViolatedWords(combinedText);
 
     if (violations.isNotEmpty) {
@@ -68,9 +75,14 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Nội dung không hợp lệ"),
-          content: Text("Thông tin review có chứa từ ngữ vi phạm: (${violations.join(', ')}). Bạn cần sửa lại trước khi lưu."),
+          content: Text(
+            "Thông tin review có chứa từ ngữ vi phạm: (${violations.join(', ')}). Bạn cần sửa lại trước khi lưu.",
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Để mình sửa")),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Để mình sửa"),
+            ),
           ],
         ),
       );
@@ -82,7 +94,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception("Chưa đăng nhập tài khoản");
-
 
       if (widget.docId != null) {
         final updateData = {
@@ -98,7 +109,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
             .collection('course_reviews')
             .doc(widget.docId)
             .update(updateData);
-
       } else {
         final reviewData = {
           'authorId': user.uid,
@@ -126,14 +136,14 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Lưu đánh giá thành công!"))
+          const SnackBar(content: Text("Lưu đánh giá thành công!")),
         );
       }
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}"))
+          SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}")),
         );
       }
     }
@@ -172,7 +182,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                 children: [
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child: Text(
+                    child: const Text(
                       "Hủy",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
@@ -194,9 +204,16 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                   GestureDetector(
                     onTap: _isSubmitting ? null : _submitReview,
                     child: _isSubmitting
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : Text(
-                      "Lưu",
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
+                        : const Text(
+                      "Đăng",
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
@@ -253,7 +270,11 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                       margin: const EdgeInsets.only(right: 11.6),
                       child: Icon(
                         Icons.star,
-                        color: i < _rating ? starYellow : (isDarkMode ? Colors.white12 : const Color(0xFFF2F2F2)),
+                        color: i < _rating
+                            ? starYellow
+                            : (isDarkMode
+                            ? Colors.white12
+                            : const Color(0xFFF2F2F2)),
                         size: 34,
                       ),
                     ),
@@ -264,31 +285,48 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
 
               _buildSectionLabel(context, "Nội dung"),
               const SizedBox(height: 10),
-              Container(
-                width: double.infinity,
+              SizedBox(
                 height: 214,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93)),
-                ),
                 child: TextField(
                   controller: _contentController,
                   maxLines: null,
+                  expands: true,
+                  textAlignVertical: TextAlignVertical.top,
                   style: TextStyle(
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 15,
-                    color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
+                    color: isDarkMode
+                        ? Colors.white
+                        : const Color(0xFF1E1E1E),
                   ),
                   decoration: InputDecoration(
                     hintText: "Nội dung",
                     hintStyle: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 15,
-                      color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
+                      color: isDarkMode
+                          ? Colors.white30
+                          : const Color(0xFF8E8E93),
                     ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(8),
+
+                    contentPadding: const EdgeInsets.all(16),
+
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white24
+                            : const Color(0xFF8E8E93),
+                      ),
+                    ),
+
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF457EC0),
+                        width: 2,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -322,16 +360,16 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         Expanded(
           flex: 2,
           child: Container(
-            padding: const EdgeInsets.only(left: 8),
-            decoration: BoxDecoration(
-              border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-            ),
+            padding: EdgeInsets.zero,
             child: DropdownButtonFormField<String>(
               value: _selectedSemester,
               dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
               decoration: const InputDecoration(
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: 8),
+                contentPadding: EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
               ),
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
@@ -367,13 +405,16 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     );
   }
 
-  Widget _buildUnderlineTextField(BuildContext context, TextEditingController ctrl, String hint, {List<TextInputFormatter>? inputFormatters, TextInputType? keyboardType}) {
+  Widget _buildUnderlineTextField(
+      BuildContext context,
+      TextEditingController ctrl,
+      String hint, {
+        List<TextInputFormatter>? inputFormatters,
+        TextInputType? keyboardType,
+      }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
       padding: const EdgeInsets.only(left: 8),
-      decoration: BoxDecoration(
-        border: Border(bottom: BorderSide(color: isDarkMode ? Colors.white24 : const Color(0xFF8E8E93), width: 1.0)),
-      ),
       child: TextField(
         controller: ctrl,
         inputFormatters: inputFormatters,
@@ -391,7 +432,10 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
             color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
           ),
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+          contentPadding: const EdgeInsets.symmetric(
+            vertical: 8,
+            horizontal: 8,
+          ),
         ),
       ),
     );

@@ -130,13 +130,15 @@ class _MyEventTabState extends State<MyEventTab>
     _isCleaningExpiredEvents = true;
 
     try {
-      final now = Timestamp.fromDate(DateTime.now());
+      final deleteBefore = Timestamp.fromDate(
+        DateTime.now().subtract(const Duration(days: 7)),
+      );
 
       final snapshot = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('personal_events')
-          .where('dateTime', isLessThan: now)
+          .where('dateTime', isLessThan: deleteBefore)
           .get();
 
       if (snapshot.docs.isEmpty) return;
@@ -181,7 +183,9 @@ class _MyEventTabState extends State<MyEventTab>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
 
-    final now = DateTime.now();
+    final sevenDaysAgo = DateTime.now().subtract(
+      const Duration(days: 7),
+    );
 
     return FirebaseFirestore.instance
         .collection('users')
@@ -189,7 +193,7 @@ class _MyEventTabState extends State<MyEventTab>
         .collection('personal_events')
         .where(
       'dateTime',
-      isGreaterThanOrEqualTo: Timestamp.fromDate(now),
+      isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo),
     )
         .orderBy('dateTime', descending: _listFilter == 'Xa nhất')
         .snapshots()
@@ -525,14 +529,22 @@ class _MyEventTabState extends State<MyEventTab>
               builder: (context, snapshot) {
                 final List<EventModel> allEvents = snapshot.data ?? [];
 
+                final now = DateTime.now();
+                final bool isToday = DateUtils.isSameDay(
+                  _selectedDay,
+                  DateTime.now(),
+                );
+
+                final bool isPastSelectedDay =
+                _selectedDay!.isBefore(DateUtils.dateOnly(DateTime.now()));
+
                 final int count = isListView
-                    ? allEvents.length
+                    ? allEvents.where((e) => !e.dateTime.isBefore(now)).length
                     : allEvents
                     .where(
-                      (e) => DateUtils.isSameDay(
-                    e.dateTime,
-                    _selectedDay,
-                  ),
+                      (e) =>
+                  DateUtils.isSameDay(e.dateTime, _selectedDay) &&
+                      !e.dateTime.isBefore(now),
                 )
                     .length;
 
@@ -554,10 +566,11 @@ class _MyEventTabState extends State<MyEventTab>
                       padding: const EdgeInsets.only(bottom: 14),
                       child: Text(
                         isListView
-                            ? 'Bạn đang có $count sự kiện sắp diễn ra'
-                            : DateUtils.isSameDay(
-                            _selectedDay, DateTime.now())
-                            ? 'Hôm nay có $count sự kiện sắp diễn ra'
+                        ? 'Bạn đang có $count sự kiện sắp diễn ra'
+                            : isToday
+                        ? 'Hôm nay có $count sự kiện sắp diễn ra'
+                            : isPastSelectedDay
+                        ? 'Các sự kiện của ngày đã chọn'
                             : 'Ngày này có $count sự kiện sắp diễn ra',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
@@ -709,7 +722,13 @@ class _MyEventTabState extends State<MyEventTab>
                 ][day.weekday % 7];
 
                 return GestureDetector(
-                  onTap: () => setState(() => _selectedDay = day),
+                  onTap: () {
+                    setState(() {
+                      _selectedDay = day;
+                      _focusedDay = day;
+                      _selectedMonth = day.month;
+                    });
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 220),
                     width: 50,
@@ -865,7 +884,12 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildTimelineRow(bool isDarkMode, EventModel ev, int index) {
-    final Color vintageBg = _getVintageColor(index, isDarkMode);
+    final bool isPastEvent = ev.dateTime.isBefore(DateTime.now());
+
+    final Color vintageBg = isPastEvent
+        ? (isDarkMode ? const Color(0xFF242424) : const Color(0xFFF1F1F1))
+        : _getVintageColor(index, isDarkMode);
+
     final List<Color> accentColors = [
       Colors.brown,
       Colors.teal,
@@ -873,7 +897,9 @@ class _MyEventTabState extends State<MyEventTab>
       Colors.deepOrange,
       Colors.blueGrey,
     ];
-    final Color accentColor = accentColors[index % accentColors.length];
+
+    final Color accentColor =
+    isPastEvent ? Colors.grey : accentColors[index % accentColors.length];
 
     return Padding(
       padding: const EdgeInsets.only(left: 16, bottom: 24),
@@ -889,7 +915,9 @@ class _MyEventTabState extends State<MyEventTab>
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
                     fontSize: 18,
-                    color: _primaryTextColor(isDarkMode),
+                    color: isPastEvent
+                        ? _secondaryTextColor(isDarkMode)
+                        : _primaryTextColor(isDarkMode),
                   ),
                 ),
                 Text(
@@ -912,18 +940,25 @@ class _MyEventTabState extends State<MyEventTab>
                 color: vintageBg,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isDarkMode
+                  color: isPastEvent
+                      ? Colors.grey.withOpacity(0.18)
+                      : (isDarkMode
                       ? Colors.white.withOpacity(0.05)
-                      : accentColor.withOpacity(0.1),
+                      : accentColor.withOpacity(0.1)),
                 ),
-                boxShadow: _cardShadow(isDarkMode),
+                boxShadow: isPastEvent ? [] : _cardShadow(isDarkMode),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: IntrinsicHeight(
                   child: Row(
                     children: [
-                      Container(width: 5, color: accentColor.withOpacity(0.4)),
+                      Container(
+                        width: 5,
+                        color: accentColor.withOpacity(
+                          isPastEvent ? 0.28 : 0.4,
+                        ),
+                      ),
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -938,7 +973,9 @@ class _MyEventTabState extends State<MyEventTab>
                                       style: TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
-                                        color: _primaryTextColor(isDarkMode),
+                                        color: isPastEvent
+                                            ? _secondaryTextColor(isDarkMode)
+                                            : _primaryTextColor(isDarkMode),
                                       ),
                                     ),
                                   ),
@@ -967,6 +1004,27 @@ class _MyEventTabState extends State<MyEventTab>
                                   ),
                                 ],
                               ),
+                              if (isPastEvent) ...[
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Đã diễn ra',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
                               const SizedBox(height: 12),
                               GestureDetector(
                                 onTap: () => _showEventDetailsBottomSheet(
@@ -977,7 +1035,7 @@ class _MyEventTabState extends State<MyEventTab>
                                 child: Text(
                                   'Xem chi tiết',
                                   style: TextStyle(
-                                    color: accentColor,
+                                    color: isPastEvent ? Colors.grey : accentColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -999,20 +1057,40 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildLargeEventCard(EventModel ev, bool isDarkMode, int index) {
-    final Color vintageBg = _getVintageColor(index, isDarkMode);
-    final diff = ev.dateTime.difference(DateTime.now());
+    final now = DateTime.now();
+    final bool isPastEvent = ev.dateTime.isBefore(now);
 
-    final String timeStatus = diff.isNegative
-        ? 'Đang diễn ra'
-        : (diff.inDays > 0
-        ? 'Trong ${diff.inDays} ngày'
-        : (diff.inHours > 0
-        ? 'Trong ${diff.inHours} giờ'
-        : 'Trong ${diff.inMinutes} phút'));
+    final Color vintageBg = isPastEvent
+        ? (isDarkMode ? const Color(0xFF242424) : const Color(0xFFF1F1F1))
+        : _getVintageColor(index, isDarkMode);
+
+    final diff = ev.dateTime.difference(now);
+
+    String timeStatus;
+
+    if (diff.isNegative) {
+      if (diff.inDays.abs() >= 1) {
+        timeStatus = '${diff.inDays.abs()} ngày trước';
+      } else if (diff.inHours.abs() >= 1) {
+        timeStatus = '${diff.inHours.abs()} giờ trước';
+      } else {
+        timeStatus = '${diff.inMinutes.abs()} phút trước';
+      }
+    } else {
+      if (diff.inDays > 0) {
+        timeStatus = 'Trong ${diff.inDays} ngày';
+      } else if (diff.inHours > 0) {
+        timeStatus = 'Trong ${diff.inHours} giờ';
+      } else {
+        timeStatus = 'Trong ${diff.inMinutes} phút';
+      }
+    }
 
     final Color statusColor = diff.isNegative
-        ? Colors.redAccent
-        : (diff.inDays == 0 ? Colors.orangeAccent : figmaSelectionBlue);
+        ? Colors.grey
+        : (diff.inDays == 0
+        ? Colors.orangeAccent
+        : figmaSelectionBlue);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1133,28 +1211,53 @@ class _MyEventTabState extends State<MyEventTab>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            timeStatus,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: statusColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                timeStatus,
+                                style: TextStyle(
+                                  color: statusColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
-                          ),
+                            if (isPastEvent) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Text(
+                                  'Đã diễn ra',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         Text(
                           'Chi tiết',
                           style: TextStyle(
-                            color: figmaDetailBtn,
+                            color: isPastEvent ? Colors.grey : figmaDetailBtn,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
