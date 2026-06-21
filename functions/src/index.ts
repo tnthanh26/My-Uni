@@ -168,9 +168,23 @@ export const chatWithUEm = onCall(async (request) => {
     return cachedData;
   }
 
-  // 5. Proxy to Python Server
+  // 5. Fetch Python Server URL from Firestore
+  let serverUrl = "https://34-21-243-141.sslip.io/chat";
   try {
-    const response = await fetch("http://34.21.243.141:8000/chat", {
+    const configDoc = await db.collection("system_config").doc("chatbot").get();
+    if (configDoc.exists) {
+      const data = configDoc.data();
+      if (data && data.server_url) {
+        serverUrl = data.server_url;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching chatbot server URL config:", error);
+  }
+
+  // 6. Proxy to Python Server
+  try {
+    const response = await fetch(serverUrl, {
       method: "POST",
       headers: {"Content-Type": "application/json"},
       body: JSON.stringify({query: query}),
@@ -182,7 +196,7 @@ export const chatWithUEm = onCall(async (request) => {
 
     const result = await response.json();
 
-    // 6. Save to Cache & Update Rate Limit
+    // 7. Save to Cache & Update Rate Limit
     await Promise.all([
       cacheRef.set({
         answer: result.answer,

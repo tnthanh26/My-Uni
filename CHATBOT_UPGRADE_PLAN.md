@@ -25,5 +25,7 @@ Initially, the plan was to implement all security layers directly on the Python 
 ## Current Status & Next Steps
 - [x] **Frontend:** Updated `chatbot_page.dart` to extract Firebase ID Token and handle `429 Too Many Requests`.
 - [x] **Proxy:** Developed the `chatWithUEm` Cloud Function in `functions/src/index.ts` with all 4 layers.
-- [ ] **Pending Integration:** The Cloud Functions deployment is temporarily paused. The Flutter app is currently reverted to use the direct HTTP call `http://34.21.243.141:8000/chat`.
-- [ ] **Next Action:** Focus on refining and finding the best API constraint/model for the Python FastAPI server. Once the Python server is finalized, deploy the Firebase Cloud Function and reconnect the App to use the secure proxy.
+- [x] **Firebase Config:** Configured the proxy Cloud Function to dynamically retrieve the Python FastAPI server URL from Firestore (`system_config/chatbot` document, `server_url` field), with a fallback to the last-known HTTPS URL.
+- [x] **Integration:** Reconnected the Flutter app to call the secure Firebase Cloud Function proxy endpoint (`https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/chatWithUEm`) instead of calling the FastAPI server directly.
+- [ ] **Next Action:** Test the integration end-to-end once the Cloud Function is fully deployed and the Firestore configuration is set.
+
