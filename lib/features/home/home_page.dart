@@ -9,6 +9,7 @@ import 'package:my_uni/features/home/material_tab.dart';
 import 'package:my_uni/features/account/account_page.dart';
 import 'package:my_uni/features/chatbot/chatbot_page.dart';
 import 'package:my_uni/features/event/event_page.dart';
+import 'package:my_uni/features/event/my_event_tab.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
@@ -67,6 +68,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    EventPageNotifier.isActive.value = (index == 1);
   }
 
   Widget _buildHeaderBackground(BuildContext context) {

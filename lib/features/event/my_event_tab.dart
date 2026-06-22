@@ -15,6 +15,10 @@ enum EventTabMode {
   community,
 }
 
+class EventPageNotifier {
+  static final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
+}
+
 class MyEventTab extends StatefulWidget {
   final EventTabMode mode;
 
@@ -48,11 +52,16 @@ class _MyEventTabState extends State<MyEventTab>
   @override
   void initState() {
     super.initState();
+    EventPageNotifier.isActive.addListener(_onActiveStateChanged);
 
     _viewTabController = TabController(length: 2, vsync: this);
     _viewTabController!.addListener(() {
       if (!_viewTabController!.indexIsChanging) {
-        setState(() {});
+        setState(() {
+          _selectedDay = DateTime.now();
+          _focusedDay = DateTime.now();
+          _selectedMonth = DateTime.now().month;
+        });
       }
     });
 
@@ -68,8 +77,19 @@ class _MyEventTabState extends State<MyEventTab>
     });
   }
 
+  void _onActiveStateChanged() {
+    if (mounted && EventPageNotifier.isActive.value) {
+      setState(() {
+        _selectedDay = DateTime.now();
+        _focusedDay = DateTime.now();
+        _selectedMonth = DateTime.now().month;
+      });
+    }
+  }
+
   @override
   void dispose() {
+    EventPageNotifier.isActive.removeListener(_onActiveStateChanged);
     _refreshTimer?.cancel();
     _viewTabController?.dispose();
     super.dispose();
@@ -711,6 +731,7 @@ class _MyEventTabState extends State<MyEventTab>
               itemBuilder: (context, index) {
                 final DateTime day = weekDays[index];
                 final bool isSelected = DateUtils.isSameDay(day, _selectedDay);
+                final bool isToday = DateUtils.isSameDay(day, DateTime.now());
                 final String label = [
                   'CN',
                   'T2',
@@ -740,6 +761,12 @@ class _MyEventTabState extends State<MyEventTab>
                       color:
                       isSelected ? figmaSelectionBlue : Colors.transparent,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: !isSelected && isToday
+                            ? figmaSelectionBlue.withOpacity(0.5)
+                            : Colors.transparent,
+                        width: 1.5,
+                      ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -749,9 +776,11 @@ class _MyEventTabState extends State<MyEventTab>
                           style: TextStyle(
                             color: isSelected
                                 ? Colors.white
-                                : _secondaryTextColor(isDarkMode),
+                                : (isToday
+                                    ? figmaSelectionBlue
+                                    : _secondaryTextColor(isDarkMode)),
                             fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -762,9 +791,24 @@ class _MyEventTabState extends State<MyEventTab>
                             fontWeight: FontWeight.bold,
                             color: isSelected
                                 ? Colors.white
-                                : _primaryTextColor(isDarkMode),
+                                : (isToday
+                                    ? figmaSelectionBlue
+                                    : _primaryTextColor(isDarkMode)),
                           ),
                         ),
+                        if (isToday) ...[
+                          const SizedBox(height: 2),
+                          Container(
+                            width: 5,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.white : figmaSelectionBlue,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ] else ...[
+                          const SizedBox(height: 7),
+                        ],
                       ],
                     ),
                   ),
@@ -1211,49 +1255,53 @@ class _MyEventTabState extends State<MyEventTab>
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 5,
-                              ),
-                              decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                timeStatus,
-                                style: TextStyle(
-                                  color: statusColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            if (isPastEvent) ...[
-                              const SizedBox(width: 8),
+                        Expanded(
+                          child: Wrap(
+                            spacing: 8,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
                               Container(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: 10,
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey.withOpacity(0.15),
+                                  color: statusColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Text(
-                                  'Đã diễn ra',
+                                child: Text(
+                                  timeStatus,
                                   style: TextStyle(
-                                    color: Colors.grey,
+                                    color: statusColor,
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
+                              if (isPastEvent)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Text(
+                                    'Đã diễn ra',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                             ],
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Text(
                           'Chi tiết',
                           style: TextStyle(
