@@ -155,15 +155,15 @@ class _CreatePostPageState extends State<CreatePostPage> {
       combinedText += " ${_pollOptionControllers.map((c) => c.text).join(' ')}";
     }
 
-    // Gọi service để lấy danh sách từ vi phạm
-    List<String> violations = ContentService.getViolatedWords(combinedText);
-    if (violations.isNotEmpty) {
+    // 1. Kiểm tra từ cấm (Blacklist) - Bắt buộc sửa
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(combinedText);
+    if (blacklistViolations.isNotEmpty) {
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Yêu cầu sửa nội dung"),
-          content: Text("Nội dung hoặc lựa chọn khảo sát chứa từ ngữ không phù hợp: (${violations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+          content: Text("Nội dung hoặc lựa chọn khảo sát chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -173,6 +173,33 @@ class _CreatePostPageState extends State<CreatePostPage> {
         ),
       );
       return;
+    }
+
+    // 2. Kiểm tra từ nhạy cảm (Sensitive List) - Cảnh báo trước khi đăng
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(combinedText);
+    if (sensitiveViolations.isNotEmpty) {
+      bool shouldSubmit = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+          content: Text("Nội dung chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bài viết sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Quay lại sửa"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Vẫn đăng"),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (!shouldSubmit) {
+        return;
+      }
     }
 
     setState(() => _isSubmitting = true);
