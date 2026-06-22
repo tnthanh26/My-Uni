@@ -14,12 +14,13 @@ module.exports = {
   ],
   parser: "@typescript-eslint/parser",
   parserOptions: {
-    project: ["tsconfig.json", "tsconfig.dev.json"],
+    project: ["tsconfig.json"],
     sourceType: "module",
     tsconfigRootDir: __dirname,
   },
   ignorePatterns: [
     "/lib/**/*", // Ignore built files.
+    ".eslintrc.js",
   ],
   plugins: [
     "@typescript-eslint",
@@ -33,6 +34,7 @@ module.exports = {
     "camelcase": "off",
     "require-jsdoc": "off",
     "@typescript-eslint/no-unused-vars": "warn",
-    "valid-jsdoc": "off"
+    "valid-jsdoc": "off",
+    "linebreak-style": "off"
   },
 };

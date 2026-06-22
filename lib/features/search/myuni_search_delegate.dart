@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -427,24 +428,32 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     selectedHashtags.where((t) => t != 'Tất cả').toList();
     final String tagParam = activeTags.isEmpty ? '' : activeTags.join(',');
 
-    final uri = Uri.parse('https://34-142-139-17.sslip.io/search').replace(
-      queryParameters: {
-        'query': cleanQuery,
-        'scope': scopeString,
-        'tag': tagParam,
-        'sort': sortOrder,
-      },
-    );
-
     try {
-      final response = await http.get(uri).timeout(
-        const Duration(seconds: 15),
-      );
+      final user = FirebaseAuth.instance.currentUser;
+      final idToken = await user?.getIdToken();
+
+      final url = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/semanticSearch');
+
+      final response = await http.post(
+        url,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          if (idToken != null) "Authorization": "Bearer $idToken",
+        },
+        body: utf8.encode(jsonEncode({
+          "data": {
+            "query": cleanQuery,
+            "scope": scopeString,
+            "tag": tagParam,
+            "sort": sortOrder,
+          }
+        })),
+      ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final List<dynamic>? data =
-        jsonDecode(utf8.decode(response.bodyBytes));
-        return data ?? [];
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final result = data['result'];
+        return result is List ? result : [];
       } else {
         throw Exception('Search API error: ${response.statusCode}');
       }

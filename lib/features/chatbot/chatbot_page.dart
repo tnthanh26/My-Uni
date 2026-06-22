@@ -80,35 +80,42 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       final user = FirebaseAuth.instance.currentUser;
       final idToken = await user?.getIdToken();
 
-      final url = Uri.parse('https://34-21-243-141.sslip.io/chat');
+      final url = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/chatWithUEm');
 
       final response = await http.post(
         url,
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json; charset=utf-8",
           if (idToken != null) "Authorization": "Bearer $idToken",
         },
-        body: jsonEncode({"query": userText}),
+        body: utf8.encode(jsonEncode({
+          "data": {"query": userText}
+        })),
       ).timeout(const Duration(seconds: 60));
 
       if (!mounted) return;
 
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+
       if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        String botAnswer = data['answer'];
+        final result = data['result'];
+        String botAnswer = result != null ? result['answer'] : "Không nhận được câu trả lời từ Ú Em.";
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: botAnswer, isUser: false));
         });
-      } else if (response.statusCode == 429) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        String errorMessage = data['detail'] ?? "Bạn đã hết 10 lượt hỏi trong hôm nay. Hãy quay lại vào ngày mai nhé!";
+      } else {
+        String errorMessage = "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏";
+        if (data is Map && data['error'] != null) {
+          final error = data['error'];
+          if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+        }
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: errorMessage, isUser: false));
         });
-      } else {
-        throw Exception("Lỗi server: ${response.statusCode}");
       }
     } catch (e) {
       if (!mounted) return;
