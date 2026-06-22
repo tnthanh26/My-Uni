@@ -67,16 +67,16 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
 
     String combinedText =
         "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
-    List<String> violations = ContentService.getViolatedWords(combinedText);
-
-    if (violations.isNotEmpty) {
+    // 1. Kiểm tra từ cấm (Blacklist) - Bắt buộc sửa
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(combinedText);
+    if (blacklistViolations.isNotEmpty) {
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Nội dung không hợp lệ"),
           content: Text(
-            "Thông tin review có chứa từ ngữ vi phạm: (${violations.join(', ')}). Bạn cần sửa lại trước khi lưu.",
+            "Thông tin review có chứa từ ngữ vi phạm: (${blacklistViolations.join(', ')}). Bạn cần sửa lại trước khi lưu.",
           ),
           actions: [
             TextButton(
@@ -87,6 +87,35 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         ),
       );
       return;
+    }
+
+    // 2. Kiểm tra từ nhạy cảm (Sensitive List) - Cảnh báo trước khi đăng
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(combinedText);
+    if (sensitiveViolations.isNotEmpty) {
+      bool shouldSubmit = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+          content: Text(
+            "Thông tin review có chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục lưu, review sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Quay lại sửa"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Vẫn lưu"),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (!shouldSubmit) {
+        return;
+      }
     }
 
     setState(() => _isSubmitting = true);

@@ -452,11 +452,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
               String newContent = editController.text.trim();
               if (newContent.isEmpty) return;
 
-              // Check for violated words
-              List<String> violations = ContentService.getViolatedWords(newContent);
-              if (violations.isNotEmpty) {
+              // Check for violated words (Blacklist & Sensitive)
+              List<String> blacklistViolations = ContentService.getBlacklistedWords(newContent);
+              if (blacklistViolations.isNotEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Nội dung chứa từ ngữ không phù hợp: ${violations.join(', ')}")),
+                  SnackBar(content: Text("Nội dung chứa từ ngữ không phù hợp: ${blacklistViolations.join(', ')}")),
+                );
+                return;
+              }
+
+              List<String> sensitiveViolations = ContentService.getSensitiveWords(newContent);
+              if (sensitiveViolations.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Nội dung chứa từ ngữ nhạy cảm: ${sensitiveViolations.join(', ')}")),
                 );
                 return;
               }
@@ -533,6 +541,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
     if (_user == null || _commentController.text.trim().isEmpty) return;
 
     String content = _commentController.text.trim();
+
+    // 1. Kiểm tra từ cấm
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(content);
+    if (blacklistViolations.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Bình luận chứa từ ngữ không phù hợp: ${blacklistViolations.join(', ')}")),
+      );
+      return;
+    }
+
+    // 2. Kiểm tra từ nhạy cảm
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(content);
+    if (sensitiveViolations.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Bình luận chứa từ ngữ nhạy cảm: ${sensitiveViolations.join(', ')}")),
+      );
+      return;
+    }
+
     String? parentId = _replyingToId;
 
     _commentController.clear();
