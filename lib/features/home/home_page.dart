@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
 import 'package:my_uni/features/home/forum_tab.dart';
 import 'package:my_uni/features/home/official_tab.dart';
@@ -15,9 +16,12 @@ import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'animated_bottom_nav.dart';
+import 'onboarding_dialog.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  static final ValueNotifier<bool> showWalkthroughNotifier = ValueNotifier<bool>(false);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -25,6 +29,58 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  bool _showWalkthrough = false;
+  int _walkthroughStep = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOnboarding();
+    HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
+  }
+
+  @override
+  void dispose() {
+    HomePage.showWalkthroughNotifier.removeListener(_onWalkthroughTriggered);
+    super.dispose();
+  }
+
+  void _onWalkthroughTriggered() {
+    if (HomePage.showWalkthroughNotifier.value) {
+      setState(() {
+        _showWalkthrough = true;
+        _walkthroughStep = 0;
+        _selectedIndex = 0;
+        EventPageNotifier.isActive.value = (_selectedIndex == 1);
+      });
+      HomePage.showWalkthroughNotifier.value = false;
+    }
+  }
+
+  Future<void> _checkOnboarding() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final key = 'show_onboarding_${user.uid}';
+        final showOnboarding = prefs.getBool(key) ?? false;
+        if (showOnboarding) {
+          // Xóa cờ ngay lập tức để không hiện lại lần sau
+          await prefs.setBool(key, false);
+          if (mounted) {
+            setState(() {
+              _showWalkthrough = true;
+              _walkthroughStep = 0;
+              _selectedIndex = 0;
+              EventPageNotifier.isActive.value = (_selectedIndex == 1);
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint("Error checking onboarding: $e");
+      }
+    }
+  }
 
   Future<void> _toggleSavePost({
     required BuildContext context,
@@ -283,6 +339,266 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _nextWalkthroughStep() {
+    setState(() {
+      if (_walkthroughStep < walkthroughSteps.length - 1) {
+        _walkthroughStep++;
+        _selectedIndex = _walkthroughStep;
+        EventPageNotifier.isActive.value = (_selectedIndex == 1);
+      } else {
+        _showWalkthrough = false;
+        _saveOnboardingDone();
+      }
+    });
+  }
+
+  void _prevWalkthroughStep() {
+    if (_walkthroughStep > 0) {
+      setState(() {
+        _walkthroughStep--;
+        _selectedIndex = _walkthroughStep;
+        EventPageNotifier.isActive.value = (_selectedIndex == 1);
+      });
+    }
+  }
+
+  void _skipWalkthrough() {
+    setState(() {
+      _showWalkthrough = false;
+      _saveOnboardingDone();
+    });
+  }
+
+  Future<void> _saveOnboardingDone() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final key = 'show_onboarding_${user.uid}';
+        await prefs.setBool(key, false);
+      } catch (e) {
+        debugPrint("Error saving onboarding: $e");
+      }
+    }
+  }
+
+  Widget _buildWalkthroughOverlay() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mediaQuery = MediaQuery.of(context);
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+        final double screenWidth = constraints.maxWidth;
+        final double screenHeight = constraints.maxHeight;
+        final double paddingBottom = mediaQuery.padding.bottom;
+
+        final stepData = walkthroughSteps[_walkthroughStep];
+
+        final double cardWidth = (screenWidth * 0.88).clamp(280.0, 360.0);
+        final double cardHeight = 245;
+        final double cardLeft = ((screenWidth - cardWidth) / 2)
+            .clamp(12.0, screenWidth - cardWidth - 12);
+
+        return SizedBox(
+          width: screenWidth,
+          height: screenHeight,
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    size: Size(screenWidth, screenHeight),
+                    painter: WalkthroughSpotlightPainter(
+                      step: _walkthroughStep,
+                      screenWidth: screenWidth,
+                      screenHeight: screenHeight,
+                      paddingBottom: paddingBottom,
+                    ),
+                  ),
+                ),
+              ),
+
+              Positioned.fill(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {},
+                ),
+              ),
+
+              Positioned(
+                left: cardLeft,
+                bottom: paddingBottom + 84,
+                width: cardWidth,
+                height: cardHeight,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1E1E24) : Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: stepData.accentColor.withOpacity(0.6),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.35),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        left: 18,
+                        top: 16,
+                        width: 36,
+                        height: 36,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: stepData.accentColor.withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            stepData.icon,
+                            color: stepData.accentColor,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+
+                      Positioned(
+                        left: 64,
+                        top: 17,
+                        right: 54,
+                        height: 42,
+                        child: Text(
+                          stepData.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            decoration: TextDecoration.none,
+                            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          ),
+                        ),
+                      ),
+
+                      Positioned(
+                        right: 18,
+                        top: 24,
+                        child: Text(
+                          "${_walkthroughStep + 1}/${walkthroughSteps.length}",
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            decoration: TextDecoration.none,
+                            color: isDarkMode ? Colors.white54 : Colors.black45,
+                          ),
+                        ),
+                      ),
+
+                      Positioned(
+                        left: 18,
+                        right: 18,
+                        top: 72,
+                        height: 104,
+                        child: Text(
+                          stepData.description.replaceAll('**', ''),
+                          maxLines: 5,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 13.5,
+                            height: 1.45,
+                            decoration: TextDecoration.none,
+                            color: isDarkMode ? Colors.white70 : Colors.black87,
+                          ),
+                        ),
+                      ),
+
+                      Positioned(
+                        left: 18,
+                        bottom: 16,
+                        width: 88,
+                        height: 38,
+                        child: GestureDetector(
+                          onTap: _skipWalkthrough,
+                          behavior: HitTestBehavior.opaque,
+                          child: Center(
+                            child: Text(
+                              "Bỏ qua",
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13,
+                                decoration: TextDecoration.none,
+                                color: isDarkMode ? Colors.white38 : Colors.black38,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      if (_walkthroughStep > 0)
+                        Positioned(
+                          right: 124,
+                          bottom: 16,
+                          width: 38,
+                          height: 38,
+                          child: GestureDetector(
+                            onTap: _prevWalkthroughStep,
+                            behavior: HitTestBehavior.opaque,
+                            child: Icon(
+                              Icons.arrow_back_rounded,
+                              color: stepData.accentColor,
+                              size: 22,
+                            ),
+                          ),
+                        ),
+
+                      Positioned(
+                        right: 18,
+                        bottom: 16,
+                        width: 100,
+                        height: 38,
+                        child: GestureDetector(
+                          onTap: _nextWalkthroughStep,
+                          behavior: HitTestBehavior.opaque,
+                          child: Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: stepData.accentColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Text(
+                              _walkthroughStep == walkthroughSteps.length - 1
+                                  ? "Xong"
+                                  : "Tiếp theo",
+                              style: const TextStyle(
+                                fontFamily: 'Nunito',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                decoration: TextDecoration.none,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
@@ -295,9 +611,17 @@ class _HomePageState extends State<HomePage> {
 
     return PopScope(
       canPop: false,
-      child: Scaffold(
-        body: IndexedStack(index: _selectedIndex, children: pages),
-        bottomNavigationBar: _buildBottomNav(),
+      child: Stack(
+        children: [
+          Scaffold(
+            body: IndexedStack(index: _selectedIndex, children: pages),
+            bottomNavigationBar: _buildBottomNav(),
+          ),
+          if (_showWalkthrough)
+            Positioned.fill(
+              child: _buildWalkthroughOverlay(),
+            ),
+        ],
       ),
     );
   }

@@ -10,6 +10,7 @@ import 'setting_page.dart';
 import 'my_post_page.dart';
 import 'my_review_page.dart';
 import 'saved_posts_page.dart';
+import '../home/onboarding_dialog.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -700,6 +701,15 @@ class AccountPage extends StatelessWidget {
                               builder: (context) => const UtilitiesPage(),
                             ),
                           );
+                        },
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildAccountItem(
+                        context,
+                        icon: Icons.explore_outlined,
+                        title: 'Hướng dẫn sử dụng',
+                        onTap: () {
+                          showOnboardingDialog(context);
                         },
                       ),
                     ],
