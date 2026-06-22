@@ -6,7 +6,8 @@ import 'my_event_tab.dart';
 import 'create_personal_event_page.dart';
 
 class EventPage extends StatefulWidget {
-  const EventPage({super.key});
+  final bool? isActive;
+  const EventPage({super.key, this.isActive = false});
   @override
   State<EventPage> createState() => _EventPageState();
 }
