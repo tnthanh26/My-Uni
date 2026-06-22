@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpPage extends StatefulWidget {
   const OtpPage({super.key});
@@ -71,6 +72,14 @@ class _OtpPageState extends State<OtpPage> {
         'createdAt': FieldValue.serverTimestamp(),
         'lastUpdated': FieldValue.serverTimestamp(),
       });
+
+      // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('show_onboarding_${userCredential.user!.uid}', true);
+      } catch (e) {
+        debugPrint("Error saving onboarding flag: $e");
+      }
 
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
