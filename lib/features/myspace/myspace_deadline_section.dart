@@ -7,6 +7,7 @@ import './services/moodle_token_storage.dart';
 
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusLightGrey = Color(0xFFEFEFEF);
+const Color hcmusRed = Color(0xFFFF6868);
 
 class AutoUpdateToggle extends StatelessWidget {
   final bool isEnabled;
@@ -173,7 +174,7 @@ class MySpaceDeadlineSection extends StatelessWidget {
   }
 }
 
-class MySpaceDeadlineDetailList extends StatelessWidget {
+class MySpaceDeadlineDetailList extends StatefulWidget {
   final List<Deadline> deadlines;
   final int selectedWeekday;
   final List<Map<String, dynamic>> currentWeek;
@@ -192,44 +193,134 @@ class MySpaceDeadlineDetailList extends StatelessWidget {
   });
 
   @override
+  State<MySpaceDeadlineDetailList> createState() => _MySpaceDeadlineDetailListState();
+}
+
+class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
+  bool _showAll = false;
+
+  @override
   Widget build(BuildContext context) {
-    final selectedDate = currentWeek.firstWhere(
-          (d) => d['value'] == selectedWeekday,
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final selectedDate = widget.currentWeek.firstWhere(
+          (d) => d['value'] == widget.selectedWeekday,
     )['fullDate'] as DateTime;
 
-    final filteredDeadlines = deadlines.where((d) {
-      return d.dueDate.year == selectedDate.year &&
-          d.dueDate.month == selectedDate.month &&
-          d.dueDate.day == selectedDate.day;
-    }).toList()
-      ..sort((a, b) {
-        final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
-        final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
-        return aTime.compareTo(bTime);
-      });
-
-    if (filteredDeadlines.isEmpty) {
-      return Center(
-        child: Text(
-          'Không có deadline cho ngày này!',
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white70
-                : Colors.black87,
-          ),
-        ),
-      );
+    final List<Deadline> filteredDeadlines;
+    if (_showAll) {
+      filteredDeadlines = List.from(widget.deadlines)
+        ..sort((a, b) {
+          final dateCompare = a.dueDate.compareTo(b.dueDate);
+          if (dateCompare != 0) return dateCompare;
+          final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+          final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+          return aTime.compareTo(bTime);
+        });
+    } else {
+      filteredDeadlines = widget.deadlines.where((d) {
+        return d.dueDate.year == selectedDate.year &&
+            d.dueDate.month == selectedDate.month &&
+            d.dueDate.day == selectedDate.day;
+      }).toList()
+        ..sort((a, b) {
+          final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+          final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+          return aTime.compareTo(bTime);
+        });
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: filteredDeadlines.length,
-      itemBuilder: (context, index) => _DeadlineDetailCard(
-        deadline: filteredDeadlines[index],
-        onToggleDeadline: onToggleDeadline,
-        onDeleteDeadline: onDeleteDeadline,
-        onEditDeadline: onEditDeadline,
-      ),
+    return Column(
+      children: [
+        // Premium Row to Toggle Mode
+        /*
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _showAll ? "Tất cả deadline" : "Deadline trong ngày",
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white70 : Colors.black87,
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() => _showAll = !_showAll),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: _showAll 
+                        ? hcmusRed.withValues(alpha: 0.15) 
+                        : (isDarkMode ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: _showAll ? hcmusRed : Colors.transparent,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        transitionBuilder: (child, anim) => RotationTransition(
+                          turns: anim,
+                          child: ScaleTransition(scale: anim, child: child),
+                        ),
+                        child: Icon(
+                          _showAll ? Icons.list_alt_rounded : Icons.calendar_today_rounded,
+                          key: ValueKey<bool>(_showAll),
+                          size: 14,
+                          color: _showAll ? hcmusRed : (isDarkMode ? Colors.white70 : Colors.black87),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _showAll ? "Tất cả" : "Theo ngày",
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: _showAll ? hcmusRed : (isDarkMode ? Colors.white70 : Colors.black87),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        */
+        // List of Deadlines
+        Expanded(
+          child: filteredDeadlines.isEmpty
+              ? Center(
+                  child: Text(
+                    _showAll ? 'Không có deadline nào!' : 'Không có deadline cho ngày này!',
+                    style: TextStyle(
+                      color: isDarkMode
+                          ? Colors.white70
+                          : Colors.black87,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 20),
+                  itemCount: filteredDeadlines.length,
+                  itemBuilder: (context, index) => _DeadlineDetailCard(
+                    deadline: filteredDeadlines[index],
+                    onToggleDeadline: widget.onToggleDeadline,
+                    onDeleteDeadline: widget.onDeleteDeadline,
+                    onEditDeadline: widget.onEditDeadline,
+                    showDate: _showAll,
+                  ),
+                ),
+        ),
+      ],
     );
   }
 }
@@ -754,14 +845,21 @@ class _DeadlineDetailCard extends StatelessWidget {
   final ValueChanged<String> onToggleDeadline;
   final ValueChanged<String> onDeleteDeadline;
   final ValueChanged<Deadline> onEditDeadline;
-  const _DeadlineDetailCard({required this.deadline, required this.onToggleDeadline, required this.onDeleteDeadline, required this.onEditDeadline});
+  final bool showDate;
 
+  const _DeadlineDetailCard({
+    required this.deadline,
+    required this.onToggleDeadline,
+    required this.onDeleteDeadline,
+    required this.onEditDeadline,
+    this.showDate = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 15, left: 20, right: 20), height: 94,
+      margin: const EdgeInsets.only(bottom: 22, left: 20, right: 20), height: 94,
       child: Stack(
         children: [
           Container(width: double.infinity, height: 94, decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 32, offset: const Offset(0, 4))])),
@@ -782,7 +880,22 @@ class _DeadlineDetailCard extends StatelessWidget {
             ),
           ),
           Positioned(left: 14, top: 38, child: Text(deadline.title, style: TextStyle(fontFamily: 'Lexend Deca', fontSize: 14, fontWeight: FontWeight.w400, color: isDarkMode ? Colors.white : const Color(0xFF24252C), decoration: deadline.isCompleted ? TextDecoration.lineThrough : null))),
-          Positioned(left: 14, top: 64, child: Row(children: [const Icon(Icons.access_time_filled, size: 14, color: hcmusBlueAccent), const SizedBox(width: 6), Text("${deadline.dueTime.hour}:${deadline.dueTime.minute.toString().padLeft(2, '0')}", style: const TextStyle(fontFamily: 'Lexend Deca', fontSize: 11, color: hcmusBlueAccent))])),
+          Positioned(
+            left: 14,
+            top: 64,
+            child: Row(
+              children: [
+                const Icon(Icons.access_time_filled, size: 14, color: hcmusBlueAccent),
+                const SizedBox(width: 6),
+                Text(
+                  showDate
+                      ? "${deadline.dueTime.hour}:${deadline.dueTime.minute.toString().padLeft(2, '0')} - ${deadline.dueDate.day.toString().padLeft(2, '0')}/${deadline.dueDate.month.toString().padLeft(2, '0')}"
+                      : "${deadline.dueTime.hour}:${deadline.dueTime.minute.toString().padLeft(2, '0')}",
+                  style: const TextStyle(fontFamily: 'Lexend Deca', fontSize: 11, color: hcmusBlueAccent),
+                ),
+              ],
+            ),
+          ),
           Positioned(right: 18, top: 12, child: GestureDetector(onTap: () => _showDeadlineActionMenu(context, deadline, onEditDeadline: onEditDeadline, onDeleteDeadline: onDeleteDeadline), child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20))),
           Positioned(right: 15, top: 55, child: GestureDetector(onTap: () => onToggleDeadline(deadline.id), child: Container(width: 24, height: 24, decoration: BoxDecoration(color: deadline.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white), shape: BoxShape.circle, border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1)), child: deadline.isCompleted ? const Icon(Icons.check, color: Colors.white, size: 16) : null))),
         ],

@@ -605,7 +605,7 @@ class _HomePageState extends State<HomePage> {
       _buildMainHomeContent(),
       const EventPage(),
       const ChatbotPage(),
-      const MySpaceScreen(),
+      MySpaceScreen(isActive: _selectedIndex == 3),
       const AccountPage(),
     ];
 
