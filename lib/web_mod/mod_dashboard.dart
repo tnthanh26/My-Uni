@@ -28,6 +28,7 @@ class _ModDashboardState extends State<ModDashboard> {
   int _selectedCollIndex = 0;
   int _filterStatusIndex = 0;
   String _userSearchKeyword = '';
+  bool _isActionInProgress = false;
 
   final List<String> _collections = [
     'forum_posts',
@@ -429,13 +430,17 @@ class _ModDashboardState extends State<ModDashboard> {
   }
 
   void _handleViewComments(String postId, String collection) {
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
     showDialog(
       context: context,
       builder: (ctx) => ModCommentDialog(
         collection: collection,
         postId: postId,
       ),
-    );
+    ).then((_) {
+      _isActionInProgress = false;
+    });
   }
 
   Widget _buildUserCard(String uid, Map<String, dynamic> data) {
@@ -451,6 +456,8 @@ class _ModDashboardState extends State<ModDashboard> {
 
   void _viewMaterial(Map<String, dynamic> data) {
     if (data['fileData'] == null) return;
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
 
     final String base64str = data['fileData'];
     final String fileName = data['fileName'] ?? "tai_lieu.pdf";
@@ -464,9 +471,14 @@ class _ModDashboardState extends State<ModDashboard> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (data['isImage'] == true)
-                Image.memory(
-                  base64Decode(base64str),
-                  fit: BoxFit.contain,
+                ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.6,
+                  ),
+                  child: Image.memory(
+                    base64Decode(base64str),
+                    fit: BoxFit.contain,
+                  ),
                 )
               else ...[
                 const Icon(Icons.picture_as_pdf, size: 80, color: Colors.redAccent),
@@ -477,11 +489,29 @@ class _ModDashboardState extends State<ModDashboard> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("Đóng")),
+          OutlinedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.grey[700],
+              side: BorderSide(color: Colors.grey[300]!),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text("Đóng"),
+          ),
           ElevatedButton.icon(
-            icon: const Icon(Icons.download, size: 18),
-            label: const Text("TẢI XUỐNG"),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blueAccent),
+            icon: const Icon(Icons.download, size: 16, color: Colors.white),
+            label: const Text("Tải xuống", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: () {
               FileHelper.downloadFile(base64str, fileName);
               Navigator.pop(ctx);
@@ -489,16 +519,20 @@ class _ModDashboardState extends State<ModDashboard> {
           ),
         ],
       ),
-    );
+    ).then((_) {
+      _isActionInProgress = false;
+    });
   }
 
   Future<void> _showUserActivity(String uid, Map<String, dynamic> userData) async {
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
     try {
       final activity = await UserActivityService.getUserActivity(uid);
 
       if (!mounted) return;
 
-      showDialog(
+      await showDialog(
         context: context,
         builder: (ctx) => UserActivityDialog(
           displayName: userData['displayName'] ?? 'user',
@@ -509,277 +543,359 @@ class _ModDashboardState extends State<ModDashboard> {
         ),
       );
     } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Không thể tải hoạt động user: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Không thể tải hoạt động user: $e")),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleSuspendUser(String uid, Map<String, dynamic> data) async {
-    final TextEditingController reasonController = TextEditingController();
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      final TextEditingController reasonController = TextEditingController();
 
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          "Khóa tài khoản?",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(
-            hintText: "Nhập lý do khóa tài khoản...",
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text(
+            "Khóa tài khoản?",
+            style: TextStyle(fontWeight: FontWeight.bold),
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Hủy"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              "Khóa",
-              style: TextStyle(color: Colors.orange),
+          content: TextField(
+            controller: reasonController,
+            decoration: const InputDecoration(
+              hintText: "Nhập lý do khóa tài khoản...",
             ),
           ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    final reason = reasonController.text.trim().isEmpty
-        ? "Tài khoản vi phạm quy định cộng đồng MyUni."
-        : reasonController.text.trim();
-
-    await UserModerationService.suspendUser(
-      uid: uid,
-      data: data,
-      reason: reason,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã khóa tài khoản người dùng.")),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Hủy"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text(
+                "Khóa",
+                style: TextStyle(color: Colors.orange),
+              ),
+            ),
+          ],
+        ),
       );
+
+      if (confirm != true) return;
+
+      final reason = reasonController.text.trim().isEmpty
+          ? "Tài khoản vi phạm quy định cộng đồng MyUni."
+          : reasonController.text.trim();
+
+      await UserModerationService.suspendUser(
+        uid: uid,
+        data: data,
+        reason: reason,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã khóa tài khoản người dùng.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error suspending user: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleRestoreUser(String uid, Map<String, dynamic> data) async {
-    await UserModerationService.restoreUser(
-      uid: uid,
-      data: data,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã khôi phục tài khoản người dùng.")),
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      await UserModerationService.restoreUser(
+        uid: uid,
+        data: data,
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã khôi phục tài khoản người dùng.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error restoring user: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleApprovePost(String docId, Map<String, dynamic> data) async {
-    await PostModerationService.approvePost(
-      collection: _collections[_selectedCollIndex],
-      docId: docId,
-    );
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      await PostModerationService.approvePost(
+        collection: _collections[_selectedCollIndex],
+        docId: docId,
+      );
 
-    _sendNotification(
-      userId: data['authorId'],
-      title: "Bài viết đã được duyệt",
-      content: "Bài viết của bạn đã được phê duyệt thành công.",
-      type: 'comment',
-      postId: docId,
-    );
+      _sendNotification(
+        userId: data['authorId'],
+        title: "Bài viết đã được duyệt",
+        content: "Bài viết của bạn đã được phê duyệt thành công.",
+        type: 'comment',
+        postId: docId,
+      );
+    } catch (e) {
+      debugPrint("Error approving post: $e");
+    } finally {
+      _isActionInProgress = false;
+    }
   }
 
   Future<void> _handleDeletePost(String docId, Map<String, dynamic> data) async {
-    String reason = "Vi phạm tiêu chuẩn cộng đồng.";
-    bool isReported = data['isReported'] ?? false;
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      String reason = "Vi phạm tiêu chuẩn cộng đồng.";
+      bool isReported = data['isReported'] ?? false;
 
-    if (!isReported) {
-      final TextEditingController reasonController = TextEditingController();
-      bool? confirm = await showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text("Lý do xóa bài", style: TextStyle(fontWeight: FontWeight.bold)),
-          content: TextField(
-            controller: reasonController,
-            decoration: const InputDecoration(hintText: "Nhập lý do cụ thể gửi user..."),
+      if (!isReported) {
+        final TextEditingController reasonController = TextEditingController();
+        bool? confirm = await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text("Lý do xóa bài", style: TextStyle(fontWeight: FontWeight.bold)),
+            content: TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(hintText: "Nhập lý do cụ thể gửi user..."),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xác nhận", style: TextStyle(color: Colors.red))),
+            ],
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
-            TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xác nhận", style: TextStyle(color: Colors.red))),
-          ],
-        ),
+        );
+        if (confirm != true) return;
+        reason = reasonController.text.isEmpty
+            ? "Nội dung không phù hợp với quy định của MyUni."
+            : reasonController.text;
+      }
+
+      await PostModerationService.deletePost(
+        collection: _collections[_selectedCollIndex],
+        docId: docId,
       );
-      if (confirm != true) return;
-      reason = reasonController.text.isEmpty
-          ? "Nội dung không phù hợp với quy định của MyUni."
-          : reasonController.text;
-    }
 
-    await PostModerationService.deletePost(
-      collection: _collections[_selectedCollIndex],
-      docId: docId,
-    );
-
-    _sendNotification(
-      userId: data['authorId'],
-      title: "Bài viết bị gỡ bỏ",
-      content: "Lý do: $reason",
-      type: 'warning',
-      postId: docId,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo.")),
+      _sendNotification(
+        userId: data['authorId'],
+        title: "Bài viết bị gỡ bỏ",
+        content: "Lý do: $reason",
+        type: 'warning',
+        postId: docId,
       );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error deleting post: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleRestorePost(String docId, Map<String, dynamic> data) async {
-    await PostModerationService.restorePost(
-      collection: _collections[_selectedCollIndex],
-      docId: docId,
-    );
-
-    _sendNotification(
-      userId: data['authorId'],
-      title: "Bài viết đã được khôi phục",
-      content: "Sau khi xem xét lại, Mod đã khôi phục bài viết của bạn.",
-      type: 'comment',
-      postId: docId,
-    );
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã khôi phục bài viết")),
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      await PostModerationService.restorePost(
+        collection: _collections[_selectedCollIndex],
+        docId: docId,
       );
+
+      _sendNotification(
+        userId: data['authorId'],
+        title: "Bài viết đã được khôi phục",
+        content: "Sau khi xem xét lại, Mod đã khôi phục bài viết của bạn.",
+        type: 'comment',
+        postId: docId,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã khôi phục bài viết")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error restoring post: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleDismissReport(String docId, Map<String, dynamic> data) async {
-    await PostModerationService.dismissReport(
-      collection: _collections[_selectedCollIndex],
-      docId: docId,
-    );
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      await PostModerationService.dismissReport(
+        collection: _collections[_selectedCollIndex],
+        docId: docId,
+      );
+    } catch (e) {
+      debugPrint("Error dismissing report: $e");
+    } finally {
+      _isActionInProgress = false;
+    }
   }
 
   Future<void> _handleEditOfficialNews(String docId, Map<String, dynamic> data) async {
-    final titleController = TextEditingController(text: data['title'] ?? '');
-    final summaryController = TextEditingController(text: data['summary'] ?? '');
-    final departmentController = TextEditingController(text: data['department'] ?? '');
-    final linkController = TextEditingController(text: data['link'] ?? '');
-    final dateController = TextEditingController(text: data['publishedDateText'] ?? '');
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      final titleController = TextEditingController(text: data['title'] ?? '');
+      final summaryController = TextEditingController(text: data['summary'] ?? '');
+      final departmentController = TextEditingController(text: data['department'] ?? '');
+      final linkController = TextEditingController(text: data['link'] ?? '');
+      final dateController = TextEditingController(text: data['publishedDateText'] ?? '');
 
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          "Chỉnh sửa thông báo",
-          style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
-        ),
-        content: SizedBox(
-          width: 550,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: "Tiêu đề"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: departmentController,
-                  decoration: const InputDecoration(labelText: "Phòng ban / đơn vị"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: dateController,
-                  decoration: const InputDecoration(labelText: "Ngày hiển thị"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: linkController,
-                  decoration: const InputDecoration(labelText: "Link bài viết"),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: summaryController,
-                  maxLines: 6,
-                  decoration: const InputDecoration(labelText: "Tóm tắt"),
-                ),
-              ],
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text(
+            "Chỉnh sửa thông báo",
+            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
+          ),
+          content: SizedBox(
+            width: 550,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: "Tiêu đề"),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: departmentController,
+                    decoration: const InputDecoration(labelText: "Phòng ban / đơn vị"),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: dateController,
+                    decoration: const InputDecoration(labelText: "Ngày hiển thị"),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: linkController,
+                    decoration: const InputDecoration(labelText: "Link bài viết"),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: summaryController,
+                    maxLines: 6,
+                    decoration: const InputDecoration(labelText: "Tóm tắt"),
+                  ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            OutlinedButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.grey[700],
+                side: BorderSide(color: Colors.grey[300]!),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text("Hủy"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text("Lưu"),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Hủy"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text("Lưu", style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    await FirebaseFirestore.instance.collection('official_news').doc(docId).update({
-      'title': titleController.text.trim(),
-      'summary': summaryController.text.trim(),
-      'department': departmentController.text.trim(),
-      'link': linkController.text.trim(),
-      'publishedDateText': dateController.text.trim(),
-    });
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã cập nhật thông báo chính thức.")),
       );
+
+      if (confirm != true) return;
+
+      await FirebaseFirestore.instance.collection('official_news').doc(docId).update({
+        'title': titleController.text.trim(),
+        'summary': summaryController.text.trim(),
+        'department': departmentController.text.trim(),
+        'link': linkController.text.trim(),
+        'publishedDateText': dateController.text.trim(),
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã cập nhật thông báo chính thức.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error editing official news: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
   Future<void> _handleDeleteOfficialNews(String docId) async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text(
-          "Xóa thông báo?",
-          style: TextStyle(fontWeight: FontWeight.bold),
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      final bool? confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text(
+            "Xóa thông báo?",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: const Text("Bài viết official news sẽ bị xóa khỏi Firebase. Không gửi thông báo cho user."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Hủy"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+            ),
+          ],
         ),
-        content: const Text("Bài viết official news sẽ bị xóa khỏi Firebase. Không gửi thông báo cho user."),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Hủy"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm != true) return;
-
-    await FirebaseFirestore.instance.collection('official_news').doc(docId).delete();
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã xóa thông báo chính thức.")),
       );
+
+      if (confirm != true) return;
+
+      await FirebaseFirestore.instance.collection('official_news').doc(docId).delete();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã xóa thông báo chính thức.")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error deleting official news: $e");
+    } finally {
+      _isActionInProgress = false;
     }
   }
 
@@ -852,41 +968,49 @@ class _ModDashboardState extends State<ModDashboard> {
               width: double.infinity,
               child: OutlinedButton.icon(
                 onPressed: () async {
-                  final bool? confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (ctx) => AlertDialog(
-                      title: const Text(
-                        "Đăng xuất?",
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      content: const Text(
-                        "Bạn có chắc muốn đăng xuất khỏi tài khoản Moderator?",
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text("Hủy"),
+                  if (_isActionInProgress) return;
+                  _isActionInProgress = true;
+                  try {
+                    final bool? confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text(
+                          "Đăng xuất?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text(
-                            "Đăng xuất",
-                            style: TextStyle(color: Colors.red),
+                        content: const Text(
+                          "Bạn có chắc muốn đăng xuất khỏi tài khoản Moderator?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text("Hủy"),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-
-                  if (confirm != true) return;
-
-                  await FirebaseAuth.instance.signOut();
-
-                  if (mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/',
-                      (route) => false,
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text(
+                              "Đăng xuất",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
                     );
+
+                    if (confirm != true) return;
+
+                    await FirebaseAuth.instance.signOut();
+
+                    if (mounted) {
+                      Navigator.of(context).pushNamedAndRemoveUntil(
+                        '/',
+                        (route) => false,
+                      );
+                    }
+                  } catch (e) {
+                    debugPrint("Error signing out: $e");
+                  } finally {
+                    _isActionInProgress = false;
                   }
                 },
                 icon: const Icon(

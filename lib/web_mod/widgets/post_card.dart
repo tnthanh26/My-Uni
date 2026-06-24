@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'mod_action_button.dart';
-import 'mod_chips.dart';
 
 class PostCard extends StatelessWidget {
   const PostCard({
@@ -125,7 +124,6 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    double toxicity = (data['toxicityScore'] ?? 0).toDouble();
     bool isReported = data['isReported'] ?? false;
     int reportCount = data['reportCount'] ?? 0;
 
@@ -196,7 +194,6 @@ class PostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                ModToxicityBadge(toxicity: toxicity),
               ],
             ),
 
@@ -212,10 +209,40 @@ class PostCard extends StatelessWidget {
                   fontFamily: 'Nunito',
                 ),
               ),
+              const SizedBox(height: 4),
+              Text(
+                "Giảng viên: ${data['teacherName']?.toString().isNotEmpty == true ? data['teacherName'] : 'Chưa cập nhật'}",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                  fontFamily: 'Nunito',
+                ),
+              ),
               const SizedBox(height: 6),
             ],
 
             if (collection == 'study_materials') ...[
+              Text(
+                "Môn học: ${data['courseName']?.toString().isNotEmpty == true ? data['courseName'] : 'Chưa cập nhật'}",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueAccent,
+                  fontSize: 15,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "Giảng viên: ${data['teacherName']?.toString().isNotEmpty == true ? data['teacherName'] : 'Chưa cập nhật'}",
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+              const SizedBox(height: 8),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),

@@ -364,6 +364,19 @@ class _MyPostsPageState extends State<MyPostsPage>
     String currentStatus = data['status'] ?? 'pending';
     final bool isForum = collectionPath == 'forum_posts';
 
+    bool canEdit = true;
+    if (data['timestamp'] != null) {
+      try {
+        final Timestamp ts = data['timestamp'] as Timestamp;
+        final DateTime postTime = ts.toDate();
+        if (DateTime.now().difference(postTime).inHours >= 12) {
+          canEdit = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking post edit timeframe: $e");
+      }
+    }
+
     final String title = isForum
         ? "Bạn"
         : (data['courseName']?.toString().isNotEmpty == true
@@ -600,46 +613,80 @@ class _MyPostsPageState extends State<MyPostsPage>
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _navigateToEdit(
-                            context,
-                            collectionPath,
-                            docId,
-                            data,
-                          ),
-                          icon: const Icon(
-                            Icons.edit_outlined,
-                            color: Color(0xFF5893D8),
-                            size: 18,
-                          ),
-                          label: const Text(
-                            "Chỉnh sửa",
-                            style: TextStyle(
+                      if (canEdit) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _navigateToEdit(
+                              context,
+                              collectionPath,
+                              docId,
+                              data,
+                            ),
+                            icon: const Icon(
+                              Icons.edit_outlined,
                               color: Color(0xFF5893D8),
-                              fontWeight: FontWeight.w700,
-                              fontFamily: 'Encode Sans Expanded',
+                              size: 18,
                             ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFF5893D8)),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            label: const Text(
+                              "Chỉnh sửa",
+                              style: TextStyle(
+                                color: Color(0xFF5893D8),
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Encode Sans Expanded',
+                              ),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            backgroundColor: isDarkMode
-                                ? Colors.white.withOpacity(0.02)
-                                : const Color(0xFFF8FBFF),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF5893D8)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: isDarkMode
+                                  ? Colors.white.withOpacity(0.02)
+                                  : const Color(0xFFF8FBFF),
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      _buildActionButton(
-                        icon: Icons.delete_outline_rounded,
-                        color: const Color(0xFFFF6C6C),
-                        onTap: () => _confirmDelete(context, ref),
-                        isDarkMode: isDarkMode,
-                      ),
+                        const SizedBox(width: 10),
+                      ],
+                      if (!canEdit)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _confirmDelete(context, ref),
+                            icon: const Icon(
+                              Icons.delete_outline_rounded,
+                              color: Color(0xFFFF6C6C),
+                              size: 18,
+                            ),
+                            label: Text(
+                              collectionPath == 'study_materials'
+                                  ? "Xóa tài liệu"
+                                  : "Xóa bài viết",
+                              style: const TextStyle(
+                                color: Color(0xFFFF6C6C),
+                                fontWeight: FontWeight.w700,
+                                fontFamily: 'Encode Sans Expanded',
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFFFF6C6C)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              backgroundColor: isDarkMode
+                                  ? Colors.white.withOpacity(0.02)
+                                  : const Color(0xFFFFF5F5),
+                            ),
+                          ),
+                        )
+                      else
+                        _buildActionButton(
+                          icon: Icons.delete_outline_rounded,
+                          color: const Color(0xFFFF6C6C),
+                          onTap: () => _confirmDelete(context, ref),
+                          isDarkMode: isDarkMode,
+                        ),
                     ],
                   ),
                 ),

@@ -105,6 +105,19 @@ class MyReviewsPage extends StatelessWidget {
       DocumentReference ref,
       bool isDarkMode,
       ) {
+    bool canEdit = true;
+    if (data['timestamp'] != null) {
+      try {
+        final Timestamp ts = data['timestamp'] as Timestamp;
+        final DateTime postTime = ts.toDate();
+        if (DateTime.now().difference(postTime).inHours >= 12) {
+          canEdit = false;
+        }
+      } catch (e) {
+        debugPrint("Error checking review edit timeframe: $e");
+      }
+    }
+
     final int rating = (data['rating'] ?? 0) is int
         ? data['rating'] ?? 0
         : ((data['rating'] ?? 0) as num).toInt();
@@ -205,23 +218,25 @@ class MyReviewsPage extends StatelessWidget {
                       ),
                       Row(
                         children: [
-                          _buildActionButton(
-                            icon: Icons.edit_outlined,
-                            color: const Color(0xFF5893D8),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => CreateReviewPage(
-                                    docId: docId,
-                                    existingData: data,
+                          if (canEdit) ...[
+                            _buildActionButton(
+                              icon: Icons.edit_outlined,
+                              color: const Color(0xFF5893D8),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => CreateReviewPage(
+                                      docId: docId,
+                                      existingData: data,
+                                    ),
                                   ),
-                                ),
-                              );
-                            },
-                            isDarkMode: isDarkMode,
-                          ),
-                          const SizedBox(width: 8),
+                                );
+                              },
+                              isDarkMode: isDarkMode,
+                            ),
+                            const SizedBox(width: 8),
+                          ],
                           _buildActionButton(
                             icon: Icons.delete_outline_rounded,
                             color: const Color(0xFFFF6C6C),
