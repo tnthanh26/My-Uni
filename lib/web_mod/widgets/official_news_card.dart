@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'mod_action_button.dart';
 import 'mod_chips.dart';
@@ -25,6 +26,7 @@ class OfficialNewsCard extends StatelessWidget {
     final authorName = data['authorName'] ?? 'Official';
     final authorId = data['authorId'] ?? '';
     final authorAvatar = data['authorAvatar'] ?? '';
+    final avatarImage = _getAvatarImage(authorAvatar);
     final date = data['publishedDateText'] ?? '';
     final link = data['link'] ?? '';
     final likeCount = data['likeCount'] ?? 0;
@@ -51,9 +53,9 @@ class OfficialNewsCard extends StatelessWidget {
             /// HEADER
             Row(
               children: [
-                authorAvatar.toString().trim().isNotEmpty
+                avatarImage != null
                     ? CircleAvatar(
-                  backgroundImage: NetworkImage(authorAvatar),
+                  backgroundImage: avatarImage,
                   radius: 16,
                 )
                     : const CircleAvatar(
@@ -255,5 +257,17 @@ class OfficialNewsCard extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+ImageProvider? _getAvatarImage(String? avatar) {
+  if (avatar == null || avatar.trim().isEmpty) return null;
+  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+    return NetworkImage(avatar);
+  }
+  try {
+    return MemoryImage(base64Decode(avatar));
+  } catch (e) {
+    return null;
   }
 }

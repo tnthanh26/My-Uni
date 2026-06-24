@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/post_moderation_service.dart';
@@ -17,6 +18,20 @@ class ModCommentDialog extends StatefulWidget {
 }
 
 class _ModCommentDialogState extends State<ModCommentDialog> {
+  bool _isActionInProgress = false;
+  ImageProvider? _getAvatarImage(String? avatar) {
+    if (avatar == null || avatar.trim().isEmpty) return null;
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+      return NetworkImage(avatar);
+    }
+    try {
+      return MemoryImage(base64Decode(avatar));
+    } catch (e) {
+      debugPrint("Error decoding avatar: $e");
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -96,6 +111,7 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                 final comment = orderedComments[index];
                 final data = comment.data() as Map<String, dynamic>;
                 final bool isReply = data['parentCommentId'] != null;
+                final avatarImage = _getAvatarImage(data['authorAvatar']);
 
                 return Column(
                   children: [
@@ -123,10 +139,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                             ),
                           CircleAvatar(
                             radius: 16,
-                            backgroundImage: data['authorAvatar'] != null && data['authorAvatar'] != ''
-                                ? NetworkImage(data['authorAvatar'])
-                                : null,
-                            child: data['authorAvatar'] == null || data['authorAvatar'] == ''
+                            backgroundImage: avatarImage,
+                            child: avatarImage == null
                                 ? const Icon(Icons.person, size: 18)
                                 : null,
                           ),
@@ -218,25 +232,27 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
   }
 
   Future<void> _confirmDeleteComment(String commentId, bool isReply) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Xác nhận xóa"),
-        content: Text(isReply
-            ? "Bạn có chắc chắn muốn xóa phản hồi này?"
-            : "Bạn có chắc chắn muốn xóa bình luận này và tất cả phản hồi liên quan?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text("Xóa", style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text("Xác nhận xóa"),
+          content: Text(isReply
+              ? "Bạn có chắc chắn muốn xóa phản hồi này?"
+              : "Bạn có chắc chắn muốn xóa bình luận này và tất cả phản hồi liên quan?"),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text("Xóa", style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
 
-    if (confirm == true) {
-      try {
+      if (confirm == true) {
         await PostModerationService.deleteComment(
           collection: widget.collection,
           postId: widget.postId,
@@ -247,13 +263,15 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
             const SnackBar(content: Text("Đã xóa bình luận thành công")),
           );
         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Lỗi khi xóa bình luận: $e")),
-          );
-        }
       }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi khi xóa bình luận: $e")),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
     }
   }
 }
