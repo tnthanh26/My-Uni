@@ -68,6 +68,30 @@ The Flutter client communicates with Cloud Function proxies:
 
 ---
 
+## Phân hệ MySpace & Quản lý Deadline/Lịch học
+Chúng ta đã tiến hành cải tiến trải nghiệm người dùng (UX) và sửa một số lỗi cốt lõi trên màn hình MySpace:
+
+### 1. Đồng bộ hóa ngày & tháng khi chuyển giao tuần (Transition Week Month Fix)
+- **Vấn đề:** Khi chọn các ngày nằm trong tuần chuyển giao giữa 2 tháng (ví dụ: ngày 30/6 và 1/7), tháng hiển thị trên tiêu đề không thay đổi theo ngày được chọn.
+- **Giải pháp:** Cập nhật `_focusedDate = dayDate` đồng thời với `selectedWeekday` khi người dùng bấm chọn thứ trong thanh lịch tuần.
+
+### 2. Tự động reset về ngày hôm nay (Auto Reset to Today)
+- **Vấn đề:** Khi đổi tab khác rồi quay lại tab MySpace, ngày được chọn cũ vẫn giữ nguyên làm mất tính cập nhật của lịch học/deadline hôm nay.
+- **Giải pháp:** Thêm thuộc tính `isActive` truyền vào `MySpaceScreen` từ `home_page.dart` và sử dụng `didUpdateWidget` để đưa lịch trình về ngày hiện tại một cách tự động khi người dùng quay lại tab.
+
+### 3. Sửa lỗi sập ứng dụng khi bấm "+" tạo mới (BuildContext Shadowing Fix)
+- **Vấn đề:** Lỗi crash `failed assertion` do shadow `context` của Modal Bottom Sheet khi đóng modal (`Navigator.pop`) rồi chuyển trang (`Navigator.push`) bằng context đã bị hủy.
+- **Giải pháp:** Tách biệt `sheetContext` (để pop modal) và `parentContext` (để push trang mới).
+
+### 4. Tối ưu khoảng cách giao diện (Spacing Optimization)
+- Tăng khoảng đệm trên (top padding) của ListView chi tiết deadline lên `18px` để tạo khoảng thoáng với phần toggle ở trên.
+- Tăng khoảng cách giữa các thẻ deadline (`bottom margin`) lên `22px` giúp tăng độ trực quan khi lướt.
+
+### 5. Tính năng xem tất cả deadline (Tạm ẩn)
+- Thiết kế Toggle Chip với hiệu ứng xoay + phóng to icon thông minh (`AnimatedSwitcher` + `AnimatedContainer`) để lọc "Theo ngày" / "Tất cả". Hiện tại code đang được comment tạm ẩn (`/* ... */`) theo yêu cầu của bạn.
+
+---
+
 ## Current Status & Next Steps
 - [x] **Infrastructure Setup:** Configured Node 24 and Singapore region for Cloud Functions.
 - [x] **Chatbot Proxy Function:** Implemented `chatWithUEm` with all 4 shields and dynamic Firestore URL configuration.
@@ -76,4 +100,6 @@ The Flutter client communicates with Cloud Function proxies:
 - [x] **Chatbot Frontend Integration:** Updated `chatbot_page.dart` to call the Callable Cloud Function proxy and gracefully handle errors.
 - [x] **Search Frontend Integration:** Updated `myuni_search_delegate.dart` to call the `semanticSearch` Cloud Function and extract query results.
 - [x] **Content Submission Status:** Configured frontend creation pages to submit items as `'status': 'pending'` and list screens to only show `'approved'` content.
-- [ ] **Next Action:** Perform end-to-end integration tests once the Cloud Functions are fully deployed and the Firestore configuration database is online.
+- [x] **MySpace UX & Calendar Fixes:** Solved transition month synchronization, auto-reset to today, context shadowing FAB crash, and layout spacing.
+- [ ] **Next Action 1:** Perform end-to-end integration tests once the Cloud Functions are fully deployed and the Firestore configuration database is online.
+- [ ] **Next Action 2:** Re-evaluate and deploy the "View All Deadlines" overlay panel or bottom sheet (UX Option 1) for MySpace.

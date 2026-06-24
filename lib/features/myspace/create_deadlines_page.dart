@@ -103,7 +103,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
           child: const Text('Hủy',
               style: TextStyle(color: accentBlue, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
         ),
-        title: const Text('Tạo Deadlines',
+        title: const Text('Tạo Deadline',
             style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
         centerTitle: true,
         actions: [

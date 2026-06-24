@@ -27,7 +27,8 @@ const Color hcmusRed = Color(0xFFFF6868);
 const Color hcmusLightGrey = Color(0xFFEFEFEF);
 
 class MySpaceScreen extends StatefulWidget {
-  const MySpaceScreen({super.key});
+  final bool isActive;
+  const MySpaceScreen({super.key, this.isActive = false});
 
   @override
   State<MySpaceScreen> createState() => _MySpaceScreenState();
@@ -71,6 +72,21 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     _scheduleSub?.cancel();
     _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant MySpaceScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _resetToToday();
+    }
+  }
+
+  void _resetToToday() {
+    setState(() {
+      _focusedDate = DateTime.now();
+      selectedWeekday = _focusedDate.weekday + 1;
+    });
   }
 
   void _prepareWeatherFuture() {
@@ -321,7 +337,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
+      builder: (sheetContext) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
@@ -334,7 +350,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               leading: const Icon(Icons.edit_calendar, color: hcmusBlueAccent),
               title: const Text("Tạo Deadline mới", style: TextStyle(fontFamily: 'Poppins')),
               onTap: () async {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CreateDeadlinesPage()),
@@ -346,7 +362,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               leading: const Icon(Icons.class_, color: hcmusTeal),
               title: const Text("Tạo Môn học mới", style: TextStyle(fontFamily: 'Poppins')),
               onTap: () async {
-                Navigator.pop(context);
+                Navigator.pop(sheetContext);
                 final result = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const CreateSchedulePage()),
@@ -922,7 +938,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         Column(
           children: [
             // Header của Detail (Tháng X, Y)
-            Padding(
+             Padding(
               padding: const EdgeInsets.all(8),
               child: Row(
                 children: [
@@ -1031,7 +1047,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           Color badgeColor = isScheduleTab ? hcmusTeal : hcmusRed;
 
           return GestureDetector(
-            onTap: () => setState(() => selectedWeekday = weekdayValue),
+            onTap: () {
+              setState(() {
+                selectedWeekday = weekdayValue;
+                _focusedDate = dayDate;
+              });
+            },
             child: Container(
               width: 48,
               margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -1081,60 +1102,60 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   // Thanh trượt deadlines và schedules
   Widget _buildSlidingToggle() {
-    final bool isDeadlineTab = _tabController.index == 0;
-    final Color activeColor = isDeadlineTab ? hcmusRed : hcmusTeal;
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      height: 48,
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(4), // Tạo khoảng trống để Indicator nhỏ hơn thanh chứa
-        child: TabBar(
-          controller: _tabController,
-          onTap: (index) {
-            setState(() {
-              // Trigger build lại để cập nhật activeColor
-            });
-          },
-          indicator: BoxDecoration(
-            color: activeColor, // Đỏ cho Deadline, Teal cho Schedule
-            borderRadius: BorderRadius.circular(26),
-            boxShadow: [
-              BoxShadow(
-                color: activeColor.withValues(alpha: 0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+    return AnimatedBuilder(
+      animation: _tabController.animation!,
+      builder: (context, child) {
+        final double animValue = _tabController.animation?.value ?? 0.0;
+        final Color activeColor = Color.lerp(hcmusRed, hcmusTeal, animValue) ?? hcmusRed;
+
+        return Container(
+          height: 48,
+          margin: const EdgeInsets.symmetric(horizontal: 20),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey,
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4), // Tạo khoảng trống để Indicator nhỏ hơn thanh chứa
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                color: activeColor, // Đỏ chuyển sang Teal mượt mà
+                borderRadius: BorderRadius.circular(26),
+                boxShadow: [
+                  BoxShadow(
+                    color: activeColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            ],
+              indicatorSize: TabBarIndicatorSize.tab,
+              labelColor: Colors.white,
+              unselectedLabelColor: isDarkMode ? Colors.white60 : const Color(0xFF94A3B8), // Màu xám (Slate 400)
+              dividerColor: Colors.transparent, // Xóa gạch chân mặc định
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w700, // Cực đậm khi được chọn
+                fontFamily: 'Poppins',
+                fontSize: 15,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w400, // Bình thường khi không chọn
+                fontFamily: 'Poppins',
+                fontSize: 13,
+              ),
+              tabs: const [
+                Tab(text: "Deadline"),
+                Tab(text: "Thời Khóa Biểu"),
+              ],
+            ),
           ),
-          indicatorSize: TabBarIndicatorSize.tab,
-          labelColor: Colors.white,
-          unselectedLabelColor: isDarkMode ? Colors.white60 : const Color(0xFF94A3B8), // Màu xám (Slate 400)
-          dividerColor: Colors.transparent, // Xóa gạch chân mặc định
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontFamily: 'Poppins',
-            fontSize: 13,
-          ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Poppins',
-            fontSize: 13,
-          ),
-          tabs: const [
-            Tab(text: "Deadlines"),
-            Tab(text: "Thời Khóa Biểu"),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
-
-
-
-
 
   void _editDeadline(Deadline deadline) async {
     final result = await Navigator.push(
@@ -1399,6 +1420,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           onTap: () {
             setState(() {
               selectedWeekday = d['value'];
+              _focusedDate = d['fullDate'];
             });
           },
           child: _calendarDayFigma(
