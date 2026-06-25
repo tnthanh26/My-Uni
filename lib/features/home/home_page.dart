@@ -22,6 +22,7 @@ class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   static final ValueNotifier<bool> showWalkthroughNotifier = ValueNotifier<bool>(false);
+  static final ValueNotifier<int> activeTabNotifier = ValueNotifier<int>(0);
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -35,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    HomePage.activeTabNotifier.value = _selectedIndex;
     _checkOnboarding();
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
   }
@@ -124,6 +126,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _selectedIndex = index;
     });
+    HomePage.activeTabNotifier.value = index;
     EventPageNotifier.isActive.value = (index == 1);
   }
 

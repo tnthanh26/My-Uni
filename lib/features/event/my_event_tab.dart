@@ -485,7 +485,7 @@ class _MyEventTabState extends State<MyEventTab>
                     builder: (_) => Scaffold(
                       appBar: AppBar(
                         title: const Text(
-                          "Sự kiện Cộng đồng mới",
+                          "Sự kiện cộng đồng mới",
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -538,82 +538,75 @@ class _MyEventTabState extends State<MyEventTab>
 
     return Scaffold(
       backgroundColor: _backgroundColor(isDarkMode),
-      body: Column(
-        children: [
-          SizedBox(height: MediaQuery.of(context).padding.top + 100),
-          Expanded(
-            child: widget.mode == EventTabMode.community
-                ? _buildCommunityTab(isDarkMode)
-                : StreamBuilder<List<EventModel>>(
-              stream: _getEventsStream(),
-              builder: (context, snapshot) {
-                final List<EventModel> allEvents = snapshot.data ?? [];
+      body: widget.mode == EventTabMode.community
+          ? _buildCommunityTab(isDarkMode)
+          : StreamBuilder<List<EventModel>>(
+        stream: _getEventsStream(),
+        builder: (context, snapshot) {
+          final List<EventModel> allEvents = snapshot.data ?? [];
 
-                final now = DateTime.now();
-                final bool isToday = DateUtils.isSameDay(
-                  _selectedDay,
-                  DateTime.now(),
-                );
+          final now = DateTime.now();
+          final bool isToday = DateUtils.isSameDay(
+            _selectedDay,
+            DateTime.now(),
+          );
 
-                final bool isPastSelectedDay =
-                _selectedDay!.isBefore(DateUtils.dateOnly(DateTime.now()));
+          final bool isPastSelectedDay =
+          _selectedDay!.isBefore(DateUtils.dateOnly(DateTime.now()));
 
-                final int count = isListView
-                    ? allEvents.where((e) => !e.dateTime.isBefore(now)).length
-                    : allEvents
-                    .where(
-                      (e) =>
-                  DateUtils.isSameDay(e.dateTime, _selectedDay) &&
-                      !e.dateTime.isBefore(now),
-                )
-                    .length;
+          final int count = isListView
+              ? allEvents.where((e) => !e.dateTime.isBefore(now)).length
+              : allEvents
+              .where(
+                (e) =>
+            DateUtils.isSameDay(e.dateTime, _selectedDay) &&
+                !e.dateTime.isBefore(now),
+          )
+              .length;
 
-                return Column(
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                child: Row(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                      child: Row(
-                        children: [
-                          isListView
-                              ? _buildListFilter(isDarkMode)
-                              : _buildMonthPicker(isDarkMode),
-                          const Spacer(),
-                          _buildViewSwitcher(isDarkMode),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: Text(
-                        isListView
-                        ? 'Bạn đang có $count sự kiện sắp diễn ra'
-                            : isToday
-                        ? 'Hôm nay có $count sự kiện sắp diễn ra'
-                            : isPastSelectedDay
-                        ? 'Các sự kiện của ngày đã chọn'
-                            : 'Ngày này có $count sự kiện sắp diễn ra',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 15,
-                          color: _primaryTextColor(isDarkMode),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: TabBarView(
-                        controller: _viewTabController,
-                        children: [
-                          _buildListView(allEvents, isDarkMode),
-                          _buildCalendarView(allEvents, isDarkMode),
-                        ],
-                      ),
-                    ),
+                    isListView
+                        ? _buildListFilter(isDarkMode)
+                        : _buildMonthPicker(isDarkMode),
+                    const Spacer(),
+                    _buildViewSwitcher(isDarkMode),
                   ],
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Text(
+                  isListView
+                      ? 'Bạn đang có $count sự kiện sắp diễn ra'
+                      : isToday
+                      ? 'Hôm nay có $count sự kiện sắp diễn ra'
+                      : isPastSelectedDay
+                      ? 'Các sự kiện của ngày đã chọn'
+                      : 'Ngày này có $count sự kiện sắp diễn ra',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                    color: _primaryTextColor(isDarkMode),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TabBarView(
+                  controller: _viewTabController,
+                  children: [
+                    _buildListView(allEvents, isDarkMode),
+                    _buildCalendarView(allEvents, isDarkMode),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

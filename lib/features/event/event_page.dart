@@ -158,26 +158,19 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
         child: const Icon(Icons.add, color: Colors.white, size: 32),
       )
           : null,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) => [
-          SliverOverlapAbsorber(
-            handle: NestedScrollView.sliverOverlapAbsorberHandleFor(context),
-            sliver: SliverAppBar(
-              expandedHeight: 102,
-              pinned: true,
-              elevation: 0,
-              automaticallyImplyLeading: false,
-              actions: const [SizedBox.shrink()],
-              backgroundColor: const Color(0xFF5893D8),
-              flexibleSpace: FlexibleSpaceBar(
-                collapseMode: CollapseMode.pin,
-                background: _buildFixedHeader(context),
-              ),
-              bottom: PreferredSize(
-                preferredSize: const Size.fromHeight(48),
+      body: Stack(
+        children: [
+          // 1. Header cố định (Dưới cùng)
+          _buildFixedHeader(context),
+
+          // 2. Nội dung (Giữa)
+          Column(
+            children: [
+              // Khoảng trống 102px để lộ phần Logo/Text của Header
+              const SizedBox(height: 102),
+              Expanded(
                 child: Container(
                   width: double.infinity,
-                  height: 48,
                   decoration: BoxDecoration(
                     color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -185,51 +178,70 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: false,
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    indicator: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
-                        begin: Alignment.centerLeft,
-                        end: Alignment.centerRight,
-                      ),
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: [
-                        BoxShadow(
-                          color: _accent.withValues(alpha: 0.35),
-                          blurRadius: 10,
-                          offset: const Offset(0, 3),
+                  child: Column(
+                    children: [
+                      // TabBar được đặt ngay đầu Container nội dung
+                      Container(
+                        width: double.infinity,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(20),
+                            topRight: Radius.circular(20),
+                          ),
                         ),
-                      ],
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
-                    dividerColor: Colors.transparent,
-                    labelStyle: const TextStyle(
-                      fontFamily: 'Nunito',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                    tabs: const [
-                      Tab(text: 'Cá nhân'),
-                      Tab(text: 'Cộng đồng'),
+                        child: TabBar(
+                          controller: _tabController,
+                          isScrollable: false,
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          indicator: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
+                              begin: Alignment.centerLeft,
+                              end: Alignment.centerRight,
+                            ),
+                            borderRadius: BorderRadius.circular(25),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _accent.withValues(alpha: 0.35),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          labelColor: Colors.white,
+                          unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                          dividerColor: Colors.transparent,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                          tabs: const [
+                            Tab(text: 'Cá nhân'),
+                            Tab(text: 'Cộng đồng'),
+                          ],
+                        ),
+                      ),
+                      // Nội dung các Tab
+                      Expanded(
+                        child: TabBarView(
+                          controller: _tabController,
+                          children: const [
+                            MyEventTab(mode: EventTabMode.personal),
+                            MyEventTab(mode: EventTabMode.community),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ],
-        body: TabBarView(
-          controller: _tabController,
-          children: const [
-            MyEventTab(mode: EventTabMode.personal),
-            MyEventTab(mode: EventTabMode.community),
-          ],
-        ),
       ),
     );
   }
