@@ -73,6 +73,7 @@ class MyUniStudentWebDemoApp extends StatelessWidget {
       darkTheme: AppTheme.dark(),
       themeMode: appProvider.themeMode,
       locale: appProvider.locale,
+      navigatorObservers: [MyUniRouteObserver()],
 
       // Quan trọng: bọc toàn bộ app student trong frame điện thoại.
       builder: (context, child) {
