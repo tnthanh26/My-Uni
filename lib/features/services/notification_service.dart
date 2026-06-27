@@ -30,8 +30,16 @@ class NotificationService {
     const AndroidInitializationSettings androidInit =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings settings =
-    InitializationSettings(android: androidInit);
+    const DarwinInitializationSettings iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const InitializationSettings settings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _notificationsPlugin.initialize(
       settings: settings,
@@ -40,7 +48,9 @@ class NotificationService {
       },
     );
 
-    if (!kIsWeb && Platform.isAndroid) {
+    if (kIsWeb) return;
+
+    if (Platform.isAndroid) {
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin>();
@@ -57,29 +67,48 @@ class NotificationService {
       await androidPlugin?.createNotificationChannel(channel);
       await androidPlugin?.requestNotificationsPermission();
 
-      final bool? canSchedule = await androidPlugin?.canScheduleExactNotifications();
+      final bool? canSchedule =
+      await androidPlugin?.canScheduleExactNotifications();
+
       if (canSchedule == false) {
         await androidPlugin?.requestExactAlarmsPermission();
       }
     }
+
+    if (Platform.isIOS) {
+      final iosPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+
+      await iosPlugin?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+    }
   }
 
   static Stream<List<MyUniNotification>> getNotifications() {
-    String? uid = _auth.currentUser?.uid;
+    final String? uid = _auth.currentUser?.uid;
     if (uid == null) return Stream.value([]);
+
     return _db
         .collection('notifications')
         .where('userId', isEqualTo: uid)
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => MyUniNotification.fromFirestore(doc))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+          .map((doc) => MyUniNotification.fromFirestore(doc))
+          .toList(),
+    );
   }
 
   static Future<void> markAsRead(String docId) async {
     try {
-      await _db.collection('notifications').doc(docId).update({'isRead': true});
+      await _db.collection('notifications').doc(docId).update({
+        'isRead': true,
+      });
     } catch (e) {
       debugPrint('Lỗi markAsRead: $e');
     }
@@ -105,6 +134,7 @@ class NotificationService {
           priority: Priority.max,
           icon: '@mipmap/ic_launcher',
         ),
+        iOS: DarwinNotificationDetails(),
       ),
     );
   }
@@ -186,6 +216,7 @@ class NotificationService {
             showWhen: true,
             when: scheduled.millisecondsSinceEpoch,
           ),
+          iOS: const DarwinNotificationDetails(),
         ),
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       );
@@ -203,14 +234,33 @@ class NotificationService {
   }
 
   static Future<bool> requestPermission() async {
-    if (!kIsWeb && Platform.isAndroid) {
-      final androidPlugin = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+    if (kIsWeb) return true;
 
-      // Yêu cầu quyền POST_NOTIFICATIONS (Android 13+)
-      final bool? granted = await androidPlugin?.requestNotificationsPermission();
+    if (Platform.isAndroid) {
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
+      final bool? granted =
+      await androidPlugin?.requestNotificationsPermission();
+
       return granted ?? false;
     }
-    return true; // iOS xử lý khác hoặc mặc định true cho Web/Desktop nếu cần
+
+    if (Platform.isIOS) {
+      final iosPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin>();
+
+      final bool? granted = await iosPlugin?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      return granted ?? false;
+    }
+
+    return true;
   }
 }
