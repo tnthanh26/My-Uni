@@ -325,15 +325,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                   },
                                   style: TextStyle(
                                     color: isDarkMode ? Colors.white : Colors.black,
-                                    fontSize: 16,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  decoration: InputDecoration(
-                                    hintText: 'yyyy',
-                                    hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black26),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                  ),
+                                  decoration: _cohortPartDecoration(context, 'yyyy'),
                                 ),
                               ),
                               Padding(
@@ -359,15 +354,10 @@ class _SignUpPageState extends State<SignUpPage> {
                                   ],
                                   style: TextStyle(
                                     color: isDarkMode ? Colors.white : Colors.black,
-                                    fontSize: 16,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                  decoration: InputDecoration(
-                                    hintText: 'yyyy',
-                                    hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black26),
-                                    border: InputBorder.none,
-                                    isDense: true,
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
-                                  ),
+                                  decoration: _cohortPartDecoration(context, 'yyyy'),
                                 ),
                               ),
                             ],
@@ -414,6 +404,46 @@ class _SignUpPageState extends State<SignUpPage> {
         border: isDarkMode ? Border.all(color: Colors.white10) : null,
       ),
       child: child,
+    );
+  }
+
+  InputDecoration _cohortPartDecoration(BuildContext context, String hint) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: isDarkMode ? Colors.white24 : Colors.black26,
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: isDarkMode
+          ? Colors.white.withOpacity(0.04)
+          : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 10,
+      ),
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Color(0xFF6797E1),
+          width: 1.4,
+        ),
+      ),
     );
   }
 
