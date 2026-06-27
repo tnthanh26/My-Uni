@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
@@ -612,19 +613,27 @@ class _HomePageState extends State<HomePage> {
       const AccountPage(),
     ];
 
-    return PopScope(
-      canPop: false,
-      child: Stack(
-        children: [
-          Scaffold(
-            body: IndexedStack(index: _selectedIndex, children: pages),
-            bottomNavigationBar: _buildBottomNav(),
-          ),
-          if (_showWalkthrough)
-            Positioned.fill(
-              child: _buildWalkthroughOverlay(),
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final statusBarStyle = (_selectedIndex == 4)
+        ? (isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
+        : SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: statusBarStyle,
+      child: PopScope(
+        canPop: false,
+        child: Stack(
+          children: [
+            Scaffold(
+              body: IndexedStack(index: _selectedIndex, children: pages),
+              bottomNavigationBar: _buildBottomNav(),
             ),
-        ],
+            if (_showWalkthrough)
+              Positioned.fill(
+                child: _buildWalkthroughOverlay(),
+              ),
+          ],
+        ),
       ),
     );
   }
