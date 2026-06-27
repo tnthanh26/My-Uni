@@ -165,7 +165,19 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     return Container(
       padding: const EdgeInsets.only(top: 56, left: 20, right: 16, bottom: 16),
       decoration: BoxDecoration(
-        color: primaryColor,
+        gradient: LinearGradient(
+          colors: isDarkMode
+              ? [
+                  const Color(0xFF40539B).withOpacity(0.95),
+                  const Color(0xFF74C98C).withOpacity(0.95),
+                ]
+              : [
+                  const Color(0xFF042788).withOpacity(0.9),
+                  const Color(0xFF60CA6F).withOpacity(1),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
