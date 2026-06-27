@@ -73,7 +73,7 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path_ios: "assets/images/App_Icon.png"
+  image_path_ios: "assets/images/logoApp2.png"
   remove_alpha_ios: true
   image_path_android: "assets/images/ic_launcher_foreground.png"
   adaptive_icon_background: "#FFFFFF"
@@ -85,7 +85,7 @@ flutter_native_splash:
   android_12:
     image: assets/images/ic_launcher_foreground.png
     icon_background_color: "#FFFFFF"
-  fullscreen: true
+  fullscreen: false
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
