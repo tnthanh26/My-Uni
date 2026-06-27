@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
-import '../../utils/formatters.dart';
 
 class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
@@ -21,7 +20,8 @@ class _SignUpPageState extends State<SignUpPage> {
   final _passwordController = TextEditingController();
   String? _selectedUniversity;
   final _studentIdController = TextEditingController();
-  final _cohortController = TextEditingController();
+  final _cohortStartController = TextEditingController();
+  final _cohortEndController = TextEditingController();
 
   @override
   void dispose() {
@@ -29,7 +29,8 @@ class _SignUpPageState extends State<SignUpPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _studentIdController.dispose();
-    _cohortController.dispose();
+    _cohortStartController.dispose();
+    _cohortEndController.dispose();
     super.dispose();
   }
 
@@ -79,6 +80,8 @@ class _SignUpPageState extends State<SignUpPage> {
   Future<void> _handleSignUp() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final startYear = _cohortStartController.text.trim();
+    final endYear = _cohortEndController.text.trim();
 
     if (
     _displayNameController.text.trim().isEmpty ||
@@ -86,11 +89,19 @@ class _SignUpPageState extends State<SignUpPage> {
         password.isEmpty ||
         _selectedUniversity == null ||
         _studentIdController.text.trim().isEmpty ||
-        _cohortController.text.trim().isEmpty
+        startYear.isEmpty ||
+        endYear.isEmpty
     ) {
       _showSnackBar('Vui lòng điền đầy đủ thông tin', isError: true);
       return;
     }
+
+    if (startYear.length != 4 || endYear.length != 4) {
+      _showSnackBar('Niên khóa không hợp lệ (mỗi năm phải đủ 4 chữ số)', isError: true);
+      return;
+    }
+
+    final cohortString = '$startYear - $endYear';
 
     if (!_isValidStudentEmail(email)) {
       _showSnackBar('Chỉ chấp nhận email sinh viên (@...edu.vn)', isError: true);
@@ -128,7 +139,7 @@ class _SignUpPageState extends State<SignUpPage> {
               'password': password.trim(),
               'university': _selectedUniversity,
               'studentId': _studentIdController.text.trim(),
-              'cohort': _cohortController.text.trim(),
+              'cohort': cohortString,
             }
           },
         );
@@ -276,18 +287,95 @@ class _SignUpPageState extends State<SignUpPage> {
 
             _buildInputContainer(
               isDarkMode: isDarkMode,
-              child: TextFormField(
-                controller: _cohortController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [CohortInputFormatter()],
-                style: TextStyle(
-                  color: isDarkMode ? Colors.white : Colors.black,
-                ),
-                decoration: _inputDecoration(
-                  'Niên khóa',
-                  Icons.school_outlined,
-                  isDarkMode,
-                  hintText: 'VD: 2022 - 2026',
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Icon(Icons.school_outlined, color: isDarkMode ? Colors.white60 : Colors.grey),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Niên khóa',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 75,
+                                child: TextFormField(
+                                  controller: _cohortStartController,
+                                  textAlign: TextAlign.center,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(4),
+                                  ],
+                                  onChanged: (value) {
+                                    if (value.length == 4) {
+                                      FocusScope.of(context).nextFocus();
+                                    }
+                                  },
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.white : Colors.black,
+                                    fontSize: 16,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'yyyy',
+                                    hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black26),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                                child: Text(
+                                  '-',
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 75,
+                                child: TextFormField(
+                                  controller: _cohortEndController,
+                                  textAlign: TextAlign.center,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    LengthLimitingTextInputFormatter(4),
+                                  ],
+                                  style: TextStyle(
+                                    color: isDarkMode ? Colors.white : Colors.black,
+                                    fontSize: 16,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'yyyy',
+                                    hintStyle: TextStyle(color: isDarkMode ? Colors.white24 : Colors.black26),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

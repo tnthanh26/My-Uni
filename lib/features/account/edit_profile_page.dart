@@ -6,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import '../../utils/formatters.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -18,10 +17,28 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _dobController = TextEditingController();
+  final _dobDayController = TextEditingController();
+  final _dobMonthController = TextEditingController();
+  final _dobYearController = TextEditingController();
   final _emailController = TextEditingController();
   final _studentIdController = TextEditingController();
-  final _cohortController = TextEditingController();
+  final _cohortStartController = TextEditingController();
+  final _cohortEndController = TextEditingController();
+
+  String _getFormattedDob() {
+    final d = _dobDayController.text.trim();
+    final m = _dobMonthController.text.trim();
+    final y = _dobYearController.text.trim();
+    if (d.isEmpty && m.isEmpty && y.isEmpty) return '';
+    return '$d - $m - $y';
+  }
+
+  String _getFormattedCohort() {
+    final start = _cohortStartController.text.trim();
+    final end = _cohortEndController.text.trim();
+    if (start.isEmpty && end.isEmpty) return '';
+    return '$start - $end';
+  }
 
   String? selectedFaculty;
   String? _currentPhotoBase64;
@@ -52,12 +69,14 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   bool _hasChanges() {
+    final currentDob = _getFormattedDob();
+    final currentCohort = _getFormattedCohort();
     return _nameController.text != _initialName ||
         _phoneController.text != _initialPhone ||
-        _dobController.text != _initialDob ||
+        currentDob != _initialDob ||
         selectedFaculty != _initialFaculty ||
         _studentIdController.text != _initialStudentId ||
-        _cohortController.text != _initialCohort ||
+        currentCohort != _initialCohort ||
         _imageFile != null ||
         _currentPhotoBase64 != _initialPhotoBase64;
   }
@@ -96,10 +115,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _dobController.dispose();
+    _dobDayController.dispose();
+    _dobMonthController.dispose();
+    _dobYearController.dispose();
     _emailController.dispose();
     _studentIdController.dispose();
-    _cohortController.dispose();
+    _cohortStartController.dispose();
+    _cohortEndController.dispose();
     super.dispose();
   }
 
@@ -119,7 +141,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         setState(() {
           _nameController.text = data['displayName'] ?? '';
           _phoneController.text = data['phone'] ?? '';
-          _dobController.text = data['dob'] ?? '';
           _currentPhotoBase64 = data['photoUrl'];
 
           if (faculties.contains(data['faculty'])) {
@@ -127,15 +148,38 @@ class _EditProfilePageState extends State<EditProfilePage> {
           }
 
           _studentIdController.text = data['studentId'] ?? '';
-          _cohortController.text = data['cohort'] ?? '';
+
+          // Parse dob
+          final dobStr = data['dob'] ?? '';
+          final dobDigits = dobStr.replaceAll(RegExp(r'\D'), '');
+          if (dobDigits.length == 8) {
+            _dobDayController.text = dobDigits.substring(0, 2);
+            _dobMonthController.text = dobDigits.substring(2, 4);
+            _dobYearController.text = dobDigits.substring(4, 8);
+          } else {
+            _dobDayController.clear();
+            _dobMonthController.clear();
+            _dobYearController.clear();
+          }
+
+          // Parse cohort
+          final cohortStr = data['cohort'] ?? '';
+          final cohortDigits = cohortStr.replaceAll(RegExp(r'\D'), '');
+          if (cohortDigits.length == 8) {
+            _cohortStartController.text = cohortDigits.substring(0, 4);
+            _cohortEndController.text = cohortDigits.substring(4, 8);
+          } else {
+            _cohortStartController.clear();
+            _cohortEndController.clear();
+          }
 
           // Initialize variables for change detection
           _initialName = _nameController.text;
           _initialPhone = _phoneController.text;
-          _initialDob = _dobController.text;
+          _initialDob = _getFormattedDob();
           _initialFaculty = selectedFaculty;
           _initialStudentId = _studentIdController.text;
-          _initialCohort = _cohortController.text;
+          _initialCohort = _getFormattedCohort();
           _initialPhotoBase64 = _currentPhotoBase64;
         });
       }
@@ -170,6 +214,52 @@ class _EditProfilePageState extends State<EditProfilePage> {
       return;
     }
 
+    final day = _dobDayController.text.trim();
+    final month = _dobMonthController.text.trim();
+    final year = _dobYearController.text.trim();
+    
+    // Validate Date of Birth
+    if (day.isNotEmpty || month.isNotEmpty || year.isNotEmpty) {
+      if (day.length != 2 || month.length != 2 || year.length != 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ngày sinh không hợp lệ (định dạng dd-mm-yyyy).')),
+        );
+        return;
+      }
+      final dInt = int.tryParse(day) ?? 0;
+      final mInt = int.tryParse(month) ?? 0;
+      final yInt = int.tryParse(year) ?? 0;
+      if (dInt < 1 || dInt > 31 || mInt < 1 || mInt > 12 || yInt < 1900 || yInt > DateTime.now().year) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Ngày sinh hoặc tháng hoặc năm không hợp lệ.')),
+        );
+        return;
+      }
+    }
+    final dobText = _getFormattedDob();
+
+    final startCohort = _cohortStartController.text.trim();
+    final endCohort = _cohortEndController.text.trim();
+
+    // Validate Cohort
+    if (startCohort.isNotEmpty || endCohort.isNotEmpty) {
+      if (startCohort.length != 4 || endCohort.length != 4) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Niên khóa không hợp lệ (mỗi năm phải đủ 4 chữ số).')),
+        );
+        return;
+      }
+      final sInt = int.tryParse(startCohort) ?? 0;
+      final eInt = int.tryParse(endCohort) ?? 0;
+      if (sInt >= eInt) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Năm bắt đầu niên khóa phải bé hơn năm kết thúc.')),
+        );
+        return;
+      }
+    }
+    final cohortText = _getFormattedCohort();
+
     setState(() => _isLoading = true);
 
     try {
@@ -192,11 +282,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'displayName': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'dob': _dobController.text.trim(),
+        'dob': dobText,
         'faculty': selectedFaculty,
         'photoUrl': finalPhotoBase64,
         'studentId': _studentIdController.text.trim(),
-        'cohort': _cohortController.text.trim(),
+        'cohort': cohortText,
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
@@ -205,10 +295,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
         setState(() {
           _initialName = _nameController.text.trim();
           _initialPhone = _phoneController.text.trim();
-          _initialDob = _dobController.text.trim();
+          _initialDob = dobText;
           _initialFaculty = selectedFaculty;
           _initialStudentId = _studentIdController.text.trim();
-          _initialCohort = _cohortController.text.trim();
+          _initialCohort = cohortText;
           _initialPhotoBase64 = finalPhotoBase64;
           _imageFile = null;
           _currentPhotoBase64 = finalPhotoBase64;
@@ -279,6 +369,252 @@ class _EditProfilePageState extends State<EditProfilePage> {
       height: 1,
       indent: 64,
       color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
+    );
+  }
+
+  InputDecoration _dobPartDecoration(BuildContext context, String hint) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: isDarkMode ? Colors.white24 : Colors.black26,
+        fontFamily: 'Encode Sans Expanded',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: isDarkMode
+          ? Colors.white.withOpacity(0.04)
+          : const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 10,
+      ),
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Color(0xFF6797E1),
+          width: 1.4,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateOfBirthCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.cake_outlined, color: Color(0xFF6797E1), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Ngày sinh',
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 55,
+                      child: TextField(
+                        controller: _dobDayController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(2),
+                        ],
+                        onChanged: (value) {
+                          if (value.length == 2) {
+                            FocusScope.of(context).nextFocus();
+                          }
+                        },
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _dobPartDecoration(context, 'dd'),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('-', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(
+                      width: 55,
+                      child: TextField(
+                        controller: _dobMonthController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(2),
+                        ],
+                        onChanged: (value) {
+                          if (value.length == 2) {
+                            FocusScope.of(context).nextFocus();
+                          }
+                        },
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _dobPartDecoration(context, 'mm'),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('-', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(
+                      width: 75,
+                      child: TextField(
+                        controller: _dobYearController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _dobPartDecoration(context, 'yyyy'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCohortCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(Icons.school_outlined, color: Color(0xFF6797E1), size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Niên khóa',
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                Row(
+                  children: [
+                    SizedBox(
+                      width: 75,
+                      child: TextField(
+                        controller: _cohortStartController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        onChanged: (value) {
+                          if (value.length == 4) {
+                            FocusScope.of(context).nextFocus();
+                          }
+                        },
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _dobPartDecoration(context, 'yyyy'),
+                      ),
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text('-', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                    SizedBox(
+                      width: 75,
+                      child: TextField(
+                        controller: _cohortEndController,
+                        textAlign: TextAlign.center,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(4),
+                        ],
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: _dobPartDecoration(context, 'yyyy'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -733,7 +1069,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         controller: _nameController,
                         hint: 'Thanh',
                       ),
-                      _buildDivider(isDarkMode),
                       _buildTextFieldCard(
                         context,
                         icon: Icons.email_outlined,
@@ -741,7 +1076,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         controller: _emailController,
                         enabled: false,
                       ),
-                      _buildDivider(isDarkMode),
                       _buildTextFieldCard(
                         context,
                         icon: Icons.phone_outlined,
@@ -750,16 +1084,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         hint: '09xxxxxx',
                         keyboardType: TextInputType.phone,
                       ),
-                      _buildDivider(isDarkMode),
-                      _buildTextFieldCard(
-                        context,
-                        icon: Icons.cake_outlined,
-                        label: 'Ngày sinh',
-                        controller: _dobController,
-                        hint: '01 - 01 - 2004',
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [DateInputFormatter()],
-                      ),
+                      _buildDateOfBirthCard(context),
                     ],
                   ),
                   const SizedBox(height: 22),
@@ -768,7 +1093,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                     isDarkMode: isDarkMode,
                     children: [
                       _buildDropdownFieldCard(context, 'Khoa'),
-                      _buildDivider(isDarkMode),
                       _buildTextFieldCard(
                         context,
                         icon: Icons.badge_outlined,
@@ -777,16 +1101,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       ),
-                      _buildDivider(isDarkMode),
-                      _buildTextFieldCard(
-                        context,
-                        icon: Icons.school_outlined,
-                        label: 'Niên khóa',
-                        controller: _cohortController,
-                        hint: '2022 - 2026',
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [CohortInputFormatter()],
-                      ),
+                      _buildCohortCard(context),
                     ],
                   ),
                   const SizedBox(height: 28),

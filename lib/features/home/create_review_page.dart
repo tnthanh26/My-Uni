@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../utils/formatters.dart';
 import '../services/content_service.dart';
 
 class CreateReviewPage extends StatefulWidget {
@@ -19,7 +18,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   late TextEditingController _courseController;
   late TextEditingController _teacherController;
   late TextEditingController _contentController;
-  late TextEditingController _schoolYearController;
+  late TextEditingController _schoolYearStartController;
+  late TextEditingController _schoolYearEndController;
   String _selectedSemester = '2';
   late int _rating;
   bool _isSubmitting = false;
@@ -48,13 +48,42 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       }
     }
     _selectedSemester = initialSemester;
-    _schoolYearController = TextEditingController(text: initialYear);
+    
+    String startYear = '';
+    String endYear = '';
+    if (initialYear.contains('-')) {
+      final parts = initialYear.split('-');
+      startYear = parts[0].trim();
+      endYear = parts[1].trim();
+    } else {
+      final digits = initialYear.replaceAll(RegExp(r'\D'), '');
+      if (digits.length == 8) {
+        startYear = digits.substring(0, 4);
+        endYear = digits.substring(4, 8);
+      }
+    }
+    _schoolYearStartController = TextEditingController(text: startYear);
+    _schoolYearEndController = TextEditingController(text: endYear);
+  }
+
+  @override
+  void dispose() {
+    _courseController.dispose();
+    _teacherController.dispose();
+    _contentController.dispose();
+    _schoolYearStartController.dispose();
+    _schoolYearEndController.dispose();
+    super.dispose();
   }
 
   Future<void> _submitReview() async {
+    final startYear = _schoolYearStartController.text.trim();
+    final endYear = _schoolYearEndController.text.trim();
+
     if (_courseController.text.isEmpty ||
         _rating == 0 ||
-        _schoolYearController.text.isEmpty) {
+        startYear.isEmpty ||
+        endYear.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Vui lòng nhập đầy đủ thông tin và chọn số sao"),
@@ -63,7 +92,14 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       return;
     }
 
-    final fullSemester = "HK$_selectedSemester ${_schoolYearController.text.trim()}";
+    if (startYear.length != 4 || endYear.length != 4) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Năm học không hợp lệ (mỗi năm phải đủ 4 chữ số)')),
+      );
+      return;
+    }
+
+    final fullSemester = "HK$_selectedSemester $startYear-$endYear";
 
     String combinedText =
         "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
@@ -422,15 +458,109 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         const SizedBox(width: 16),
         Expanded(
           flex: 3,
-          child: _buildUnderlineTextField(
-            context,
-            _schoolYearController,
-            "Năm học (2024-2025)",
-            inputFormatters: [SchoolYearInputFormatter()],
-            keyboardType: TextInputType.number,
+          child: Container(
+            padding: const EdgeInsets.only(left: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 75,
+                  child: TextField(
+                    controller: _schoolYearStartController,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    onChanged: (value) {
+                      if (value.length == 4) {
+                        FocusScope.of(context).nextFocus();
+                      }
+                    },
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                    decoration: _schoolYearPartDecoration(context, 'yyyy'),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6.0),
+                  child: Text(
+                    '-',
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                SizedBox(
+                  width: 75,
+                  child: TextField(
+                    controller: _schoolYearEndController,
+                    textAlign: TextAlign.center,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(4),
+                    ],
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 16,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                    decoration: _schoolYearPartDecoration(context, 'yyyy'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  InputDecoration _schoolYearPartDecoration(BuildContext context, String hint) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: isDarkMode ? Colors.white24 : Colors.black26,
+        fontFamily: 'Nunito',
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+      ),
+      filled: true,
+      fillColor: isDarkMode
+          ? Colors.white.withOpacity(0.04)
+          : const Color(0xFFF8FAFC),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: 10,
+      ),
+      isDense: true,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(
+          color: Color(0xFF6797E1),
+          width: 1.4,
+        ),
+      ),
     );
   }
 
