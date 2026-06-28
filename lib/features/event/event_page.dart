@@ -15,7 +15,7 @@ class EventPage extends StatefulWidget {
 class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   late TabController _tabController;
   bool _showFab = true;
-  static const Color primaryBrown = Color(0xFF47352E);
+  static const Color primaryBrown = Color(0xFF545454);
   static const Color _accent   = Color(0xFF6C63FF); // electric violet
 
   @override
