@@ -53,7 +53,6 @@ class _OtpPageState extends State<OtpPage> {
 
         // field chưa có thì để rỗng/null để EditProfilePage cập nhật sau
         'faculty': null,
-        'phone': '',
         'dob': '',
         'photoUrl': '', // Để trống để UI hiển thị icon mặc định
 
