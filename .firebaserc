@@ -1,0 +1,19 @@
+{
+  "projects": {},
+  "targets": {
+    "myuni-fe6d1": {
+      "hosting": {
+        "student": [
+          "myuni-fe6d1"
+        ],
+        "dashboard": [
+          "myuni-dashboard"
+        ],
+        "legal": [
+          "myuni-legal"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}
