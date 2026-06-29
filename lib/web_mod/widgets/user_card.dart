@@ -26,7 +26,6 @@ class UserCard extends StatelessWidget {
     final email = data['email'] ?? '';
     final university = data['university'] ?? 'Chưa có trường';
     final faculty = data['faculty'] ?? 'Chưa có khoa';
-    final phone = data['phone'] ?? '';
     final photoUrl = data['photoUrl'] ?? '';
     final status = data['status'] ?? 'active';
     final violationCount = data['violationCount'] ?? 0;

@@ -24,9 +24,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   String _realUserName = "Đang tải...";
   String? _userPhotoBase64;
-  bool _isLoadingUser = true;
 
-  final List<String> _suggestedHashtags = ["Hỏi đáp", "Quân sự", "Học phí", "Tìm đồ", "Chia sẻ", "Tìm việc"];
+  final List<String> _suggestedHashtags = ["Hỏi đáp", "Quân sự", "Học phí", "Học bổng", "Tìm đồ", "Chia sẻ", "Tìm việc", "Nghỉ lễ", "Nghỉ hè", "Điểm rèn luyện"];
   File? _newImageFile;
   String? _existingImageUrl;
   bool _isSubmitting = false;
@@ -82,12 +81,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
         setState(() {
           _realUserName = data['displayName'] ?? 'Sinh viên MyUni';
           _userPhotoBase64 = data['photoUrl'];
-          _isLoadingUser = false;
         });
       }
-    } catch (e) {
-      if (mounted) setState(() => _isLoadingUser = false);
-    }
+    } catch (_) {}
   }
 
   Future<void> _pickImage() async {

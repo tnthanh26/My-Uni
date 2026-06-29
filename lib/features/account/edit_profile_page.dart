@@ -16,7 +16,6 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _nameController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _dobDayController = TextEditingController();
   final _dobMonthController = TextEditingController();
   final _dobYearController = TextEditingController();
@@ -47,7 +46,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   // Variables to track initial state for change detection
   String _initialName = '';
-  String _initialPhone = '';
   String _initialDob = '';
   String? _initialFaculty;
   String _initialStudentId = '';
@@ -56,10 +54,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   final List<String> faculties = [
     'Công nghệ thông tin',
-    'Hệ thống thông tin',
-    'Khoa học máy tính',
-    'Kỹ thuật phần mềm',
-    'An toàn thông tin',
+    'Địa chất',
+    'Điện tử – Viễn thông',
+    'Hóa học',
+    'Khoa học và Công nghệ Vật liệu',
+    'Khoa Môi trường',
+    'Sinh học – Công nghệ Sinh học',
+    'Khoa học Liên ngành',
+    'Toán – Tin học',
+    'Vật lý – Vật lý Kỹ thuật',
   ];
 
   @override
@@ -72,7 +75,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     final currentDob = _getFormattedDob();
     final currentCohort = _getFormattedCohort();
     return _nameController.text != _initialName ||
-        _phoneController.text != _initialPhone ||
         currentDob != _initialDob ||
         selectedFaculty != _initialFaculty ||
         _studentIdController.text != _initialStudentId ||
@@ -114,7 +116,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
   @override
   void dispose() {
     _nameController.dispose();
-    _phoneController.dispose();
     _dobDayController.dispose();
     _dobMonthController.dispose();
     _dobYearController.dispose();
@@ -140,7 +141,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         setState(() {
           _nameController.text = data['displayName'] ?? '';
-          _phoneController.text = data['phone'] ?? '';
           _currentPhotoBase64 = data['photoUrl'];
 
           if (faculties.contains(data['faculty'])) {
@@ -175,7 +175,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
           // Initialize variables for change detection
           _initialName = _nameController.text;
-          _initialPhone = _phoneController.text;
           _initialDob = _getFormattedDob();
           _initialFaculty = selectedFaculty;
           _initialStudentId = _studentIdController.text;
@@ -281,7 +280,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set({
         'displayName': _nameController.text.trim(),
-        'phone': _phoneController.text.trim(),
         'dob': dobText,
         'faculty': selectedFaculty,
         'photoUrl': finalPhotoBase64,
@@ -294,7 +292,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         // Reset initial values after saving to avoid "unsaved changes" dialog when popping
         setState(() {
           _initialName = _nameController.text.trim();
-          _initialPhone = _phoneController.text.trim();
           _initialDob = dobText;
           _initialFaculty = selectedFaculty;
           _initialStudentId = _studentIdController.text.trim();
@@ -1075,14 +1072,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         label: 'Email',
                         controller: _emailController,
                         enabled: false,
-                      ),
-                      _buildTextFieldCard(
-                        context,
-                        icon: Icons.phone_outlined,
-                        label: 'Số điện thoại',
-                        controller: _phoneController,
-                        hint: '09xxxxxx',
-                        keyboardType: TextInputType.phone,
                       ),
                       _buildDateOfBirthCard(context),
                     ],
