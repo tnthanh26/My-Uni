@@ -455,18 +455,49 @@ class _PostDetailPageState extends State<PostDetailPage> {
               // Check for violated words (Blacklist & Sensitive)
               List<String> blacklistViolations = ContentService.getBlacklistedWords(newContent);
               if (blacklistViolations.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Nội dung chứa từ ngữ không phù hợp: ${blacklistViolations.join(', ')}")),
+                await showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Yêu cầu sửa nội dung"),
+                    content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text("Quay lại sửa"),
+                      ),
+                    ],
+                  ),
                 );
                 return;
               }
 
+              bool isSensitive = false;
               List<String> sensitiveViolations = ContentService.getSensitiveWords(newContent);
               if (sensitiveViolations.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Nội dung chứa từ ngữ nhạy cảm: ${sensitiveViolations.join(', ')}")),
-                );
-                return;
+                bool shouldSubmit = await showDialog<bool>(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => AlertDialog(
+                    title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+                    content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục sửa, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text("Quay lại sửa"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text("Vẫn đăng"),
+                      ),
+                    ],
+                  ),
+                ) ?? false;
+
+                if (!shouldSubmit) {
+                  return;
+                }
+                isSensitive = true;
               }
 
               try {
@@ -475,7 +506,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     .doc(widget.docId)
                     .collection('comments')
                     .doc(comment['id'])
-                    .update({'content': newContent});
+                    .update({
+                  'content': newContent,
+                  'status': isSensitive ? 'pending' : 'approved',
+                });
                 
                 if (mounted) {
                   Navigator.pop(context);
@@ -545,19 +579,50 @@ class _PostDetailPageState extends State<PostDetailPage> {
     // 1. Kiểm tra từ cấm
     List<String> blacklistViolations = ContentService.getBlacklistedWords(content);
     if (blacklistViolations.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Bình luận chứa từ ngữ không phù hợp: ${blacklistViolations.join(', ')}")),
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Yêu cầu sửa nội dung"),
+          content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Quay lại sửa"),
+            ),
+          ],
+        ),
       );
       return;
     }
 
     // 2. Kiểm tra từ nhạy cảm
+    bool isSensitive = false;
     List<String> sensitiveViolations = ContentService.getSensitiveWords(content);
     if (sensitiveViolations.isNotEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Bình luận chứa từ ngữ nhạy cảm: ${sensitiveViolations.join(', ')}")),
-      );
-      return;
+      bool shouldSubmit = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+          content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Quay lại sửa"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Vẫn đăng"),
+            ),
+          ],
+        ),
+      ) ?? false;
+
+      if (!shouldSubmit) {
+        return;
+      }
+      isSensitive = true;
     }
 
     String? parentId = _replyingToId;
@@ -584,6 +649,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       'timestamp': FieldValue.serverTimestamp(),
       'parentCommentId': parentId,
       'likes': [],
+      'status': isSensitive ? 'pending' : 'approved',
     });
 
     await _firestore.collection(_collectionPath).doc(widget.docId).update({
@@ -1863,6 +1929,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
         var allComments = snapshot.data!.docs
             .map((d) => {...d.data() as Map<String, dynamic>, 'id': d.id})
+            .where((c) {
+              final status = c['status'];
+              final authorId = c['authorId'];
+              if (status == 'pending' && authorId != _user?.uid) {
+                return false;
+              }
+              if (status == 'hidden') {
+                return false;
+              }
+              return true;
+            })
             .toList();
         var rootComments =
         allComments.where((c) => c['parentCommentId'] == null).toList();

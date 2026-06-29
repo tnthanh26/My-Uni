@@ -44,7 +44,7 @@ class _MyEventTabState extends State<MyEventTab>
   bool _isCleaningExpiredEvents = false;
 
   static const Color primaryBlue = Color(0xFF6797E1);
-  static const Color primaryBrown = Color(0xFF47352E);
+  static const Color primaryBrown = Color(0xFF545454);
   static const Color figmaBlueBg = Color(0xFFF2F6FF);
   static const Color figmaSelectionBlue = Color(0xFF5893D8);
   static const Color figmaDetailBtn = Color(0xFF1088AE);

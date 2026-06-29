@@ -42,7 +42,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   final List<ReminderControllerGroup> _reminderGroups = [];
   bool _isLoading = false;
 
-  static const Color primaryBrown = Color(0xFF47352E);
+  static const Color primaryBrown = Color(0xFF545454);
   static const Color accentBlue = Color(0xFF92B9E6);
   static const Color borderGrey = Color(0xFF8E8E93);
 
