@@ -50,6 +50,21 @@
           "destination": "/index.html"
         }
       ]
+    },
+    {
+      "target": "legal",
+      "public": "legal_pages",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ]
     }
   ],
   "functions": [
