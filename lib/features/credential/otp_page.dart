@@ -122,9 +122,12 @@ class _OtpPageState extends State<OtpPage> {
         elevation: 0,
         leading: BackButton(color: isDarkMode ? Colors.white : Colors.black),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
-        child: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500.0),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            child: Column(
           children: [
             const SizedBox(height: 10),
             // Icon minh họa với nền nhẹ
@@ -242,6 +245,6 @@ class _OtpPageState extends State<OtpPage> {
           ],
         ),
       ),
-    );
+    )));
   }
 }

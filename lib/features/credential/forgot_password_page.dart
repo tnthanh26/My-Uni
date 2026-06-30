@@ -94,9 +94,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 30.0),
-          child: Form(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 30.0),
+              child: Form(
             key: _formKey,
             child: Column(
               children: [
@@ -232,6 +235,6 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
         ),
       ),
-    );
+    )));
   }
 }

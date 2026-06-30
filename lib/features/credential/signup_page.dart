@@ -176,10 +176,13 @@ class _SignUpPageState extends State<SignUpPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 30.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 500.0),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 30.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
             Text(
@@ -394,7 +397,7 @@ class _SignUpPageState extends State<SignUpPage> {
           ],
         ),
       ),
-    );
+    )));
   }
 
   Widget _buildInputContainer({required Widget child, required bool isDarkMode}) {

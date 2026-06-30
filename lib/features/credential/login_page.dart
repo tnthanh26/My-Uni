@@ -84,11 +84,13 @@ class _LoginPageState extends State<LoginPage> {
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 30.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500.0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 30.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Icon hoặc Logo app
                 SizedBox(
@@ -185,7 +187,7 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-    ));
+    )));
   }
 
   Widget _buildTextField({

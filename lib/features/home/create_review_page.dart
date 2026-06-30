@@ -293,18 +293,21 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF121212) : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 550.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -399,7 +402,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
           ),
         ),
       ),
-    );
+    )));
   }
 
   Widget _buildSectionLabel(BuildContext context, String text) {

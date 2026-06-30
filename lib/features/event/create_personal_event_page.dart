@@ -570,10 +570,13 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 550.0),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _titleController,
@@ -700,6 +703,6 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           ],
         ),
       ),
-    );
+    )));
   }
 }

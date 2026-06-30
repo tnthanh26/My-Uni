@@ -119,8 +119,11 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 550.0),
+          child: SingleChildScrollView(
+            child: Column(
           children: [
             const SizedBox(height: 16),
             Padding(
@@ -356,7 +359,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
           ],
         ),
       ),
-    );
+    )));
   }
 
   Future<void> _selectDate() async {

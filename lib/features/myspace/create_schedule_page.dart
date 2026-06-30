@@ -110,12 +110,15 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 550.0),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
               const SizedBox(height: 24),
 
               // 1. Tên Môn học
@@ -256,7 +259,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
           ),
         ),
       ),
-    );
+    )));
   }
 
   Widget _buildRectangleField({required Widget child, VoidCallback? onTap}) {
