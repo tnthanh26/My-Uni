@@ -1,4 +1,4 @@
-package com.example.my_uni;
+package com.archondev.myuni;
 
 import io.flutter.embedding.android.FlutterActivity;
 
