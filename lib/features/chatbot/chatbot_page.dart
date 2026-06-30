@@ -3,6 +3,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_uni/theme/app_colors.dart';
 
 class ChatbotPage extends StatefulWidget {
@@ -261,94 +262,248 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
   }
 
   void _showReportDialog(BuildContext context) {
+    final TextEditingController detailController = TextEditingController();
+    String selectedCategory = 'Sai kiến thức';
+    final List<String> categories = [
+      'Sai kiến thức',
+      'Không phản hồi',
+      'Nội dung không phù hợp',
+      'Lỗi khác'
+    ];
+
     showDialog(
       context: context,
       builder: (context) {
-        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-          title: Row(
-            children: [
-              const Icon(Icons.feedback_rounded, color: AppColors.hcmusBlue),
-              const SizedBox(width: 10),
-              Text(
-                'Báo cáo lỗi chatbot',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: isDarkMode ? Colors.white : Colors.black87,
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+            final Color textColor = isDarkMode ? Colors.white : Colors.black87;
+            final Color labelColor = isDarkMode ? Colors.white70 : Colors.black54;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+              title: Row(
+                children: [
+                  const Icon(Icons.feedback_rounded, color: AppColors.hcmusBlue),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Báo cáo lỗi chatbot',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Loại lỗi bạn gặp phải:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: labelColor,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: isDarkMode ? Colors.white24 : Colors.black26),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedCategory,
+                          isExpanded: true,
+                          dropdownColor: isDarkMode ? const Color(0xFF2C2C2E) : Colors.white,
+                          style: TextStyle(color: textColor, fontSize: 14),
+                          items: categories.map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          onChanged: (newValue) {
+                            if (newValue != null) {
+                              setStateDialog(() {
+                                selectedCategory = newValue;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      'Mô tả chi tiết:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: labelColor,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: detailController,
+                      maxLines: 4,
+                      style: TextStyle(color: textColor, fontSize: 14),
+                      decoration: InputDecoration(
+                        hintText: 'Vui lòng mô tả chi tiết nội dung lỗi hoặc câu hỏi bị lỗi...',
+                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: isDarkMode ? Colors.white24 : Colors.black26),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: AppColors.hcmusBlue, width: 2),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Bạn gặp vấn đề gì với câu trả lời của Ú Em?',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: isDarkMode ? Colors.white70 : Colors.black54,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
                 ),
-              ),
-              const SizedBox(height: 20),
-              _buildReportOption(context, 'Chatbot trả lời sai kiến thức', isDarkMode),
-              _buildReportOption(context, 'Không nhận được câu trả lời', isDarkMode),
-              _buildReportOption(context, 'Nội dung không phù hợp', isDarkMode),
-              _buildReportOption(context, 'Lỗi khác...', isDarkMode),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-            ),
-          ],
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.hcmusBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  ),
+                  onPressed: () async {
+                    final String details = detailController.text.trim();
+                    if (details.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Vui lòng nhập chi tiết lỗi!'),
+                          backgroundColor: Colors.redAccent,
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.pop(context);
+
+                    final user = FirebaseAuth.instance.currentUser;
+                    final String userEmail = user?.email ?? 'N/A';
+                    final String userId = user?.uid ?? 'N/A';
+
+                    try {
+                      await FirebaseFirestore.instance.collection('chatbot_reports').add({
+                        'category': selectedCategory,
+                        'details': details,
+                        'userEmail': userEmail,
+                        'userId': userId,
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+                    } catch (e) {
+                      debugPrint('Lỗi lưu report vào Firestore: $e');
+                    }
+
+                    // 2. Gửi thông báo đến Discord Webhook
+                    await _sendToDiscordWebhook(
+                      category: selectedCategory,
+                      details: details,
+                      userEmail: userEmail,
+                      userId: userId,
+                    );
+
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Cảm ơn đóng góp của bạn! Báo cáo đã được gửi tới hệ thống.'),
+                          backgroundColor: AppColors.hcmusBlue,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('Gửi báo cáo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildReportOption(BuildContext context, String title, bool isDarkMode) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: InkWell(
-        onTap: () {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Cảm ơn bạn! Báo cáo "$title" đã được gửi.'),
-              backgroundColor: primaryColor,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-          );
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: isDarkMode ? Colors.white10 : Colors.black12),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey),
-            ],
-          ),
-        ),
-      ),
-    );
+  Future<void> _sendToDiscordWebhook({
+    required String category,
+    required String details,
+    required String userEmail,
+    required String userId,
+  }) async {
+    // WEBHOOK CONFIGURATION:
+    // Bạn hãy tạo một webhook trên Discord (Server Settings -> Integrations -> Webhooks)
+    // Và dán URL webhook thực tế của bạn vào đây thay thế chuỗi bên dưới.
+    const String discordWebhookUrl = 'https://discord.com/api/webhooks/1521577476734849177/sBXm5Ve4FwXICLP6GGh4MApvwuloBoWT7fWioKhE-Z8xWepfGwQJUciYEZqt3NnzMCY7';
+
+    if (discordWebhookUrl == 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
+      debugPrint('Discord Webhook chưa được cấu hình. Bỏ qua gửi tin nhắn.');
+      return;
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse(discordWebhookUrl),
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
+        body: jsonEncode({
+          "username": "My-Uni Bot",
+          "avatar_url": "https://i.imgur.com/gK2Jp5M.png",
+          "embeds": [
+            {
+              "title": "🚨 BÁO CÁO LỖI CHATBOT MỚI",
+              "color": 16730112, // Hex: #FF6868
+              "fields": [
+                {
+                  "name": "📌 Loại lỗi",
+                  "value": category,
+                  "inline": true
+                },
+                {
+                  "name": "👤 Người gửi",
+                  "value": "$userEmail\n(UID: $userId)",
+                  "inline": true
+                },
+                {
+                  "name": "📝 Chi tiết lỗi",
+                  "value": details,
+                  "inline": false
+                }
+              ],
+              "footer": {
+                "text": "My-Uni Academic Companion App"
+              },
+              "timestamp": DateTime.now().toUtc().toIso8601String()
+            }
+          ]
+        }),
+      );
+      if (response.statusCode == 204) {
+        debugPrint('Gửi Discord Webhook thành công!');
+      } else {
+        debugPrint('Gửi Discord Webhook thất bại: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('Lỗi kết nối tới Discord Webhook: $e');
+    }
   }
 
   // ── Chat area ───────────────────────────────────────────────
