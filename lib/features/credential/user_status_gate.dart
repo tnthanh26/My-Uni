@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'blocked_account_page.dart';
+import 'deleting_account_page.dart';
 
 class UserStatusGate extends StatelessWidget {
   const UserStatusGate({
@@ -36,6 +37,17 @@ class UserStatusGate extends StatelessWidget {
           return BlockedAccountPage(
             reason: reason,
             status: status,
+          );
+        }
+
+        if (status == 'deleting') {
+          final scheduledDeleteAt = data?['scheduledDeleteAt'];
+          DateTime? deleteTime;
+          if (scheduledDeleteAt is Timestamp) {
+            deleteTime = scheduledDeleteAt.toDate();
+          }
+          return DeletingAccountPage(
+            scheduledDeleteAt: deleteTime,
           );
         }
 

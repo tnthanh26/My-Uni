@@ -38,6 +38,7 @@ class _SignUpPageState extends State<SignUpPage> {
     final trimmedEmail = email.trim().toLowerCase();
     final allowedEmails = [
       'nhatthanhtest2002@gmail.com',
+      'testusermyuni@gmail.com',
     ];
 
     if (allowedEmails.contains(trimmedEmail)) {
