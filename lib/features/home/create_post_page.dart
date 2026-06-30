@@ -326,18 +326,21 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF121212) : Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(25),
-            topRight: Radius.circular(25),
-          ),
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 550.0),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF121212) : Colors.white,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(25),
+                topRight: Radius.circular(25),
+              ),
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // User Card (Figma style)
               Container(
@@ -604,7 +607,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
         ),
       ),
-    );
+    )));
   }
 }
 
