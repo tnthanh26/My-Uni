@@ -624,7 +624,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           Column(
             children: [
               // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
-              SizedBox(height: MediaQuery.of(context).padding.top + 54.0),
+              SizedBox(height: MediaQuery.of(context).padding.top + 64.0),
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -1218,7 +1218,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         // Logo & HCMUS Text & Notification - Cố định
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
+            padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 35),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
