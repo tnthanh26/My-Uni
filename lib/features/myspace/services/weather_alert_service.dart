@@ -100,12 +100,11 @@ class WeatherAlertService {
     return WeatherAlertResult(
       shouldShow: true,
       level: WeatherAlertLevel.heavyRain,
-      title: 'TEST: Có thể mưa lớn',
-      subtitle: 'Đây là test widget thời tiết.',
+      title: 'TEST: Không có mưa',
+      subtitle: 'Test widget thời tiết.',
       classStart: schedule.startTime,
       classEnd: schedule.endTime,
     );
-
 
   }
 

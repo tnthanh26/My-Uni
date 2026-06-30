@@ -163,6 +163,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           setState(() {
             _userUniversity = university;
           });
+          // Hiển thị cảnh báo thời tiết
+          //_prepareWeatherFuture();
         }
       }
 
