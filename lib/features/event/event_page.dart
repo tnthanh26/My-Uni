@@ -39,11 +39,12 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   }
 
   Widget _buildFixedHeader(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Stack(
       children: [
         // Background Image with Overlay
         Container(
-          height: 150,
+          height: statusBarHeight + 102.0,
           width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
@@ -167,7 +168,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
           Column(
             children: [
               // Khoảng trống 102px để lộ phần Logo/Text của Header
-              const SizedBox(height: 102),
+              SizedBox(height: MediaQuery.of(context).padding.top + 54.0),
               Expanded(
                 child: Container(
                   width: double.infinity,

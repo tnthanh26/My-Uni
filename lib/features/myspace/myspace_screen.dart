@@ -622,7 +622,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           Column(
             children: [
               // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
-              const SizedBox(height: 102),
+              SizedBox(height: MediaQuery.of(context).padding.top + 54.0),
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -1197,11 +1197,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildFixedHeader(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Stack(
       children: [
         // Background Image - Cố định
         Container(
-          height: 150,
+          height: statusBarHeight + 102.0,
           width: double.infinity,
           decoration: const BoxDecoration(
             image: DecorationImage(
