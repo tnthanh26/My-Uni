@@ -149,7 +149,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHeaderForeground(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 35),
+        padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 35),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -266,8 +266,8 @@ class _HomePageState extends State<HomePage> {
           // 2. Nội dung có thể cuộn (Giữa)
           Column(
             children: [
-              // Khoảng trống 102px để lộ phần Logo/Text của Header
-              SizedBox(height: statusBarHeight + 54.0),
+              // Khoảng trống để lộ phần Logo/Text của Header
+              SizedBox(height: statusBarHeight + 64.0),
               Expanded(
                 child: Container(
                   width: double.infinity,
