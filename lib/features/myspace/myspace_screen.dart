@@ -904,7 +904,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode
                     ? Colors.white
