@@ -127,81 +127,86 @@ class DiscoverEventTab extends StatelessWidget {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
 
-    return Container(
-      color: _backgroundColor(isDark),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('official_news')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Đã xảy ra lỗi dữ liệu',
-                style: TextStyle(color: _secondaryText(isDark)),
-              ),
-            );
-          }
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600.0),
+        child: Container(
+          color: _backgroundColor(isDark),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('official_news')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Đã xảy ra lỗi dữ liệu',
+                    style: TextStyle(color: _secondaryText(isDark)),
+                  ),
+                );
+              }
 
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: primaryBlue),
-            );
-          }
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: primaryBlue),
+                );
+              }
 
-          final eventDocs = snapshot.data!.docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            return _checkIsEvent(
-              data['title'] ?? '',
-              data['summary'] ?? '',
-            );
-          }).toList();
+              final eventDocs = snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                return _checkIsEvent(
+                  data['title'] ?? '',
+                  data['summary'] ?? '',
+                );
+              }).toList();
 
-          if (eventDocs.isEmpty) {
-            return CustomScrollView(
-              slivers: [
-                ..._buildOverlapSliver(context),
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text(
-                      'Hiện chưa có sự kiện nào',
-                      style: TextStyle(color: _secondaryText(isDark)),
+              if (eventDocs.isEmpty) {
+                return CustomScrollView(
+                  slivers: [
+                    ..._buildOverlapSliver(context),
+                    SliverFillRemaining(
+                      hasScrollBody: false,
+                      child: Center(
+                        child: Text(
+                          'Hiện chưa có sự kiện nào',
+                          style: TextStyle(color: _secondaryText(isDark)),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
+
+              return CustomScrollView(
+                slivers: [
+                  ..._buildOverlapSliver(context),
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                          final doc = eventDocs[index];
+                          final data = doc.data() as Map<String, dynamic>;
+                          final String docId = doc.id;
+
+                          return _buildEventCard(
+                            context,
+                            docId,
+                            data,
+                            user,
+                            isDark,
+                          );
+                        },
+                        childCount: eventDocs.length,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            );
-          }
-
-          return CustomScrollView(
-            slivers: [
-              ..._buildOverlapSliver(context),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                      final doc = eventDocs[index];
-                      final data = doc.data() as Map<String, dynamic>;
-                      final String docId = doc.id;
-
-                      return _buildEventCard(
-                        context,
-                        docId,
-                        data,
-                        user,
-                        isDark,
-                      );
-                    },
-                    childCount: eventDocs.length,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+                ],
+              );
+            },
+          ),
+        ),
       ),
     );
   }

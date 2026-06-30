@@ -630,14 +630,19 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   width: double.infinity,
                   decoration: BoxDecoration(
                     color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                    borderRadius: BorderRadius.only(
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  child: _isDetailView
-                      ? _buildDetailViewContent() // Hiển thị nội dung DI
-                      : _buildDashboardContent(), // Hiển thị nội dung 3.1
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600.0),
+                      child: _isDetailView
+                          ? _buildDetailViewContent() // Hiển thị nội dung DI
+                          : _buildDashboardContent(), // Hiển thị nội dung 3.1
+                    ),
+                  ),
                 ),
               ),
             ],

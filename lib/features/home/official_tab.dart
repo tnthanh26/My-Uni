@@ -194,10 +194,13 @@ class OfficialTab extends StatelessWidget {
           );
         }
 
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          itemCount: snapshot.data!.docs.length + 1,
-          itemBuilder: (context, index) {
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600.0),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: snapshot.data!.docs.length + 1,
+              itemBuilder: (context, index) {
             if (index == 0) {
               return DailyDigestCard(
                 isDarkMode: isDarkMode,
@@ -527,7 +530,7 @@ class OfficialTab extends StatelessWidget {
               ),
             );
           },
-        );
+        )));
       },
     );
   }

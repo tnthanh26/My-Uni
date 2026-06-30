@@ -464,10 +464,13 @@ class MaterialTab extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-            itemCount: snapshot.data!.docs.length,
-            itemBuilder: (context, index) {
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600.0),
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                itemCount: snapshot.data!.docs.length,
+                itemBuilder: (context, index) {
               var doc = snapshot.data!.docs[index];
               var data = doc.data() as Map<String, dynamic>;
               String docId = doc.id;
@@ -479,7 +482,7 @@ class MaterialTab extends StatelessWidget {
                 isDarkMode,
               );
             },
-          );
+          )));
         },
       ),
       floatingActionButton: FloatingActionButton(

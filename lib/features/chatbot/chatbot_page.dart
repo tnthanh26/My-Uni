@@ -150,13 +150,18 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: isDarkMode ? AppColors.backgroundDark : AppColors.backgroundLight,
-      body: Column(
-        children: [
-          _buildHeader(isDarkMode),
-          Expanded(
-            child: _buildChatArea(isDarkMode),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600.0),
+          child: Column(
+            children: [
+              _buildHeader(isDarkMode),
+              Expanded(
+                child: _buildChatArea(isDarkMode),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -566,10 +566,13 @@ class AccountPage extends StatelessWidget {
               'generatedAt': DateTime.now().toIso8601String(),
             });
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            return Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600.0),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildProfileHeader(
                     context: context,
@@ -744,7 +747,7 @@ class AccountPage extends StatelessWidget {
                   const SizedBox(height: 10),
                 ],
               ),
-            );
+            )));
           },
         ),
       ),
