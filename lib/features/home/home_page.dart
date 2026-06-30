@@ -132,8 +132,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHeaderBackground(BuildContext context) {
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Container(
-      height: 150,
+      height: statusBarHeight + 102.0,
       width: double.infinity,
       decoration: const BoxDecoration(
         image: DecorationImage(
@@ -253,6 +254,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildMainHomeContent() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final double statusBarHeight = MediaQuery.of(context).padding.top;
 
     return DefaultTabController(
       length: 4,
@@ -265,7 +267,7 @@ class _HomePageState extends State<HomePage> {
           Column(
             children: [
               // Khoảng trống 102px để lộ phần Logo/Text của Header
-              const SizedBox(height: 102),
+              SizedBox(height: statusBarHeight + 54.0),
               Expanded(
                 child: Container(
                   width: double.infinity,
