@@ -199,11 +199,8 @@ class OfficialTab extends StatelessWidget {
           itemCount: snapshot.data!.docs.length + 1,
           itemBuilder: (context, index) {
             if (index == 0) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 24),
-                child: DailyDigestCard(
-                  isDarkMode: isDarkMode,
-                ),
+              return DailyDigestCard(
+                isDarkMode: isDarkMode,
               );
             }
 

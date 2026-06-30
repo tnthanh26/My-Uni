@@ -88,7 +88,7 @@ class DailyDigestCard extends StatelessWidget {
             : '${items.length} thông báo mới hôm nay';
 
         return Container(
-          margin: const EdgeInsets.only(bottom: 18),
+          margin: const EdgeInsets.only(bottom: 24),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(22),
             gradient: LinearGradient(
