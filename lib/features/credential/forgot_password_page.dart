@@ -183,6 +183,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     final trimmedValue = value.trim().toLowerCase();
                     final allowedEmails = [
                       'nhatthanhtest2002@gmail.com',
+                      'testusermyuni@gmail.com',
                     ];
 
                     if (allowedEmails.contains(trimmedValue)) {

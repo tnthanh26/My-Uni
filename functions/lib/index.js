@@ -1,10 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
+exports.cleanupDeletedAccounts = exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
 /* eslint-disable indent */
 const v2_1 = require("firebase-functions/v2");
 const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
 admin.initializeApp();
@@ -261,5 +262,40 @@ exports.semanticSearch = (0, https_1.onCall)(async (request) => {
         console.error("Semantic Search Proxy Error:", error);
         throw new https_1.HttpsError("internal", "Tìm kiếm đang gặp sự cố hoặc server đang bảo trì. Thử lại sau nhé!");
     }
+});
+/**
+ * Daily cleanup for accounts scheduled for deletion (deleted after 3 days)
+ */
+exports.cleanupDeletedAccounts = (0, scheduler_1.onSchedule)("0 0 * * *", async (event) => {
+    const now = admin.firestore.Timestamp.now();
+    const expiredUsersQuery = await db.collection("users")
+        .where("status", "==", "deleting")
+        .where("scheduledDeleteAt", "<=", now)
+        .get();
+    if (expiredUsersQuery.empty) {
+        console.log("No accounts scheduled for deletion at this time.");
+        return;
+    }
+    const batch = db.batch();
+    const promises = [];
+    for (const doc of expiredUsersQuery.docs) {
+        const uid = doc.id;
+        console.log(`Processing deletion for user UID: ${uid}`);
+        // 1. Queue Firestore user document deletion
+        batch.delete(doc.ref);
+        // 2. Queue Firebase Auth user deletion
+        promises.push(admin.auth().deleteUser(uid)
+            .then(() => {
+            console.log(`Successfully deleted Auth account for user UID: ${uid}`);
+        })
+            .catch((error) => {
+            console.error(`Error deleting Auth account for user UID: ${uid}`, error);
+        }));
+    }
+    // Commit firestore document deletions
+    await batch.commit();
+    // Wait for all Auth account deletions to complete
+    await Promise.all(promises);
+    console.log(`Cleaned up ${expiredUsersQuery.size} accounts.`);
 });
 //# sourceMappingURL=index.js.map

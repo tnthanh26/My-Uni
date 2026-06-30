@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:my_uni/app_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -83,6 +85,86 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        title: Text(
+          'Xác nhận xóa tài khoản',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white : Colors.black87,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Tài khoản của bạn sẽ không bị xóa ngay lập tức mà sẽ ẩn khỏi hệ thống. '
+          'Sau 3 ngày, tài khoản cùng toàn bộ dữ liệu liên quan sẽ bị xóa vĩnh viễn và không thể khôi phục.\n\n'
+          'Bạn có chắc chắn muốn tiếp tục yêu cầu xóa tài khoản?',
+          style: TextStyle(
+            color: isDarkMode ? Colors.white70 : Colors.black54,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Xác nhận xóa', style: TextStyle(color: Color(0xFFFF6C6C), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (!mounted) return;
+      _requestAccountDeletion(context);
+    }
+  }
+
+  Future<void> _requestAccountDeletion(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      final scheduledDate = DateTime.now().add(const Duration(days: 3));
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'status': 'deleting',
+        'scheduledDeleteAt': Timestamp.fromDate(scheduledDate),
+      });
+
+      if (!mounted) return;
+      Navigator.pop(context); // Tắt loading dialog
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Đã gửi yêu cầu xóa tài khoản! Tài khoản sẽ được xóa hoàn toàn sau 3 ngày.")),
+      );
+
+      Navigator.pop(context); // Quay về trang trước
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context); // Tắt loading dialog
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Lỗi yêu cầu xóa: ${e.toString()}")),
+      );
+    }
   }
 
   Future<void> _openExternalLink(BuildContext context, String urlString) async {
@@ -367,7 +449,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   label: 'Điều khoản dịch vụ',
                   onTap: () => _openExternalLink(
                     context,
-                    'https://tinyurl.com/58dcj7cb',
+                    'https://myuni-legal.web.app/',
                   ),
                 ),
                 _buildDivider(isDarkMode),
@@ -378,6 +460,21 @@ class _SettingsPageState extends State<SettingsPage> {
                     context,
                     'https://forms.gle/zyU75ecHFuapfPGz8',
                   ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 22),
+
+            _buildSectionTitle('Tài khoản', isDarkMode),
+            _buildSettingsGroup(
+              isDarkMode: isDarkMode,
+              children: [
+                _buildSettingItem(
+                  icon: Icons.delete_forever_rounded,
+                  label: 'Xóa tài khoản',
+                  isDestructive: true,
+                  onTap: () => _showDeleteAccountDialog(context),
                 ),
               ],
             ),
