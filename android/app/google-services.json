@@ -7,12 +7,17 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:285693378488:android:8717764dbf41a6c3b1594d",
+        "mobilesdk_app_id": "1:285693378488:android:55b747f8796f1f33b1594d",
         "android_client_info": {
-          "package_name": "com.example.my_uni"
+          "package_name": "com.archondev.myuni"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "285693378488-sp2pgotb993pdlre9n5ilioo2mjl8j5h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyC3_fRo0S2kSKc1wZZRaaeiy0duxChr7es"
@@ -20,7 +25,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "285693378488-sp2pgotb993pdlre9n5ilioo2mjl8j5h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "285693378488-hoeuvcmd48okgnm5vk4god4dke02feip.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myUni"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:285693378488:android:8717764dbf41a6c3b1594d",
+        "android_client_info": {
+          "package_name": "com.archondev.myuni"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "285693378488-sp2pgotb993pdlre9n5ilioo2mjl8j5h.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3_fRo0S2kSKc1wZZRaaeiy0duxChr7es"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "285693378488-sp2pgotb993pdlre9n5ilioo2mjl8j5h.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "285693378488-hoeuvcmd48okgnm5vk4god4dke02feip.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.myUni"
+              }
+            }
+          ]
         }
       }
     }

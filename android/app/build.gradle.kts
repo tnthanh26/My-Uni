@@ -9,7 +9,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.my_uni"
+    namespace = "com.archondev.myuni"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
