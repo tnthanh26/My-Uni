@@ -188,86 +188,89 @@ class MyUniHomePage extends StatelessWidget {
       child: Scaffold(
         body: SafeArea(
         child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
-                
-                // Logo
-                SizedBox(
-                  width: 140,
-                  height: 140,
-                  child: Hero(
-                    tag: 'app_logo', // Thêm Hero animation nếu cần sau này
-                    child: Image.asset(
-                      'assets/images/logoApp.png',
-                      fit: BoxFit.contain,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500.0),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 32.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  
+                  // Logo
+                  SizedBox(
+                    width: 140,
+                    height: 140,
+                    child: Hero(
+                      tag: 'app_logo', // Thêm Hero animation nếu cần sau này
+                      child: Image.asset(
+                        'assets/images/logoApp.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
-                ),
-                
-                const SizedBox(height: 40),
-                
-                // Tiêu đề
-                Text(
-                  'Chào mừng bạn đến với',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w500,
-                    color: isDark ? Colors.white70 : Colors.black54,
+                  
+                  const SizedBox(height: 40),
+                  
+                  // Tiêu đề
+                  Text(
+                    'Chào mừng bạn đến với',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white70 : Colors.black54,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'MyUni',
-                  style: TextStyle(
-                    fontSize: 40,
-                    fontWeight: FontWeight.w800,
-                    color: primaryColor,
-                    letterSpacing: 1.2,
+                  const SizedBox(height: 8),
+                  Text(
+                    'MyUni',
+                    style: TextStyle(
+                      fontSize: 40,
+                      fontWeight: FontWeight.w800,
+                      color: primaryColor,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                
-                const SizedBox(height: 12),
+                  
+                  const SizedBox(height: 12),
 
-                // Tagline nhỏ
-                Text(
-                  'Your Campus. Your Way.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    color: isDark ? Colors.white54 : Colors.black45,
+                  // Tagline nhỏ
+                  Text(
+                    'Your Campus. Your Way.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      color: isDark ? Colors.white54 : Colors.black45,
+                    ),
                   ),
-                ),
 
-                const SizedBox(height: 60),
+                  const SizedBox(height: 60),
 
-                // Nút Đăng nhập (Primary)
-                _buildButton(
-                  context,
-                  'Đăng nhập',
-                  primaryColor,
-                  () => Navigator.pushNamed(context, '/login'),
-                  isOutlined: false,
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Nút Đăng ký (Secondary/Outlined)
-                _buildButton(
-                  context,
-                  'Đăng ký tài khoản',
-                  primaryColor,
-                  () => Navigator.pushNamed(context, '/signup'),
-                  isOutlined: true,
-                ),
-                
-                const SizedBox(height: 40),
-              ],
+                  // Nút Đăng nhập (Primary)
+                  _buildButton(
+                    context,
+                    'Đăng nhập',
+                    primaryColor,
+                    () => Navigator.pushNamed(context, '/login'),
+                    isOutlined: false,
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Nút Đăng ký (Secondary/Outlined)
+                  _buildButton(
+                    context,
+                    'Đăng ký tài khoản',
+                    primaryColor,
+                    () => Navigator.pushNamed(context, '/signup'),
+                    isOutlined: true,
+                  ),
+                  
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),

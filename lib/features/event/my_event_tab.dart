@@ -538,9 +538,12 @@ class _MyEventTabState extends State<MyEventTab>
 
     return Scaffold(
       backgroundColor: _backgroundColor(isDarkMode),
-      body: widget.mode == EventTabMode.community
-          ? _buildCommunityTab(isDarkMode)
-          : StreamBuilder<List<EventModel>>(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 600.0),
+          child: widget.mode == EventTabMode.community
+              ? _buildCommunityTab(isDarkMode)
+              : StreamBuilder<List<EventModel>>(
         stream: _getEventsStream(),
         builder: (context, snapshot) {
           final List<EventModel> allEvents = snapshot.data ?? [];
@@ -608,7 +611,7 @@ class _MyEventTabState extends State<MyEventTab>
           );
         },
       ),
-    );
+    )));
   }
 
   Widget _buildViewSwitcher(bool isDarkMode) {

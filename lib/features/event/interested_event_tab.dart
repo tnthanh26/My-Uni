@@ -88,98 +88,103 @@ class InterestedEventTab extends StatelessWidget {
       );
     }
 
-    return Container(
-      color: _backgroundColor(isDarkMode),
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('interested_events')
-            .orderBy('timestamp', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                'Đã xảy ra lỗi',
-                style: TextStyle(
-                  color: _secondaryTextColor(isDarkMode),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            );
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: primaryBlue),
-            );
-          }
-
-          final docs = snapshot.data!.docs;
-
-          if (docs.isEmpty) {
-            return Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 24,
-                ),
-                decoration: BoxDecoration(
-                  color: _surfaceColor(isDarkMode),
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: _borderColor(isDarkMode)),
-                  boxShadow: _cardShadow(isDarkMode),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.favorite_border_rounded,
-                      size: 34,
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 600.0),
+        child: Container(
+          color: _backgroundColor(isDarkMode),
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .collection('interested_events')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(
+                  child: Text(
+                    'Đã xảy ra lỗi',
+                    style: TextStyle(
                       color: _secondaryTextColor(isDarkMode),
+                      fontWeight: FontWeight.w500,
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Bạn chưa quan tâm sự kiện nào.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: _primaryTextColor(isDarkMode),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Những sự kiện bạn lưu sẽ xuất hiện ở đây.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: _secondaryTextColor(isDarkMode),
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
+                  ),
+                );
+              }
 
-          return ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-            itemCount: docs.length,
-            itemBuilder: (context, index) {
-              final doc = docs[index];
-              final data = doc.data() as Map<String, dynamic>;
-              return _buildEventCard(
-                context,
-                doc.id,
-                data,
-                isDarkMode,
+              if (!snapshot.hasData) {
+                return const Center(
+                  child: CircularProgressIndicator(color: primaryBlue),
+                );
+              }
+
+              final docs = snapshot.data!.docs;
+
+              if (docs.isEmpty) {
+                return Center(
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 24),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _surfaceColor(isDarkMode),
+                      borderRadius: BorderRadius.circular(22),
+                      border: Border.all(color: _borderColor(isDarkMode)),
+                      boxShadow: _cardShadow(isDarkMode),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.favorite_border_rounded,
+                          size: 34,
+                          color: _secondaryTextColor(isDarkMode),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Bạn chưa quan tâm sự kiện nào.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _primaryTextColor(isDarkMode),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Những sự kiện bạn lưu sẽ xuất hiện ở đây.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: _secondaryTextColor(isDarkMode),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                itemCount: docs.length,
+                itemBuilder: (context, index) {
+                  final doc = docs[index];
+                  final data = doc.data() as Map<String, dynamic>;
+                  return _buildEventCard(
+                    context,
+                    doc.id,
+                    data,
+                    isDarkMode,
+                  );
+                },
               );
             },
-          );
-        },
+          ),
+        ),
       ),
     );
   }
