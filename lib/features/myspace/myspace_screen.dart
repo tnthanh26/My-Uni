@@ -398,6 +398,15 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Future<void> _showAutoDeadlineConfigSheet() async {
+    final bool isPolicyAccepted = await LocalStorageHelper.isMoodlePolicyAccepted();
+    if (!isPolicyAccepted) {
+      if (!mounted) return;
+      final bool? proceed = await showMoodlePolicyDialog(context);
+      if (proceed != true) return;
+      await LocalStorageHelper.setMoodlePolicyAccepted(true);
+    }
+
+    if (!mounted) return;
     await showAutoDeadlineConfigSheet(
       context,
       currentConfig: _autoDeadlineConfig,
