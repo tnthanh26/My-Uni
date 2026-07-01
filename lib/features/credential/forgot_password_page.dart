@@ -187,6 +187,19 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     final allowedEmails = [
                       'nhatthanhtest2002@gmail.com',
                       'testusermyuni@gmail.com',
+                      'akipikona@gmail.com',
+                      'xuanmai.vanhoc@gmail.com',
+                      'quoctientran145@gmail.com',
+                      'trangdangductin@gmail.com',
+                      'pphambuu@gmail.com',
+                      'huynhhuemy643@gmail.com',
+                      'lanphuong150404@gmail.com',
+                      'duthy1202@gmail.com',
+                      'huala1704@gmail.com',
+                      'bichchau2222004@gmail.com',
+                      'khiemduong0938@gmail.com',
+                      'duonghieu2907@gmail.com',
+                      'nphuongnguyen615@gmail.com',
                     ];
 
                     if (allowedEmails.contains(trimmedValue)) {

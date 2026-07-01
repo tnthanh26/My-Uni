@@ -945,3 +945,353 @@ Map<String, dynamic> _getTimeLeft(Deadline deadline) {
   else textColor = const Color(0xFF448E58);
   return {'text': timeText, 'color': textColor};
 }
+
+Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
+  return showModalBottomSheet<bool>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) {
+      final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+      return Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header bar indicator (gray pill)
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(top: 10, bottom: 10),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              // Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? hcmusBlueAccent.withValues(alpha: 0.18) : const Color(0xFFEAF2FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.description_rounded, color: hcmusBlueAccent, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Chính sách đồng bộ',
+                        style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Poppins',
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(sheetContext, false),
+                      icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 16),
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+                      // Title: Đồng bộ Deadline từ Moodle
+                      Text(
+                        'Đồng bộ Deadline từ Moodle',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Poppins',
+                          color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Subtitle: Tự động cập nhật deadline học tập
+                      Text(
+                        'Tự động cập nhật deadline học tập',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                          color: hcmusBlueAccent,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Introduction text
+                      Text(
+                        'Tính năng này giúp MyUni tự động lấy các bài tập và deadline từ hệ thống Moodle của trường để hiển thị trong ứng dụng, giúp bạn không cần tạo deadline thủ công.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.5,
+                          fontFamily: 'Poppins',
+                          color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Warning box
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.orange.withValues(alpha: 0.1) : const Color(0xFFFFF7ED),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: isDarkMode ? Colors.orange.withValues(alpha: 0.3) : const Color(0xFFFED7AA)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: RichText(
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontSize: 12.5,
+                                    height: 1.45,
+                                    fontFamily: 'Poppins',
+                                    color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Lưu ý: ',
+                                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                                    ),
+                                    const TextSpan(
+                                      text: 'Tính năng này chỉ hoạt động nếu trường hoặc chương trình đào tạo của bạn sử dụng Moodle để quản lý bài tập và thời hạn nộp. Nếu chương trình học của bạn không sử dụng Moodle, bạn vẫn có thể quản lý deadline bằng cách tạo thủ công trong MyUni.',
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      // Section: Cách hoạt động
+                      _buildSectionHeader(context, 'Cách hoạt động', Icons.alt_route_rounded),
+                      const SizedBox(height: 12),
+                      _buildStepItem(context, '1', 'Chọn địa chỉ Moodle của trường hoặc nhập đường dẫn Moodle.'),
+                      _buildStepItem(context, '2', 'Đăng nhập bằng tài khoản Moodle của bạn.'),
+                      _buildStepItem(context, '3', 'Sau khi đăng nhập thành công, MyUni sẽ nhận access token từ Moodle để đồng bộ dữ liệu.'),
+                      _buildStepItem(context, '4', 'Những lần đồng bộ sau sẽ sử dụng token này, bạn không cần đăng nhập lại trừ khi token hết hạn hoặc bị thu hồi.'),
+                      const SizedBox(height: 20),
+                      // Section: Quyền riêng tư & Bảo mật
+                      _buildSectionHeader(context, 'Quyền riêng tư & Bảo mật', Icons.security_rounded),
+                      const SizedBox(height: 12),
+                      _buildPolicyPoint(context, '🔒 MyUni không lưu mật khẩu Moodle của bạn.', isTitle: true),
+                      _buildPolicyPoint(context, 'Mật khẩu chỉ được sử dụng trong quá trình đăng nhập với Moodle để lấy access token.'),
+                      _buildPolicyPoint(context, 'Sau khi đăng nhập thành công, ứng dụng chỉ lưu access token cần thiết để đồng bộ deadline.'),
+                      _buildPolicyPoint(context, 'Bạn có thể ngắt kết nối hoặc đăng nhập lại bất cứ lúc nào.'),
+                      _buildPolicyPoint(context, 'Token chỉ được sử dụng để đọc các thông tin cần thiết phục vụ việc đồng bộ deadline và không được sử dụng cho bất kỳ mục đích nào khác.'),
+                      const SizedBox(height: 20),
+                      // Section: Bạn đồng ý tiếp tục?
+                      _buildSectionHeader(context, 'Bạn đồng ý tiếp tục?', Icons.help_outline_rounded),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Bằng việc tiếp tục, bạn xác nhận rằng:',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Poppins',
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      _buildBulletPoint(context, 'Bạn đã đọc và hiểu cách hoạt động của tính năng.'),
+                      _buildBulletPoint(context, 'Bạn đồng ý đăng nhập Moodle để MyUni lấy access token phục vụ việc đồng bộ deadline.'),
+                      _buildBulletPoint(context, 'Bạn đã đọc và hiểu chính sách bảo mật của tính năng này.'),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ),
+              // Footer Buttons
+              const Divider(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 16, top: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          side: BorderSide(color: isDarkMode ? Colors.white30 : Colors.black26),
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext, false),
+                        child: Text(
+                          'Quay lại',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: hcmusBlueAccent,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                        onPressed: () => Navigator.pop(sheetContext, true),
+                        child: const Text(
+                          'Tiếp tục',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+Widget _buildSectionHeader(BuildContext context, String text, IconData icon) {
+  final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  return Row(
+    children: [
+      Icon(icon, size: 18, color: hcmusBlueAccent),
+      const SizedBox(width: 8),
+      Text(
+        text,
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+          fontFamily: 'Poppins',
+          color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+        ),
+      ),
+    ],
+  );
+}
+
+Widget _buildStepItem(BuildContext context, String number, String text) {
+  final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 10.0, left: 4.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 20,
+          height: 20,
+          margin: const EdgeInsets.only(top: 2.0),
+          alignment: Alignment.center,
+          decoration: const BoxDecoration(
+            color: hcmusBlueAccent,
+            shape: BoxShape.circle,
+          ),
+          child: Text(
+            number,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              fontFamily: 'Poppins',
+              color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildPolicyPoint(BuildContext context, String text, {bool isTitle = false}) {
+  final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (!isTitle)
+          const Padding(
+            padding: EdgeInsets.only(top: 6.0),
+            child: Icon(Icons.circle, size: 5, color: hcmusBlueAccent),
+          ),
+        if (!isTitle) const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              fontWeight: isTitle ? FontWeight.w600 : FontWeight.normal,
+              fontFamily: 'Poppins',
+              color: isTitle 
+                  ? (isDarkMode ? Colors.white : Colors.black87)
+                  : (isDarkMode ? Colors.white70 : Colors.grey.shade800),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildBulletPoint(BuildContext context, String text) {
+  final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 3.0),
+          child: Icon(Icons.check_circle_outline_rounded, size: 15, color: hcmusBlueAccent),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.45,
+              fontFamily: 'Poppins',
+              color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}

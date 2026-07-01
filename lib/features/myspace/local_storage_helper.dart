@@ -196,11 +196,24 @@ class LocalStorageHelper {
     }
   }
 
+  static const String _moodlePolicyAcceptedKey = 'moodle_policy_accepted';
+
+  static Future<bool> isMoodlePolicyAccepted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_moodlePolicyAcceptedKey) ?? false;
+  }
+
+  static Future<void> setMoodlePolicyAccepted(bool accepted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_moodlePolicyAcceptedKey, accepted);
+  }
+
   // --- RESET DATA ---
   static Future<void> clearAll() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_deadlineKey);
     await prefs.remove(_scheduleKey);
     await prefs.remove(_autoDeadlineConfigKey);
+    await prefs.remove(_moodlePolicyAcceptedKey);
   }
 }
