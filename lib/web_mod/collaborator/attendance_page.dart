@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../file_helper_stub.dart'
 if (dart.library.html) '../file_helper_web.dart';
 import '../services/activity_service.dart';
@@ -222,6 +223,35 @@ class AttendancePage extends StatelessWidget {
                     ),
                   ),
 
+                  if (isActive)
+                    SizedBox(
+                      height: 46,
+                      width: 220,
+                      child: ElevatedButton.icon(
+                        onPressed: () => _showEventQrDialog(
+                          context,
+                          selectedActivityId!,
+                          activityData,
+                        ),
+                        icon: const Icon(Icons.qr_code_rounded, size: 20),
+                        label: const Text('Xem QR hoạt động'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(horizontal: 18),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          textStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+
                   SizedBox(
                     height: 46,
                     width: 200,
@@ -253,6 +283,7 @@ class AttendancePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 22),
+              _buildRequestsSection(context, selectedActivityId!),
               Expanded(
                 child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                   stream: ActivityService.getAttendance(selectedActivityId!),
@@ -267,7 +298,9 @@ class AttendancePage extends StatelessWidget {
                       return const Center(child: CircularProgressIndicator());
                     }
 
-                    final docs = snapshot.data?.docs ?? [];
+                    final docs = (snapshot.data?.docs ?? [])
+                        .where((doc) => doc.data()['isApproved'] != false)
+                        .toList();
 
                     return SingleChildScrollView(
                       child: AttendanceTable(
@@ -411,5 +444,335 @@ class AttendancePage extends StatelessWidget {
   String _csvCell(dynamic value) {
     final text = value.toString().replaceAll('"', '""');
     return '"$text"';
+  }
+
+  void _showEventQrDialog(
+      BuildContext context,
+      String activityId,
+      Map<String, dynamic> activityData,
+      ) {
+    final title = activityData['title'] ?? 'Hoạt động';
+    final point = activityData['trainingPoint'] ?? 0;
+
+    final eventQrData = jsonEncode({
+      'type': 'myuni_event_qr',
+      'version': 1,
+      'activityId': activityId,
+      'title': title,
+      'trainingPoint': point,
+      'organizerName': activityData['organizerName'] ?? '',
+      'generatedAt': DateTime.now().toIso8601String(),
+    });
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 760, maxHeight: 720),
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Mã QR hoạt động',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF1A1F37),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(
+                            color: const Color(0xFFE5E7EB),
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: QrImageView(
+                          data: eventQrData,
+                          version: QrVersions.auto,
+                          size: 240,
+                          backgroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.orangeAccent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          '+$point Điểm rèn luyện',
+                          style: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Sinh viên quét mã này bằng ứng dụng My Uni để tự ghi nhận điểm danh.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: Color(0xFF667085),
+                          fontSize: 13,
+                        ),
+                      ),
+
+                      const SizedBox(height: 22),
+                      _buildRequestsSection(context, activityId),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRequestsSection(BuildContext context, String activityId) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: ActivityService.getAttendance(activityId),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const SizedBox.shrink();
+        }
+
+        final requestDocs = snapshot.data!.docs
+            .where((doc) => doc.data()['isApproved'] == false)
+            .toList();
+
+        if (requestDocs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.pending_actions_rounded,
+                  color: Colors.orangeAccent,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                const Text(
+                  'Yêu cầu xét duyệt vãng lai',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1F37),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '${requestDocs.length} chờ duyệt',
+                    style: const TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.orange,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 16,
+              runSpacing: 16,
+              children: requestDocs.map((doc) {
+                final data = doc.data();
+                final studentUid = doc.id;
+                final displayName = data['displayName'] ?? 'Sinh viên';
+                final studentId = data['studentId'] ?? '';
+                final faculty = data['faculty'] ?? '';
+                final cohort = data['cohort'] ?? '';
+
+                return Container(
+                  width: 280,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.03),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1A1F37),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'MSSV: $studentId',
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF475467),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$faculty - $cohort',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 12,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () async {
+                                try {
+                                  await ActivityService.rejectAttendanceRequest(
+                                    activityId: activityId,
+                                    studentUid: studentUid,
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Lỗi từ chối: $e')),
+                                  );
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.redAccent,
+                                side: const BorderSide(color: Colors.redAccent),
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              child: const Text('Từ chối'),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                try {
+                                  await ActivityService.approveAttendanceRequest(
+                                    activityId: activityId,
+                                    studentUid: studentUid,
+                                    studentData: data,
+                                  );
+                                } catch (e) {
+                                  if (!context.mounted) return;
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Lỗi duyệt: $e')),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blueAccent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                textStyle: const TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              child: const Text('Duyệt'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 18),
+          ],
+        );
+      },
+    );
   }
 }

@@ -4,6 +4,8 @@ import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'my_event_tab.dart';
 import 'create_personal_event_page.dart';
+import 'event_qr_scanner_dialog.dart';
+import 'student_attendance_history_tab.dart';
 
 class EventPage extends StatefulWidget {
   final bool? isActive;
@@ -21,7 +23,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 3, vsync: this);
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
@@ -86,52 +88,77 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                   ),
                 ]),
 
-                // Cụm phải: Nút thông báo UI Capsule (Đã cập nhật)
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => NotificationScreen()),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff545454),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: StreamBuilder<List<MyUniNotification>>(
-                      stream: NotificationService.getNotifications(),
-                      builder: (context, snapshot) {
-                        // Đếm số thông báo chưa đọc thực tế
-                        final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                            if (unreadCount > 0)
-                              Positioned(
-                                right: -2,
-                                top: -2,
-                                child: CircleAvatar(
-                                  radius: 6,
-                                  backgroundColor: Colors.red,
-                                  child: Text(
-                                    unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 7,
-                                        fontWeight: FontWeight.bold
-                                    ),
-                                  ),
-                                ),
-                              )
-                          ],
+                // Cụm phải: Nút quét QR Event & Nút thông báo UI Capsule
+                Row(
+                  children: [
+                    GestureDetector(
+                      onTap: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => const EventQrScannerDialog(),
                         );
                       },
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: const BoxDecoration(
+                          color: Color(0xff545454),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => NotificationScreen()),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xff545454),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: StreamBuilder<List<MyUniNotification>>(
+                          stream: NotificationService.getNotifications(),
+                          builder: (context, snapshot) {
+                            // Đếm số thông báo chưa đọc thực tế
+                            final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: CircleAvatar(
+                                      radius: 6,
+                                      backgroundColor: Colors.red,
+                                      child: Text(
+                                        unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 7,
+                                            fontWeight: FontWeight.bold
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -223,6 +250,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                           tabs: const [
                             Tab(text: 'Cá nhân'),
                             Tab(text: 'Cộng đồng'),
+                            Tab(text: 'Điểm danh'),
                           ],
                         ),
                       ),
@@ -233,6 +261,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                           children: const [
                             MyEventTab(mode: EventTabMode.personal),
                             MyEventTab(mode: EventTabMode.community),
+                            StudentAttendanceHistoryTab(),
                           ],
                         ),
                       ),

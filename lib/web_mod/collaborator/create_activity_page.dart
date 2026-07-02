@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../services/activity_service.dart';
 import 'dart:convert';
 import 'package:file_picker/file_picker.dart';
@@ -274,7 +275,29 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     final description = _descriptionController.text.trim();
     final location = _locationController.text.trim();
     final organizer = _organizerController.text.trim();
-    final point = int.tryParse(_pointController.text.trim()) ?? 0;
+    
+    final pointText = _pointController.text.trim();
+    if (pointText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Vui lòng nhập điểm rèn luyện.')),
+      );
+      return;
+    }
+
+    final point = int.tryParse(pointText);
+    if (point == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Điểm rèn luyện phải là số nguyên (không chứa dấu thập phân).')),
+      );
+      return;
+    }
+
+    if (point < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Điểm rèn luyện không được là số âm.')),
+      );
+      return;
+    }
 
     final registeredIds = _studentIdsController.text
         .split(RegExp(r'[\n\r,]+'))
@@ -355,8 +378,11 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       controller: controller,
       maxLines: maxLines,
       keyboardType: isNumber
-          ? TextInputType.number
+          ? const TextInputType.numberWithOptions(decimal: false, signed: false)
           : TextInputType.text,
+      inputFormatters: isNumber
+          ? [FilteringTextInputFormatter.digitsOnly]
+          : null,
       decoration: InputDecoration(
         labelText: label,
         filled: true,
