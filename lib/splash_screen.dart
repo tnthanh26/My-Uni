@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -109,8 +110,37 @@ class _SplashPageState extends State<SplashPage>
     if (!mounted || _navigated) return;
 
     final user = FirebaseAuth.instance.currentUser;
+    String route = '/welcome';
 
-    final route = user == null ? '/welcome' : '/home';
+    if (user != null) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final loginTimestamp = prefs.getInt('login_timestamp');
+
+        if (loginTimestamp != null) {
+          final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
+          final difference = DateTime.now().difference(loginTime).inDays;
+
+          if (difference >= 15) {
+            // Đã quá 15 ngày, tự động đăng xuất
+            await FirebaseAuth.instance.signOut();
+            await prefs.remove('login_timestamp');
+            route = '/welcome';
+          } else {
+            route = '/home';
+          }
+        } else {
+          // Chưa có mốc thời gian (ví dụ: người dùng cũ nâng cấp app), lưu mốc hiện tại
+          await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+          route = '/home';
+        }
+      } catch (e) {
+        debugPrint("Error checking login session age: $e");
+        route = '/home'; // Nếu có lỗi bất ngờ, cho qua để không bị kẹt ở Splash
+      }
+    } else {
+      route = '/welcome';
+    }
 
     _navigate(route);
   }

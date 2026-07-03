@@ -26,10 +26,10 @@ class HomePage extends StatefulWidget {
   static final ValueNotifier<int> activeTabNotifier = ValueNotifier<int>(0);
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() => HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   bool _showWalkthrough = false;
   int _walkthroughStep = 0;
@@ -48,14 +48,19 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void startWalkthrough() {
+    setState(() {
+      _showWalkthrough = true;
+      _walkthroughStep = 0;
+      _selectedIndex = 0;
+      EventPageNotifier.isActive.value = (_selectedIndex == 1);
+      HomePage.activeTabNotifier.value = 0;
+    });
+  }
+
   void _onWalkthroughTriggered() {
     if (HomePage.showWalkthroughNotifier.value) {
-      setState(() {
-        _showWalkthrough = true;
-        _walkthroughStep = 0;
-        _selectedIndex = 0;
-        EventPageNotifier.isActive.value = (_selectedIndex == 1);
-      });
+      startWalkthrough();
       HomePage.showWalkthroughNotifier.value = false;
     }
   }
@@ -142,7 +147,7 @@ class _HomePageState extends State<HomePage> {
           fit: BoxFit.cover,
         ),
       ),
-      child: Container(color: Colors.black.withOpacity(0.45)),
+      child: Container(color: Colors.black.withValues(alpha: 0.45)),
     );
   }
 
@@ -351,6 +356,7 @@ class _HomePageState extends State<HomePage> {
         _walkthroughStep++;
         _selectedIndex = _walkthroughStep;
         EventPageNotifier.isActive.value = (_selectedIndex == 1);
+        HomePage.activeTabNotifier.value = _selectedIndex;
       } else {
         _showWalkthrough = false;
         _saveOnboardingDone();
@@ -364,6 +370,7 @@ class _HomePageState extends State<HomePage> {
         _walkthroughStep--;
         _selectedIndex = _walkthroughStep;
         EventPageNotifier.isActive.value = (_selectedIndex == 1);
+        HomePage.activeTabNotifier.value = _selectedIndex;
       });
     }
   }
@@ -441,12 +448,12 @@ class _HomePageState extends State<HomePage> {
                     color: isDarkMode ? const Color(0xFF1E1E24) : Colors.white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: stepData.accentColor.withOpacity(0.6),
+                      color: stepData.accentColor.withValues(alpha: 0.6),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.35),
+                        color: Colors.black.withValues(alpha: 0.35),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -461,7 +468,7 @@ class _HomePageState extends State<HomePage> {
                         height: 36,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: stepData.accentColor.withOpacity(0.15),
+                            color: stepData.accentColor.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
                           child: Icon(

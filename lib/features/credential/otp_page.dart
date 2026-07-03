@@ -72,12 +72,13 @@ class _OtpPageState extends State<OtpPage> {
         'lastUpdated': FieldValue.serverTimestamp(),
       });
 
-      // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn
+      // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn và lưu timestamp login
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('show_onboarding_${userCredential.user!.uid}', true);
+        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
       } catch (e) {
-        debugPrint("Error saving onboarding flag: $e");
+        debugPrint("Error saving onboarding or login data: $e");
       }
 
       if (mounted) {

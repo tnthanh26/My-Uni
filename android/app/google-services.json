@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "285693378488-0i4tsp2o7li14pnanlrcvu54eek20cpv.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.archondev.myuni",
+            "certificate_hash": "8fb560fe51619c3fc0d22b3c33a6da06f53ef613"
+          }
+        },
+        {
           "client_id": "285693378488-sp2pgotb993pdlre9n5ilioo2mjl8j5h.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -31,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "285693378488-hoeuvcmd48okgnm5vk4god4dke02feip.apps.googleusercontent.com",
+              "client_id": "285693378488-h4s4lpdool9mt7pm7dhdsbbn2fgq7f1b.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.myUni"
+                "bundle_id": "com.archondev.myuni"
               }
             }
           ]
@@ -45,7 +53,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:285693378488:android:8717764dbf41a6c3b1594d",
         "android_client_info": {
-          "package_name": "com.archondev.myuni"
+          "package_name": "com.example.my_uni"
         }
       },
       "oauth_client": [
@@ -67,10 +75,10 @@
               "client_type": 3
             },
             {
-              "client_id": "285693378488-hoeuvcmd48okgnm5vk4god4dke02feip.apps.googleusercontent.com",
+              "client_id": "285693378488-h4s4lpdool9mt7pm7dhdsbbn2fgq7f1b.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.myUni"
+                "bundle_id": "com.archondev.myuni"
               }
             }
           ]
