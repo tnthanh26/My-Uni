@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -39,6 +40,13 @@ class _LoginPageState extends State<LoginPage> {
         email: email,
         password: password,
       );
+
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+      } catch (e) {
+        debugPrint("Error saving login timestamp: $e");
+      }
 
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/home');

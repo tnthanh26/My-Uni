@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:my_uni/features/home/home_page.dart';
 
 void showOnboardingDialog(BuildContext context) {
-  HomePage.showWalkthroughNotifier.value = true;
+  final homeState = context.findAncestorStateOfType<HomePageState>();
+  if (homeState != null) {
+    homeState.startWalkthrough();
+  } else {
+    HomePage.showWalkthroughNotifier.value = false;
+    HomePage.showWalkthroughNotifier.value = true;
+  }
 }
 
 // Walkthrough step data class
@@ -71,7 +77,7 @@ class WalkthroughSpotlightPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final overlayPaint = Paint()
-      ..color = Colors.black.withOpacity(0.65);
+      ..color = Colors.black.withValues(alpha: 0.65);
 
     if (step < 0 || step >= walkthroughSteps.length) {
       canvas.drawRect(
@@ -115,7 +121,7 @@ class WalkthroughSpotlightPainter extends CustomPainter {
     canvas.restore();
 
     final borderPaint = Paint()
-      ..color = const Color(0xFF00D4AA).withOpacity(0.85)
+      ..color = const Color(0xFF00D4AA).withValues(alpha: 0.85)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.2;
 
