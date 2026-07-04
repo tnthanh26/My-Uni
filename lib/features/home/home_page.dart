@@ -18,6 +18,7 @@ import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
+import 'package:my_uni/features/services/daily_active_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,6 +38,7 @@ class HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    DailyActiveService.logDailyActiveUser();
     HomePage.activeTabNotifier.value = _selectedIndex;
     _checkOnboarding();
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
