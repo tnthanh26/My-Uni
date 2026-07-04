@@ -552,18 +552,29 @@ class NotificationScreen extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      noti.content,
-                      style: TextStyle(
-                        color: isDarkMode
-                            ? Colors.white70
-                            : const Color(0xFF4B5563),
-                        height: 1.45,
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 13,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    Builder(
+                      builder: (context) {
+                        String displayContent = noti.content;
+                        if (displayContent.startsWith(' đã ')) {
+                          displayContent = 'Ai đó$displayContent';
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            NotificationService.updateNotificationContent(noti.id, displayContent);
+                          });
+                        }
+                        return Text(
+                          displayContent,
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF4B5563),
+                            height: 1.45,
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 13,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        );
+                      },
                     ),
                     const SizedBox(height: 10),
                     Row(

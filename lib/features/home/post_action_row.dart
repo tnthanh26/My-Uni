@@ -85,10 +85,19 @@ class _PostActionRowState extends State<PostActionRow> {
         } else {
           final String? ownerId = widget.data['authorId'] ?? widget.data['uploaderId'] ?? widget.data['uid'];
           if (ownerId != null) {
-            _sendNotification(
+            final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+            final userData = userDoc.data();
+            final rawName = userData?['displayName']?.toString().trim();
+            final senderName = (rawName != null && rawName.isNotEmpty)
+                ? rawName
+                : (user.displayName != null && user.displayName!.trim().isNotEmpty
+                    ? user.displayName!.trim()
+                    : "Ai đó");
+
+            await _sendNotification(
               targetUserId: ownerId,
               type: 'like',
-              content: '${user.displayName ?? "Ai đó"} đã thích bài viết của bạn.',
+              content: '$senderName đã thích bài viết của bạn.',
             );
           }
         }
