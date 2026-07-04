@@ -288,6 +288,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      // Sync name & avatar changes to forum posts, study materials, and comments
+      final newName = _nameController.text.trim();
+      final newAvatar = finalPhotoBase64;
+      if (newName != _initialName || newAvatar != _initialPhotoBase64) {
+        await _syncProfileToPostsAndComments(uid, newName, newAvatar);
+      }
+
       if (mounted) {
         // Reset initial values after saving to avoid "unsaved changes" dialog when popping
         setState(() {
@@ -317,6 +324,104 @@ class _EditProfilePageState extends State<EditProfilePage> {
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _syncProfileToPostsAndComments(
+      String uid, String newName, String? newAvatar) async {
+    final firestore = FirebaseFirestore.instance;
+
+    // 1. Sync forum_posts (only non-anonymous posts)
+    try {
+      final forumQuery = await firestore
+          .collection('forum_posts')
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      if (forumQuery.docs.isNotEmpty) {
+        WriteBatch batch = firestore.batch();
+        int count = 0;
+        for (var doc in forumQuery.docs) {
+          final data = doc.data();
+          if (data['isAnonymous'] != true) {
+            batch.update(doc.reference, {
+              'authorName': newName,
+              'authorAvatar': newAvatar,
+            });
+            count++;
+            if (count >= 400) {
+              await batch.commit();
+              batch = firestore.batch();
+              count = 0;
+            }
+          }
+        }
+        if (count > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi đồng bộ forum_posts: $e");
+    }
+
+    // 2. Sync study_materials
+    try {
+      final materialsQuery = await firestore
+          .collection('study_materials')
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      if (materialsQuery.docs.isNotEmpty) {
+        WriteBatch batch = firestore.batch();
+        int count = 0;
+        for (var doc in materialsQuery.docs) {
+          batch.update(doc.reference, {
+            'authorName': newName,
+            'authorAvatar': newAvatar,
+          });
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = firestore.batch();
+            count = 0;
+          }
+        }
+        if (count > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi đồng bộ study_materials: $e");
+    }
+
+    // 3. Sync comments (collection group query for all comment subcollections)
+    try {
+      final commentsQuery = await firestore
+          .collectionGroup('comments')
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      if (commentsQuery.docs.isNotEmpty) {
+        WriteBatch batch = firestore.batch();
+        int count = 0;
+        for (var doc in commentsQuery.docs) {
+          batch.update(doc.reference, {
+            'authorName': newName,
+            'authorAvatar': newAvatar,
+          });
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = firestore.batch();
+            count = 0;
+          }
+        }
+        if (count > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi đồng bộ comments: $e");
     }
   }
 

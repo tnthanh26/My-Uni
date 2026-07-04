@@ -42,6 +42,120 @@ class HomePageState extends State<HomePage> {
     HomePage.activeTabNotifier.value = _selectedIndex;
     _checkOnboarding();
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
+    _syncExistingProfileData();
+  }
+
+  Future<void> _syncExistingProfileData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data();
+      if (userData == null) return;
+
+      final String displayName = userData['displayName'] ?? '';
+      final String? photoUrl = userData['photoUrl'];
+
+      if (displayName.isEmpty) return;
+
+      final firestore = FirebaseFirestore.instance;
+
+      // 1. Sync forum_posts
+      final forumQuery = await firestore
+          .collection('forum_posts')
+          .where('authorId', isEqualTo: user.uid)
+          .get();
+
+      WriteBatch? batch;
+      int count = 0;
+
+      for (var doc in forumQuery.docs) {
+        final data = doc.data();
+        if (data['isAnonymous'] != true) {
+          final currentName = data['authorName'];
+          final currentAvatar = data['authorAvatar'];
+
+          if (currentName != displayName || currentAvatar != photoUrl) {
+            batch ??= firestore.batch();
+            batch.update(doc.reference, {
+              'authorName': displayName,
+              'authorAvatar': photoUrl,
+            });
+            count++;
+            if (count >= 400) {
+              await batch.commit();
+              batch = null;
+              count = 0;
+            }
+          }
+        }
+      }
+
+      // 2. Sync study_materials
+      final materialsQuery = await firestore
+          .collection('study_materials')
+          .where('authorId', isEqualTo: user.uid)
+          .get();
+
+      for (var doc in materialsQuery.docs) {
+        final data = doc.data();
+        final currentName = data['authorName'];
+        final currentAvatar = data['authorAvatar'];
+
+        if (currentName != displayName || currentAvatar != photoUrl) {
+          batch ??= firestore.batch();
+          batch.update(doc.reference, {
+            'authorName': displayName,
+            'authorAvatar': photoUrl,
+          });
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = null;
+            count = 0;
+          }
+        }
+      }
+
+      // 3. Sync comments
+      final commentsQuery = await firestore
+          .collectionGroup('comments')
+          .where('authorId', isEqualTo: user.uid)
+          .get();
+
+      for (var doc in commentsQuery.docs) {
+        final data = doc.data();
+        final currentName = data['authorName'];
+        final currentAvatar = data['authorAvatar'];
+
+        if (currentName != displayName || currentAvatar != photoUrl) {
+          batch ??= firestore.batch();
+          batch.update(doc.reference, {
+            'authorName': displayName,
+            'authorAvatar': photoUrl,
+          });
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = null;
+            count = 0;
+          }
+        }
+      }
+
+      if (batch != null && count > 0) {
+        await batch.commit();
+      }
+    } catch (e) {
+      debugPrint("Error auto-syncing profile data: $e");
+    }
   }
 
   @override
