@@ -26,7 +26,7 @@ class PostActionRow extends StatefulWidget {
 }
 
 class _PostActionRowState extends State<PostActionRow> {
-  bool _isLiking = false;
+  DateTime _lastLikeTapTime = DateTime.fromMillisecondsSinceEpoch(0);
 
   Future<void> _sendNotification({
     required String targetUserId,
@@ -48,42 +48,38 @@ class _PostActionRowState extends State<PostActionRow> {
     });
   }
 
-  Future<void> _handleLike() async {
-    if (_isLiking) return;
+  Future<void> _handleLike(bool isLiked, int currentLikeCount) async {
+    final now = DateTime.now();
+    // 500ms synchronous debounce check to completely prevent double-click / spam race conditions
+    if (now.difference(_lastLikeTapTime) < const Duration(milliseconds: 500)) {
+      return;
+    }
+    _lastLikeTapTime = now;
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
-
-    setState(() {
-      _isLiking = true;
-    });
 
     try {
       final postRef = FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId);
       final userLikeRef = postRef.collection('likes').doc(user.uid);
 
-      bool isLikingAction = false;
-
-      // Sử dụng Transaction để đảm bảo tính toàn vẹn dữ liệu khi spam click
-      await FirebaseFirestore.instance.runTransaction((transaction) async {
-        final docSnapshot = await transaction.get(userLikeRef);
-
-        if (docSnapshot.exists) {
-          transaction.delete(userLikeRef);
-          transaction.update(postRef, {'likeCount': FieldValue.increment(-1)});
-          isLikingAction = false;
-        } else {
-          transaction.set(userLikeRef, {
-            'userId': user.uid,
-            'timestamp': FieldValue.serverTimestamp(),
-          });
-          transaction.update(postRef, {'likeCount': FieldValue.increment(1)});
-          isLikingAction = true;
-        }
-      });
+      if (isLiked) {
+        // Direct write to trigger Firestore's local cache optimistic update instantly
+        // Check to prevent likeCount from dropping below 0
+        final newLikeCount = currentLikeCount > 0 ? FieldValue.increment(-1) : 0;
+        postRef.update({'likeCount': newLikeCount});
+        userLikeRef.delete();
+      } else {
+        // Direct write to trigger Firestore's local cache optimistic update instantly
+        postRef.update({'likeCount': FieldValue.increment(1)});
+        userLikeRef.set({
+          'userId': user.uid,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
+      }
 
       // Chỉ gửi thông báo nếu hành động thực sự là "Like" mới
-      if (isLikingAction) {
+      if (!isLiked) {
         if (widget.onLike != null) {
           widget.onLike!();
         } else {
@@ -99,12 +95,6 @@ class _PostActionRowState extends State<PostActionRow> {
       }
     } catch (e) {
       debugPrint("Lỗi khi xử lý Like: $e");
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLiking = false;
-        });
-      }
     }
   }
 
@@ -121,7 +111,8 @@ class _PostActionRowState extends State<PostActionRow> {
             ? postSnapshot.data!.data() as Map<String, dynamic>
             : widget.data;
 
-        final int currentLikeCount = postData['likeCount'] ?? 0;
+        final int rawLikeCount = postData['likeCount'] ?? 0;
+        final int currentLikeCount = rawLikeCount < 0 ? 0 : rawLikeCount;
         final int currentCommentCount = postData['commentCount'] ?? 0;
 
         return Padding(
@@ -160,7 +151,7 @@ class _PostActionRowState extends State<PostActionRow> {
           icon: isLiked ? Icons.favorite : Icons.favorite_border,
           label: '$likeCount',
           color: isLiked ? Colors.redAccent : defaultColor,
-          onTap: _handleLike,
+          onTap: () => _handleLike(isLiked, likeCount),
         );
       },
     );
