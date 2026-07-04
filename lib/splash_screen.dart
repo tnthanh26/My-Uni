@@ -25,9 +25,7 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _titleOpacity;
   late Animation<Offset> _titleSlide;
 
-  // Button: fade + slide up (most delayed)
-  late Animation<double> _buttonOpacity;
-  late Animation<Offset> _buttonSlide;
+
 
   bool _navigated = false;
 
@@ -79,22 +77,7 @@ class _SplashPageState extends State<SplashPage>
       ),
     );
 
-    // --- Button ---
-    _buttonOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.65, 0.9, curve: Curves.easeOut),
-      ),
-    );
-    _buttonSlide = Tween<Offset>(
-      begin: const Offset(0, 0.6),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.65, 0.9, curve: Curves.easeOut),
-      ),
-    );
+
 
     _startAnimationsAndNavigate();
   }
@@ -186,84 +169,39 @@ class _SplashPageState extends State<SplashPage>
 
           // Lớp nội dung
           SafeArea(
-            child: Column(
-              children: [
-                const Spacer(flex: 5),
-
-                // ── Logo + Title ──
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FadeTransition(
-                      opacity: _logoOpacity,
-                      child: ScaleTransition(
-                        scale: _logoScale,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FadeTransition(
+                    opacity: _logoOpacity,
+                    child: ScaleTransition(
+                      scale: _logoScale,
+                      child: Image.asset(
+                        'assets/images/logoSplash.png',
+                        width: 160,
+                        height: 166,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  FadeTransition(
+                    opacity: _titleOpacity,
+                    child: SlideTransition(
+                      position: _titleSlide,
+                      child: Transform.translate(
+                        offset: const Offset(0, -30),
                         child: Image.asset(
-                          'assets/images/logoSplash.png',
-                          width: 160,
-                          height: 166,
+                          'assets/images/MyUni.png',
+                          width: 220,
+                          height: 100,
                           fit: BoxFit.contain,
                         ),
                       ),
                     ),
-
-                    FadeTransition(
-                      opacity: _titleOpacity,
-                      child: SlideTransition(
-                        position: _titleSlide,
-                        child: Transform.translate(
-                          offset: const Offset(0, -30),
-                          child: Image.asset(
-                            'assets/images/MyUni.png',
-                            width: 220,
-                            height: 100,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const Spacer(flex: 6),
-
-                // ── CTA Button ──
-                FadeTransition(
-                  opacity: _buttonOpacity,
-                  child: SlideTransition(
-                    position: _buttonSlide,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 45),
-                      child: SizedBox(
-                        height: 52,
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () => _navigate('/welcome'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white.withOpacity(0.2),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            side: const BorderSide(color: Colors.white, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(56),
-                            ),
-                          ),
-                          child: const Text(
-                            'Bắt đầu thôi',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
                   ),
-                ),
-
-                const SizedBox(height: 60),
-              ],
+                ],
+              ),
             ),
           ),
         ],

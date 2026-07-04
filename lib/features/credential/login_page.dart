@@ -127,6 +127,7 @@ class _LoginPageState extends State<LoginPage> {
                   icon: Icons.email_outlined,
                   isDarkMode: isDarkMode,
                   keyboardType: TextInputType.emailAddress,
+                  textInputAction: TextInputAction.next,
                 ),
                 const SizedBox(height: 20),
 
@@ -139,6 +140,8 @@ class _LoginPageState extends State<LoginPage> {
                   isPassword: true,
                   obscureText: _isObscured,
                   onSuffixIconTap: () => setState(() => _isObscured = !_isObscured),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _isLoading ? null : _handleLogin(),
                 ),
 
                 Align(
@@ -207,6 +210,8 @@ class _LoginPageState extends State<LoginPage> {
     bool obscureText = false,
     VoidCallback? onSuffixIconTap,
     TextInputType? keyboardType,
+    TextInputAction? textInputAction,
+    ValueChanged<String>? onSubmitted,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -218,6 +223,8 @@ class _LoginPageState extends State<LoginPage> {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
+        textInputAction: textInputAction,
+        onSubmitted: onSubmitted,
         style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
         decoration: InputDecoration(
           labelText: label,

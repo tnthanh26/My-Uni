@@ -72,64 +72,65 @@ class _AnimatedBottomNavState extends State<AnimatedBottomNav>
     final count = widget.items.length;
 
     // --- Dark Mode Logic ---
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // Use provided colors OR fallback to theme-specific defaults
-    final effectiveBgColor = widget.backgroundColor ??
+    final Color effectiveBgColor = widget.backgroundColor ??
         (isDarkMode ? const Color(0xFF16161F) : Colors.white);
 
-    final effectiveActiveColor = widget.activeColor ?? const Color(0xFF457EC0);
+    final Color effectiveActiveColor = widget.activeColor ?? const Color(0xFF457EC0);
 
-    final effectiveInactiveColor = widget.inactiveColor ??
+    final Color effectiveInactiveColor = widget.inactiveColor ??
         (isDarkMode ? Colors.white38 : const Color(0xFF8E8E93));
 
-    final effectivePillColor = widget.pillColor ??
-        effectiveActiveColor.withOpacity(0.1);
+    final Color effectivePillColor = widget.pillColor ??
+        effectiveActiveColor.withValues(alpha: 0.1);
 
     return Container(
-      color: effectiveBgColor, // Use effective color
+      color: effectiveBgColor,
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 64,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final totalWidth = constraints.maxWidth;
-              final itemWidth = totalWidth / count;
-
-              return Stack(
-                children: [
-                  // Sliding pill background
-                  AnimatedPositioned(
-                    duration: const Duration(milliseconds: 400),
-                    curve: _spring,
-                    left: widget.currentIndex * itemWidth + itemWidth * 0.1,
-                    top: 8,
-                    width: itemWidth * 0.8,
-                    height: 46,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: effectivePillColor, // Use effective color
-                        borderRadius: BorderRadius.circular(23),
+          height: 70, // Tăng nhẹ chiều cao thanh điều hướng để cân đối
+          child: Stack(
+            children: [
+              // Sliding pill background sử dụng AnimatedAlign & FractionallySizedBox
+              Positioned.fill(
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 400),
+                  curve: _spring,
+                  alignment: Alignment(
+                    count > 1 ? (widget.currentIndex / (count - 1)) * 2 - 1 : 0.0,
+                    0.0,
+                  ),
+                  child: FractionallySizedBox(
+                    widthFactor: 1.0 / count,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Tăng height của pill (vertical: 6 thay vì top/height cố định)
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: effectivePillColor, // Use effective color
+                          borderRadius: BorderRadius.circular(24),
+                        ),
                       ),
                     ),
                   ),
+                ),
+              ),
 
-                  // Nav items
-                  Row(
-                    children: List.generate(count, (i) {
-                      return _NavItemWidget(
-                        item: widget.items[i],
-                        isSelected: widget.currentIndex == i,
-                        activeColor: effectiveActiveColor,   // Use effective color
-                        inactiveColor: effectiveInactiveColor, // Use effective color
-                        onTap: () => widget.onTap(i),
-                      );
-                    }),
-                  ),
-                ],
-              );
-            },
+              // Nav items
+              Row(
+                children: List.generate(count, (i) {
+                  return _NavItemWidget(
+                    item: widget.items[i],
+                    isSelected: widget.currentIndex == i,
+                    activeColor: effectiveActiveColor,   // Use effective color
+                    inactiveColor: effectiveInactiveColor, // Use effective color
+                    onTap: () => widget.onTap(i),
+                  );
+                }),
+              ),
+            ],
           ),
         ),
       ),
