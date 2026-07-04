@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_uni/theme/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatbotPage extends StatefulWidget {
   const ChatbotPage({super.key});
@@ -251,9 +252,14 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
+                color: const Color(0xFFD85858).withOpacity(0.9),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: const Color(0xFFD85858),
+                  width: 1,
+                ),
               ),
+
               child: const Icon(
                 Icons.report_gmailerrorred_rounded,
                 color: Colors.white,
@@ -693,7 +699,16 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 border: isDarkMode ? Border.all(color: Colors.white10) : null,
               ),
               child: MarkdownBody(
-                data: msg.text,
+                data: _cleanMessageFormat(msg.text),
+                selectable: true,
+                onTapLink: (text, href, title) async {
+                  if (href != null) {
+                    final uri = Uri.tryParse(href);
+                    if (uri != null) {
+                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                    }
+                  }
+                },
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(
                     color: isDarkMode ? Colors.white.withOpacity(0.9) : const Color(0xFF1A1F35),
@@ -747,8 +762,8 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   ),
                 ],
               ),
-              child: Text(
-                msg.text,
+              child: SelectableText(
+                _cleanMessageFormat(msg.text),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 14,
@@ -838,8 +853,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                     ),
                   ],
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.only(left: 4),
+                child: const Center(
                   child: Icon(
                     Icons.send_rounded,
                     color: Colors.white,
@@ -850,8 +864,39 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
             ),
           ],
         ),
-      ),
+      )
     );
+  }
+
+  String _cleanMessageFormat(String text) {
+    var cleaned = text;
+    cleaned = cleaned.replaceAll(r'$\rightarrow$', '→');
+    cleaned = cleaned.replaceAll(r'\rightarrow', '→');
+    cleaned = cleaned.replaceAll(r'$\leftarrow$', '←');
+    cleaned = cleaned.replaceAll(r'\leftarrow', '←');
+    cleaned = cleaned.replaceAll(r'$\Rightarrow$', '⇒');
+    cleaned = cleaned.replaceAll(r'\Rightarrow', '⇒');
+    cleaned = cleaned.replaceAll(r'$\Leftarrow$', '⇐');
+    cleaned = cleaned.replaceAll(r'\Leftarrow', '⇐');
+    cleaned = cleaned.replaceAll(r'$\leftrightarrow$', '↔');
+    cleaned = cleaned.replaceAll(r'\leftrightarrow', '↔');
+    cleaned = cleaned.replaceAll(r'$\Leftrightarrow$', '⇔');
+    cleaned = cleaned.replaceAll(r'\Leftrightarrow', '⇔');
+    cleaned = cleaned.replaceAll(r'$\times$', '×');
+    cleaned = cleaned.replaceAll(r'\times', '×');
+    cleaned = cleaned.replaceAll(r'$\div$', '÷');
+    cleaned = cleaned.replaceAll(r'\div', '÷');
+    cleaned = cleaned.replaceAll(r'$\leq$', '≤');
+    cleaned = cleaned.replaceAll(r'\leq', '≤');
+    cleaned = cleaned.replaceAll(r'$\geq$', '≥');
+    cleaned = cleaned.replaceAll(r'\geq', '≥');
+    cleaned = cleaned.replaceAll(r'$\neq$', '≠');
+    cleaned = cleaned.replaceAll(r'\neq', '≠');
+    cleaned = cleaned.replaceAll(r'$\approx$', '≈');
+    cleaned = cleaned.replaceAll(r'\approx', '≈');
+    cleaned = cleaned.replaceAll(r'$\pm$', '±');
+    cleaned = cleaned.replaceAll(r'\pm', '±');
+    return cleaned;
   }
 }
 

@@ -644,7 +644,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 600.0),
                       child: _isDetailView
@@ -866,7 +867,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           if (top3Deadlines.isEmpty) _buildEmptyStateMeme(type: 'deadline'),
 
           const SizedBox(height: 20),
-          _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1)),
+          _buildSectionHeaderFigma("THỜI KHÓA BIỂU", () => _navigateToDetail(1)),
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
 
@@ -920,11 +921,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               title,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: isDarkMode
                     ? Colors.white
-                    : const Color(0xFF1E293B),
+                    : const Color(0xFF040404),
               ),
             ),
           ],
@@ -1041,13 +1042,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final currentWeek = _getCurrentWeekDays();
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return SizedBox(
-      height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        itemCount: currentWeek.length,
-        itemBuilder: (context, index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Row(
+        children: List.generate(currentWeek.length, (index) {
           final dayData = currentWeek[index];
           DateTime dayDate = dayData['fullDate'];
           int weekdayValue = dayData['value']; // T2=2, T3=3... CN=8
@@ -1062,56 +1060,80 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
           Color badgeColor = isScheduleTab ? hcmusTeal : hcmusRed;
 
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                selectedWeekday = weekdayValue;
-                _focusedDate = dayDate;
-              });
-            },
-            child: Container(
-              width: 48,
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? hcmusBlueAccent : Colors.transparent,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("${dayDate.day}",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black))),
-                  Text(dayData['label'],
-                      style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white60 : const Color(0xff94A3B8)), fontSize: 12)),
-                  const SizedBox(height: 4),
-                  // Badge thông báo (Đỏ cho Deadline, Teal cho Schedule)
-                  SizedBox(
-                    height: 18,
-                    child: count > 0
-                        ? Container(
-                      width: 18, // Đảm bảo width = height để tạo hình tròn chuẩn
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: badgeColor,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Text(
-                        "$count",
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    )
-                        : const SizedBox.shrink(), // Vẫn giữ vùng 18px nhưng bên trong trống
+          return Expanded(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedWeekday = weekdayValue;
+                  _focusedDate = dayDate;
+                });
+              },
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: Container(
+                  height: 70,
+                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: isSelected ? hcmusBlueAccent : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ],
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${dayDate.day}",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black),
+                          ),
+                        ),
+                        Text(
+                          dayData['label'],
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : (isDarkMode ? Colors.white60 : const Color(0xff94A3B8)),
+                            fontSize: 11,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // Badge thông báo (Đỏ cho Deadline, Teal cho Schedule)
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: count > 0
+                              ? Container(
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: badgeColor,
+                              shape: BoxShape.circle,
+                            ),
+                            child: FittedBox(
+                              fit: BoxFit.contain,
+                              child: Padding(
+                                padding: const EdgeInsets.all(2.0),
+                                child: Text(
+                                  "$count",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          )
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ),
           );
-        },
+        }),
       ),
     );
   }
@@ -1315,9 +1337,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildWelcomeBannerFigma() {
     final int today = DateTime.now().weekday + 1;
-
     final int todayClassesCount = mockSchedule.where((c) => c.weekday == today).length;
-
     final int pendingDeadlinesCount = mockDeadlines.where((d) => !d.isCompleted).length;
 
     return Container(
@@ -1422,28 +1442,28 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-
-
-
-
   Widget _buildCalendarStripFigma() {
     final List<Map<String, dynamic>> currentWeek = _getCurrentWeekDays();
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 15),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: currentWeek.map((d) => GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedWeekday = d['value'];
-              _focusedDate = d['fullDate'];
-            });
-          },
-          child: _calendarDayFigma(
-              d['day'],
-              d['label'],
-              isSelected: selectedWeekday == d['value']
+        children: currentWeek.map((d) => Expanded(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                selectedWeekday = d['value'];
+                _focusedDate = d['fullDate'];
+              });
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _calendarDayFigma(
+                  d['day'],
+                  d['label'],
+                  isSelected: selectedWeekday == d['value']
+              ),
+            ),
           ),
         )).toList(),
       ),
@@ -1453,22 +1473,40 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   Widget _calendarDayFigma(String day, String weekday, {bool isSelected = false}) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      width: 36,
-      height: 54,
+      height: 56,
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
       decoration: BoxDecoration(
         color: isSelected ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(weekday, style: TextStyle(color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black), fontSize: 12, height: 0.75)),
-          const SizedBox(height: 4),
-          Text(day, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black))),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              weekday,
+              style: TextStyle(
+                color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              day,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   void _showScheduleActionMenu(StudyClass s) {
     showModalBottomSheet(

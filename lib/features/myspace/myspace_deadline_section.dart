@@ -517,6 +517,7 @@ Future<void> showAutoDeadlineConfigSheet(
                                 setModalState(() {
                                   permissionGranted = false;
                                   permissionRequested = false;
+                                  isEnabled = false;
                                 });
                                 await saveCurrentConfig();
                                 if (sheetContext.mounted) {
@@ -759,7 +760,7 @@ class _DeadlineSectionHeader extends StatelessWidget {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Expanded(child: Text('Deadlines', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87))),
+        Expanded(child: Text('DEADLINES', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87))),
         AutoUpdateToggle(isEnabled: isEnabled, onTap: onOpenAutoConfig),
         const SizedBox(width: 8),
         GestureDetector(
