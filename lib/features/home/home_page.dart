@@ -68,93 +68,116 @@ class HomePageState extends State<HomePage> {
       final firestore = FirebaseFirestore.instance;
 
       // 1. Sync forum_posts
-      final forumQuery = await firestore
-          .collection('forum_posts')
-          .where('authorId', isEqualTo: user.uid)
-          .get();
+      try {
+        final forumQuery = await firestore
+            .collection('forum_posts')
+            .where('authorId', isEqualTo: user.uid)
+            .get();
 
-      WriteBatch? batch;
-      int count = 0;
+        if (forumQuery.docs.isNotEmpty) {
+          WriteBatch batch = firestore.batch();
+          int count = 0;
+          for (var doc in forumQuery.docs) {
+            final data = doc.data();
+            if (data['isAnonymous'] != true) {
+              final currentName = data['authorName'];
+              final currentAvatar = data['authorAvatar'];
 
-      for (var doc in forumQuery.docs) {
-        final data = doc.data();
-        if (data['isAnonymous'] != true) {
-          final currentName = data['authorName'];
-          final currentAvatar = data['authorAvatar'];
-
-          if (currentName != displayName || currentAvatar != photoUrl) {
-            batch ??= firestore.batch();
-            batch.update(doc.reference, {
-              'authorName': displayName,
-              'authorAvatar': photoUrl,
-            });
-            count++;
-            if (count >= 400) {
-              await batch.commit();
-              batch = null;
-              count = 0;
+              if (currentName != displayName || currentAvatar != photoUrl) {
+                batch.update(doc.reference, {
+                  'authorName': displayName,
+                  'authorAvatar': photoUrl,
+                });
+                count++;
+                if (count >= 400) {
+                  await batch.commit();
+                  batch = firestore.batch();
+                  count = 0;
+                }
+              }
             }
           }
+          if (count > 0) {
+            await batch.commit();
+          }
         }
+      } catch (e) {
+        debugPrint("Error auto-syncing forum_posts: $e");
       }
 
       // 2. Sync study_materials
-      final materialsQuery = await firestore
-          .collection('study_materials')
-          .where('authorId', isEqualTo: user.uid)
-          .get();
+      try {
+        final materialsQuery = await firestore
+            .collection('study_materials')
+            .where('authorId', isEqualTo: user.uid)
+            .get();
 
-      for (var doc in materialsQuery.docs) {
-        final data = doc.data();
-        final currentName = data['authorName'];
-        final currentAvatar = data['authorAvatar'];
+        if (materialsQuery.docs.isNotEmpty) {
+          WriteBatch batch = firestore.batch();
+          int count = 0;
+          for (var doc in materialsQuery.docs) {
+            final data = doc.data();
+            final currentName = data['authorName'];
+            final currentAvatar = data['authorAvatar'];
 
-        if (currentName != displayName || currentAvatar != photoUrl) {
-          batch ??= firestore.batch();
-          batch.update(doc.reference, {
-            'authorName': displayName,
-            'authorAvatar': photoUrl,
-          });
-          count++;
-          if (count >= 400) {
+            if (currentName != displayName || currentAvatar != photoUrl) {
+              batch.update(doc.reference, {
+                'authorName': displayName,
+                'authorAvatar': photoUrl,
+              });
+              count++;
+              if (count >= 400) {
+                await batch.commit();
+                batch = firestore.batch();
+                count = 0;
+              }
+            }
+          }
+          if (count > 0) {
             await batch.commit();
-            batch = null;
-            count = 0;
           }
         }
+      } catch (e) {
+        debugPrint("Error auto-syncing study_materials: $e");
       }
 
       // 3. Sync comments
-      final commentsQuery = await firestore
-          .collectionGroup('comments')
-          .where('authorId', isEqualTo: user.uid)
-          .get();
+      try {
+        final commentsQuery = await firestore
+            .collectionGroup('comments')
+            .where('authorId', isEqualTo: user.uid)
+            .get();
 
-      for (var doc in commentsQuery.docs) {
-        final data = doc.data();
-        final currentName = data['authorName'];
-        final currentAvatar = data['authorAvatar'];
+        if (commentsQuery.docs.isNotEmpty) {
+          WriteBatch batch = firestore.batch();
+          int count = 0;
+          for (var doc in commentsQuery.docs) {
+            final data = doc.data();
+            final currentName = data['authorName'];
+            final currentAvatar = data['authorAvatar'];
 
-        if (currentName != displayName || currentAvatar != photoUrl) {
-          batch ??= firestore.batch();
-          batch.update(doc.reference, {
-            'authorName': displayName,
-            'authorAvatar': photoUrl,
-          });
-          count++;
-          if (count >= 400) {
+            if (currentName != displayName || currentAvatar != photoUrl) {
+              batch.update(doc.reference, {
+                'authorName': displayName,
+                'authorAvatar': photoUrl,
+              });
+              count++;
+              if (count >= 400) {
+                await batch.commit();
+                batch = firestore.batch();
+                count = 0;
+              }
+            }
+          }
+          if (count > 0) {
             await batch.commit();
-            batch = null;
-            count = 0;
           }
         }
-      }
-
-      if (batch != null && count > 0) {
-        await batch.commit();
+      } catch (e) {
+        debugPrint("Error auto-syncing comments: $e");
       }
     } catch (e) {
-      debugPrint("Error auto-syncing profile data: $e");
+      debugPrint("Error in _syncExistingProfileData: $e");
     }
   }
 

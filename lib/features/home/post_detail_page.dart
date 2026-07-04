@@ -2089,7 +2089,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget _buildSingleCommentWidget(Map<String, dynamic> comment, int depth,
       bool hasReplies, bool isLast, List<Map<String, dynamic>> allComments) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    String? avt = comment['authorAvatar'];
+    final String? commentAuthorId = comment['authorId'];
+
     final bool isCommentOwner = _user?.uid == comment['authorId'];
     final bool isPostOwner = _user?.uid ==
         (widget.initialPostData['authorId'] ??
@@ -2116,257 +2117,295 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);
     final String timeStr = comment['timestamp'] != null
-        ? timeago.format((comment['timestamp'] as Timestamp).toDate(),
-        locale: 'vi')
+        ? timeago.format(
+      (comment['timestamp'] as Timestamp).toDate(),
+      locale: 'vi',
+    )
         : 'Vừa xong';
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        if (depth > 0 && depth <= 3)
-          Positioned(
-            left: -18,
-            top: -12,
-            height: 38,
-            child: Container(
-              width: 18,
-              decoration: BoxDecoration(
-                border: Border(
-                  left: BorderSide(
-                      color: Colors.grey.withOpacity(0.25), width: 1.5),
-                  bottom: BorderSide(
-                      color: Colors.grey.withOpacity(0.25), width: 1.5),
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(10),
-                ),
-              ),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor:
-                isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
-                child: (avt == null || avt.isEmpty)
-                    ? Icon(
-                  Icons.person,
-                  size: 20,
-                  color: isDarkMode ? Colors.white38 : Colors.grey,
-                )
-                    : ClipOval(
-                  child: Image.memory(
-                    base64Decode(avt),
-                    fit: BoxFit.cover,
-                    width: 36,
-                    height: 36,
+    return StreamBuilder<DocumentSnapshot>(
+      stream: commentAuthorId == null
+          ? null
+          : _firestore.collection('users').doc(commentAuthorId).snapshots(),
+      builder: (context, userSnapshot) {
+        final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
+
+        final String liveName =
+            userData?['displayName'] ?? comment['authorName'] ?? 'Người dùng';
+
+        final String? liveAvatar =
+            userData?['photoUrl'] ?? comment['authorAvatar'];
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            if (depth > 0 && depth <= 3)
+              Positioned(
+                left: -18,
+                top: -12,
+                height: 38,
+                child: Container(
+                  width: 18,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      left: BorderSide(
+                        color: Colors.grey.withOpacity(0.25),
+                        width: 1.5,
+                      ),
+                      bottom: BorderSide(
+                        color: Colors.grey.withOpacity(0.25),
+                        width: 1.5,
+                      ),
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(10),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                      decoration: BoxDecoration(
-                        color: isDarkMode
-                            ? Colors.white.withOpacity(0.04)
-                            : const Color(0xFFF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isDarkMode
-                              ? Colors.white10
-                              : const Color(0xFFEAEFF5),
-                        ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor:
+                    isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
+                    child: (liveAvatar == null || liveAvatar.isEmpty)
+                        ? Icon(
+                      Icons.person,
+                      size: 20,
+                      color: isDarkMode ? Colors.white38 : Colors.grey,
+                    )
+                        : ClipOval(
+                      child: Image.memory(
+                        base64Decode(liveAvatar),
+                        fit: BoxFit.cover,
+                        width: 36,
+                        height: 36,
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          decoration: BoxDecoration(
+                            color: isDarkMode
+                                ? Colors.white.withOpacity(0.04)
+                                : const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDarkMode
+                                  ? Colors.white10
+                                  : const Color(0xFFEAEFF5),
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Expanded(
-                                child: Wrap(
-                                  crossAxisAlignment: WrapCrossAlignment.center,
-                                  spacing: 6,
-                                  runSpacing: 6,
-                                  children: [
-                                    Text(
-                                      comment['authorName'] ?? 'Người dùng',
-                                      style: TextStyle(
-                                        fontFamily: 'Encode Sans Expanded',
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 14,
-                                        color: isDarkMode
-                                            ? Colors.white
-                                            : const Color(0xFF1F2937),
-                                      ),
-                                    ),
-                                    if (isAuthor)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF5893D8)
-                                              .withOpacity(
-                                              isDarkMode ? 0.22 : 0.12),
-                                          borderRadius:
-                                          BorderRadius.circular(999),
-                                        ),
-                                        child: const Text(
-                                          "Tác giả",
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Wrap(
+                                      crossAxisAlignment:
+                                      WrapCrossAlignment.center,
+                                      spacing: 6,
+                                      runSpacing: 6,
+                                      children: [
+                                        Text(
+                                          liveName,
                                           style: TextStyle(
                                             fontFamily: 'Encode Sans Expanded',
                                             fontWeight: FontWeight.w700,
-                                            fontSize: 10,
-                                            color: Color(0xFF5893D8),
+                                            fontSize: 14,
+                                            color: isDarkMode
+                                                ? Colors.white
+                                                : const Color(0xFF1F2937),
                                           ),
                                         ),
+                                        if (isAuthor)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFF5893D8)
+                                                  .withOpacity(
+                                                  isDarkMode ? 0.22 : 0.12),
+                                              borderRadius:
+                                              BorderRadius.circular(999),
+                                            ),
+                                            child: const Text(
+                                              "Tác giả",
+                                              style: TextStyle(
+                                                fontFamily:
+                                                'Encode Sans Expanded',
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 10,
+                                                color: Color(0xFF5893D8),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (canDelete || canEdit)
+                                    SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: PopupMenuButton<String>(
+                                        padding: EdgeInsets.zero,
+                                        icon: Icon(
+                                          Icons.more_horiz,
+                                          size: 18,
+                                          color: isDarkMode
+                                              ? Colors.white38
+                                              : const Color(0xFF777777),
+                                        ),
+                                        onSelected: (val) {
+                                          if (val == 'delete') {
+                                            _showDeleteConfirmation(
+                                                comment['id']);
+                                          }
+                                          if (val == 'edit') {
+                                            _showEditCommentDialog(comment);
+                                          }
+                                        },
+                                        itemBuilder: (context) => [
+                                          if (canEdit)
+                                            const PopupMenuItem(
+                                              value: 'edit',
+                                              child: Text("Sửa bình luận"),
+                                            ),
+                                          if (canDelete)
+                                            const PopupMenuItem(
+                                              value: 'delete',
+                                              child: Text(
+                                                "Xóa",
+                                                style:
+                                                TextStyle(color: Colors.red),
+                                              ),
+                                            ),
+                                        ],
                                       ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              RichText(
+                                text: TextSpan(
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 14,
+                                    height: 1.5,
+                                    fontWeight: FontWeight.w500,
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : const Color(0xFF4B5563),
+                                  ),
+                                  children: [
+                                    if (depth > 1)
+                                      TextSpan(
+                                        text:
+                                        "@${_getParentAuthorName(comment['parentCommentId'], allComments)} ",
+                                        style: const TextStyle(
+                                          color: Color(0xFF5893D8),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    TextSpan(text: comment['content'] ?? ''),
                                   ],
                                 ),
                               ),
-                              if (canDelete || canEdit)
-                                SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: PopupMenuButton<String>(
-                                    padding: EdgeInsets.zero,
-                                    icon: Icon(
-                                      Icons.more_horiz,
-                                      size: 18,
-                                      color: isDarkMode
-                                          ? Colors.white38
-                                          : const Color(0xFF777777),
-                                    ),
-                                    onSelected: (val) {
-                                      if (val == 'delete')
-                                        _showDeleteConfirmation(comment['id']);
-                                      if (val == 'edit')
-                                        _showEditCommentDialog(comment);
-                                    },
-                                    itemBuilder: (context) => [
-                                      if (canEdit)
-                                        const PopupMenuItem(
-                                          value: 'edit',
-                                          child: Text("Sửa bình luận"),
-                                        ),
-                                      if (canDelete)
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Text(
-                                            "Xóa",
-                                            style: TextStyle(color: Colors.red),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
                             ],
                           ),
-                          const SizedBox(height: 2),
-                          RichText(
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontFamily: 'Encode Sans Expanded',
-                                fontSize: 14,
-                                height: 1.5,
-                                fontWeight: FontWeight.w500,
-                                color: isDarkMode
-                                    ? Colors.white70
-                                    : const Color(0xFF4B5563),
-                              ),
-                              children: [
-                                if (depth > 1)
-                                  TextSpan(
-                                    text:
-                                    "@${_getParentAuthorName(comment['parentCommentId'], allComments)} ",
-                                    style: const TextStyle(
-                                      color: Color(0xFF5893D8),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                TextSpan(text: comment['content'] ?? ''),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(left: 8, top: 4),
-                      child: Wrap(
-                        spacing: 12,
-                        runSpacing: 4,
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        children: [
-                          Text(
-                            timeStr,
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 11,
-                              color: isDarkMode ? Colors.white38 : Colors.grey,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => _toggleCommentLike(comment),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  isLiked ? Icons.favorite : Icons.favorite_border,
-                                  size: 14,
-                                  color: isLiked
-                                      ? Colors.redAccent
-                                      : (isDarkMode ? Colors.white38 : Colors.grey),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8, top: 4),
+                          child: Wrap(
+                            spacing: 12,
+                            runSpacing: 4,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(
+                                timeStr,
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 11,
+                                  color:
+                                  isDarkMode ? Colors.white38 : Colors.grey,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  likes.isNotEmpty ? likes.length.toString() : "Thích",
+                              ),
+                              GestureDetector(
+                                onTap: () => _toggleCommentLike(comment),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isLiked
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      size: 14,
+                                      color: isLiked
+                                          ? Colors.redAccent
+                                          : (isDarkMode
+                                          ? Colors.white38
+                                          : Colors.grey),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      likes.isNotEmpty
+                                          ? likes.length.toString()
+                                          : "Thích",
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        color: isLiked
+                                            ? Colors.redAccent
+                                            : (isDarkMode
+                                            ? Colors.white38
+                                            : Colors.grey),
+                                        fontWeight: isLiked
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () => setState(() {
+                                  _replyingToId = comment['id'];
+                                  _replyingToName = liveName;
+                                }),
+                                child: const Text(
+                                  "Trả lời",
                                   style: TextStyle(
                                     fontFamily: 'Encode Sans Expanded',
                                     fontSize: 12,
-                                    color: isLiked
-                                        ? Colors.redAccent
-                                        : (isDarkMode ? Colors.white38 : Colors.grey),
-                                    fontWeight: isLiked ? FontWeight.bold : FontWeight.normal,
+                                    color: Color(0xFF5893D8),
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () => setState(() {
-                              _replyingToId = comment['id'];
-                              _replyingToName = comment['authorName'];
-                            }),
-                            child: const Text(
-                              "Trả lời",
-                              style: TextStyle(
-                                fontFamily: 'Encode Sans Expanded',
-                                fontSize: 12,
-                                color: Color(0xFF5893D8),
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
