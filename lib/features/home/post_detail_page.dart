@@ -535,7 +535,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  Future<void> _sendCommentNotification(String content) async {
+  Future<void> _sendCommentNotification(String content, String senderName) async {
     if (_collectionPath == 'official_news') return;
     final authorId =
         widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
@@ -545,7 +545,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       'userId': authorId,
       'type': 'comment',
       'title': 'Bình luận mới',
-      'content': '${_user!.displayName ?? "Ai đó"} đã bình luận bài viết của bạn',
+      'content': '$senderName đã bình luận bài viết của bạn',
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
       'relatedPostId': widget.docId,
@@ -559,11 +559,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
         widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
+    final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+    final userData = userDoc.data();
+    final rawName = userData?['displayName']?.toString().trim();
+    final senderName = (rawName != null && rawName.isNotEmpty)
+        ? rawName
+        : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
+            ? _user!.displayName!.trim()
+            : "Ai đó");
+
     await _firestore.collection('notifications').add({
       'userId': authorId,
       'type': 'like',
       'title': 'Yêu thích',
-      'content': '${_user!.displayName ?? "Ai đó"} đã thích bài viết của bạn',
+      'content': '$senderName đã thích bài viết của bạn',
       'timestamp': FieldValue.serverTimestamp(),
       'isRead': false,
       'relatedPostId': widget.docId,
@@ -636,6 +645,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
     final userData = userDoc.data();
+    final rawName = userData?['displayName']?.toString().trim();
+    final senderName = (rawName != null && rawName.isNotEmpty)
+        ? rawName
+        : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
+            ? _user!.displayName!.trim()
+            : "Ai đó");
 
     await _firestore
         .collection(_collectionPath)
@@ -643,7 +658,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         .collection('comments')
         .add({
       'authorId': _user!.uid,
-      'authorName': userData?['displayName'] ?? 'Sinh viên MyUni',
+      'authorName': senderName,
       'authorAvatar': userData?['photoUrl'] ?? '',
       'content': content,
       'timestamp': FieldValue.serverTimestamp(),
@@ -656,7 +671,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       'commentCount': FieldValue.increment(1)
     });
 
-    await _sendCommentNotification(content);
+    await _sendCommentNotification(content, senderName);
 
     // If it's a reply, also notify the parent comment author
     if (parentId != null) {
@@ -677,7 +692,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               'userId': parentAuthorId,
               'type': 'comment',
               'title': 'Phản hồi mới',
-              'content': '${_user!.displayName ?? "Ai đó"} đã phản hồi bình luận của bạn: "$content"',
+              'content': '$senderName đã phản hồi bình luận của bạn: "$content"',
               'timestamp': FieldValue.serverTimestamp(),
               'isRead': false,
               'relatedPostId': widget.docId,
@@ -715,11 +730,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
       // Send notification to comment author
       final commentAuthorId = comment['authorId'];
       if (commentAuthorId != null && commentAuthorId != uid) {
+        final userDoc = await _firestore.collection('users').doc(uid).get();
+        final userData = userDoc.data();
+        final rawLikeName = userData?['displayName']?.toString().trim();
+        final senderLikeName = (rawLikeName != null && rawLikeName.isNotEmpty)
+            ? rawLikeName
+            : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
+                ? _user!.displayName!.trim()
+                : "Ai đó");
+
         await _firestore.collection('notifications').add({
           'userId': commentAuthorId,
           'type': 'like',
           'title': 'Lượt thích mới',
-          'content': '${_user!.displayName ?? "Ai đó"} đã thích bình luận của bạn: "${comment['content']}"',
+          'content': '$senderLikeName đã thích bình luận của bạn: "${comment['content']}"',
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'relatedPostId': widget.docId,

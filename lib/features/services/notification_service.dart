@@ -114,6 +114,16 @@ class NotificationService {
     }
   }
 
+  static Future<void> updateNotificationContent(String docId, String newContent) async {
+    try {
+      await _db.collection('notifications').doc(docId).update({
+        'content': newContent,
+      });
+    } catch (e) {
+      debugPrint('Lỗi updateNotificationContent: $e');
+    }
+  }
+
   static Future<void> showInstantNotification({
     required int id,
     required String title,
