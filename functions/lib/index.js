@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.cleanupDeletedAccounts = exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
+exports.verifyOTPAndCreateUser = exports.sendRegistrationOTP = exports.cleanupDeletedAccounts = exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
 /* eslint-disable indent */
 const v2_1 = require("firebase-functions/v2");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -8,6 +8,7 @@ const https_1 = require("firebase-functions/v2/https");
 const scheduler_1 = require("firebase-functions/v2/scheduler");
 const admin = require("firebase-admin");
 const crypto = require("crypto");
+const axios_1 = require("axios");
 admin.initializeApp();
 const db = admin.firestore();
 (0, v2_1.setGlobalOptions)({ maxInstances: 5, region: "asia-southeast1" });
@@ -266,7 +267,7 @@ exports.semanticSearch = (0, https_1.onCall)(async (request) => {
 /**
  * Daily cleanup for accounts scheduled for deletion (deleted after 3 days)
  */
-exports.cleanupDeletedAccounts = (0, scheduler_1.onSchedule)("0 0 * * *", async (event) => {
+exports.cleanupDeletedAccounts = (0, scheduler_1.onSchedule)("0 0 * * *", async () => {
     const now = admin.firestore.Timestamp.now();
     const expiredUsersQuery = await db.collection("users")
         .where("status", "==", "deleting")
@@ -297,5 +298,159 @@ exports.cleanupDeletedAccounts = (0, scheduler_1.onSchedule)("0 0 * * *", async 
     // Wait for all Auth account deletions to complete
     await Promise.all(promises);
     console.log(`Cleaned up ${expiredUsersQuery.size} accounts.`);
+});
+/**
+ * Gửi mã OTP đăng ký tài khoản (không tiết lộ trạng thái email)
+ */
+exports.sendRegistrationOTP = (0, https_1.onCall)(async (request) => {
+    const email = request.data.email;
+    if (!email || typeof email !== "string") {
+        throw new https_1.HttpsError("invalid-argument", "Email không hợp lệ.");
+    }
+    try {
+        // 1. Kiểm tra xem email đã tồn tại trong Auth chưa
+        let emailExists = true;
+        try {
+            await admin.auth().getUserByEmail(email);
+        }
+        catch (error) {
+            const err = error;
+            if (err.code === "auth/user-not-found") {
+                emailExists = false;
+            }
+            else {
+                throw error;
+            }
+        }
+        if (emailExists) {
+            // Gửi email báo trùng tài khoản qua EmailJS
+            await axios_1.default.post("https://api.emailjs.com/api/v1.0/email/send", {
+                service_id: "service_1oynodg",
+                template_id: "template_4g8950q",
+                user_id: "0JWFYtrABC8w_Cfcp",
+                template_params: {
+                    user_email: email,
+                    from_name: "Đội ngũ phát triển MyUni",
+                },
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "origin": "http://localhost",
+                },
+            });
+        }
+        else {
+            // Sinh mã OTP 6 số
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = admin.firestore.Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000));
+            // Lưu OTP tạm vào Firestore
+            await db.collection("pending_otps").doc(email).set({
+                otp: otp,
+                expiresAt: expiresAt,
+            });
+            // Gửi email chứa OTP qua EmailJS
+            await axios_1.default.post("https://api.emailjs.com/api/v1.0/email/send", {
+                service_id: "service_1oynodg",
+                template_id: "template_3ftz8sr",
+                user_id: "0JWFYtrABC8w_Cfcp",
+                template_params: {
+                    user_email: email,
+                    otp_code: otp,
+                    from_name: "Đội ngũ phát triển MyUni",
+                },
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "origin": "http://localhost",
+                },
+            });
+        }
+        // Luôn luôn trả về thành công
+        return { success: true };
+    }
+    catch (error) {
+        console.error("sendRegistrationOTP Error:", error);
+        const err = error;
+        throw new https_1.HttpsError("internal", "Lỗi gửi mã xác thực: " + err.message);
+    }
+});
+/**
+ * Xác thực OTP và tiến hành tạo tài khoản người dùng
+ */
+exports.verifyOTPAndCreateUser = (0, https_1.onCall)(async (request) => {
+    const { email, otp, userData } = request.data;
+    if (!email || !otp || !userData) {
+        throw new https_1.HttpsError("invalid-argument", "Thiếu thông tin xác thực.");
+    }
+    const { displayName, password, university, studentId, cohort } = userData;
+    if (!displayName || !password || !university || !studentId || !cohort) {
+        throw new https_1.HttpsError("invalid-argument", "Thiếu thông tin người dùng.");
+    }
+    try {
+        // 1. Kiểm tra OTP
+        const otpDocRef = db.collection("pending_otps").doc(email);
+        const otpDoc = await otpDocRef.get();
+        if (!otpDoc.exists) {
+            throw new https_1.HttpsError("invalid-argument", "Mã OTP không tồn tại hoặc đã hết hạn.");
+        }
+        const otpData = otpDoc.data();
+        if (!otpData) {
+            throw new https_1.HttpsError("internal", "Lỗi dữ liệu OTP.");
+        }
+        const expiresAt = otpData.expiresAt;
+        if (expiresAt.toDate() < new Date()) {
+            await otpDocRef.delete();
+            throw new https_1.HttpsError("invalid-argument", "Mã OTP đã hết hạn. Vui lòng gửi lại.");
+        }
+        if (otpData.otp !== otp) {
+            throw new https_1.HttpsError("invalid-argument", "Mã OTP không chính xác.");
+        }
+        // 2. Tạo tài khoản Auth
+        const userRecord = await admin.auth().createUser({
+            email: email,
+            password: password,
+            displayName: displayName,
+        });
+        // 3. Tạo Firestore profile
+        await db.collection("users").doc(userRecord.uid).set({
+            displayName: displayName,
+            email: email,
+            university: university,
+            studentId: studentId,
+            cohort: cohort,
+            faculty: null,
+            dob: "",
+            photoUrl: "",
+            status: "active",
+            isBanned: false,
+            role: "student",
+            isVerified: true,
+            verificationMethod: "edu_email_otp",
+            verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+            verificationLevel: "student",
+            violationCount: 0,
+            suspensionCount: 0,
+            lastBanReason: "",
+            lastViolationAt: null,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // 4. Dọn dẹp OTP tạm
+        await otpDocRef.delete();
+        // 5. Sinh custom token để đăng nhập trên client
+        const customToken = await admin.auth().createCustomToken(userRecord.uid);
+        return { success: true, customToken: customToken };
+    }
+    catch (error) {
+        console.error("verifyOTPAndCreateUser Error:", error);
+        if (error instanceof https_1.HttpsError) {
+            throw error;
+        }
+        const err = error;
+        if (err.code === "auth/email-already-in-use") {
+            throw new https_1.HttpsError("already-exists", "Email này đã được đăng ký.");
+        }
+        throw new https_1.HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
+    }
 });
 //# sourceMappingURL=index.js.map
