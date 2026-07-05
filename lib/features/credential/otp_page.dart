@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -22,70 +24,69 @@ class _OtpPageState extends State<OtpPage> {
 
   Future<void> _verifyAndSignUp(Map<String, dynamic> args) async {
     final String userEnteredOtp = _otpInputController.text.trim();
-    final String correctOtp = args['otpCode'];
     final String email = args['email'];
     final Map<String, dynamic> userData = args['userData'];
 
-    if (userEnteredOtp != correctOtp) {
-      _showSnackBar('Mã OTP không chính xác. Vui lòng thử lại.', isError: true);
+    if (userEnteredOtp.isEmpty) {
+      _showSnackBar('Vui lòng nhập mã OTP.', isError: true);
       return;
     }
 
     setState(() => _isVerifying = true);
 
     try {
-      // Tạo tài khoản Auth
-      UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: email,
-        password: userData['password'],
-      );
+      // Gọi Cloud Function để xác thực OTP và tạo tài khoản
+      final verifyUrl = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/verifyOTPAndCreateUser');
+      final response = await http.post(
+        verifyUrl,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: json.encode({
+          "data": {
+            "email": email,
+            "otp": userEnteredOtp,
+            "userData": userData,
+          }
+        }),
+      ).timeout(const Duration(seconds: 20));
 
-      // Lưu thông tin vào Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userCredential.user!.uid)
-          .set({
-        'displayName': userData['displayName'],
-        'email': email,
-        'university': userData['university'],
-        'studentId': userData['studentId'],
-        'cohort': userData['cohort'],
+      if (!mounted) return;
 
-        // field chưa có thì để rỗng/null để EditProfilePage cập nhật sau
-        'faculty': null,
-        'dob': '',
-        'photoUrl': '', // Để trống để UI hiển thị icon mặc định
+      final responseData = json.decode(utf8.decode(response.bodyBytes));
+      if (response.statusCode == 200) {
+        final result = responseData['result'];
+        if (result != null && result['success'] == true) {
+          final String customToken = result['customToken'];
+          
+          // Đăng nhập bằng Custom Token nhận được từ server
+          UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
-        // field hệ thống
-        'status': 'active',
-        'isBanned': false,
-        'role': 'student',
-        'isVerified': true,
-        'verificationMethod': 'edu_email_otp',
-        'verifiedAt': FieldValue.serverTimestamp(),
-        'verificationLevel': 'student',
-        'violationCount': 0,
-        'suspensionCount': 0,
-        'lastBanReason': '',
-        'lastViolationAt': null,
-        'createdAt': FieldValue.serverTimestamp(),
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
+          // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn và lưu timestamp login
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('show_onboarding_${userCredential.user!.uid}', true);
+            await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+          } catch (e) {
+            debugPrint("Error saving onboarding or login data: $e");
+          }
 
-      // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn và lưu timestamp login
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('show_onboarding_${userCredential.user!.uid}', true);
-        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
-      } catch (e) {
-        debugPrint("Error saving onboarding or login data: $e");
+          if (mounted) {
+            Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+          }
+        } else {
+          _showSnackBar('Không thể tạo tài khoản. Vui lòng thử lại.', isError: true);
+        }
+      } else {
+        String errorMessage = "Mã OTP không chính xác hoặc đã hết hạn.";
+        if (responseData is Map && responseData['error'] != null) {
+          final error = responseData['error'];
+          if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+        }
+        _showSnackBar(errorMessage, isError: true);
       }
-
-      if (mounted) {
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
-      }
-    } on FirebaseAuthException catch (e) {
-      _showSnackBar(e.message ?? 'Lỗi đăng ký', isError: true);
     } catch (e) {
       _showSnackBar('Đã có lỗi xảy ra: $e', isError: true);
     } finally {

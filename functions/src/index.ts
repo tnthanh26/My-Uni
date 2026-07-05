@@ -5,6 +5,7 @@ import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
+import axios from "axios";
 
 admin.initializeApp();
 
@@ -317,7 +318,7 @@ export const semanticSearch = onCall(async (request) => {
 /**
  * Daily cleanup for accounts scheduled for deletion (deleted after 3 days)
  */
-export const cleanupDeletedAccounts = onSchedule("0 0 * * *", async (event) => {
+export const cleanupDeletedAccounts = onSchedule("0 0 * * *", async () => {
   const now = admin.firestore.Timestamp.now();
   const expiredUsersQuery = await db.collection("users")
     .where("status", "==", "deleting")
@@ -357,3 +358,179 @@ export const cleanupDeletedAccounts = onSchedule("0 0 * * *", async (event) => {
   await Promise.all(promises);
   console.log(`Cleaned up ${expiredUsersQuery.size} accounts.`);
 });
+
+/**
+ * Gửi mã OTP đăng ký tài khoản (không tiết lộ trạng thái email)
+ */
+export const sendRegistrationOTP = onCall(async (request) => {
+  const email = request.data.email;
+  if (!email || typeof email !== "string") {
+    throw new HttpsError("invalid-argument", "Email không hợp lệ.");
+  }
+
+  try {
+    // 1. Kiểm tra xem email đã tồn tại trong Auth chưa
+    let emailExists = true;
+    try {
+      await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      const err = error as {code?: string};
+      if (err.code === "auth/user-not-found") {
+        emailExists = false;
+      } else {
+        throw error;
+      }
+    }
+
+    if (emailExists) {
+      // Gửi email báo trùng tài khoản qua EmailJS
+      await axios.post(
+        "https://api.emailjs.com/api/v1.0/email/send",
+        {
+          service_id: "service_1oynodg",
+          template_id: "template_4g8950q",
+          user_id: "0JWFYtrABC8w_Cfcp",
+          template_params: {
+            user_email: email,
+            from_name: "Đội ngũ phát triển MyUni",
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "origin": "http://localhost",
+          },
+        }
+      );
+    } else {
+      // Sinh mã OTP 6 số
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = admin.firestore.Timestamp.fromDate(new Date(Date.now() + 5 * 60 * 1000));
+
+      // Lưu OTP tạm vào Firestore
+      await db.collection("pending_otps").doc(email).set({
+        otp: otp,
+        expiresAt: expiresAt,
+      });
+
+      // Gửi email chứa OTP qua EmailJS
+      await axios.post(
+        "https://api.emailjs.com/api/v1.0/email/send",
+        {
+          service_id: "service_1oynodg",
+          template_id: "template_3ftz8sr",
+          user_id: "0JWFYtrABC8w_Cfcp",
+          template_params: {
+            user_email: email,
+            otp_code: otp,
+            from_name: "Đội ngũ phát triển MyUni",
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            "origin": "http://localhost",
+          },
+        }
+      );
+    }
+
+    // Luôn luôn trả về thành công
+    return {success: true};
+  } catch (error) {
+    console.error("sendRegistrationOTP Error:", error);
+    const err = error as Error;
+    throw new HttpsError("internal", "Lỗi gửi mã xác thực: " + err.message);
+  }
+});
+
+/**
+ * Xác thực OTP và tiến hành tạo tài khoản người dùng
+ */
+export const verifyOTPAndCreateUser = onCall(async (request) => {
+  const {email, otp, userData} = request.data;
+  if (!email || !otp || !userData) {
+    throw new HttpsError("invalid-argument", "Thiếu thông tin xác thực.");
+  }
+
+  const {displayName, password, university, studentId, cohort} = userData;
+  if (!displayName || !password || !university || !studentId || !cohort) {
+    throw new HttpsError("invalid-argument", "Thiếu thông tin người dùng.");
+  }
+
+  try {
+    // 1. Kiểm tra OTP
+    const otpDocRef = db.collection("pending_otps").doc(email);
+    const otpDoc = await otpDocRef.get();
+
+    if (!otpDoc.exists) {
+      throw new HttpsError("invalid-argument", "Mã OTP không tồn tại hoặc đã hết hạn.");
+    }
+
+    const otpData = otpDoc.data();
+    if (!otpData) {
+      throw new HttpsError("internal", "Lỗi dữ liệu OTP.");
+    }
+
+    const expiresAt = otpData.expiresAt as admin.firestore.Timestamp;
+    if (expiresAt.toDate() < new Date()) {
+      await otpDocRef.delete();
+      throw new HttpsError("invalid-argument", "Mã OTP đã hết hạn. Vui lòng gửi lại.");
+    }
+
+    if (otpData.otp !== otp) {
+      throw new HttpsError("invalid-argument", "Mã OTP không chính xác.");
+    }
+
+    // 2. Tạo tài khoản Auth
+    const userRecord = await admin.auth().createUser({
+      email: email,
+      password: password,
+      displayName: displayName,
+    });
+
+    // 3. Tạo Firestore profile
+    await db.collection("users").doc(userRecord.uid).set({
+      displayName: displayName,
+      email: email,
+      university: university,
+      studentId: studentId,
+      cohort: cohort,
+      faculty: null,
+      dob: "",
+      photoUrl: "",
+      status: "active",
+      isBanned: false,
+      role: "student",
+      isVerified: true,
+      verificationMethod: "edu_email_otp",
+      verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      verificationLevel: "student",
+      violationCount: 0,
+      suspensionCount: 0,
+      lastBanReason: "",
+      lastViolationAt: null,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 4. Dọn dẹp OTP tạm
+    await otpDocRef.delete();
+
+    // 5. Sinh custom token để đăng nhập trên client
+    const customToken = await admin.auth().createCustomToken(userRecord.uid);
+
+    return {success: true, customToken: customToken};
+  } catch (error) {
+    console.error("verifyOTPAndCreateUser Error:", error);
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+    const err = error as {code?: string; message?: string};
+    if (err.code === "auth/email-already-in-use") {
+      throw new HttpsError("already-exists", "Email này đã được đăng ký.");
+    }
+    throw new HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
+  }
+});
+

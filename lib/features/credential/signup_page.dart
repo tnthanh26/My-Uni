@@ -65,32 +65,6 @@ class _SignUpPageState extends State<SignUpPage> {
     return emailRegex.hasMatch(trimmedEmail);
   }
 
-  Future<void> _sendOTPEmail(String email, String otp) async {
-    final url = Uri.parse('https://api.emailjs.com/api/v1.0/email/send');
-
-    final response = await http.post(
-      url,
-      headers: {
-        'Content-Type': 'application/json',
-        'origin': 'http://localhost',
-      },
-      body: json.encode({
-        'service_id': 'service_1oynodg',
-        'template_id': 'template_3ftz8sr',
-        'user_id': '0JWFYtrABC8w_Cfcp',
-        'template_params': {
-          'user_email': email,
-          'otp_code': otp,
-          'from_name': 'Đội ngũ phát triển MyUni',
-        },
-      }),
-    );
-
-    if (response.statusCode != 200) {
-      throw Exception('Lỗi gửi email: ${response.body}');
-    }
-  }
-
   Future<void> _handleSignUp() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
@@ -138,16 +112,28 @@ class _SignUpPageState extends State<SignUpPage> {
     setState(() => _isLoading = true);
 
     try {
-      String otpCode = (Random().nextInt(900000) + 100000).toString();
-      await _sendOTPEmail(email, otpCode);
+      // Gọi Cloud Function sendRegistrationOTP để xử lý gửi OTP hoặc gửi mail báo trùng bảo mật
+      final sendOtpUrl = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/sendRegistrationOTP');
+      final response = await http.post(
+        sendOtpUrl,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: utf8.encode(json.encode({
+          "data": {"email": email}
+        })),
+      ).timeout(const Duration(seconds: 15));
 
-      if (mounted) {
+      if (!mounted) return;
+
+      final responseData = json.decode(utf8.decode(response.bodyBytes));
+      if (response.statusCode == 200) {
+        // Đã xử lý gửi email thành công (cho cả 2 trường hợp để bảo mật)
         Navigator.pushNamed(
           context,
           '/otp',
           arguments: {
             'email': email,
-            'otpCode': otpCode,
             'userData': {
               'displayName': _displayNameController.text.trim(),
               'password': password.trim(),
@@ -157,6 +143,15 @@ class _SignUpPageState extends State<SignUpPage> {
             }
           },
         );
+      } else {
+        String errorMessage = "Không thể gửi mã xác nhận lúc này. Vui lòng thử lại.";
+        if (responseData is Map && responseData['error'] != null) {
+          final error = responseData['error'];
+          if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+        }
+        _showSnackBar(errorMessage, isError: true);
       }
     } catch (e) {
       _showSnackBar('Không thể gửi OTP. Vui lòng thử lại.', isError: true);
