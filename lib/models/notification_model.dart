@@ -4,6 +4,7 @@ class MyUniNotification {
   final String id;
   final String? relatedPostId;
   final String? collectionPath;
+  final String? reportedCommentId;
   final String type;
   final String title;
   final String content;
@@ -13,6 +14,7 @@ class MyUniNotification {
   MyUniNotification({
     this.relatedPostId,
     this.collectionPath,
+    this.reportedCommentId,
     required this.id,
     required this.type,
     required this.title,
@@ -28,6 +30,7 @@ class MyUniNotification {
       id: doc.id,
       relatedPostId: data['relatedPostId'],
       collectionPath: data['collectionPath'],
+      reportedCommentId: data['reportedCommentId'],
       type: data['type'] ?? 'info',
       title: data['title'] ?? '',
       content: data['content'] ?? '',

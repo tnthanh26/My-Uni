@@ -46,7 +46,7 @@ class _ModDashboardState extends State<ModDashboard> {
     'Quản lý người dùng',
   ];
 
-  final List<String> _filterLabels = ['Chờ duyệt', 'Bị báo cáo', 'Tất cả bài viết'];
+  final List<String> _filterLabels = ['Bị báo cáo', 'Tất cả bài viết'];
 
   bool get _isOfficialNews => _collections[_selectedCollIndex] == 'official_news';
   bool get _isUsers => _collections[_selectedCollIndex] == 'users';
@@ -372,26 +372,33 @@ class _ModDashboardState extends State<ModDashboard> {
       );
     }
 
-    Query query = FirebaseFirestore.instance.collection(_collections[_selectedCollIndex]);
-    if (_filterStatusIndex == 0) {
-      query = query.where('status', isEqualTo: 'pending');
-    } else if (_filterStatusIndex == 1) {
-      query = query.where('isReported', isEqualTo: true);
-    }
+    Query query = FirebaseFirestore.instance
+        .collection(_collections[_selectedCollIndex])
+        .orderBy('timestamp', descending: true);
 
     return StreamBuilder<QuerySnapshot>(
       key: ValueKey('posts-stream-$_selectedCollIndex-$_filterStatusIndex'),
-      stream: query.orderBy('timestamp', descending: true).snapshots(),
+      stream: query.snapshots(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          debugPrint("🔥 FIRESTORE INDEX ERROR:");
+          debugPrint("🔥 FIRESTORE ERROR:");
           debugPrint(snapshot.error.toString());
 
           return _buildErrorState(snapshot.error.toString());
         }
 
         final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
-        final docs = snapshot.data?.docs ?? [];
+        final allDocs = snapshot.data?.docs ?? [];
+
+        final List<QueryDocumentSnapshot> docs = _filterStatusIndex == 0
+            ? allDocs.where((doc) {
+                final d = doc.data() as Map<String, dynamic>;
+                final int reportCount = d['reportCount'] ?? 0;
+                final int reportedCommentCount = d['reportedCommentCount'] ?? 0;
+
+                return reportCount > 0 || reportedCommentCount > 0;
+              }).toList()
+            : allDocs;
 
         if (docs.isEmpty && !isLoading) {
           return _buildEmptyState();
@@ -412,7 +419,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   docId: docId,
                   data: data,
                   collection: _collections[_selectedCollIndex],
-                  onApprove: () => _handleApprovePost(docId, data),
+                  onApprove: () {},
                   onDelete: () => _handleDeletePost(docId, data),
                   onRestore: () => _handleRestorePost(docId, data),
                   onDismissReport: () => _handleDismissReport(docId, data),
@@ -633,29 +640,6 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleApprovePost(String docId, Map<String, dynamic> data) async {
-    if (_isActionInProgress) return;
-    _isActionInProgress = true;
-    try {
-      await PostModerationService.approvePost(
-        collection: _collections[_selectedCollIndex],
-        docId: docId,
-      );
-
-      _sendNotification(
-        userId: data['authorId'],
-        title: "Bài viết đã được duyệt",
-        content: "Bài viết của bạn đã được phê duyệt thành công.",
-        type: 'comment',
-        postId: docId,
-      );
-    } catch (e) {
-      debugPrint("Error approving post: $e");
-    } finally {
-      _isActionInProgress = false;
-    }
-  }
-
   Future<void> _handleDeletePost(String docId, Map<String, dynamic> data) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
@@ -665,24 +649,65 @@ class _ModDashboardState extends State<ModDashboard> {
 
       if (!isReported) {
         final TextEditingController reasonController = TextEditingController();
-        bool? confirm = await showDialog(
+        bool? confirm = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text("Lý do xóa bài", style: TextStyle(fontWeight: FontWeight.bold)),
-            content: TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(hintText: "Nhập lý do cụ thể gửi user..."),
+            backgroundColor: Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              "Lý do xóa bài",
+              style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
+            ),
+            content: SizedBox(
+              width: 400,
+              child: TextField(
+                controller: reasonController,
+                maxLines: 3,
+                decoration: InputDecoration(
+                  hintText: "Nhập lý do cụ thể gửi user...",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: Colors.grey[300]!),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.orange),
+                  ),
+                  contentPadding: const EdgeInsets.all(12),
+                ),
+              ),
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
-              TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text("Xác nhận", style: TextStyle(color: Colors.red))),
+              OutlinedButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.grey[700],
+                  side: BorderSide(color: Colors.grey[300]!),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text("Hủy"),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
+                ),
+                child: const Text("Xác nhận xóa"),
+              ),
             ],
           ),
         );
         if (confirm != true) return;
-        reason = reasonController.text.isEmpty
+        reason = reasonController.text.trim().isEmpty
             ? "Nội dung không phù hợp với quy định của MyUni."
-            : reasonController.text;
+            : reasonController.text.trim();
       }
 
       await PostModerationService.deletePost(
@@ -690,17 +715,51 @@ class _ModDashboardState extends State<ModDashboard> {
         docId: docId,
       );
 
-      _sendNotification(
-        userId: data['authorId'],
-        title: "Bài viết bị gỡ bỏ",
-        content: "Lý do: $reason",
-        type: 'warning',
-        postId: docId,
-      );
+      final reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('reportedPostId', isEqualTo: docId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      final postReports = reportsSnapshot.docs.where((doc) {
+        final rData = doc.data();
+        return rData['reportedCommentId'] == null;
+      }).toList();
+
+      for (var reportDoc in postReports) {
+        final rData = reportDoc.data();
+        final reporterId = rData['reporterId'];
+        if (reporterId != null) {
+          await _sendNotification(
+            userId: reporterId,
+            title: "Phản hồi báo cáo",
+            content: "Báo cáo của bạn đã được xử lý. Bài viết vi phạm đã bị xóa.",
+            type: 'info',
+            postId: docId,
+          );
+        }
+        await reportDoc.reference.update({
+          'status': 'resolved',
+          'resolvedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      final authorId = data['authorId'] ?? data['uploaderId'];
+      if (authorId != null) {
+        await _sendNotification(
+          userId: authorId,
+          title: "Bài viết bị gỡ bỏ",
+          content: isReported
+              ? "Bài viết của bạn đã bị xóa do vi phạm tiêu chuẩn cộng đồng. Lý do: $reason"
+              : "Bài viết của bạn đã bị gỡ bỏ bởi quản trị viên. Lý do: $reason",
+          type: 'warning',
+          postId: docId,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo.")),
+          const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo cho các bên.")),
         );
       }
     } catch (e) {
@@ -719,13 +778,16 @@ class _ModDashboardState extends State<ModDashboard> {
         docId: docId,
       );
 
-      _sendNotification(
-        userId: data['authorId'],
-        title: "Bài viết đã được khôi phục",
-        content: "Sau khi xem xét lại, Mod đã khôi phục bài viết của bạn.",
-        type: 'comment',
-        postId: docId,
-      );
+      final authorId = data['authorId'] ?? data['uploaderId'];
+      if (authorId != null) {
+        _sendNotification(
+          userId: authorId,
+          title: "Bài viết đã được khôi phục",
+          content: "Nội dung của bạn đã được duyệt.",
+          type: 'info',
+          postId: docId,
+        );
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -747,6 +809,52 @@ class _ModDashboardState extends State<ModDashboard> {
         collection: _collections[_selectedCollIndex],
         docId: docId,
       );
+
+      final reportsSnapshot = await FirebaseFirestore.instance
+          .collection('reports')
+          .where('reportedPostId', isEqualTo: docId)
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      final postReports = reportsSnapshot.docs.where((doc) {
+        final rData = doc.data();
+        return rData['reportedCommentId'] == null;
+      }).toList();
+
+      for (var reportDoc in postReports) {
+        final rData = reportDoc.data();
+        final reporterId = rData['reporterId'];
+        if (reporterId != null) {
+          await _sendNotification(
+            userId: reporterId,
+            title: "Phản hồi báo cáo",
+            content: "Mod không phát hiện sai phạm đối với bài viết bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
+            type: 'info',
+            postId: docId,
+          );
+        }
+        await reportDoc.reference.update({
+          'status': 'dismissed',
+          'resolvedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      final authorId = data['authorId'] ?? data['uploaderId'];
+      if (authorId != null) {
+        await _sendNotification(
+          userId: authorId,
+          title: "Báo cáo nội dung",
+          content: "Mod không phát hiện sai phạm đối với bài viết của bạn. Bài viết vẫn giữ nguyên.",
+          type: 'info',
+          postId: docId,
+        );
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã hủy báo cáo và gửi thông báo cho các bên.")),
+        );
+      }
     } catch (e) {
       debugPrint("Error dismissing report: $e");
     } finally {
