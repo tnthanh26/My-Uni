@@ -15,6 +15,8 @@ import 'create_post_page.dart';
 import 'create_material_page.dart';
 import 'create_review_page.dart';
 import '../services/content_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -40,6 +42,58 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   // State to track expanded comment threads
   final Set<String> _expandedComments = {};
+
+  File? _commentImageFile;
+  bool _isSubmittingComment = false;
+
+  Future<void> _pickCommentImage() async {
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() => _commentImageFile = File(pickedFile.path));
+    }
+  }
+
+  Future<String?> _processImageToBase64(File file) async {
+    final bytes = await file.readAsBytes();
+    var compressedBytes = await FlutterImageCompress.compressWithList(
+      bytes, quality: 20, minWidth: 500, minHeight: 500,
+    );
+    return base64Encode(compressedBytes);
+  }
+
+  void _showFullScreenImage(BuildContext context, String base64Image) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              child: Image.memory(
+                base64Decode(base64Image),
+                fit: BoxFit.contain,
+                width: double.infinity,
+                height: double.infinity,
+              ),
+            ),
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 10,
+              right: 16,
+              child: CircleAvatar(
+                backgroundColor: Colors.black45,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   String get _collectionPath {
     if (widget.initialPostData.containsKey('link')) return 'official_news';
@@ -305,6 +359,229 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     } catch (e) {
       debugPrint("Lỗi báo cáo: $e");
+    }
+  }
+
+  void _showReportCommentOptions(Map<String, dynamic> comment) {
+    final List<String> reportReasons = [
+      "Nội dung thô tục, nhạy cảm",
+      "Spam, quảng cáo không phép",
+      "Quấy rối, công kích cá nhân",
+      "Thông tin sai sự thật",
+      "Vi phạm quy chuẩn cộng đồng",
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                "Báo cáo bình luận này",
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 14),
+              ...reportReasons.map(
+                (reason) => ListTile(
+                  leading: const Icon(
+                    Icons.report_problem_outlined,
+                    color: Colors.redAccent,
+                  ),
+                  title: Text(
+                    reason,
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _submitCommentReport(comment, reason);
+                  },
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit_note, color: Colors.blueAccent),
+                title: Text(
+                  "Lý do khác...",
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showCustomReportCommentDialog(comment);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showCustomReportCommentDialog(Map<String, dynamic> comment) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final TextEditingController reasonController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        title: Text(
+          "Lý do báo cáo khác",
+          style: TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+        ),
+        content: TextField(
+          controller: reasonController,
+          maxLines: 3,
+          minLines: 1,
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
+          decoration: InputDecoration(
+            hintText: "Nhập lý do chi tiết...",
+            hintStyle: TextStyle(
+              color: isDarkMode ? Colors.white38 : Colors.grey,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFF5893D8)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              String customReason = reasonController.text.trim();
+              if (customReason.isNotEmpty) {
+                Navigator.pop(context);
+                _submitCommentReport(comment, "Khác: $customReason");
+              }
+            },
+            child: const Text(
+              "Gửi báo cáo",
+              style: TextStyle(
+                color: Colors.redAccent,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _submitCommentReport(
+      Map<String, dynamic> comment,
+      String reason,
+      ) async {
+    if (_user == null) return;
+
+    final commentId = comment['id'];
+
+    try {
+      // Đánh dấu comment bị báo cáo
+      await _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .collection('comments')
+          .doc(commentId)
+          .update({
+        'isReported': true,
+        'reportCount': FieldValue.increment(1),
+      });
+
+      // Đánh dấu bài viết có comment bị báo cáo
+      await _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .update({
+        'hasReportedComments': true,
+        'reportedCommentCount': FieldValue.increment(1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      // Lưu report
+      await _firestore.collection('reports').add({
+        'reporterId': _user!.uid,
+        'reportedCommentId': commentId,
+        'reportedPostId': widget.docId,
+        'postCollection': _collectionPath,
+        'reason': reason,
+        'timestamp': FieldValue.serverTimestamp(),
+        'status': 'pending',
+        'type': 'comment',
+      });
+
+      // Gửi thông báo cho tác giả comment
+      final commentAuthorId = comment['authorId'];
+      if (commentAuthorId != null) {
+        String shortCommentText = comment['content'] ?? "";
+
+        if (shortCommentText.isEmpty && comment['imageUrl'] != null) {
+          shortCommentText = "[Hình ảnh]";
+        }
+
+        if (shortCommentText.length > 30) {
+          shortCommentText =
+          "${shortCommentText.substring(0, 30)}...";
+        }
+
+        await _firestore.collection('notifications').add({
+          'userId': commentAuthorId,
+          'type': 'warning',
+          'title': 'Cảnh báo bình luận',
+          'content':
+          'Bình luận "$shortCommentText" bị báo cáo: $reason.',
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'relatedPostId': widget.docId,
+          'collectionPath': _collectionPath,
+          'reportedCommentId': commentId,
+        });
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              "Cảm ơn bạn! Báo cáo bình luận đã được gửi tới điều hành viên.",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Lỗi báo cáo bình luận: $e");
     }
   }
 
@@ -581,127 +858,163 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _addComment() async {
-    if (_user == null || _commentController.text.trim().isEmpty) return;
-
-    String content = _commentController.text.trim();
+    final content = _commentController.text.trim();
+    if (_user == null || (content.isEmpty && _commentImageFile == null)) return;
+    if (_isSubmittingComment) return;
 
     // 1. Kiểm tra từ cấm
-    List<String> blacklistViolations = ContentService.getBlacklistedWords(content);
-    if (blacklistViolations.isNotEmpty) {
-      await showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text("Yêu cầu sửa nội dung"),
-          content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("Quay lại sửa"),
-            ),
-          ],
-        ),
-      );
-      return;
+    if (content.isNotEmpty) {
+      List<String> blacklistViolations = ContentService.getBlacklistedWords(content);
+      if (blacklistViolations.isNotEmpty) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text("Yêu cầu sửa nội dung"),
+            content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Quay lại sửa"),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
     }
 
     // 2. Kiểm tra từ nhạy cảm
     bool isSensitive = false;
-    List<String> sensitiveViolations = ContentService.getSensitiveWords(content);
-    if (sensitiveViolations.isNotEmpty) {
-      bool shouldSubmit = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-          content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Quay lại sửa"),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Vẫn đăng"),
-            ),
-          ],
-        ),
-      ) ?? false;
+    if (content.isNotEmpty) {
+      List<String> sensitiveViolations = ContentService.getSensitiveWords(content);
+      if (sensitiveViolations.isNotEmpty) {
+        bool shouldSubmit = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+            content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text("Quay lại sửa"),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text("Vẫn đăng"),
+              ),
+            ],
+          ),
+        ) ?? false;
 
-      if (!shouldSubmit) {
-        return;
+        if (!shouldSubmit) {
+          return;
+        }
+        isSensitive = true;
       }
-      isSensitive = true;
     }
 
-    String? parentId = _replyingToId;
-
-    _commentController.clear();
     setState(() {
-      _replyingToId = null;
-      _replyingToName = null;
-    });
-    FocusScope.of(context).unfocus();
-
-    final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
-    final userData = userDoc.data();
-    final rawName = userData?['displayName']?.toString().trim();
-    final senderName = (rawName != null && rawName.isNotEmpty)
-        ? rawName
-        : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
-            ? _user!.displayName!.trim()
-            : "Ai đó");
-
-    await _firestore
-        .collection(_collectionPath)
-        .doc(widget.docId)
-        .collection('comments')
-        .add({
-      'authorId': _user!.uid,
-      'authorName': senderName,
-      'authorAvatar': userData?['photoUrl'] ?? '',
-      'content': content,
-      'timestamp': FieldValue.serverTimestamp(),
-      'parentCommentId': parentId,
-      'likes': [],
-      'status': isSensitive ? 'pending' : 'approved',
+      _isSubmittingComment = true;
     });
 
-    await _firestore.collection(_collectionPath).doc(widget.docId).update({
-      'commentCount': FieldValue.increment(1)
-    });
+    try {
+      String? parentId = _replyingToId;
+      String? commentImageUrl;
 
-    await _sendCommentNotification(content, senderName);
+      if (_commentImageFile != null) {
+        commentImageUrl = await _processImageToBase64(_commentImageFile!);
+      }
 
-    // If it's a reply, also notify the parent comment author
-    if (parentId != null) {
-      try {
-        final parentDoc = await _firestore
-            .collection(_collectionPath)
-            .doc(widget.docId)
-            .collection('comments')
-            .doc(parentId)
-            .get();
-        
-        if (parentDoc.exists) {
-          final parentData = parentDoc.data();
-          final parentAuthorId = parentData?['authorId'];
+      _commentController.clear();
+      setState(() {
+        _replyingToId = null;
+        _replyingToName = null;
+        _commentImageFile = null;
+      });
+      FocusScope.of(context).unfocus();
+
+      final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+      final userData = userDoc.data();
+      final rawName = userData?['displayName']?.toString().trim();
+      final senderName = (rawName != null && rawName.isNotEmpty)
+          ? rawName
+          : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
+              ? _user!.displayName!.trim()
+              : "Ai đó");
+
+      Map<String, dynamic> commentData = {
+        'authorId': _user!.uid,
+        'authorName': senderName,
+        'authorAvatar': userData?['photoUrl'] ?? '',
+        'content': content,
+        'timestamp': FieldValue.serverTimestamp(),
+        'parentCommentId': parentId,
+        'likes': [],
+        'status': isSensitive ? 'pending' : 'approved',
+      };
+
+      if (commentImageUrl != null) {
+        commentData['imageUrl'] = commentImageUrl;
+      }
+
+      await _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .collection('comments')
+          .add(commentData);
+
+      await _firestore.collection(_collectionPath).doc(widget.docId).update({
+        'commentCount': FieldValue.increment(1)
+      });
+
+      String notificationContent = content.isNotEmpty ? content : "[Hình ảnh]";
+      await _sendCommentNotification(notificationContent, senderName);
+
+      // If it's a reply, also notify the parent comment author
+      if (parentId != null) {
+        try {
+          final parentDoc = await _firestore
+              .collection(_collectionPath)
+              .doc(widget.docId)
+              .collection('comments')
+              .doc(parentId)
+              .get();
           
-          if (parentAuthorId != null && parentAuthorId != _user!.uid) {
-            await _firestore.collection('notifications').add({
-              'userId': parentAuthorId,
-              'type': 'comment',
-              'title': 'Phản hồi mới',
-              'content': '$senderName đã phản hồi bình luận của bạn: "$content"',
-              'timestamp': FieldValue.serverTimestamp(),
-              'isRead': false,
-              'relatedPostId': widget.docId,
-              'collectionPath': _collectionPath,
-            });
+          if (parentDoc.exists) {
+            final parentData = parentDoc.data();
+            final parentAuthorId = parentData?['authorId'];
+            
+            if (parentAuthorId != null && parentAuthorId != _user!.uid) {
+              await _firestore.collection('notifications').add({
+                'userId': parentAuthorId,
+                'type': 'comment',
+                'title': 'Phản hồi mới',
+                'content': '$senderName đã phản hồi bình luận của bạn: "$notificationContent"',
+                'timestamp': FieldValue.serverTimestamp(),
+                'isRead': false,
+                'relatedPostId': widget.docId,
+                'collectionPath': _collectionPath,
+              });
+            }
           }
+        } catch (e) {
+          debugPrint("Lỗi gửi thông báo reply: $e");
         }
-      } catch (e) {
-        debugPrint("Lỗi gửi thông báo reply: $e");
+      }
+    } catch (e) {
+      debugPrint("Lỗi thêm bình luận: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi khi thêm bình luận: $e")),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingComment = false;
+        });
       }
     }
   }
@@ -1771,12 +2084,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ),
             if (data['imageUrl'] != null && data['imageUrl'] != '') ...[
               const SizedBox(height: 18),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(18),
-                child: Image.memory(
-                  base64Decode(data['imageUrl']),
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () => _showFullScreenImage(context, data['imageUrl']),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.memory(
+                    base64Decode(data['imageUrl']),
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
             ],
@@ -2279,7 +2595,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                       ],
                                     ),
                                   ),
-                                  if (canDelete || canEdit)
+                                  if (_user != null)
                                     SizedBox(
                                       height: 24,
                                       width: 24,
@@ -2300,6 +2616,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                           if (val == 'edit') {
                                             _showEditCommentDialog(comment);
                                           }
+                                          if (val == 'report') {
+                                            _showReportCommentOptions(comment);
+                                          }
                                         },
                                         itemBuilder: (context) => [
                                           if (canEdit)
@@ -2314,6 +2633,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                                 "Xóa",
                                                 style:
                                                 TextStyle(color: Colors.red),
+                                              ),
+                                            ),
+                                          if (!isCommentOwner)
+                                            const PopupMenuItem(
+                                              value: 'report',
+                                              child: Text(
+                                                "Báo cáo bình luận",
+                                                style:
+                                                TextStyle(color: Colors.redAccent),
                                               ),
                                             ),
                                         ],
@@ -2347,6 +2675,27 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   ],
                                 ),
                               ),
+                              if (comment['imageUrl'] != null &&
+                                  comment['imageUrl'].toString().isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                GestureDetector(
+                                  onTap: () => _showFullScreenImage(
+                                      context, comment['imageUrl']),
+                                  child: ConstrainedBox(
+                                    constraints: BoxConstraints(
+                                      maxWidth: MediaQuery.of(context).size.width * 0.5,
+                                      maxHeight: 180,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.memory(
+                                        base64Decode(comment['imageUrl']),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -2509,8 +2858,54 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ],
               ),
             ),
+          if (_commentImageFile != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              height: 90,
+              alignment: Alignment.centerLeft,
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      _commentImageFile!,
+                      height: 90,
+                      width: 90,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    top: 2,
+                    right: 2,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _commentImageFile = null),
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          size: 14,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
+              IconButton(
+                onPressed: _pickCommentImage,
+                icon: Icon(
+                  Icons.image_outlined,
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF5893D8),
+                  size: 22,
+                ),
+              ),
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
@@ -2564,13 +2959,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   backgroundColor: Colors.transparent,
                   child: IconButton(
                     onPressed: _addComment,
-                    icon: const Padding(
-                      padding: EdgeInsets.only(left: 3),
-                      child: Icon(
-                        Icons.send_rounded,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                    icon: Padding(
+                      padding: EdgeInsets.only(left: _isSubmittingComment ? 0 : 3),
+                      child: _isSubmittingComment
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                     ),
                   ),
                 ),

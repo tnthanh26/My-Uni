@@ -27,10 +27,43 @@ class PostCard extends StatelessWidget {
   final VoidCallback onViewMaterial;
   final VoidCallback onViewComments;
 
+  Widget _buildReportBadge({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color bgColor,
+    required Color borderColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 11,
+              fontFamily: 'Nunito',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPollPreview(Map<String, dynamic> pollData) {
     final List<dynamic> options = pollData['options'] ?? [];
-    final Map<String, dynamic> votes = Map<String, dynamic>.from(pollData['votes'] ?? {});
-    final int totalParticipants = votes.length;
+    final Map<String, dynamic> votes =
+    Map<String, dynamic>.from(pollData['votes'] ?? {});
 
     Map<int, int> optionCounts = {};
     for (var v in votes.values) {
@@ -88,7 +121,10 @@ class PostCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           text,
-                          style: const TextStyle(fontSize: 12, fontFamily: 'Nunito'),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontFamily: 'Nunito',
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -109,7 +145,9 @@ class PostCard extends StatelessWidget {
                     child: LinearProgressIndicator(
                       value: percentage,
                       backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.blueAccent),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        Colors.blueAccent,
+                      ),
                       minHeight: 6,
                     ),
                   ),
@@ -124,8 +162,15 @@ class PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool isReported = data['isReported'] ?? false;
-    int reportCount = data['reportCount'] ?? 0;
+    final bool isPostReported = data['isReported'] ?? false;
+    final int postReportCount = data['reportCount'] ?? 0;
+
+    final bool hasReportedComments = data['hasReportedComments'] ?? false;
+    final int reportedCommentCount = data['reportedCommentCount'] ?? 0;
+
+    final bool showPostReportBadge = isPostReported && postReportCount > 0;
+    final bool showCommentReportBadge =
+        hasReportedComments && reportedCommentCount > 0;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -146,52 +191,86 @@ class PostCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// HEADER
-            Row(
+            Stack(
               children: [
-                const CircleAvatar(
-                  radius: 16,
-                  backgroundColor: Color(0xFFF0F2F5),
-                  child: Icon(
-                    Icons.person_outline,
-                    color: Colors.grey,
-                    size: 18,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Column(
+                Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      data['authorName'] ?? "Ẩn danh",
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                        fontFamily: 'Nunito',
+                    const CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Color(0xFFF0F2F5),
+                      child: Icon(
+                        Icons.person_outline,
+                        color: Colors.grey,
+                        size: 18,
                       ),
                     ),
-                    Text(
-                      data['timestamp']?.toDate().toString().substring(0, 16) ?? "",
-                      style: TextStyle(color: Colors.grey[500], fontSize: 11),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          right: (showPostReportBadge || showCommentReportBadge)
+                              ? 360
+                              : 0,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              data['authorName'] ?? "Ẩn danh",
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                fontFamily: 'Nunito',
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              data['timestamp']
+                                  ?.toDate()
+                                  .toString()
+                                  .substring(0, 16) ??
+                                  "",
+                              style: TextStyle(
+                                color: Colors.grey[500],
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
-                const Spacer(),
-                if (isReported)
-                  Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.redAccent.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Text(
-                      "Báo cáo: $reportCount",
-                      style: const TextStyle(
-                        color: Colors.redAccent,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                        fontFamily: 'Nunito',
-                      ),
+
+                if (showPostReportBadge || showCommentReportBadge)
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: Wrap(
+                      alignment: WrapAlignment.end,
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: [
+                        if (showPostReportBadge)
+                          _buildReportBadge(
+                            icon: Icons.report_problem,
+                            label: "Bài viết bị báo cáo: $postReportCount",
+                            color: Colors.redAccent,
+                            bgColor: Colors.redAccent.withOpacity(0.1),
+                            borderColor: Colors.redAccent.withOpacity(0.3),
+                          ),
+                        if (showCommentReportBadge)
+                          _buildReportBadge(
+                            icon: Icons.chat_bubble_outline_rounded,
+                            label:
+                            "Có bình luận bị báo cáo: $reportedCommentCount",
+                            color: const Color(0xFFEA580C),
+                            bgColor: const Color(0xFFFFF7ED),
+                            borderColor: const Color(0xFFFFEDD5),
+                          ),
+                      ],
                     ),
                   ),
               ],
@@ -245,7 +324,8 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
@@ -259,7 +339,11 @@ class PostCard extends StatelessWidget {
                     Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.attach_file, color: Colors.blueGrey, size: 18),
+                        const Icon(
+                          Icons.attach_file,
+                          color: Colors.blueGrey,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 700),
@@ -300,14 +384,16 @@ class PostCard extends StatelessWidget {
               Wrap(
                 spacing: 8,
                 children: (data['hashtags'] as List)
-                    .map((t) => Text(
-                  "#$t",
-                  style: const TextStyle(
-                    color: Colors.blueAccent,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
+                    .map(
+                      (t) => Text(
+                    "#$t",
+                    style: const TextStyle(
+                      color: Colors.blueAccent,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
                   ),
-                ))
+                )
                     .toList(),
               ),
               const SizedBox(height: 8),
@@ -374,7 +460,7 @@ class PostCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   if (data['status'] != 'hidden') ...[
-                    if (isReported)
+                    if (showPostReportBadge)
                       SizedBox(
                         width: 150,
                         height: 34,
@@ -395,24 +481,15 @@ class PostCard extends StatelessWidget {
                         onPressed: onDelete,
                       ),
                     ),
-                    if (data['status'] == 'pending')
-                      SizedBox(
-                        width: 90,
-                        height: 34,
-                        child: ModActionButton(
-                          icon: Icons.check,
-                          label: "DUYỆT",
-                          color: Colors.green,
-                          onPressed: onApprove,
-                        ),
-                      ),
                     SizedBox(
                       width: 120,
                       height: 34,
                       child: ModActionButton(
                         icon: Icons.comment_outlined,
                         label: "BÌNH LUẬN",
-                        color: Colors.blueAccent,
+                        color: showCommentReportBadge
+                            ? const Color(0xFFEA580C)
+                            : Colors.blueAccent,
                         onPressed: onViewComments,
                       ),
                     ),

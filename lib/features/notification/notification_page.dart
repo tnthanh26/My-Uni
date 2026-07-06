@@ -246,12 +246,31 @@ class NotificationScreen extends StatelessWidget {
         if (!context.mounted) return;
         Navigator.pop(context);
 
+        final bool isCommentNotification = noti.reportedCommentId != null ||
+            noti.title.toLowerCase().contains("bình luận") ||
+            noti.content.toLowerCase().contains("bình luận");
+
         if (postDoc.exists) {
           final postData = postDoc.data() as Map<String, dynamic>;
 
           if (postData['status'] == 'hidden') {
-            _showUnavailableDialog(context, noti.id);
+            _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
           } else {
+            // Nếu đây là thông báo liên quan đến bình luận cụ thể, hãy kiểm tra xem bình luận đó còn tồn tại không
+            if (noti.reportedCommentId != null) {
+              final commentDoc = await FirebaseFirestore.instance
+                  .collection(noti.collectionPath!)
+                  .doc(noti.relatedPostId)
+                  .collection('comments')
+                  .doc(noti.reportedCommentId)
+                  .get();
+
+              if (!commentDoc.exists) {
+                _showUnavailableDialog(context, noti.id, isComment: true);
+                return;
+              }
+            }
+
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -263,14 +282,18 @@ class NotificationScreen extends StatelessWidget {
             );
           }
         } else {
-          _showUnavailableDialog(context, noti.id);
+          _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
         }
       } on FirebaseException catch (e) {
         if (!context.mounted) return;
         Navigator.pop(context);
 
+        final bool isCommentNotification = noti.reportedCommentId != null ||
+            noti.title.toLowerCase().contains("bình luận") ||
+            noti.content.toLowerCase().contains("bình luận");
+
         if (e.code == 'permission-denied' || e.code == 'not-found') {
-          _showUnavailableDialog(context, noti.id);
+          _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text("Lỗi hệ thống: ${e.message}")),
@@ -279,12 +302,15 @@ class NotificationScreen extends StatelessWidget {
       } catch (e) {
         if (!context.mounted) return;
         Navigator.pop(context);
-        _showUnavailableDialog(context, noti.id);
+        final bool isCommentNotification = noti.reportedCommentId != null ||
+            noti.title.toLowerCase().contains("bình luận") ||
+            noti.content.toLowerCase().contains("bình luận");
+        _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
       }
     }
   }
 
-  void _showUnavailableDialog(BuildContext context, String notiId) {
+  void _showUnavailableDialog(BuildContext context, String notiId, {bool isComment = false}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -303,7 +329,9 @@ class NotificationScreen extends StatelessWidget {
           ),
         ),
         content: Text(
-          "Nội dung này không còn tồn tại hoặc đã bị quản trị viên gỡ bỏ.",
+          isComment
+              ? "Bình luận này đã bị xóa hoặc không còn tồn tại."
+              : "Bài viết này đã bị xóa hoặc không còn tồn tại.",
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             color: isDarkMode ? Colors.white70 : Colors.black87,

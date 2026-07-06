@@ -24,6 +24,9 @@ class PostModerationService {
         .update({
       'status': 'hidden',
       'isReported': false,
+      'reportCount': 0,
+      'hasReportedComments': false,
+      'reportedCommentCount': 0,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }
@@ -51,6 +54,7 @@ class PostModerationService {
         .update({
       'isReported': false,
       'reportCount': 0,
+      'updatedAt': FieldValue.serverTimestamp(),
     });
   }
 
@@ -60,8 +64,7 @@ class PostModerationService {
     required String commentId,
   }) async {
     final firestore = FirebaseFirestore.instance;
-    
-    // Find replies
+
     final repliesSnapshot = await firestore
         .collection(collection)
         .doc(postId)
@@ -71,21 +74,18 @@ class PostModerationService {
 
     final batch = firestore.batch();
 
-    // Delete the comment
     final commentRef = firestore
         .collection(collection)
         .doc(postId)
         .collection('comments')
         .doc(commentId);
-    
+
     batch.delete(commentRef);
 
-    // Delete replies
     for (var doc in repliesSnapshot.docs) {
       batch.delete(doc.reference);
     }
 
-    // Decrement commentCount on the post
     int totalToDelete = 1 + repliesSnapshot.docs.length;
     final postRef = firestore.collection(collection).doc(postId);
     batch.update(postRef, {
@@ -93,5 +93,57 @@ class PostModerationService {
     });
 
     await batch.commit();
+
+    await _refreshPostCommentReportState(
+      collection: collection,
+      postId: postId,
+    );
+  }
+
+  static Future<void> dismissCommentReport({
+    required String collection,
+    required String postId,
+    required String commentId,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .doc(commentId)
+        .update({
+      'isReported': false,
+      'reportCount': 0,
+    });
+
+    await _refreshPostCommentReportState(
+      collection: collection,
+      postId: postId,
+    );
+  }
+
+  static Future<void> _refreshPostCommentReportState({
+    required String collection,
+    required String postId,
+  }) async {
+    final firestore = FirebaseFirestore.instance;
+
+    final reportedComments = await firestore
+        .collection(collection)
+        .doc(postId)
+        .collection('comments')
+        .where('isReported', isEqualTo: true)
+        .get();
+
+    final validReportedCount = reportedComments.docs.where((doc) {
+      final data = doc.data();
+      final count = data['reportCount'] ?? 0;
+      return count > 0;
+    }).length;
+
+    await firestore.collection(collection).doc(postId).update({
+      'hasReportedComments': validReportedCount > 0,
+      'reportedCommentCount': validReportedCount,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }

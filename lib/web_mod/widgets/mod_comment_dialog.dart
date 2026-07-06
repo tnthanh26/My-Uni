@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/post_moderation_service.dart';
+import '../services/mod_notification_service.dart';
 
 class ModCommentDialog extends StatefulWidget {
   final String collection;
@@ -80,29 +81,35 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
             final allDocs = snapshot.data!.docs;
             final List<QueryDocumentSnapshot> orderedComments = [];
 
-            // 1. Lấy các comment gốc (không có parentCommentId)
-            final rootComments = allDocs.where((doc) {
-              final d = doc.data() as Map<String, dynamic>;
-              return d['parentCommentId'] == null;
-            }).toList();
-
-            // 2. Với mỗi comment gốc, tìm các reply của nó
-            for (var root in rootComments) {
-              orderedComments.add(root);
-              final replies = allDocs.where((doc) {
+            void addRepliesRecursively(String parentId, List<QueryDocumentSnapshot> source, List<QueryDocumentSnapshot> target) {
+              final directReplies = source.where((doc) {
                 final d = doc.data() as Map<String, dynamic>;
-                return d['parentCommentId'] == root.id;
+                return d['parentCommentId'] == parentId;
               }).toList();
 
-              // Sắp xếp reply theo thời gian tăng dần (cũ đến mới) để dễ theo dõi hội thoại
-              replies.sort((a, b) {
+              directReplies.sort((a, b) {
                 final aT = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
                 final bT = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
                 if (aT == null || bT == null) return 0;
                 return aT.compareTo(bT);
               });
 
-              orderedComments.addAll(replies);
+              for (var reply in directReplies) {
+                target.add(reply);
+                addRepliesRecursively(reply.id, source, target);
+              }
+            }
+
+            // 1. Lấy các comment gốc (không có parentCommentId)
+            final rootComments = allDocs.where((doc) {
+              final d = doc.data() as Map<String, dynamic>;
+              return d['parentCommentId'] == null;
+            }).toList();
+
+            // 2. Với mỗi comment gốc, tìm các reply đệ quy
+            for (var root in rootComments) {
+              orderedComments.add(root);
+              addRepliesRecursively(root.id, allDocs, orderedComments);
             }
 
             return ListView.builder(
@@ -110,23 +117,47 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
               itemBuilder: (context, index) {
                 final comment = orderedComments[index];
                 final data = comment.data() as Map<String, dynamic>;
-                final bool isReply = data['parentCommentId'] != null;
                 final avatarImage = _getAvatarImage(data['authorAvatar']);
+                final int reportCount = data['reportCount'] ?? 0;
+                final bool isReported = data['isReported'] == true && reportCount > 0;
+
+                int depth = 0;
+                String? currParent = data['parentCommentId'];
+                while (currParent != null) {
+                  depth++;
+                  final matches = allDocs.where((d) => d.id == currParent).toList();
+                  if (matches.isNotEmpty) {
+                    final pData = matches.first.data() as Map<String, dynamic>;
+                    currParent = pData['parentCommentId'];
+                  } else {
+                    currParent = null;
+                  }
+                }
+                final double leftMargin = depth > 0 ? (depth * 24.0).clamp(0.0, 72.0) : 0.0;
+                final bool isReply = depth > 0;
 
                 return Column(
                   children: [
                     Container(
                       margin: EdgeInsets.only(
-                        left: isReply ? 40 : 0,
+                        left: leftMargin,
                         top: 6,
                         bottom: 6,
                       ),
-                      padding: isReply ? const EdgeInsets.all(12) : const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-                      decoration: isReply
+                      padding: (isReply || isReported)
+                          ? const EdgeInsets.all(12)
+                          : const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                      decoration: (isReply || isReported)
                           ? BoxDecoration(
-                              color: Colors.grey[50],
+                              color: isReported
+                                  ? const Color(0xFFFFF1F2)
+                                  : Colors.grey[50],
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey[200]!),
+                              border: Border.all(
+                                color: isReported
+                                    ? const Color(0xFFFECDD3)
+                                    : Colors.grey[200]!,
+                              ),
                             )
                           : null,
                       child: Row(
@@ -179,14 +210,53 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                               ),
                                             ),
                                           ),
+                                        if (isReported)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 8),
+                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            decoration: BoxDecoration(
+                                              color: Colors.redAccent.withOpacity(0.1),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(Icons.report_problem, size: 10, color: Colors.redAccent),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "Bị báo cáo ($reportCount)",
+                                                  style: const TextStyle(
+                                                    color: Colors.redAccent,
+                                                    fontSize: 9,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                       ],
                                     ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                      onPressed: () => _confirmDeleteComment(comment.id, isReply),
-                                      padding: EdgeInsets.zero,
-                                      constraints: const BoxConstraints(),
-                                      tooltip: "Xóa bình luận",
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (isReported) ...[
+                                          IconButton(
+                                            icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
+                                            onPressed: () => _dismissCommentReport(comment.id),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(),
+                                            tooltip: "Bỏ qua báo cáo",
+                                          ),
+                                          const SizedBox(width: 12),
+                                        ],
+                                        IconButton(
+                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
+                                          onPressed: () => _confirmDeleteComment(comment.id, isReply),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          tooltip: "Xóa bình luận",
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -198,6 +268,18 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                     fontFamily: 'Nunito',
                                   ),
                                 ),
+                                if (data['imageUrl'] != null &&
+                                    data['imageUrl'].toString().isNotEmpty) ...[
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.memory(
+                                      base64Decode(data['imageUrl']),
+                                      height: 100,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 4),
                                 Text(
                                   data['timestamp']?.toDate().toString().substring(0, 16) ?? "",
@@ -253,14 +335,67 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
       );
 
       if (confirm == true) {
+        // Fetch comment details before deletion to get author info
+        final commentDoc = await FirebaseFirestore.instance
+            .collection(widget.collection)
+            .doc(widget.postId)
+            .collection('comments')
+            .doc(commentId)
+            .get();
+
         await PostModerationService.deleteComment(
           collection: widget.collection,
           postId: widget.postId,
           commentId: commentId,
         );
+
+        if (commentDoc.exists) {
+          final commentData = commentDoc.data();
+          final commentAuthorId = commentData?['authorId'];
+
+          // Query reports for this comment to notify reporters and resolve reports
+          final reportsSnapshot = await FirebaseFirestore.instance
+              .collection('reports')
+              .where('reportedCommentId', isEqualTo: commentId)
+              .where('status', isEqualTo: 'pending')
+              .get();
+
+          for (var reportDoc in reportsSnapshot.docs) {
+            final rData = reportDoc.data();
+            final reporterId = rData['reporterId'];
+            if (reporterId != null) {
+              await ModNotificationService.sendPostNotification(
+                userId: reporterId,
+                title: "Phản hồi báo cáo",
+                content: "Báo cáo của bạn đã được xử lý. Bình luận vi phạm đã bị xóa.",
+                type: 'info',
+                postId: widget.postId,
+                collectionPath: widget.collection,
+                reportedCommentId: commentId,
+              );
+            }
+            await reportDoc.reference.update({
+              'status': 'resolved',
+              'resolvedAt': FieldValue.serverTimestamp(),
+            });
+          }
+
+          if (commentAuthorId != null) {
+            await ModNotificationService.sendPostNotification(
+              userId: commentAuthorId,
+              title: "Bình luận bị gỡ bỏ",
+              content: "Bình luận của bạn đã bị xóa do vi phạm tiêu chuẩn cộng đồng.",
+              type: 'warning',
+              postId: widget.postId,
+              collectionPath: widget.collection,
+              reportedCommentId: commentId,
+            );
+          }
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Đã xóa bình luận thành công")),
+            const SnackBar(content: Text("Đã xóa bình luận thành công và gửi thông báo.")),
           );
         }
       }
@@ -268,6 +403,84 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Lỗi khi xóa bình luận: $e")),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
+    }
+  }
+
+  Future<void> _dismissCommentReport(String commentId) async {
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+    try {
+      // Fetch comment details to get author info
+      final commentDoc = await FirebaseFirestore.instance
+          .collection(widget.collection)
+          .doc(widget.postId)
+          .collection('comments')
+          .doc(commentId)
+          .get();
+
+      await PostModerationService.dismissCommentReport(
+        collection: widget.collection,
+        postId: widget.postId,
+        commentId: commentId,
+      );
+
+      if (commentDoc.exists) {
+        final commentData = commentDoc.data();
+        final commentAuthorId = commentData?['authorId'];
+
+        // Query reports for this comment to notify reporters and resolve reports
+        final reportsSnapshot = await FirebaseFirestore.instance
+            .collection('reports')
+            .where('reportedCommentId', isEqualTo: commentId)
+            .where('status', isEqualTo: 'pending')
+            .get();
+
+        for (var reportDoc in reportsSnapshot.docs) {
+          final rData = reportDoc.data();
+          final reporterId = rData['reporterId'];
+          if (reporterId != null) {
+            await ModNotificationService.sendPostNotification(
+              userId: reporterId,
+              title: "Phản hồi báo cáo",
+              content: "Mod không phát hiện sai phạm đối với bình luận bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
+              type: 'info',
+              postId: widget.postId,
+              collectionPath: widget.collection,
+              reportedCommentId: commentId,
+            );
+          }
+          await reportDoc.reference.update({
+            'status': 'dismissed',
+            'resolvedAt': FieldValue.serverTimestamp(),
+          });
+        }
+
+        if (commentAuthorId != null) {
+          await ModNotificationService.sendPostNotification(
+            userId: commentAuthorId,
+            title: "Báo cáo bình luận",
+            content: "Mod không phát hiện sai phạm đối với bình luận của bạn. Bình luận vẫn giữ nguyên.",
+            type: 'info',
+            postId: widget.postId,
+            collectionPath: widget.collection,
+            reportedCommentId: commentId,
+          );
+        }
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã bỏ qua báo cáo bình luận và gửi thông báo.")),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi khi bỏ báo cáo: $e")),
         );
       }
     } finally {

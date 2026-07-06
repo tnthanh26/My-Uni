@@ -8,8 +8,9 @@ class ModNotificationService {
     required String type,
     required String postId,
     required String collectionPath,
+    String? reportedCommentId,
   }) async {
-    await FirebaseFirestore.instance.collection('notifications').add({
+    final Map<String, dynamic> notiData = {
       'userId': userId,
       'title': title,
       'content': content,
@@ -18,7 +19,11 @@ class ModNotificationService {
       'isRead': false,
       'relatedPostId': postId,
       'collectionPath': collectionPath,
-    });
+    };
+    if (reportedCommentId != null) {
+      notiData['reportedCommentId'] = reportedCommentId;
+    }
+    await FirebaseFirestore.instance.collection('notifications').add(notiData);
   }
 
   static Future<void> sendUserNotification({
