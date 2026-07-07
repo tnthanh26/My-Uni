@@ -76,7 +76,33 @@ class CommunityEventPage extends StatelessWidget {
         children: [
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.asset('assets/images/news.png', height: 140, width: double.infinity, fit: BoxFit.cover),
+            child: Stack(
+              children: [
+                Image.asset('assets/images/news.png', height: 140, width: double.infinity, fit: BoxFit.cover),
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(32),
+                    ),
+                    child: const Text(
+                      'MỚI',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

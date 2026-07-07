@@ -296,6 +296,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     const Color figmaHeaderBlue = Color(0xFF457EC0);
     const Color figmaDashedColor = Color(0xFF1C95BE);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 550.0;
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
@@ -374,6 +376,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: Container(
+            width: double.infinity,
+            height: isTablet ? null : double.infinity,
             decoration: BoxDecoration(
               color: isDarkMode ? const Color(0xFF121212) : Colors.white,
               borderRadius: const BorderRadius.only(

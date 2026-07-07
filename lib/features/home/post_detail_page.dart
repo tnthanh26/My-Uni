@@ -1106,6 +1106,64 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
+  Widget _buildInterestButton({
+    required BuildContext context,
+    required bool isDarkMode,
+    required bool isInterested,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: isInterested
+                ? (isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                : const Color(0xFF5893D8),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: isInterested || isDarkMode
+                ? []
+                : [
+              BoxShadow(
+                color: const Color(0xFF5893D8).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isInterested ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                size: 16,
+                color: isInterested
+                    ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
+                    : Colors.white,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                isInterested ? 'Đã quan tâm' : 'Quan tâm',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isInterested
+                      ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
+                      : Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _toggleSavePost({
     required BuildContext context,
     required String docId,
@@ -1419,7 +1477,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String _getAppBarTitle() {
-    if (_collectionPath == 'official_news') return "Thông báo";
+    if (_collectionPath == 'official_news') return "Chi tiết bài viết";
     if (_collectionPath == 'course_reviews') return "Review môn học";
     if (_collectionPath == 'study_materials') return "Tài liệu học tập";
     return "Chi tiết bài đăng";
@@ -1478,9 +1536,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildTopChip(
                   label: isEvent ? "Sự kiện" : "Tin chính thức",
@@ -1488,6 +1545,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   isDarkMode: isDarkMode,
                   highlighted: isEvent,
                 ),
+                if (isEvent)
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: _firestore
+                        .collection('users')
+                        .doc(_user?.uid ?? 'guest')
+                        .collection('interested_events')
+                        .doc(widget.docId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      final bool isInterested =
+                          snapshot.hasData && snapshot.data!.exists;
+
+                      return _buildInterestButton(
+                        context: context,
+                        isDarkMode: isDarkMode,
+                        isInterested: isInterested,
+                        onTap: _toggleInterest,
+                      );
+                    },
+                  ),
               ],
             ),
           ),
@@ -1610,58 +1687,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                     ),
                   ),
-                  if (isEvent)
-                    Positioned(
-                      top: 12,
-                      right: 12,
-                      child: StreamBuilder<DocumentSnapshot>(
-                        stream: _firestore
-                            .collection('users')
-                            .doc(_user?.uid ?? 'guest')
-                            .collection('interested_events')
-                            .doc(widget.docId)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          final bool isInterested =
-                              snapshot.hasData && snapshot.data!.exists;
 
-                          return ElevatedButton.icon(
-                            onPressed: _toggleInterest,
-                            icon: Icon(
-                              isInterested
-                                  ? Icons.check_circle_rounded
-                                  : Icons.add_circle_outline_rounded,
-                              size: 16,
-                            ),
-                            label: Text(
-                              isInterested ? "Đã quan tâm" : "Quan tâm",
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Encode Sans Expanded',
-                              ),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: isInterested
-                                  ? Colors.white.withOpacity(0.25)
-                                  : const Color(0xFF5794F3),
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: isInterested
-                                    ? const BorderSide(color: Colors.white70)
-                                    : BorderSide.none,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
                 ],
               ),
             ),
