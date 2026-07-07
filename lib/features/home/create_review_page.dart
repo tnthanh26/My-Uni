@@ -219,6 +219,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     const Color figmaHeaderBlue = Color(0xFF457EC0);
     const Color starYellow = Color(0xFFFFCB45);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isTablet = screenWidth > 550.0;
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
@@ -297,6 +299,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: Container(
+            width: double.infinity,
+            height: isTablet ? null : double.infinity,
             decoration: BoxDecoration(
               color: isDarkMode ? const Color(0xFF121212) : Colors.white,
               borderRadius: const BorderRadius.only(

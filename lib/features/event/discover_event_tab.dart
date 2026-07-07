@@ -268,16 +268,16 @@ class DiscoverEventTab extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                    top: 10,
-                    left: 10,
+                    top: 0,
+                    left: 0,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
+                        horizontal: 20,
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(999),
+                        borderRadius: BorderRadius.circular(22),
                       ),
                       child: const Text(
                         'MỚI',
@@ -289,45 +289,7 @@ class DiscoverEventTab extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    top: 10,
-                    right: 10,
-                    child: StreamBuilder<DocumentSnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('users')
-                          .doc(user?.uid ?? 'guest')
-                          .collection('interested_events')
-                          .doc(docId)
-                          .snapshots(),
-                      builder: (context, favSnapshot) {
-                        final bool isInterested =
-                            favSnapshot.hasData && favSnapshot.data!.exists;
 
-                        return ElevatedButton(
-                          onPressed: () =>
-                              _toggleInterest(context, docId, data),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                isInterested ? Colors.grey : detailBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(horizontal: 12),
-                            minimumSize: const Size(0, 34),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: Text(
-                            isInterested ? 'Đã lưu' : 'Quan tâm',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
                 ],
               ),
             ),
