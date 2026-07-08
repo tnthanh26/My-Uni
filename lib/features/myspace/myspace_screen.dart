@@ -38,6 +38,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   bool _isDetailView = false;
   late TabController _tabController;
   int selectedWeekday = DateTime.now().weekday + 1;
+  bool _deadlineShowAll = false;
   // Dữ liệu mẫu
   List<Deadline> mockDeadlines = [];
   List<StudyClass> mockSchedule = [];
@@ -323,10 +324,13 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   // --- ĐIỀU HƯỚNG (NAVIGATION) ---
 
-  void _navigateToDetail(int tabIndex) {
+  void _navigateToDetail(int tabIndex, {bool forceShowAll = false}) {
     setState(() {
       _isDetailView = true;
       _tabController.index = tabIndex;
+      if (tabIndex == 0) {
+        _deadlineShowAll = forceShowAll;
+      }
     });
   }
 
@@ -355,7 +359,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 Navigator.pop(sheetContext);
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CreateDeadlinesPage()),
+                  MaterialPageRoute(
+                    builder: (context) => CreateDeadlinesPage(
+                      initialDate: _focusedDate,
+                    ),
+                  ),
                 );
                 if (result == true) _loadInitialMetaData(); // QUAN TRỌNG: Load lại sau khi tạo
               },
@@ -367,7 +375,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 Navigator.pop(sheetContext);
                 final result = await Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CreateSchedulePage()),
+                  MaterialPageRoute(
+                    builder: (context) => CreateSchedulePage(
+                      initialWeekday: selectedWeekday,
+                    ),
+                  ),
                 );
                 if (result == true) _loadInitialMetaData(); // QUAN TRỌNG: Load lại sau khi tạo
               },
@@ -859,7 +871,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             deadlines: top3Deadlines,
             totalDeadlinesCount: mockDeadlines.length,
             onOpenAutoConfig: _showAutoDeadlineConfigSheet,
-            onOpenDetail: () => _navigateToDetail(0),
+            onOpenDetail: () => _navigateToDetail(0, forceShowAll: true),
             onToggleDeadline: _toggleDeadline,
             onDeleteDeadline: _deleteDeadline,
           ),
@@ -867,7 +879,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           if (top3Deadlines.isEmpty) _buildEmptyStateMeme(type: 'deadline'),
 
           const SizedBox(height: 20),
-          _buildSectionHeaderFigma("THỜI KHÓA BIỂU", () => _navigateToDetail(1)),
+          _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1)),
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
 
@@ -1000,11 +1012,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             ),
 
             _buildDetailCalendarStrip(),
-            const SizedBox(height: 36),
+            const SizedBox(height: 24),
             _buildSlidingToggle(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 2),
 
-            // Phần danh sách bên dưới (Nằm ngoài lớp phủ 150px nên sẽ hiện trên nền trắng sạch sẽ)
             Expanded(
               child: TabBarView(
                 controller: _tabController,
@@ -1016,6 +1027,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                     onToggleDeadline: _toggleDeadline,
                     onDeleteDeadline: _deleteDeadline,
                     onEditDeadline: _editDeadline,
+                    initialShowAll: _deadlineShowAll,
                   ),
                   _buildScheduleDetailList(),
                 ],
@@ -1149,46 +1161,50 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         final Color activeColor = Color.lerp(hcmusRed, hcmusTeal, animValue) ?? hcmusRed;
 
         return Container(
-          height: 48,
           margin: const EdgeInsets.symmetric(horizontal: 20),
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(4), // Tạo khoảng trống để Indicator nhỏ hơn thanh chứa
-            child: TabBar(
-              controller: _tabController,
-              indicator: BoxDecoration(
-                color: activeColor, // Đỏ chuyển sang Teal mượt mà
-                borderRadius: BorderRadius.circular(26),
-                boxShadow: [
-                  BoxShadow(
-                    color: activeColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+            border: Border(
+              bottom: BorderSide(
+                color: isDarkMode ? Colors.white.withValues(alpha: 0.08) : Colors.black.withValues(alpha: 0.05),
+                width: 1.5,
               ),
-              indicatorSize: TabBarIndicatorSize.tab,
-              labelColor: Colors.white,
-              unselectedLabelColor: isDarkMode ? Colors.white60 : const Color(0xFF94A3B8), // Màu xám (Slate 400)
-              dividerColor: Colors.transparent, // Xóa gạch chân mặc định
-              labelStyle: const TextStyle(
-                fontWeight: FontWeight.w700, // Cực đậm khi được chọn
-                fontFamily: 'Poppins',
-                fontSize: 15,
-              ),
-              unselectedLabelStyle: const TextStyle(
-                fontWeight: FontWeight.w400, // Bình thường khi không chọn
-                fontFamily: 'Poppins',
-                fontSize: 13,
-              ),
-              tabs: const [
-                Tab(text: "Deadline"),
-                Tab(text: "Thời Khóa Biểu"),
-              ],
             ),
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicatorColor: activeColor,
+            indicatorSize: TabBarIndicatorSize.label,
+            indicatorWeight: 3,
+            labelColor: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+            unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF94A3B8),
+            dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Poppins',
+              fontSize: 15,
+              letterSpacing: 0.2,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Poppins',
+              fontSize: 14,
+            ),
+            tabs: const [
+              Tab(
+                height: 40,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text("Deadline"),
+                ),
+              ),
+              Tab(
+                height: 40,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text("Thời Khóa Biểu"),
+                ),
+              ),
+            ],
           ),
         );
       },
