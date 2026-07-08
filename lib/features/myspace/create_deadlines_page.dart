@@ -22,7 +22,8 @@ class ReminderControllerGroup {
 
 class CreateDeadlinesPage extends StatefulWidget {
   final Deadline? deadline;
-  const CreateDeadlinesPage({super.key, this.deadline});
+  final DateTime? initialDate;
+  const CreateDeadlinesPage({super.key, this.deadline, this.initialDate});
 
   @override
   State<CreateDeadlinesPage> createState() => _CreateDeadlinesPageState();
@@ -33,7 +34,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
   final TextEditingController _descController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
-  TimeOfDay _selectedTime = const TimeOfDay(hour: 14, minute: 0);
+  TimeOfDay _selectedTime = const TimeOfDay(hour: 23, minute: 59);
   
   final List<ReminderControllerGroup> _reminderGroups = [];
 
@@ -59,6 +60,9 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
         }
       }
     } else {
+      if (widget.initialDate != null) {
+        _selectedDate = widget.initialDate!;
+      }
       _reminderGroups.add(ReminderControllerGroup(value: '30', unit: 'phút'));
     }
 
@@ -91,7 +95,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     final Color primaryText = isDarkMode ? Colors.white : Colors.black;
     final Color secondaryText = isDarkMode ? Colors.white70 : borderGrey;
     final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
-    
+
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
@@ -119,7 +123,9 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
           ),
         ],
       ),
-      body: Center(
+
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: SingleChildScrollView(
@@ -133,6 +139,8 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                 children: [
                   TextField(
                     controller: _titleController,
+                    maxLength: 50,
+                    buildCounter: (context, {required currentLength, required isFocused, required maxLength}) => null,
                     style: TextStyle(fontSize: 20, color: primaryText),
                     decoration: InputDecoration(
                       hintText: 'Tên deadline',
@@ -143,42 +151,130 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                   ),
                   const SizedBox(height: 24),
 
+                  // Chọn Ngày & Giờ (Premium Unified Card)
                   Container(
                     width: double.infinity,
-                    height: 77,
                     decoration: BoxDecoration(
                       color: cardBg,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.08)
+                            : Colors.black.withOpacity(0.05),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDarkMode ? 0.2 : 0.02),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Row(
+                    child: Column(
                       children: [
-                        Expanded(
+                        // Chọn Ngày
+                        Material(
+                          color: Colors.transparent,
                           child: InkWell(
                             onTap: _selectDate,
-                            child: Row(
-                              children: [
-                                Icon(Icons.calendar_today, size: 24, color: primaryText),
-                                const SizedBox(width: 8),
-                                Text(
-                                  DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
-                                  style: TextStyle(fontSize: 18, fontFamily: 'Urbanist', color: primaryText),
-                                ),
-                              ],
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today_rounded, size: 22, color: accentBlue),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Ngày hết hạn",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      fontFamily: 'Urbanist',
+                                      color: primaryText,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      DateFormat('EEE, dd/MM/yyyy').format(_selectedDate),
+                                      textAlign: TextAlign.right,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        fontFamily: 'Urbanist',
+                                        color: primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: secondaryText.withOpacity(0.5),
+                                    size: 18,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
-                        InkWell(
-                          onTap: _selectTime,
-                          child: Row(
-                            children: [
-                              Icon(Icons.access_time_outlined, size: 24, color: primaryText),
-                              const SizedBox(width: 8),
-                              Text(
-                                _selectedTime.format(context),
-                                style: TextStyle(fontSize: 18, fontFamily: 'Urbanist', color: primaryText),
+                        // Đường phân cách
+ 
+                        Divider(
+                          height: 1,
+                          thickness: 1,
+                          indent: 50,
+                          endIndent: 16,
+                          color: isDarkMode
+                              ? Colors.white.withOpacity(0.08)
+                              : Colors.black.withOpacity(0.05),
+                        ),
+                        // Chọn Giờ
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _selectTime,
+                            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.access_time_rounded, size: 22, color: accentBlue),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    "Giờ hết hạn",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w400,
+                                      fontFamily: 'Urbanist',
+                                      color: primaryText,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedTime.format(context),
+                                      textAlign: TextAlign.right,
+                                      overflow: TextOverflow.ellipsis,
+                                      maxLines: 1,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w400,
+                                        fontFamily: 'Urbanist',
+                                        color: primaryText,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    color: secondaryText.withOpacity(0.5),
+                                    size: 18,
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ],
@@ -189,8 +285,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                   Text('Lời nhắc',
                       style: TextStyle(fontSize: 15, color: primaryText, fontFamily: 'Encode Sans Expanded', fontWeight: FontWeight.w600)),
                   const SizedBox(height: 12),
-                  
-                  // Modern Inline Reminders - Unified Containers
+
                   ..._reminderGroups.asMap().entries.map((entry) {
                     int idx = entry.key;
                     var group = entry.value;
@@ -228,7 +323,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                                 focusNode: group.focusNode,
                                 keyboardType: TextInputType.number,
                                 textAlign: TextAlign.center,
-                                style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: primaryText, fontSize: 16, fontWeight: FontWeight.w400),
                                 decoration: const InputDecoration(
                                   isDense: true,
                                   border: InputBorder.none,
@@ -259,7 +354,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                                   value: group.unit,
                                   icon: Icon(Icons.expand_more_rounded, color: secondaryText, size: 18),
                                   alignment: Alignment.center,
-                                  style: TextStyle(color: primaryText, fontSize: 16, fontFamily: 'Urbanist', fontWeight: FontWeight.w500),
+                                  style: TextStyle(color: primaryText, fontSize: 16, fontFamily: 'Urbanist', fontWeight: FontWeight.w400),
                                   items: ['phút', 'giờ', 'ngày', 'tuần'].map((String val) {
                                     return DropdownMenuItem<String>(
                                       value: val,
@@ -337,9 +432,11 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                     child: TextField(
                       controller: _descController,
                       maxLines: 8,
+                      maxLength: 200,
+                      buildCounter: (context, {required currentLength, required isFocused, required maxLength}) => null,
                       style: TextStyle(color: primaryText, fontSize: 15),
                       decoration: InputDecoration(
-                        hintText: 'Có note gì thì ghi ngắn gọn ở đây nhe...',
+                        hintText: 'Có note gì thì ghi ngắn gọn ở đây nè.',
                         hintStyle: TextStyle(color: borderGrey, fontSize: 15, fontFamily: 'Encode Sans Expanded'),
                         contentPadding: const EdgeInsets.all(12),
                         enabledBorder: OutlineInputBorder(
@@ -385,6 +482,20 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     if (_titleController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Vui lòng nhập tên deadline')),
+      );
+      return;
+    }
+
+    if (_titleController.text.length > 20) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Tên deadline không được vượt quá 20 ký tự')),
+      );
+      return;
+    }
+
+    if (_descController.text.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ghi chú không được vượt quá 50 ký tự')),
       );
       return;
     }

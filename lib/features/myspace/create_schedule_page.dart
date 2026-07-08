@@ -6,7 +6,8 @@ import 'package:intl/intl.dart';
 
 class CreateSchedulePage extends StatefulWidget {
   final StudyClass? schedule;
-  const CreateSchedulePage({super.key, this.schedule});
+  final int? initialWeekday;
+  const CreateSchedulePage({super.key, this.schedule, this.initialWeekday});
 
   @override
   State<CreateSchedulePage> createState() => _CreateSchedulePageState();
@@ -35,7 +36,6 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   final List<Color> _colorOptions = [
     const Color(0xFFFFC374), // Vàng
     const Color(0xFF92B9E6), // Xanh dương hcmus
-    const Color(0xFF66D46D), // Xanh lá
     const Color(0xFFFFA3A3), // Đỏ nhạt
     const Color(0xFFD492E6), // Tím
     const Color(0xFF8DE6D4), // Teal nhạt
@@ -54,6 +54,10 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
       _startTime = _parseScheduleTime(schedule.start);
       _endTime = _parseScheduleTime(schedule.end);
+    } else if (widget.initialWeekday != null &&
+        widget.initialWeekday! >= 2 &&
+        widget.initialWeekday! <= 8) {
+      _selectedWeekday = _weekdays[widget.initialWeekday! - 2];
     }
   }
 
@@ -110,7 +114,8 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
           ),
         ],
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: SingleChildScrollView(

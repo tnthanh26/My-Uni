@@ -141,34 +141,34 @@ class MySpaceDeadlineSection extends StatelessWidget {
         if (totalDeadlinesCount > deadlines.length)
           Padding(
             padding: const EdgeInsets.only(top: 20, bottom: 2),
-              child: Center(
-                child: GestureDetector(
-                  onTap: onOpenDetail,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'và ${totalDeadlinesCount - deadlines.length} deadline khác',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontFamily: 'Poppins',
-                          fontWeight: FontWeight.w500,
-                          color: isDarkMode
-                              ? const Color(0xFFFFFFFF)
-                              : const Color(0xFF404349),
-                        ),
+            child: Center(
+              child: GestureDetector(
+                onTap: onOpenDetail,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'xem ${totalDeadlinesCount - deadlines.length} deadline khác',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w500,
+                        color: isDarkMode
+                            ? const Color(0xFFFFFFFF)
+                            : const Color(0xFF404349),
                       ),
-                      const SizedBox(width: 3),
-                      Icon(
-                        Icons.arrow_forward_ios_rounded,
-                        size: 10,
-                        color: isDarkMode ? const Color(0xFFFFFFFF) : const Color(0xFF334155),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 3),
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 10,
+                      color: isDarkMode ? const Color(0xFFFFFFFF) : const Color(0xFF334155),
+                    ),
+                  ],
                 ),
               ),
             ),
+          ),
       ],
     );
   }
@@ -181,6 +181,7 @@ class MySpaceDeadlineDetailList extends StatefulWidget {
   final ValueChanged<String> onToggleDeadline;
   final ValueChanged<String> onDeleteDeadline;
   final ValueChanged<Deadline> onEditDeadline;
+  final bool initialShowAll;
 
   const MySpaceDeadlineDetailList({
     super.key,
@@ -190,6 +191,7 @@ class MySpaceDeadlineDetailList extends StatefulWidget {
     required this.onToggleDeadline,
     required this.onDeleteDeadline,
     required this.onEditDeadline,
+    this.initialShowAll = false,
   });
 
   @override
@@ -197,7 +199,119 @@ class MySpaceDeadlineDetailList extends StatefulWidget {
 }
 
 class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
-  bool _showAll = false;
+  late bool _showAll;
+  bool _isCompletedExpanded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _showAll = widget.initialShowAll;
+  }
+
+  @override
+  void didUpdateWidget(covariant MySpaceDeadlineDetailList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialShowAll != oldWidget.initialShowAll) {
+      _showAll = widget.initialShowAll;
+    }
+  }
+
+  Widget _buildGroupSection({
+    required String title,
+    required List<Deadline> items,
+    required Color headerColor,
+    required bool isDarkMode,
+    bool isCompletedSection = false,
+  }) {
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    final bool isExpanded = isCompletedSection ? _isCompletedExpanded : true;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Group Header
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: InkWell(
+            onTap: isCompletedSection
+                ? () => setState(() => _isCompletedExpanded = !_isCompletedExpanded)
+                : null,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  "$title (${items.length})",
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Poppins',
+                    color: headerColor,
+                  ),
+                ),
+                if (isCompletedSection) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    _isCompletedExpanded
+                        ? Icons.keyboard_arrow_up_rounded
+                        : Icons.keyboard_arrow_down_rounded,
+                    color: headerColor,
+                    size: 18,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+        // Group Items
+        if (isExpanded)
+          ...items.map(
+            (d) => _DeadlineDetailCard(
+              deadline: d,
+              onToggleDeadline: widget.onToggleDeadline,
+              onDeleteDeadline: widget.onDeleteDeadline,
+              onEditDeadline: widget.onEditDeadline,
+              showDate: true,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildToggleAction(bool isDarkMode) {
+    final Color activeColor = _showAll ? hcmusBlueAccent : hcmusRed;
+    final String label = _showAll ? "Xem theo ngày" : "Xem tất cả";
+
+    return InkWell(
+      onTap: () => setState(() {
+        _showAll = !_showAll;
+      }),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: activeColor.withValues(alpha: isDarkMode ? 0.15 : 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                fontFamily: 'Poppins',
+                color: activeColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -207,118 +321,174 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
           (d) => d['value'] == widget.selectedWeekday,
     )['fullDate'] as DateTime;
 
-    final List<Deadline> filteredDeadlines;
-    if (_showAll) {
-      filteredDeadlines = List.from(widget.deadlines)
-        ..sort((a, b) {
-          final dateCompare = a.dueDate.compareTo(b.dueDate);
-          if (dateCompare != 0) return dateCompare;
-          final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
-          final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
-          return aTime.compareTo(bTime);
-        });
-    } else {
-      filteredDeadlines = widget.deadlines.where((d) {
-        return d.dueDate.year == selectedDate.year &&
-            d.dueDate.month == selectedDate.month &&
-            d.dueDate.day == selectedDate.day;
-      }).toList()
-        ..sort((a, b) {
-          final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
-          final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
-          return aTime.compareTo(bTime);
-        });
+    final List<Deadline> filteredDeadlines = widget.deadlines.where((d) {
+      return d.dueDate.year == selectedDate.year &&
+          d.dueDate.month == selectedDate.month &&
+          d.dueDate.day == selectedDate.day;
+    }).toList()
+      ..sort((a, b) {
+        final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+        final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+        return aTime.compareTo(bTime);
+      });
+
+    // Gom nhóm cho chế độ xem Tất cả
+    final List<Deadline> overdue = [];
+    final List<Deadline> todayAndTomorrow = [];
+    final List<Deadline> thisWeek = [];
+    final List<Deadline> upcoming = [];
+    final List<Deadline> completed = [];
+
+    final DateTime now = DateTime.now();
+    final DateTime today = DateTime(now.year, now.month, now.day);
+    final DateTime tomorrow = today.add(const Duration(days: 1));
+    final DateTime oneWeekLater = today.add(const Duration(days: 7));
+
+    for (var d in widget.deadlines) {
+      if (d.isCompleted) {
+        completed.add(d);
+      } else {
+        final dDate = DateTime(d.dueDate.year, d.dueDate.month, d.dueDate.day);
+        if (dDate.isBefore(today)) {
+          overdue.add(d);
+        } else if (dDate == today || dDate == tomorrow) {
+          todayAndTomorrow.add(d);
+        } else if (dDate.isAfter(tomorrow) && dDate.isBefore(oneWeekLater)) {
+          thisWeek.add(d);
+        } else {
+          upcoming.add(d);
+        }
+      }
     }
+
+    int compareTimes(Deadline a, Deadline b) {
+      final dateCompare = a.dueDate.compareTo(b.dueDate);
+      if (dateCompare != 0) return dateCompare;
+      final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+      final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+      return aTime.compareTo(bTime);
+    }
+
+    overdue.sort(compareTimes);
+    todayAndTomorrow.sort(compareTimes);
+    thisWeek.sort(compareTimes);
+    upcoming.sort(compareTimes);
+    completed.sort(compareTimes);
 
     return Column(
       children: [
-        // Premium Row to Toggle Mode
-        /*
+        // Header: Title + Modern Segmented Toggle
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.fromLTRB(20, 14, 20, 5),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment: MainAxisAlignment.start,
             children: [
-              Text(
-                _showAll ? "Tất cả deadline" : "Deadline trong ngày",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: isDarkMode ? Colors.white70 : Colors.black87,
-                ),
-              ),
-              GestureDetector(
-                onTap: () => setState(() => _showAll = !_showAll),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: _showAll 
-                        ? hcmusRed.withValues(alpha: 0.15) 
-                        : (isDarkMode ? Colors.white10 : Colors.black.withValues(alpha: 0.05)),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: _showAll ? hcmusRed : Colors.transparent,
-                      width: 1.2,
+              Expanded(
+                child: Row(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      width: 4,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        color: _showAll ? hcmusRed : hcmusBlueAccent,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        transitionBuilder: (child, anim) => RotationTransition(
-                          turns: anim,
-                          child: ScaleTransition(scale: anim, child: child),
-                        ),
-                        child: Icon(
-                          _showAll ? Icons.list_alt_rounded : Icons.calendar_today_rounded,
-                          key: ValueKey<bool>(_showAll),
-                          size: 14,
-                          color: _showAll ? hcmusRed : (isDarkMode ? Colors.white70 : Colors.black87),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
                         _showAll ? "Tất cả" : "Theo ngày",
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: _showAll ? hcmusRed : (isDarkMode ? Colors.white70 : Colors.black87),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Poppins',
+                          color: isDarkMode ? Colors.white : const Color(0xFF1A1A1A),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+              const SizedBox(width: 12),
+              _buildToggleAction(isDarkMode),
             ],
           ),
         ),
-        */
+
         // List of Deadlines
         Expanded(
-          child: filteredDeadlines.isEmpty
-              ? Center(
-                  child: Text(
-                    _showAll ? 'Không có deadline nào!' : 'Không có deadline cho ngày này!',
-                    style: TextStyle(
-                      color: isDarkMode
-                          ? Colors.white70
-                          : Colors.black87,
-                    ),
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 20),
-                  itemCount: filteredDeadlines.length,
-                  itemBuilder: (context, index) => _DeadlineDetailCard(
-                    deadline: filteredDeadlines[index],
-                    onToggleDeadline: widget.onToggleDeadline,
-                    onDeleteDeadline: widget.onDeleteDeadline,
-                    onEditDeadline: widget.onEditDeadline,
-                    showDate: _showAll,
-                  ),
-                ),
+          child: _showAll
+              ? (widget.deadlines.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Không có deadline nào!',
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.only(top: 5, bottom: 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildGroupSection(
+                            title: "Quá hạn",
+                            items: overdue,
+                            headerColor: hcmusRed,
+                            isDarkMode: isDarkMode,
+                          ),
+                          _buildGroupSection(
+                            title: "Hôm nay & Ngày mai",
+                            items: todayAndTomorrow,
+                            headerColor: const Color (0xFFDC2626),
+                            isDarkMode: isDarkMode,
+                          ),
+                          _buildGroupSection(
+                            title: "Tuần này",
+                            items: thisWeek,
+                            headerColor: const Color(0xFFEA580C),
+                            isDarkMode: isDarkMode,
+                          ),
+                          _buildGroupSection(
+                            title: "Sắp tới",
+                            items: upcoming,
+                            headerColor: isDarkMode ? Colors.white70 : const Color(0xFF448E58),
+                            isDarkMode: isDarkMode,
+                          ),
+                          _buildGroupSection(
+                            title: "Đã hoàn thành",
+                            items: completed,
+                            headerColor: const Color(0xFF448E58),
+                            isDarkMode: isDarkMode,
+                            isCompletedSection: true,
+                          ),
+                        ],
+                      ),
+                    ))
+              : (filteredDeadlines.isEmpty
+                  ? Center(
+                      child: Text(
+                        'Không có deadline cho ngày này!',
+                        style: TextStyle(
+                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 10, bottom: 20),
+                      itemCount: filteredDeadlines.length,
+                      itemBuilder: (context, index) => _DeadlineDetailCard(
+                        deadline: filteredDeadlines[index],
+                        onToggleDeadline: widget.onToggleDeadline,
+                        onDeleteDeadline: widget.onDeleteDeadline,
+                        onEditDeadline: widget.onEditDeadline,
+                        showDate: false,
+                      ),
+                    )),
         ),
       ],
     );
@@ -760,7 +930,7 @@ class _DeadlineSectionHeader extends StatelessWidget {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Expanded(child: Text('DEADLINES', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87))),
+        Expanded(child: Text('Deadlines', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87))),
         AutoUpdateToggle(isEnabled: isEnabled, onTap: onOpenAutoConfig),
         const SizedBox(width: 8),
         GestureDetector(
@@ -808,7 +978,25 @@ class _DeadlineCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(child: Text(deadline.title, style: TextStyle(fontSize: 14, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : const Color(0xFF0F172A), decoration: deadline.isCompleted ? TextDecoration.lineThrough : null))),
+          Expanded(
+            child: Text(
+              deadline.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 14,
+                fontFamily: 'Poppins',
+                color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
+              ),
+            ),
+          ),
+          Container(
+            height: 18,
+            width: 1,
+            margin: const EdgeInsets.symmetric(horizontal: 12),
+            color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+          ),
           SizedBox(
             width: 100,
             child: RichText(
@@ -816,25 +1004,38 @@ class _DeadlineCard extends StatelessWidget {
               text: TextSpan(
                 style: TextStyle(fontSize: 10, fontFamily: 'Poppins', color: isDarkMode ? Colors.white70 : const Color(0xFF0F172A)),
                 children: [
-                  if (timeLeftData['color'] != const Color(0xFFDC2626)) const TextSpan(text: 'Còn '),
-                  TextSpan(text: timeLeftData['text'].replaceAll('còn ', ''), style: TextStyle(color: timeLeftData['color'], fontSize: 12, fontWeight: FontWeight.w600)),
+                  if (timeLeftData['text'] == 'Quá trễ rùi')
+                    const TextSpan(text: 'Còn ', style: TextStyle(color: Colors.transparent)),
+                  if (timeLeftData['text'] != 'Quá trễ rùi')
+                    const TextSpan(text: 'Còn '),
+                  TextSpan(
+                    text: timeLeftData['text'].replaceAll('còn ', ''),
+                    style: TextStyle(color: timeLeftData['color'], fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
                 ],
               ),
             ),
           ),
-          SizedBox(
-            width: 18,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: deadline.isCompleted
-                  ? IconButton(
-                constraints: const BoxConstraints(), padding: EdgeInsets.zero,
-                icon: SvgPicture.asset('assets/icons/trash.svg', width: 18, height: 18, colorFilter: const ColorFilter.mode(Color(0xFFFF6666), BlendMode.srcIn)),
-                onPressed: () => onDeleteDeadline(deadline.id),
-              )
-                  : const SizedBox.shrink(),
+          if (deadline.isCompleted) ...[
+            SizedBox(
+              width: 18,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  constraints: const BoxConstraints(),
+                  padding: EdgeInsets.zero,
+                  icon: SvgPicture.asset(
+                    'assets/icons/trash.svg',
+                    width: 18,
+                    height: 18,
+                    colorFilter: const ColorFilter.mode(Color(0xFFFF6666), BlendMode.srcIn),
+                  ),
+                  onPressed: () => onDeleteDeadline(deadline.id),
+                ),
+              ),
             ),
-          ),
+          ] else
+            const SizedBox(width: 18),
         ],
       ),
     );
@@ -866,7 +1067,8 @@ class _DeadlineDetailCard extends StatelessWidget {
           Container(width: double.infinity, height: 94, decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 32, offset: const Offset(0, 4))])),
           Positioned(
             left: 14,
-            top: 16,
+            top: 14,
+            right: 48,
             child: Text(
               (deadline.description == null || deadline.description!.isEmpty)
                   ? 'Không có mô tả'
@@ -880,7 +1082,23 @@ class _DeadlineDetailCard extends StatelessWidget {
               ),
             ),
           ),
-          Positioned(left: 14, top: 38, child: Text(deadline.title, style: TextStyle(fontFamily: 'Lexend Deca', fontSize: 14, fontWeight: FontWeight.w400, color: isDarkMode ? Colors.white : const Color(0xFF24252C), decoration: deadline.isCompleted ? TextDecoration.lineThrough : null))),
+          Positioned(
+            left: 14,
+            top: 36,
+            right: 48,
+            child: Text(
+              deadline.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Lexend Deca',
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+                color: isDarkMode ? Colors.white : const Color(0xFF24252C),
+                decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
+              ),
+            ),
+          ),
           Positioned(
             left: 14,
             top: 64,
@@ -897,8 +1115,8 @@ class _DeadlineDetailCard extends StatelessWidget {
               ],
             ),
           ),
-          Positioned(right: 18, top: 12, child: GestureDetector(onTap: () => _showDeadlineActionMenu(context, deadline, onEditDeadline: onEditDeadline, onDeleteDeadline: onDeleteDeadline), child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20))),
-          Positioned(right: 15, top: 55, child: GestureDetector(onTap: () => onToggleDeadline(deadline.id), child: Container(width: 24, height: 24, decoration: BoxDecoration(color: deadline.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white), shape: BoxShape.circle, border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1)), child: deadline.isCompleted ? const Icon(Icons.check, color: Colors.white, size: 16) : null))),
+          Positioned(right: 18, top: 8, child: GestureDetector(onTap: () => _showDeadlineActionMenu(context, deadline, onEditDeadline: onEditDeadline, onDeleteDeadline: onDeleteDeadline), child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20))),
+          Positioned(right: 15, top: 58, child: GestureDetector(onTap: () => onToggleDeadline(deadline.id), child: Container(width: 24, height: 24, decoration: BoxDecoration(color: deadline.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white), shape: BoxShape.circle, border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1)), child: deadline.isCompleted ? const Icon(Icons.check, color: Colors.white, size: 16) : null))),
         ],
       ),
     );
@@ -1093,7 +1311,7 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                       _buildStepItem(context, '4', 'Những lần đồng bộ sau sẽ sử dụng token này, bạn không cần đăng nhập lại trừ khi token hết hạn hoặc bị thu hồi.'),
                       const SizedBox(height: 20),
                       // Section: Quyền riêng tư & Bảo mật
-                      _buildSectionHeader(context, 'Quyền riêng tư & Bảo mật', Icons.security_rounded),
+                      _buildSectionHeader(context, '🔒 Quyền riêng tư & Bảo mật', Icons.security_rounded),
                       const SizedBox(height: 12),
                       _buildPolicyPoint(context, '🔒 MyUni không lưu mật khẩu Moodle của bạn.', isTitle: true),
                       _buildPolicyPoint(context, 'Mật khẩu chỉ được sử dụng trong quá trình đăng nhập với Moodle để lấy access token.'),
