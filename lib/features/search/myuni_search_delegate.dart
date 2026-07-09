@@ -19,13 +19,33 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   String currentSort = 'relevance';
 
   final List<String> availableHashtags = [
-    'Tất cả',
-    'Hỏi đáp',
-    'Quân sự',
-    'Học phí',
-    'Tìm đồ',
-    'Chia sẻ',
-    'Tìm việc',
+    "Hỏi đáp",
+    "Đăng Ký Môn Học",
+    "Ngoại ngữ",
+    "Nghiên cứu KH",
+    "Học phí",
+    "Học bổng",
+    "Điểm rèn luyện",
+    "Thủ tục",
+    "Tân sinh viên",
+    "Quân sự",
+    "CLB",
+    "Trọ/KTX",
+    "Tìm đồ",
+    "Tìm việc",
+    "Chia sẻ",
+    "Thanh Lý",
+    "Nghỉ lễ",
+    "Nghỉ hè"
+  ];
+
+  final List<String> quickHashtags = [
+    "Hỏi đáp",
+    "Đăng Ký Môn Học",
+    "Học phí",
+    "Học bổng",
+    "Quân sự",
+    "Tân sinh viên",
   ];
 
   MyUniSearchDelegate({required this.currentScope})
@@ -81,9 +101,23 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     showResults(context);
   }
 
-  String _formatTimestamp(int? seconds) {
-    if (seconds == null) return "Vừa xong";
-    final date = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+  String _formatTimestamp(dynamic raw) {
+    if (raw == null) return "Vừa xong";
+
+    DateTime date;
+
+    if (raw is Timestamp) {
+      date = raw.toDate();
+    } else if (raw is int) {
+      date = DateTime.fromMillisecondsSinceEpoch(raw * 1000);
+    } else if (raw is String) {
+      final parsed = int.tryParse(raw);
+      if (parsed == null) return "Vừa xong";
+      date = DateTime.fromMillisecondsSinceEpoch(parsed * 1000);
+    } else {
+      return "Vừa xong";
+    }
+
     final now = DateTime.now();
     final diff = now.difference(date);
 
@@ -227,10 +261,205 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     ),
   );
 
+  void _toggleHashtag({
+    required String tag,
+    required bool selected,
+  }) {
+    selectedHashtags.remove('Tất cả');
+
+    if (selected) {
+      if (!selectedHashtags.contains(tag.trim())) {
+        selectedHashtags.add(tag.trim());
+      }
+    } else {
+      selectedHashtags.remove(tag.trim());
+      if (selectedHashtags.isEmpty) {
+        selectedHashtags = ['Tất cả'];
+      }
+    }
+  }
+
+  Widget _hashtagChip({
+    required BuildContext context,
+    required String tag,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return FilterChip(
+      label: Text('# $tag'),
+      labelStyle: TextStyle(
+        color: isSelected ? Colors.white : _secondaryText(isDarkMode),
+        fontSize: 13,
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+      ),
+      selected: isSelected,
+      selectedColor: const Color(0xFF6797E1),
+      backgroundColor: _secondarySurface(isDarkMode),
+      checkmarkColor: Colors.white,
+      side: BorderSide(color: _borderColor(isDarkMode)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(999),
+      ),
+      onSelected: onSelected,
+    );
+  }
+
+  void _showHashtagPicker(
+      BuildContext parentContext,
+      StateSetter parentSetState,
+      ) {
+    showModalBottomSheet(
+      context: parentContext,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetContext) {
+        final isDarkMode = Theme.of(sheetContext).brightness == Brightness.dark;
+
+        return StatefulBuilder(
+          builder: (sheetBuilderContext, sheetSetState) {
+            void refreshSearch() {
+              if (!parentContext.mounted) return;
+              _forceRefresh(parentContext);
+            }
+
+            return Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(sheetContext).size.height * 0.72,
+              ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
+              decoration: BoxDecoration(
+                color: _surfaceColor(isDarkMode),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(26),
+                ),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 42,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDarkMode ? Colors.white24 : Colors.black12,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Chọn hashtag',
+                            style: TextStyle(
+                              color: _primaryText(isDarkMode),
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            sheetSetState(() {
+                              selectedHashtags = ['Tất cả'];
+                            });
+                            refreshSearch();
+                          },
+                          child: const Text(
+                            'Bỏ chọn',
+                            style: TextStyle(
+                              color: Color(0xFF6797E1),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      selectedHashtags.contains('Tất cả')
+                          ? 'Chưa chọn hashtag nào'
+                          : 'Đã chọn: ${selectedHashtags.where((t) => t != 'Tất cả').map((t) => '#$t').join(', ')}',
+                      style: TextStyle(
+                        color: _secondaryText(isDarkMode),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 8,
+                          runSpacing: 10,
+                          children: availableHashtags.map((tag) {
+                            final isSelected = selectedHashtags.contains(tag);
+
+                            return _hashtagChip(
+                              context: sheetContext,
+                              tag: tag,
+                              isSelected: isSelected,
+                              onSelected: (selected) {
+                                sheetSetState(() {
+                                  _toggleHashtag(
+                                    tag: tag,
+                                    selected: selected,
+                                  );
+                                });
+                                refreshSearch();
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF6797E1),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Áp dụng',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildFilterBar(StateSetter setState, BuildContext context) {
     if (currentScope != SearchScope.forum) return const SizedBox.shrink();
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final List<String> visibleTags = [
+      ...quickHashtags,
+      ...selectedHashtags.where(
+            (tag) =>
+        tag != 'Tất cả' &&
+            !quickHashtags.contains(tag) &&
+            availableHashtags.contains(tag),
+      ),
+    ];
 
     return Container(
       width: double.infinity,
@@ -240,50 +469,51 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
-          children: availableHashtags.map((tag) {
-            final bool isSelected = selectedHashtags.contains(tag);
-
-            return Padding(
+          children: [
+            Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: FilterChip(
-                label: Text(tag == 'Tất cả' ? tag : '# $tag'),
-                labelStyle: TextStyle(
-                  color: isSelected
-                      ? Colors.white
-                      : _secondaryText(isDarkMode),
-                  fontSize: 13,
-                  fontWeight:
-                  isSelected ? FontWeight.bold : FontWeight.w500,
+              child: ActionChip(
+                avatar: const Icon(
+                  Icons.grid_view_rounded,
+                  size: 16,
+                  color: Color(0xFF6797E1),
                 ),
-                selected: isSelected,
-                selectedColor: const Color(0xFF6797E1),
+                label: const Text('Xem tất cả'),
+                labelStyle: const TextStyle(
+                  color: Color(0xFF6797E1),
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                ),
                 backgroundColor: _secondarySurface(isDarkMode),
-                checkmarkColor: Colors.white,
                 side: BorderSide(color: _borderColor(isDarkMode)),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
                 ),
-                onSelected: (selected) {
-                  setState(() {
-                    if (tag == 'Tất cả') {
-                      selectedHashtags = ['Tất cả'];
-                    } else {
-                      selectedHashtags.remove('Tất cả');
-                      if (selected) {
-                        selectedHashtags.add(tag.trim());
-                      } else {
-                        selectedHashtags.remove(tag.trim());
-                        if (selectedHashtags.isEmpty) {
-                          selectedHashtags = ['Tất cả'];
-                        }
-                      }
-                    }
-                  });
-                  _forceRefresh(context);
-                },
+                onPressed: () => _showHashtagPicker(context, setState),
               ),
-            );
-          }).toList(),
+            ),
+            ...visibleTags.map((tag) {
+              final bool isSelected = selectedHashtags.contains(tag);
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _hashtagChip(
+                  context: context,
+                  tag: tag,
+                  isSelected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      _toggleHashtag(
+                        tag: tag,
+                        selected: selected,
+                      );
+                    });
+                    _forceRefresh(context);
+                  },
+                ),
+              );
+            }),
+          ],
         ),
       ),
     );
@@ -293,56 +523,6 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   Widget buildResults(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    if (query.trim().isEmpty) {
-      return Container(
-        color: _backgroundColor(isDarkMode),
-        child: Center(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 24),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 24,
-            ),
-            decoration: BoxDecoration(
-              color: _surfaceColor(isDarkMode),
-              borderRadius: BorderRadius.circular(22),
-              border: Border.all(color: _borderColor(isDarkMode)),
-              boxShadow: _cardShadow(isDarkMode),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.search_rounded,
-                  size: 36,
-                  color: _secondaryText(isDarkMode),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Nhập từ khóa để bắt đầu tìm kiếm',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _primaryText(isDarkMode),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Kết quả phù hợp sẽ hiện ra ở đây.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: _secondaryText(isDarkMode),
-                    fontSize: 13,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     return Container(
       color: _backgroundColor(isDarkMode),
       child: ValueListenableBuilder<int>(
@@ -350,6 +530,11 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
         builder: (context, trigger, _) {
           return StatefulBuilder(
             builder: (context, setState) {
+              final List<String> activeTags =
+              selectedHashtags.where((t) => t != 'Tất cả').toList();
+              final bool hasNoSearchInput =
+                  query.trim().isEmpty && activeTags.isEmpty;
+
               return Column(
                 children: [
                   if (currentScope == SearchScope.forum)
@@ -363,11 +548,60 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                           : Colors.grey.shade300,
                     ),
                   Expanded(
-                    child: FutureBuilder<List<dynamic>>(
+                    child: hasNoSearchInput
+                        ? Center(
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 24),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 24,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _surfaceColor(isDarkMode),
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: _borderColor(isDarkMode)),
+                          boxShadow: _cardShadow(isDarkMode),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.search_rounded,
+                              size: 36,
+                              color: _secondaryText(isDarkMode),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              currentScope == SearchScope.forum
+                                  ? 'Nhập từ khóa hoặc chọn hashtag để bắt đầu tìm kiếm'
+                                  : 'Nhập từ khóa để bắt đầu tìm kiếm',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _primaryText(isDarkMode),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Kết quả phù hợp sẽ hiện ra ở đây.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: _secondaryText(isDarkMode),
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                        : FutureBuilder<List<dynamic>>(
                       key: ValueKey(
                         '${query}_${selectedHashtags.join()}_${currentSort}_$trigger',
                       ),
-                      future: _performSemanticSearch(query, currentScope),
+                      future: query.trim().isEmpty
+                          ? _fetchForumPostsByTags(activeTags)
+                          : _performSemanticSearch(query, currentScope),
                       builder: (context, snapshot) {
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
@@ -381,7 +615,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                         if (snapshot.hasError) {
                           return const Center(
                             child: Text(
-                              'Lỗi kết nối Server',
+                              'Không thể tải kết quả',
                               style: TextStyle(color: Colors.red),
                             ),
                           );
@@ -432,7 +666,8 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       final user = FirebaseAuth.instance.currentUser;
       final idToken = await user?.getIdToken();
 
-      final url = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/semanticSearch');
+      final url = Uri.parse(
+          'https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/semanticSearch');
 
       final response = await http.post(
         url,
@@ -459,6 +694,71 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       }
     } catch (e) {
       debugPrint("Lỗi Search: $e");
+      rethrow;
+    }
+  }
+
+  int _timestampToMillis(dynamic raw) {
+    if (raw == null) return 0;
+
+    if (raw is Timestamp) {
+      return raw.millisecondsSinceEpoch;
+    }
+
+    if (raw is int) {
+      return raw * 1000;
+    }
+
+    if (raw is String) {
+      final parsed = int.tryParse(raw);
+      return parsed == null ? 0 : parsed * 1000;
+    }
+
+    return 0;
+  }
+
+  Future<List<dynamic>> _fetchForumPostsByTags(List<String> activeTags) async {
+    if (activeTags.isEmpty) return [];
+
+    try {
+      final Query queryRef = FirebaseFirestore.instance
+          .collection('forum_posts')
+          .where('status', isEqualTo: 'approved');
+
+      final List<String> queryTags = activeTags.take(10).toList();
+
+      final QuerySnapshot snapshot = await queryRef
+          .where('hashtags', arrayContainsAny: queryTags)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      final List<dynamic> results = snapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'data': {
+            ...doc.data() as Map<String, dynamic>,
+            'scope': 'forum_posts',
+          }
+        };
+      }).toList();
+
+      results.sort((a, b) {
+        final dataA = Map<String, dynamic>.from(a['data'] as Map);
+        final dataB = Map<String, dynamic>.from(b['data'] as Map);
+
+        final int tsA = _timestampToMillis(dataA['timestamp']);
+        final int tsB = _timestampToMillis(dataB['timestamp']);
+
+        if (currentSort == 'asc') {
+          return tsA.compareTo(tsB);
+        } else {
+          return tsB.compareTo(tsA);
+        }
+      });
+
+      return results;
+    } catch (e) {
+      debugPrint("Error fetching posts by tags: $e");
       rethrow;
     }
   }
@@ -594,7 +894,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          _formatTimestamp(data['timestamp'] as int?),
+                          _formatTimestamp(data['timestamp']),
                           style: TextStyle(
                             color: _secondaryText(isDarkMode),
                             fontSize: 11,
