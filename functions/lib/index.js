@@ -197,11 +197,14 @@ exports.chatWithUEm = (0, https_1.onCall)(async (request) => {
         }
         const result = await response.json();
         // 7. Save to Cache & Update Rate Limit
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + 30); // Cache expires after 30 days
         await Promise.all([
             cacheRef.set({
                 answer: result.answer,
                 sources: result.sources || [],
                 createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                expireAt: admin.firestore.Timestamp.fromDate(expireDate),
             }),
             limitRef.set({ count: count + 1, lastReset: today }, { merge: true }),
         ]);
