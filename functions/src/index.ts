@@ -162,162 +162,277 @@ export const moderateMaterial = onDocumentCreated(
 /**
  * Chat with Ú Em via Proxy
  */
-export const chatWithUEm = onCall(async (request) => {
-  // 1. Security Layer: Check authentication
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Bạn cần đăng nhập để hỏi Ú Em.");
-  }
-
-  const uid = request.auth.uid;
-  const query = request.data.query;
-
-  if (!query || typeof query !== "string") {
-    throw new HttpsError("invalid-argument", "Câu hỏi không hợp lệ.");
-  }
-
-  // 2. Toxic Check (Optional but good)
-  const analysis = analyzeContent(query);
-  if (analysis.status === "hidden") {
-    return {
-      answer: "Ú Em từ chối trả lời các câu hỏi có nội dung không phù hợp. Hãy giữ văn minh nhé!",
-      sources: [],
-    };
-  }
-
-  // 3. Rate Limit Layer (10 questions/day)
-  const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
-  const limitRef = db.collection("usage_limits").doc(uid);
-  const limitDoc = await limitRef.get();
-
-  let count = 0;
-  if (limitDoc.exists) {
-    const data = limitDoc.data();
-    if (data?.lastReset === today) {
-      count = data?.count || 0;
+export const chatWithUEm = onCall(
+  {timeoutSeconds: 60, memory: "512MiB"},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Bạn cần đăng nhập để hỏi Ú Em.");
     }
-  }
 
-  if (count >= 10) {
-    throw new HttpsError("resource-exhausted", "Bạn đã hết 10 lượt hỏi trong hôm nay. Hẹn gặp lại vào ngày mai!");
-  }
+    const uid = request.auth.uid;
+    const query = request.data.query;
 
-  // 4. Caching Layer
-  const queryHash = crypto.createHash("md5").update(query.trim().toLowerCase()).digest("hex");
-  const cacheRef = db.collection("chat_cache").doc(queryHash);
-  const cacheDoc = await cacheRef.get();
+    if (!query || typeof query !== "string") {
+      throw new HttpsError("invalid-argument", "Câu hỏi không hợp lệ.");
+    }
 
-  if (cacheDoc.exists) {
-    const cachedData = cacheDoc.data();
-    // Record usage even for cache hit
-    await limitRef.set({count: count + 1, lastReset: today}, {merge: true});
-    return cachedData;
-  }
+    const analysis = analyzeContent(query);
+    if (analysis.status === "hidden") {
+      return {
+        answer: "Ú Em từ chối trả lời các câu hỏi có nội dung không phù hợp. Hãy giữ văn minh nhé!",
+        sources: [],
+      };
+    }
 
-  // 5. Fetch Python Server URL from Firestore
-  let serverUrl = "https://34-21-243-141.sslip.io/chat";
-  try {
-    const configDoc = await db.collection("system_config").doc("chatbot").get();
-    if (configDoc.exists) {
-      const data = configDoc.data();
-      if (data && data.server_url) {
-        serverUrl = data.server_url;
+    const today = new Date().toISOString().split("T")[0];
+    const limitRef = db.collection("usage_limits").doc(uid);
+    const limitDoc = await limitRef.get();
+
+    let count = 0;
+    if (limitDoc.exists) {
+      const data = limitDoc.data();
+      if (data?.lastReset === today) {
+        count = data?.count || 0;
       }
     }
-  } catch (error) {
-    console.error("Error fetching chatbot server URL config:", error);
-  }
 
-  // 6. Proxy to Python Server
-  try {
-    const response = await fetch(serverUrl, {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({query: query}),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status}`);
+    if (count >= 10) {
+      throw new HttpsError(
+        "resource-exhausted",
+        "Bạn đã hết 10 lượt hỏi trong hôm nay. Hẹn gặp lại vào ngày mai!"
+      );
     }
 
-    const result = await response.json();
+    const queryHash = crypto
+      .createHash("md5")
+      .update(query.trim().toLowerCase())
+      .digest("hex");
 
-    // 7. Save to Cache & Update Rate Limit
-    const expireDate = new Date();
-    expireDate.setDate(expireDate.getDate() + 30); // Cache expires after 30 days
+    const cacheRef = db.collection("chat_cache").doc(queryHash);
+    const cacheDoc = await cacheRef.get();
 
-    await Promise.all([
-      cacheRef.set({
+    if (cacheDoc.exists) {
+      const cachedData = cacheDoc.data();
+      await limitRef.set(
+        {count: count + 1, lastReset: today},
+        {merge: true}
+      );
+      return cachedData;
+    }
+
+    let serverUrl = "https://chatbot.85-211-240-41.sslip.io/chat";
+
+    try {
+      const configDoc = await db
+        .collection("system_config")
+        .doc("chatbot")
+        .get();
+
+      const configuredUrl = configDoc.data()?.server_url;
+      if (typeof configuredUrl === "string" && configuredUrl.trim()) {
+        serverUrl = configuredUrl.trim();
+      }
+    } catch (error) {
+      console.error("Error fetching chatbot server URL config:", error);
+    }
+
+    console.log("CHATBOT_AZURE_V2");
+    console.log("Chatbot URL:", serverUrl);
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+
+      let response: Response;
+      try {
+        response = await fetch(serverUrl, {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({query}),
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      const rawBody = await response.text();
+
+      console.log("Chatbot status:", response.status);
+      console.log("Chatbot body preview:", rawBody.substring(0, 500));
+
+      if (!response.ok) {
+        throw new Error(
+          `Chatbot server error ${response.status}: ${rawBody.substring(0, 500)}`
+        );
+      }
+
+      let result: {answer?: string; sources?: unknown[]};
+      try {
+        result = JSON.parse(rawBody);
+      } catch {
+        throw new Error(
+          `Chatbot returned invalid JSON: ${rawBody.substring(0, 500)}`
+        );
+      }
+
+      if (typeof result.answer !== "string") {
+        throw new Error("Chatbot response is missing a valid answer field.");
+      }
+
+      const safeResult = {
         answer: result.answer,
-        sources: result.sources || [],
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        expireAt: admin.firestore.Timestamp.fromDate(expireDate),
-      }),
-      limitRef.set({count: count + 1, lastReset: today}, {merge: true}),
-    ]);
+        sources: Array.isArray(result.sources) ? result.sources : [],
+      };
 
-    return result;
-  } catch (error) {
-    console.error("Chatbot Proxy Error:", error);
-    throw new HttpsError("internal", "Ú Em đang bận hoặc server đang bảo trì. Thử lại sau nhé!");
+        const expireDate = new Date();
+        expireDate.setDate(expireDate.getDate() + 30); // Cache expires after 30 days
+
+       await Promise.all([
+           cacheRef.set({
+              answer: result.answer,
+              sources: result.sources || [],
+              createdAt: admin.firestore.FieldValue.serverTimestamp(),
+              expireAt: admin.firestore.Timestamp.fromDate(expireDate),
+            }),
+            limitRef.set({count: count + 1, lastReset: today}, {merge: true}),
+          ]);
+
+      return safeResult;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      console.error("Chatbot Proxy Error:", message);
+      if (stack) console.error("Chatbot stack:", stack);
+
+      throw new HttpsError(
+        "internal",
+        "Ú Em đang bận hoặc server đang bảo trì. Thử lại sau nhé!"
+      );
+    }
   }
-});
+);
 
 /**
  * Semantic Search via Proxy
  */
-export const semanticSearch = onCall(async (request) => {
-  // 1. Security Layer: Check authentication
-  if (!request.auth) {
-    throw new HttpsError("unauthenticated", "Bạn cần đăng nhập để thực hiện tìm kiếm.");
-  }
+export const semanticSearch = onCall(
+  {timeoutSeconds: 60, memory: "512MiB"},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Bạn cần đăng nhập để thực hiện tìm kiếm."
+      );
+    }
 
-  const {query, scope, tag, sort} = request.data;
+    const {query, scope, tag, sort} = request.data ?? {};
 
-  // 2. Fetch Python Server URL from Firestore
-  let serverUrl = "https://34-142-139-17.sslip.io/search";
-  try {
-    const configDoc = await db.collection("system_config").doc("search").get();
-    if (configDoc.exists) {
-      const data = configDoc.data();
-      if (data && data.server_url) {
-        serverUrl = data.server_url;
+    if (typeof query !== "string" || !query.trim()) {
+      throw new HttpsError("invalid-argument", "Từ khóa tìm kiếm không hợp lệ.");
+    }
+
+    let serverUrl = "https://search.85-211-240-41.sslip.io/search";
+
+    try {
+      const configDoc = await db
+        .collection("system_config")
+        .doc("search")
+        .get();
+
+      const configuredUrl = configDoc.data()?.server_url;
+      if (typeof configuredUrl === "string" && configuredUrl.trim()) {
+        serverUrl = configuredUrl.trim();
       }
+    } catch (error) {
+      console.error("Error fetching search server URL config:", error);
     }
-  } catch (error) {
-    console.error("Error fetching search server URL config:", error);
+
+    try {
+      const urlObj = new URL(serverUrl);
+
+      urlObj.searchParams.set("query", query.trim());
+
+      if (scope !== undefined && scope !== null) {
+        urlObj.searchParams.set("scope", String(scope));
+      }
+
+      if (tag !== undefined && tag !== null) {
+        urlObj.searchParams.set("tag", String(tag));
+      }
+
+      if (sort !== undefined && sort !== null) {
+        urlObj.searchParams.set("sort", String(sort));
+      }
+
+      const finalUrl = urlObj.toString();
+
+      console.log("SEMANTIC_SEARCH_AZURE_V2");
+      console.log("Search URL:", finalUrl);
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 45000);
+
+      let response: Response;
+      try {
+        response = await fetch(finalUrl, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "MyUni-Firebase-Function/2.0",
+          },
+          signal: controller.signal,
+        });
+      } finally {
+        clearTimeout(timeout);
+      }
+
+      const rawBody = await response.text();
+
+      console.log("Search status:", response.status);
+      console.log("Search content-type:", response.headers.get("content-type"));
+      console.log("Search body length:", rawBody.length);
+      console.log("Search body preview:", rawBody.substring(0, 500));
+
+      if (!response.ok) {
+        throw new Error(
+          `Search server error ${response.status}: ${rawBody.substring(0, 500)}`
+        );
+      }
+
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(rawBody);
+      } catch {
+        throw new Error(
+          `Search server returned invalid JSON: ${rawBody.substring(0, 500)}`
+        );
+      }
+
+      if (!Array.isArray(parsed)) {
+        throw new Error("Search server response is not an array.");
+      }
+
+      // Chuẩn hóa lại thành JSON thuần trước khi trả về callable function.
+      const safeResult = JSON.parse(JSON.stringify(parsed));
+
+      console.log("Search result count:", safeResult.length);
+
+      return safeResult;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const stack = error instanceof Error ? error.stack : undefined;
+
+      console.error("Semantic Search Proxy Error:", message);
+      if (stack) console.error("Semantic Search stack:", stack);
+
+      throw new HttpsError(
+        "internal",
+        "Tìm kiếm đang gặp sự cố hoặc server đang bảo trì. Thử lại sau nhé!"
+      );
+    }
   }
-
-  // 3. Proxy to Python Server (GET request with query params)
-  try {
-    const urlObj = new URL(serverUrl);
-    if (query !== undefined && query !== null) {
-      urlObj.searchParams.append("query", String(query));
-    }
-    if (scope !== undefined && scope !== null) {
-      urlObj.searchParams.append("scope", String(scope));
-    }
-    if (tag !== undefined && tag !== null) {
-      urlObj.searchParams.append("tag", String(tag));
-    }
-    if (sort !== undefined && sort !== null) {
-      urlObj.searchParams.append("sort", String(sort));
-    }
-
-    const response = await fetch(urlObj.toString(), {
-      method: "GET",
-    });
-
-    if (!response.ok) {
-      throw new Error(`Search server error: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error("Semantic Search Proxy Error:", error);
-    throw new HttpsError("internal", "Tìm kiếm đang gặp sự cố hoặc server đang bảo trì. Thử lại sau nhé!");
-  }
-});
+);
 
 /**
  * Daily cleanup for accounts scheduled for deletion (deleted after 3 days)
