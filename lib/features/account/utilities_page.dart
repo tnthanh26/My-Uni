@@ -198,36 +198,39 @@ class UtilitiesPage extends StatelessWidget {
 
   Widget _buildEmptyState(bool isDarkMode) {
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(
+              color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.extension_off_outlined,
-              size: 70,
-              color: isDarkMode ? Colors.white38 : const Color(0xFFCBD5E1),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'Hiện chưa có tiện ích nào được thiết lập.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: isDarkMode ? Colors.white70 : const Color(0xFF475467),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.extension_off_outlined,
+                size: 70,
+                color: isDarkMode ? Colors.white38 : const Color(0xFFCBD5E1),
               ),
-            ),
-          ],
+              const SizedBox(height: 18),
+              Text(
+                'Hiện chưa có tiện ích nào được thiết lập.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF475467),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -306,30 +309,41 @@ class UtilitiesPage extends StatelessWidget {
                   return _buildEmptyState(isDarkMode);
                 }
 
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 14,
-                    crossAxisSpacing: 14,
-                    childAspectRatio: 0.80,
+                final screenWidth = MediaQuery.sizeOf(context).width;
+                final bool isTablet = screenWidth >= 600;
+                final double gridWidth = screenWidth > 800 ? 800 : screenWidth;
+                final int crossAxisCount = isTablet ? (gridWidth > 750 ? 4 : 3) : 2;
+                final double childAspectRatio = isTablet ? 0.92 : 0.82;
+
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: crossAxisCount,
+                        mainAxisSpacing: 14,
+                        crossAxisSpacing: 14,
+                        childAspectRatio: childAspectRatio,
+                      ),
+                      itemCount: docs.length,
+                      itemBuilder: (context, index) {
+                        final data = docs[index].data() as Map<String, dynamic>;
+
+                        final String title = data['title'] ?? 'N/A';
+                        final String url = data['url'] ?? '';
+                        final String iconName = data['iconName'] ?? '';
+
+                        return _buildUtilityCard(
+                          context: context,
+                          isDarkMode: isDarkMode,
+                          title: title,
+                          url: url,
+                          iconName: iconName,
+                        );
+                      },
+                    ),
                   ),
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final data = docs[index].data() as Map<String, dynamic>;
-
-                    final String title = data['title'] ?? 'N/A';
-                    final String url = data['url'] ?? '';
-                    final String iconName = data['iconName'] ?? '';
-
-                    return _buildUtilityCard(
-                      context: context,
-                      isDarkMode: isDarkMode,
-                      title: title,
-                      url: url,
-                      iconName: iconName,
-                    );
-                  },
                 );
               },
             ),

@@ -19,8 +19,33 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool _isObscureConfirm = true;
   bool _isLoading = false;
 
+  bool get _isNewPasswordSameAsCurrent =>
+      _currentPasswordController.text.isNotEmpty &&
+      _newPasswordController.text.isNotEmpty &&
+      _currentPasswordController.text.trim() == _newPasswordController.text.trim();
+
+  bool get _isConfirmPasswordInvalid =>
+      _newPasswordController.text.isNotEmpty &&
+      _confirmPasswordController.text.isNotEmpty &&
+      _confirmPasswordController.text.trim() != _newPasswordController.text.trim();
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPasswordController.addListener(_onPasswordChanged);
+    _newPasswordController.addListener(_onPasswordChanged);
+    _confirmPasswordController.addListener(_onPasswordChanged);
+  }
+
+  void _onPasswordChanged() {
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _currentPasswordController.removeListener(_onPasswordChanged);
+    _newPasswordController.removeListener(_onPasswordChanged);
+    _confirmPasswordController.removeListener(_onPasswordChanged);
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
@@ -167,6 +192,18 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 hint: 'Nhập mật khẩu mới',
                 obscure: _isObscureNew,
                 onToggle: () => setState(() => _isObscureNew = !_isObscureNew),
+                hasError: _isNewPasswordSameAsCurrent,
+                errorText: _isNewPasswordSameAsCurrent
+                    ? 'Mật khẩu mới không được trùng với mật khẩu hiện tại'
+                    : null,
+                validator: (val) {
+                  if (val == null || val.isEmpty) return 'Vui lòng không để trống';
+                  if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+                  if (val.trim() == _currentPasswordController.text.trim()) {
+                    return 'Mật khẩu mới không được trùng với mật khẩu hiện tại';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 20),
 
@@ -176,9 +213,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 hint: 'Nhập lại mật khẩu mới',
                 obscure: _isObscureConfirm,
                 onToggle: () => setState(() => _isObscureConfirm = !_isObscureConfirm),
+                hasError: _isConfirmPasswordInvalid,
+                errorText: _isConfirmPasswordInvalid ? 'Mật khẩu nhập lại không khớp' : null,
                 validator: (val) {
                   if (val == null || val.isEmpty) return 'Vui lòng xác nhận mật khẩu';
-                  if (val != _newPasswordController.text) return 'Mật khẩu nhập lại không khớp';
+                  if (val.trim() != _newPasswordController.text.trim()) {
+                    return 'Mật khẩu nhập lại không khớp';
+                  }
                   return null;
                 },
               ),
@@ -187,7 +228,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
               Center(
                 child: ElevatedButton(
-                  onPressed: _isLoading ? null : _updatePassword,
+                  onPressed: (_isLoading || _isNewPasswordSameAsCurrent || _isConfirmPasswordInvalid)
+                      ? null
+                      : _updatePassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6797E1),
                     foregroundColor: Colors.white,
@@ -223,58 +266,102 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     required bool obscure,
     required VoidCallback onToggle,
     String? Function(String?)? validator,
+    bool hasError = false,
+    String? errorText,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        // Ô nhập liệu màu xám trắng mờ khi ở Dark Mode
-        color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            // Bóng đổ nhẹ hơn ở Dark Mode để không bị thô
-            color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        // Thêm viền mờ khi ở Dark Mode giúp ô nổi bật hơn
-        border: isDarkMode ? Border.all(color: Colors.white10) : null,
-      ),
-      child: TextFormField(
-        controller: controller,
-        obscureText: obscure,
-        style: TextStyle(
-          fontSize: 16,
-          color: isDarkMode ? Colors.white : Colors.black, // Chữ nhập vào
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            color: isDarkMode ? Colors.white38 : Colors.black26,
-            fontSize: 15,
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
-          border: InputBorder.none,
-          suffixIcon: Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: IconButton(
-              icon: Icon(
-                obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                color: const Color(0xFF6797E1),
-                size: 22,
+    return FormField<String>(
+      initialValue: controller.text,
+      validator: validator ?? (val) {
+        if (val == null || val.isEmpty) return 'Vui lòng không để trống';
+        if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+        return null;
+      },
+      builder: (FormFieldState<String> state) {
+        final displayError = errorText ?? state.errorText;
+        final fieldHasError = hasError || state.hasError;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                // Ô nhập liệu màu xám trắng mờ khi ở Dark Mode
+                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: [
+                  BoxShadow(
+                    // Bóng đổ nhẹ hơn ở Dark Mode để không bị thô
+                    color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                // Thêm viền khi có lỗi, hoặc viền mờ khi ở Dark Mode giúp ô nổi bật hơn
+                border: Border.all(
+                  color: fieldHasError
+                      ? Colors.redAccent
+                      : (isDarkMode ? Colors.white10 : Colors.transparent),
+                  width: 1.2,
+                ),
               ),
-              onPressed: onToggle,
+              child: TextField(
+                controller: controller,
+                obscureText: obscure,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: isDarkMode ? Colors.white : Colors.black, // Chữ nhập vào
+                ),
+                onChanged: (val) {
+                  state.didChange(val);
+                },
+                decoration: InputDecoration(
+                  filled: false,
+                  fillColor: Colors.transparent,
+                  hintText: hint,
+                  hintStyle: TextStyle(
+                    color: isDarkMode ? Colors.white38 : Colors.black26,
+                    fontSize: 15,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  suffixIcon: Padding(
+                    padding: const EdgeInsets.only(right: 10),
+                    child: IconButton(
+                      icon: Icon(
+                        obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        color: const Color(0xFF6797E1),
+                        size: 22,
+                      ),
+                      onPressed: onToggle,
+                    ),
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-        validator: validator ?? (val) {
-          if (val == null || val.isEmpty) return 'Vui lòng không để trống';
-          if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
-          return null;
-        },
-      ),
+            if (displayError != null) ...[
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  displayError,
+                  style: const TextStyle(
+                    color: Colors.redAccent,
+                    fontSize: 12,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 }
