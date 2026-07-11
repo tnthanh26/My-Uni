@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -33,6 +34,14 @@ class MyEventTab extends StatefulWidget {
 
 class _MyEventTabState extends State<MyEventTab>
     with TickerProviderStateMixin {
+  final List<String> _emptyQuotes = [
+    "Thanh xuân như 1 tách trà, tham gia sự kiện, đậm đà thanh xuân.",
+    "Hôm nay bạn bận... bận không làm gì cả.",
+    "Thôi thì nghỉ ngơi một hôm cũng tốt.",
+    "Nghe nói cách có người yêu nhanh nhất là tham gia thật nhiều sự kiện đấy!",
+  ];
+  late int _quoteIndex = Random().nextInt(_emptyQuotes.length);
+
   TabController? _viewTabController;
 
   int _selectedMonth = DateTime.now().month;
@@ -239,61 +248,43 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  void _showFullCalendarPopup(bool isDarkMode) {
-    showDialog(
+  Future<void> _selectDate(BuildContext context, bool isDarkMode) async {
+    final DateTime? picked = await showDatePicker(
       context: context,
-      barrierColor: Colors.black54,
-      builder: (context) => Dialog(
-        backgroundColor: _surfaceColor(isDarkMode),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Chọn ngày',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                  color: _primaryTextColor(isDarkMode),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 300,
-                width: 300,
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: Theme.of(context).colorScheme.copyWith(
-                      primary: figmaSelectionBlue,
-                      onPrimary: Colors.white,
-                      surface: _surfaceColor(isDarkMode),
-                      onSurface: _primaryTextColor(isDarkMode),
-                    ),
+      initialDate: _selectedDay ?? DateTime.now(),
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2030),
+      builder: (context, child) {
+        return Theme(
+          data: isDarkMode
+              ? ThemeData.dark().copyWith(
+                  colorScheme: const ColorScheme.dark(
+                    primary: figmaSelectionBlue,
+                    onPrimary: Colors.white,
+                    surface: Color(0xFF1E1E1E),
+                    onSurface: Colors.white,
                   ),
-                  child: CalendarDatePicker(
-                    initialDate: _selectedDay!,
-                    firstDate: DateTime(2024),
-                    lastDate: DateTime(2030),
-                    onDateChanged: (date) {
-                      setState(() {
-                        _selectedDay = date;
-                        _focusedDay = date;
-                        _selectedMonth = date.month;
-                      });
-                      Navigator.pop(context);
-                    },
+                  dialogBackgroundColor: const Color(0xFF1E1E1E),
+                )
+              : ThemeData.light().copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: figmaSelectionBlue,
+                    onPrimary: Colors.white,
+                    surface: Colors.white,
+                    onSurface: Colors.black87,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
+          child: child!,
+        );
+      },
     );
+    if (picked != null) {
+      setState(() {
+        _selectedDay = picked;
+        _focusedDay = picked;
+        _selectedMonth = picked.month;
+      });
+    }
   }
 
   void _showEventDetailsBottomSheet(
@@ -557,9 +548,8 @@ class _MyEventTabState extends State<MyEventTab>
           final bool isPastSelectedDay =
           _selectedDay!.isBefore(DateUtils.dateOnly(DateTime.now()));
 
-          final int count = isListView
-              ? allEvents.where((e) => !e.dateTime.isBefore(now)).length
-              : allEvents
+          final int countList = allEvents.where((e) => !e.dateTime.isBefore(now)).length;
+          final int countCalendar = allEvents
               .where(
                 (e) =>
             DateUtils.isSameDay(e.dateTime, _selectedDay) &&
@@ -567,47 +557,94 @@ class _MyEventTabState extends State<MyEventTab>
           )
               .length;
 
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                child: Row(
-                  children: [
-                    isListView
-                        ? _buildListFilter(isDarkMode)
-                        : _buildMonthPicker(isDarkMode),
-                    const Spacer(),
-                    _buildViewSwitcher(isDarkMode),
-                  ],
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(bottom: 14),
-                child: Text(
-                  isListView
-                      ? 'Bạn đang có $count sự kiện sắp diễn ra'
-                      : isToday
-                      ? 'Hôm nay có $count sự kiện sắp diễn ra'
-                      : isPastSelectedDay
-                      ? 'Các sự kiện của ngày đã chọn'
-                      : 'Ngày này có $count sự kiện sắp diễn ra',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
-                    color: _primaryTextColor(isDarkMode),
+          final String listText = 'Bạn đang có $countList sự kiện sắp diễn ra';
+          final String calendarText = isToday
+              ? 'Hôm nay có $countCalendar sự kiện đang chờ bạn'
+              : isPastSelectedDay
+              ? 'Các sự kiện của ngày đã chọn'
+              : 'Ngày này có $countCalendar sự kiện đang chờ bạn';
+
+          final Widget tabBarView = Expanded(
+            child: TabBarView(
+              controller: _viewTabController,
+              children: [
+                _buildListView(allEvents, isDarkMode),
+                _buildCalendarView(allEvents, isDarkMode),
+              ],
+            ),
+          );
+
+          return AnimatedBuilder(
+            animation: _viewTabController!.animation!,
+            child: tabBarView,
+            builder: (context, child) {
+              final double value = _viewTabController!.animation!.value;
+              final double listOpacity = (1.0 - value).clamp(0.0, 1.0);
+              final double calendarOpacity = value.clamp(0.0, 1.0);
+
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                    child: Row(
+                      children: [
+                        Stack(
+                          children: [
+                            Opacity(
+                              opacity: listOpacity,
+                              child: IgnorePointer(
+                                ignoring: value >= 0.5,
+                                child: _buildListFilter(isDarkMode),
+                              ),
+                            ),
+                            Opacity(
+                              opacity: calendarOpacity,
+                              child: IgnorePointer(
+                                ignoring: value < 0.5,
+                                child: _buildMonthPicker(isDarkMode),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Spacer(),
+                        _buildViewSwitcher(isDarkMode),
+                      ],
+                    ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _viewTabController,
-                  children: [
-                    _buildListView(allEvents, isDarkMode),
-                    _buildCalendarView(allEvents, isDarkMode),
-                  ],
-                ),
-              ),
-            ],
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Opacity(
+                          opacity: listOpacity,
+                          child: Text(
+                            listText,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: _primaryTextColor(isDarkMode),
+                            ),
+                          ),
+                        ),
+                        Opacity(
+                          opacity: calendarOpacity,
+                          child: Text(
+                            calendarText,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: _primaryTextColor(isDarkMode),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  child!,
+                ],
+              );
+            },
           );
         },
       ),
@@ -615,6 +652,9 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildViewSwitcher(bool isDarkMode) {
+    if (_viewTabController == null || _viewTabController!.animation == null) {
+      return const SizedBox.shrink();
+    }
     return Container(
       height: 44,
       width: 98,
@@ -624,56 +664,70 @@ class _MyEventTabState extends State<MyEventTab>
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: _borderColor(isDarkMode)),
       ),
-      child: Stack(
-        children: [
-          AnimatedAlign(
-            duration: const Duration(milliseconds: 250),
-            curve: Curves.easeInOut,
-            alignment: isListView ? Alignment.centerLeft : Alignment.centerRight,
-            child: Container(
-              width: 43,
-              height: 34,
-              decoration: BoxDecoration(
-                color: primaryBrown,
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-          ),
-          Row(
+      child: AnimatedBuilder(
+        animation: _viewTabController!.animation!,
+        builder: (context, child) {
+          final double value = _viewTabController!.animation!.value;
+          final double x = -1.0 + 2.0 * value;
+
+          final Color listIconColor = Color.lerp(
+            Colors.white,
+            _secondaryTextColor(isDarkMode),
+            value,
+          ) ?? Colors.white;
+
+          final Color calendarIconColor = Color.lerp(
+            _secondaryTextColor(isDarkMode),
+            Colors.white,
+            value,
+          ) ?? Colors.white;
+
+          return Stack(
             children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _viewTabController!.animateTo(0),
-                  behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Icon(
-                      Icons.list_alt_rounded,
-                      size: 21,
-                      color: isListView
-                          ? Colors.white
-                          : _secondaryTextColor(isDarkMode),
-                    ),
+              Align(
+                alignment: Alignment(x, 0.0),
+                child: Container(
+                  width: 43,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: primaryBrown,
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
               ),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _viewTabController!.animateTo(1),
-                  behavior: HitTestBehavior.opaque,
-                  child: Center(
-                    child: Icon(
-                      Icons.calendar_month_outlined,
-                      size: 21,
-                      color: !isListView
-                          ? Colors.white
-                          : _secondaryTextColor(isDarkMode),
+              Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _viewTabController!.animateTo(0),
+                      behavior: HitTestBehavior.opaque,
+                      child: Center(
+                        child: Icon(
+                          Icons.list_alt_rounded,
+                          size: 21,
+                          color: listIconColor,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => _viewTabController!.animateTo(1),
+                      behavior: HitTestBehavior.opaque,
+                      child: Center(
+                        child: Icon(
+                          Icons.calendar_month_outlined,
+                          size: 21,
+                          color: calendarIconColor,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
-          ),
-        ],
+          );
+        },
       ),
     );
   }
@@ -681,11 +735,31 @@ class _MyEventTabState extends State<MyEventTab>
   Widget _buildListView(List<EventModel> events, bool isDarkMode) {
     if (events.isEmpty) {
       return Center(
-        child: Text(
-          'Không có sự kiện sắp tới.',
-          style: TextStyle(
-            color: _secondaryTextColor(isDarkMode),
-            fontWeight: FontWeight.w500,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.format_quote_rounded,
+                size: 40,
+                color: figmaSelectionBlue.withOpacity(0.3),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                _emptyQuotes[_quoteIndex],
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _primaryTextColor(isDarkMode).withOpacity(0.85),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 17,
+                  fontStyle: FontStyle.italic,
+                  height: 1.5,
+                  fontFamily: 'Urbanist',
+                ),
+              ),
+            ],
           ),
         ),
       );
@@ -713,6 +787,7 @@ class _MyEventTabState extends State<MyEventTab>
         children: [
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
             decoration: BoxDecoration(
               color: _surfaceColor(isDarkMode),
               borderRadius: BorderRadius.circular(22),
@@ -720,11 +795,8 @@ class _MyEventTabState extends State<MyEventTab>
               boxShadow: _cardShadow(isDarkMode),
             ),
             height: 94,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: weekDays.length,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              itemBuilder: (context, index) {
+            child: Row(
+              children: List.generate(weekDays.length, (index) {
                 final DateTime day = weekDays[index];
                 final bool isSelected = DateUtils.isSameDay(day, _selectedDay);
                 final bool isToday = DateUtils.isSameDay(day, DateTime.now());
@@ -738,162 +810,165 @@ class _MyEventTabState extends State<MyEventTab>
                   'T7'
                 ][day.weekday % 7];
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedDay = day;
-                      _focusedDay = day;
-                      _selectedMonth = day.month;
-                    });
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    width: 50,
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 5,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color:
-                      isSelected ? figmaSelectionBlue : Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: !isSelected && isToday
-                            ? figmaSelectionBlue.withOpacity(0.5)
-                            : Colors.transparent,
-                        width: 1.5,
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedDay = day;
+                        _focusedDay = day;
+                        _selectedMonth = day.month;
+                      });
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 220),
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 10,
                       ),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          label,
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : (isToday
-                                    ? figmaSelectionBlue
-                                    : _secondaryTextColor(isDarkMode)),
-                            fontSize: 12,
-                            fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
-                          ),
+                      decoration: BoxDecoration(
+                        color:
+                        isSelected ? figmaSelectionBlue : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: !isSelected && isToday
+                              ? figmaSelectionBlue.withOpacity(0.5)
+                              : Colors.transparent,
+                          width: 1.5,
                         ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '${day.day}',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected
-                                ? Colors.white
-                                : (isToday
-                                    ? figmaSelectionBlue
-                                    : _primaryTextColor(isDarkMode)),
-                          ),
-                        ),
-                        if (isToday) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            width: 5,
-                            height: 5,
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.white : figmaSelectionBlue,
-                              shape: BoxShape.circle,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            label,
+                            style: TextStyle(
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isToday
+                                      ? figmaSelectionBlue
+                                      : _secondaryTextColor(isDarkMode)),
+                              fontSize: 12,
+                              fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
                             ),
                           ),
-                        ] else ...[
-                          const SizedBox(height: 7),
+                          const SizedBox(height: 3),
+                          Text(
+                            '${day.day}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isToday
+                                      ? figmaSelectionBlue
+                                      : _primaryTextColor(isDarkMode)),
+                            ),
+                          ),
+                          if (isToday) ...[
+                            const SizedBox(height: 2),
+                            Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: isSelected ? Colors.white : figmaSelectionBlue,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ] else ...[
+                            const SizedBox(height: 7),
+                          ],
                         ],
-                      ],
+                      ),
                     ),
                   ),
                 );
-              },
+              }),
             ),
           ),
           const SizedBox(height: 12),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                IconButton(
-                  onPressed: () => _showFullCalendarPopup(isDarkMode),
-                  icon: Icon(
-                    Icons.keyboard_arrow_down,
-                    color: _secondaryTextColor(isDarkMode),
-                  ),
-                ),
-                Padding(
-                  padding:
-                  const EdgeInsets.only(left: 16, right: 16, bottom: 12),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 110,
-                        child: Center(
-                          child: Text(
-                            'Thời gian',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: _secondaryTextColor(isDarkMode),
+            child: Container(
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF2F6FF),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+              ),
+              width: double.infinity,
+              child: ListView(
+                padding: const EdgeInsets.only(top: 24, bottom: 24),
+                children: [
+                  Padding(
+                    padding:
+                    const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          child: Center(
+                            child: Text(
+                              'Thời gian',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: _secondaryTextColor(isDarkMode),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 20),
-                      Text(
-                        'Sự kiện',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: _secondaryTextColor(isDarkMode),
+                        const SizedBox(width: 20),
+                        Text(
+                          'Sự kiện',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _secondaryTextColor(isDarkMode),
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  Stack(
+                    children: [
+                      Positioned(
+                        left: 126,
+                        top: 0,
+                        bottom: 0,
+                        child: Container(
+                          width: 1.2,
+                          color: _borderColor(isDarkMode),
+                        ),
+                      ),
+                      Column(
+                        children: dayEvents.isEmpty
+                            ? [
+                          Padding(
+                            padding:
+                            const EdgeInsets.only(top: 110, left: 146),
+                            child: Text(
+                              'Không có sự kiện',
+                              style: TextStyle(
+                                color: _secondaryTextColor(isDarkMode),
+                                fontWeight: FontWeight.w500,
+                                fontSize: 15,
+                              ),
+                            ),
+                          ),
+                        ]
+                            : dayEvents
+                            .asMap()
+                            .entries
+                            .map(
+                              (entry) => _buildTimelineRow(
+                            isDarkMode,
+                            entry.value,
+                            entry.key,
+                          ),
+                        )
+                            .toList(),
                       ),
                     ],
                   ),
-                ),
-                Stack(
-                  children: [
-                    Positioned(
-                      left: 126,
-                      top: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 1.2,
-                        color: _borderColor(isDarkMode),
-                      ),
-                    ),
-                    Column(
-                      children: dayEvents.isEmpty
-                          ? [
-                        Padding(
-                          padding:
-                          const EdgeInsets.only(top: 50, left: 146),
-                          child: Text(
-                            'Không có sự kiện',
-                            style: TextStyle(
-                              color: _secondaryTextColor(isDarkMode),
-                            ),
-                          ),
-                        ),
-                      ]
-                          : dayEvents
-                          .asMap()
-                          .entries
-                          .map(
-                            (entry) => _buildTimelineRow(
-                          isDarkMode,
-                          entry.value,
-                          entry.key,
-                        ),
-                      )
-                          .toList(),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -1376,26 +1451,12 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildMonthPicker(bool isDarkMode) {
-    return PopupMenuButton<int>(
-      color: _surfaceColor(isDarkMode),
-      onSelected: (m) {
-        setState(() {
-          _selectedMonth = m;
-          _selectedDay = DateTime(DateTime.now().year, m, 1);
-          _focusedDay = _selectedDay!;
-        });
-      },
-      itemBuilder: (ctx) => List.generate(
-        12,
-            (i) => PopupMenuItem(
-          value: i + 1,
-          child: Text(
-            'Tháng ${i + 1}',
-            style: TextStyle(color: _primaryTextColor(isDarkMode)),
-          ),
-        ),
+    return GestureDetector(
+      onTap: () => _selectDate(context, isDarkMode),
+      child: _filterChip(
+        isDarkMode,
+        'Tháng $_selectedMonth, ${_selectedDay?.year ?? DateTime.now().year}',
       ),
-      child: _filterChip(isDarkMode, 'Tháng $_selectedMonth'),
     );
   }
 

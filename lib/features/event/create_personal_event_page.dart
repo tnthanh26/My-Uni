@@ -570,7 +570,8 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           ),
         ],
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: SingleChildScrollView(
