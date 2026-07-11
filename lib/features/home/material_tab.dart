@@ -7,6 +7,7 @@ import 'package:open_filex/open_filex.dart';
 import 'create_material_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
 
 class MaterialTab extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -165,7 +166,7 @@ class MaterialTab extends StatelessWidget {
       child: Stack(
         children: [
           Image.memory(
-            base64Decode(fileData),
+            Base64ImageCache.decode(fileData),
             width: double.infinity,
             height: 240,
             fit: BoxFit.cover,

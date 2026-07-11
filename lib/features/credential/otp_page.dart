@@ -1,8 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpPage extends StatefulWidget {
@@ -15,14 +15,84 @@ class OtpPage extends StatefulWidget {
 class _OtpPageState extends State<OtpPage> {
   final TextEditingController _otpInputController = TextEditingController();
   bool _isVerifying = false;
+  int _secondsRemaining = 60;
+  bool _canResend = false;
+  Timer? _countdownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startTimer();
+  }
+
+  void _startTimer() {
+    setState(() {
+      _secondsRemaining = 60;
+      _canResend = false;
+    });
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_secondsRemaining == 0) {
+        setState(() {
+          _canResend = true;
+          timer.cancel();
+        });
+      } else {
+        setState(() {
+          _secondsRemaining--;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _otpInputController.dispose();
     super.dispose();
   }
 
+  Future<void> _resendOtp(String email) async {
+    if (!_canResend || _isVerifying) return;
+
+    setState(() {
+      _isVerifying = true;
+    });
+
+    try {
+      final sendOtpUrl = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/sendRegistrationOTP');
+      final response = await http.post(
+        sendOtpUrl,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+        body: utf8.encode(json.encode({
+          "data": {"email": email}
+        })),
+      ).timeout(const Duration(seconds: 15));
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        _showSnackBar('Mã OTP mới đã được gửi lại vào email.');
+        _startTimer();
+      } else {
+        _showSnackBar('Không thể gửi lại mã. Vui lòng thử lại sau.', isError: true);
+      }
+    } catch (e) {
+      _showSnackBar('Lỗi kết nối khi gửi lại mã: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isVerifying = false;
+        });
+      }
+    }
+  }
+
   Future<void> _verifyAndSignUp(Map<String, dynamic> args) async {
+    if (_isVerifying) return;
+
     final String userEnteredOtp = _otpInputController.text.trim();
     final String email = args['email'];
     final Map<String, dynamic> userData = args['userData'];
@@ -117,13 +187,17 @@ class _OtpPageState extends State<OtpPage> {
     final Map<String, dynamic> args = rawArgs;
     final String email = args['email'] ?? "Email không xác định";
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: BackButton(color: isDarkMode ? Colors.white : Colors.black),
-      ),
+    return PopScope(
+      canPop: !_isVerifying,
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: _isVerifying
+              ? const SizedBox()
+              : BackButton(color: isDarkMode ? Colors.white : Colors.black),
+        ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 500.0),
@@ -235,9 +309,40 @@ class _OtpPageState extends State<OtpPage> {
               ),
             ),
 
+            const SizedBox(height: 25),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Chưa nhận được mã? ",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white70 : Colors.black54,
+                    fontSize: 14,
+                  ),
+                ),
+                TextButton(
+                  onPressed: _canResend && !_isVerifying ? () => _resendOtp(email) : null,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    _canResend ? "Gửi lại mã" : "Gửi lại mã (${_secondsRemaining}s)",
+                    style: TextStyle(
+                      color: _canResend && !_isVerifying
+                          ? const Color(0xFF6797E1)
+                          : (isDarkMode ? Colors.white30 : Colors.grey),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _isVerifying ? null : () => Navigator.pop(context),
               child: Text(
                   'Quay lại sửa email',
                   style: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey[600])
@@ -247,6 +352,6 @@ class _OtpPageState extends State<OtpPage> {
           ],
         ),
       ),
-    )));
+    ))));
   }
 }

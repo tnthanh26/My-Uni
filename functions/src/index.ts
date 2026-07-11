@@ -577,9 +577,9 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
     throw new HttpsError("invalid-argument", "Thiếu thông tin người dùng.");
   }
 
+  // 1. Kiểm tra OTP
+  const otpDocRef = db.collection("pending_otps").doc(email);
   try {
-    // 1. Kiểm tra OTP
-    const otpDocRef = db.collection("pending_otps").doc(email);
     const otpDoc = await otpDocRef.get();
 
     if (!otpDoc.exists) {
@@ -600,9 +600,15 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
     if (otpData.otp !== otp) {
       throw new HttpsError("invalid-argument", "Mã OTP không chính xác.");
     }
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    throw new HttpsError("internal", "Lỗi xác thực OTP: " + (error as Error).message);
+  }
 
+  let userRecord: admin.auth.UserRecord | null = null;
+  try {
     // 2. Tạo tài khoản Auth
-    const userRecord = await admin.auth().createUser({
+    userRecord = await admin.auth().createUser({
       email: email,
       password: password,
       displayName: displayName,
@@ -642,11 +648,27 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
     return {success: true, customToken: customToken};
   } catch (error) {
     console.error("verifyOTPAndCreateUser Error:", error);
+
+    // Rollback: Nếu đã tạo tài khoản Auth thành công nhưng lỗi ở các bước sau (như ghi Firestore hoặc sinh Token)
+    // thì phải xóa cả tài khoản Auth và Firestore document vừa tạo để tránh rác hệ thống.
+    if (userRecord) {
+      try {
+        await admin.auth().deleteUser(userRecord.uid);
+      } catch (deleteError) {
+        console.error("Rollback failed to delete Auth user:", deleteError);
+      }
+      try {
+        await db.collection("users").doc(userRecord.uid).delete();
+      } catch (deleteError) {
+        console.error("Rollback failed to delete Firestore document:", deleteError);
+      }
+    }
+
     if (error instanceof HttpsError) {
       throw error;
     }
     const err = error as {code?: string; message?: string};
-    if (err.code === "auth/email-already-in-use") {
+    if (err.code === "auth/email-already-in-use" || err.code === "auth/email-already-exists") {
       throw new HttpsError("already-exists", "Email này đã được đăng ký.");
     }
     throw new HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));

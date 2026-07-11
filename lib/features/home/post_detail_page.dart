@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'post_action_row.dart';
 import 'official_content_helper.dart';
@@ -72,7 +73,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           children: [
             InteractiveViewer(
               child: Image.memory(
-                base64Decode(base64Image),
+                Base64ImageCache.decode(base64Image),
                 fit: BoxFit.contain,
                 width: double.infinity,
                 height: double.infinity,
@@ -1928,7 +1929,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     ? ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: Image.memory(
-                    base64Decode(data['fileData']),
+                    Base64ImageCache.decode(data['fileData']),
                     width: double.infinity,
                     fit: BoxFit.contain,
                   ),
@@ -2115,7 +2116,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(18),
                   child: Image.memory(
-                    base64Decode(data['imageUrl']),
+                    Base64ImageCache.decode(data['imageUrl']),
                     width: double.infinity,
                     fit: BoxFit.cover,
                   ),
@@ -2194,7 +2195,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       if (avatarBase64 != null && avatarBase64.isNotEmpty) {
         avatarWidget = ClipOval(
           child: Image.memory(
-            base64Decode(avatarBase64),
+            Base64ImageCache.decode(avatarBase64),
             fit: BoxFit.cover,
             width: 46,
             height: 46,
@@ -2219,7 +2220,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
           child: avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
               ? CircleAvatar(
             radius: 21,
-            backgroundImage: MemoryImage(base64Decode(avatarBase64)),
+            backgroundImage: MemoryImage(Base64ImageCache.decode(avatarBase64)),
           )
               : Padding(
             padding: const EdgeInsets.all(2.0),
@@ -2546,7 +2547,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     )
                         : ClipOval(
                       child: Image.memory(
-                        base64Decode(liveAvatar),
+                        Base64ImageCache.decode(liveAvatar),
                         fit: BoxFit.cover,
                         width: 36,
                         height: 36,
@@ -2715,7 +2716,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     child: ClipRRect(
                                       borderRadius: BorderRadius.circular(12),
                                       child: Image.memory(
-                                        base64Decode(comment['imageUrl']),
+                                        Base64ImageCache.decode(comment['imageUrl']),
                                         fit: BoxFit.cover,
                                       ),
                                     ),
