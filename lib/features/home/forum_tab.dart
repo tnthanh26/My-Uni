@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
 import 'create_post_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
@@ -55,7 +56,7 @@ class _ForumTabState extends State<ForumTab> {
           child: Stack(
             children: [
               Image.memory(
-                base64Decode(imgData),
+                Base64ImageCache.decode(imgData),
                 width: double.infinity,
                 height: 220,
                 fit: BoxFit.cover,
@@ -167,7 +168,7 @@ class _ForumTabState extends State<ForumTab> {
           backgroundColor: isDarkMode ? Colors.white10 : Colors.white,
           child: CircleAvatar(
             radius: 21,
-            backgroundImage: MemoryImage(base64Decode(avatarData)),
+            backgroundImage: MemoryImage(Base64ImageCache.decode(avatarData)),
           ),
         );
       } catch (e) {

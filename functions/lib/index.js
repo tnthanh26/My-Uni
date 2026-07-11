@@ -454,9 +454,9 @@ exports.verifyOTPAndCreateUser = (0, https_1.onCall)(async (request) => {
     if (!displayName || !password || !university || !studentId || !cohort) {
         throw new https_1.HttpsError("invalid-argument", "Thiếu thông tin người dùng.");
     }
+    // 1. Kiểm tra OTP
+    const otpDocRef = db.collection("pending_otps").doc(email);
     try {
-        // 1. Kiểm tra OTP
-        const otpDocRef = db.collection("pending_otps").doc(email);
         const otpDoc = await otpDocRef.get();
         if (!otpDoc.exists) {
             throw new https_1.HttpsError("invalid-argument", "Mã OTP không tồn tại hoặc đã hết hạn.");
@@ -473,8 +473,16 @@ exports.verifyOTPAndCreateUser = (0, https_1.onCall)(async (request) => {
         if (otpData.otp !== otp) {
             throw new https_1.HttpsError("invalid-argument", "Mã OTP không chính xác.");
         }
+    }
+    catch (error) {
+        if (error instanceof https_1.HttpsError)
+            throw error;
+        throw new https_1.HttpsError("internal", "Lỗi xác thực OTP: " + error.message);
+    }
+    let userRecord = null;
+    try {
         // 2. Tạo tài khoản Auth
-        const userRecord = await admin.auth().createUser({
+        userRecord = await admin.auth().createUser({
             email: email,
             password: password,
             displayName: displayName,
@@ -511,11 +519,27 @@ exports.verifyOTPAndCreateUser = (0, https_1.onCall)(async (request) => {
     }
     catch (error) {
         console.error("verifyOTPAndCreateUser Error:", error);
+        // Rollback: Nếu đã tạo tài khoản Auth thành công nhưng lỗi ở các bước sau (như ghi Firestore hoặc sinh Token)
+        // thì phải xóa cả tài khoản Auth và Firestore document vừa tạo để tránh rác hệ thống.
+        if (userRecord) {
+            try {
+                await admin.auth().deleteUser(userRecord.uid);
+            }
+            catch (deleteError) {
+                console.error("Rollback failed to delete Auth user:", deleteError);
+            }
+            try {
+                await db.collection("users").doc(userRecord.uid).delete();
+            }
+            catch (deleteError) {
+                console.error("Rollback failed to delete Firestore document:", deleteError);
+            }
+        }
         if (error instanceof https_1.HttpsError) {
             throw error;
         }
         const err = error;
-        if (err.code === "auth/email-already-in-use") {
+        if (err.code === "auth/email-already-in-use" || err.code === "auth/email-already-exists") {
             throw new https_1.HttpsError("already-exists", "Email này đã được đăng ký.");
         }
         throw new https_1.HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
