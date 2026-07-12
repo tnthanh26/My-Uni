@@ -415,6 +415,7 @@ class HomePageState extends State<HomePage> {
               Expanded(
                 child: Container(
                   width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -462,6 +463,7 @@ class HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+
                       // Nội dung các Tab
                       Expanded(
                         child: TabBarView(
