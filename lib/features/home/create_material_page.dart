@@ -372,7 +372,8 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
           ),
         ),
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: Container(

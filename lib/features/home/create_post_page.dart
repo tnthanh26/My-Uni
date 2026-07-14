@@ -27,6 +27,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
   final List<String> _suggestedHashtags = [
     "Hỏi đáp",
+    "Chia sẻ",
     "Đăng Ký Môn Học",
     "Ngoại ngữ",
     "Nghiên cứu KH",
@@ -40,7 +41,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
     "Trọ/KTX",
     "Tìm đồ",
     "Tìm việc",
-    "Chia sẻ",
     "Thanh Lý",
     "Nghỉ lễ",
     "Nghỉ hè"
@@ -292,6 +292,11 @@ class _CreatePostPageState extends State<CreatePostPage> {
             final isDarkMode = Theme.of(context).brightness == Brightness.dark;
             const Color figmaHeaderBlue = Color(0xFF457EC0);
 
+            final orderedHashtags = [
+              ..._suggestedHashtags.where((tag) => _selectedHashtags.contains(tag)),
+              ..._suggestedHashtags.where((tag) => !_selectedHashtags.contains(tag)),
+            ];
+
             return Padding(
               padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
               child: Column(
@@ -335,7 +340,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 10,
-                    children: _suggestedHashtags.map((tag) {
+                    children: orderedHashtags.map((tag) {
                       bool isSelected = _selectedHashtags.contains(tag);
                       return GestureDetector(
                         onTap: () {
@@ -408,6 +413,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final double screenWidth = MediaQuery.of(context).size.width;
     final bool isTablet = screenWidth > 550.0;
+    final orderedHashtags = [
+      ..._suggestedHashtags.where((tag) => _selectedHashtags.contains(tag)),
+      ..._suggestedHashtags.where((tag) => !_selectedHashtags.contains(tag)),
+    ];
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
@@ -475,7 +484,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
           ),
         ),
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: Container(
@@ -585,7 +595,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           ),
                         ),
                       ),
-                      ..._suggestedHashtags.map((tag) {
+                      ...orderedHashtags.map((tag) {
                         bool isSelected = _selectedHashtags.contains(tag);
                         return Padding(
                           padding: const EdgeInsets.only(right: 8.0),

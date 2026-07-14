@@ -295,7 +295,8 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
           ),
         ),
       ),
-      body: Center(
+      body: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 550.0),
           child: Container(
