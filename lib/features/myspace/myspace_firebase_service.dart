@@ -69,11 +69,8 @@ class MySpaceFirebaseService {
   Future<List<StudyClass>> getSchedule() async {
     if (userId == null) return [];
     try {
-      final snapshot = await _scheduleRef
-          .orderBy('weekday')
-          .orderBy('start')
-          .get();
-      return snapshot.docs.map((doc) {
+      final snapshot = await _scheduleRef.get();
+      final list = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return StudyClass(
           id: doc.id,
@@ -85,6 +82,15 @@ class MySpaceFirebaseService {
           color: Color(data['colorValue'] ?? 0xFF5893D8),
         );
       }).toList();
+
+      // Sắp xếp trên RAM để tránh lỗi composite index của Firestore
+      list.sort((a, b) {
+        final dayCompare = a.weekday.compareTo(b.weekday);
+        if (dayCompare != 0) return dayCompare;
+        return a.start.compareTo(b.start);
+      });
+
+      return list;
     } catch (e) {
       debugPrint("Error fetching schedule: $e");
       return [];

@@ -22,6 +22,8 @@ class ForumTab extends StatefulWidget {
 }
 
 class _ForumTabState extends State<ForumTab> {
+  List<String>? _sortedPostIds;
+
   @override
   void initState() {
     super.initState();
@@ -252,213 +254,280 @@ class _ForumTabState extends State<ForumTab> {
             );
           }
 
+          List<QueryDocumentSnapshot> posts = snapshot.data!.docs;
+
+          // Hàm tính điểm xu hướng (Trending Score) để xếp hạng bài viết
+          double calculateTrendingScore(Map<String, dynamic> data) {
+            final double likes = (data['likeCount'] ?? 0).toDouble();
+            final double comments = (data['commentCount'] ?? 0).toDouble();
+            final Timestamp? time = data['timestamp'] as Timestamp?;
+            double score = likes * 1.5 + comments * 3.0;
+            if (time != null) {
+              score += time.toDate().millisecondsSinceEpoch / (1000 * 864.0);
+            }
+            return score;
+          }
+
+          if (_sortedPostIds == null) {
+            // Khi tải lần đầu hoặc khi refresh: Tính toán điểm xu hướng và sắp xếp
+            final List<QueryDocumentSnapshot> sorted = List.from(posts);
+            sorted.sort((a, b) {
+              final aScore = calculateTrendingScore(a.data() as Map<String, dynamic>);
+              final bScore = calculateTrendingScore(b.data() as Map<String, dynamic>);
+              return bScore.compareTo(aScore);
+            });
+            _sortedPostIds = sorted.map((doc) => doc.id).toList();
+          } else {
+            // Khi có tương tác (like, comment), thứ tự được khóa cố định.
+            // Chỉ cập nhật các bài viết mới tạo bằng cách đưa chúng lên đầu danh sách.
+            final currentIds = posts.map((doc) => doc.id).toSet();
+            final cachedIdsSet = _sortedPostIds!.toSet();
+            final newIds = currentIds.difference(cachedIdsSet);
+
+            if (newIds.isNotEmpty) {
+              final newDocs = posts.where((doc) => newIds.contains(doc.id)).toList();
+              newDocs.sort((a, b) {
+                final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                if (aTime == null && bTime == null) return 0;
+                if (aTime == null) return 1;
+                if (bTime == null) return -1;
+                return bTime.compareTo(aTime);
+              });
+              _sortedPostIds!.insertAll(0, newDocs.map((doc) => doc.id));
+            }
+
+            // Đồng thời xóa các bài viết đã bị xóa khỏi cơ sở dữ liệu
+            _sortedPostIds!.removeWhere((id) => !currentIds.contains(id));
+          }
+
+          // Ánh xạ lại các bài viết theo thứ tự đã được khóa
+          final Map<String, QueryDocumentSnapshot> postsMap = {
+            for (var doc in posts) doc.id: doc
+          };
+          final List<QueryDocumentSnapshot> orderedPosts = [];
+          for (var id in _sortedPostIds!) {
+            if (postsMap.containsKey(id)) {
+              orderedPosts.add(postsMap[id]!);
+            }
+          }
+
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600.0),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-              var doc = snapshot.data!.docs[index];
-              var data = doc.data() as Map<String, dynamic>;
-              String docId = doc.id;
-              String? avatarData = data['authorAvatar'];
-              final String content = data['content']?.toString() ?? '';
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _sortedPostIds = null; // Reset để sắp xếp lại theo điểm Trending mới nhất
+                  });
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                  itemCount: orderedPosts.length,
+                  itemBuilder: (context, index) {
+                    var doc = orderedPosts[index];
+                    var data = doc.data() as Map<String, dynamic>;
+                    String docId = doc.id;
+                    String? avatarData = data['authorAvatar'];
+                    final String content = data['content']?.toString() ?? '';
 
-              final currentUser = FirebaseAuth.instance.currentUser;
-              final bool isOwner = currentUser?.uid == data['authorId'];
-              final bool isAnonymous =
-                  (data['isAnonymous'] == true) ||
-                      (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
-              final bool showOwnAnonymousBadge = isOwner && isAnonymous;
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    final bool isOwner = currentUser?.uid == data['authorId'];
+                    final bool isAnonymous =
+                        (data['isAnonymous'] == true) ||
+                            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
+                    final bool showOwnAnonymousBadge = isOwner && isAnonymous;
 
-              return Container(
-                margin: const EdgeInsets.only(bottom: 18),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                  boxShadow: isDarkMode
-                      ? []
-                      : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 18,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => PostDetailPage(
-                              docId: docId,
-                              initialPostData: data,
-                            ),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 18),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                        borderRadius: BorderRadius.circular(22),
+                        border: Border.all(
+                          color: isDarkMode
+                              ? Colors.white10
+                              : const Color(0xFFE9EEF3),
+                        ),
+                        boxShadow: isDarkMode
+                            ? []
+                            : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 18,
+                            offset: const Offset(0, 6),
                           ),
-                        );
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-                            child: Row(
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(22),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PostDetailPage(
+                                    docId: docId,
+                                    initialPostData: data,
+                                  ),
+                                ),
+                              );
+                            },
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                _buildAuthorAvatar(avatarData, isDarkMode),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                                  child: Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              data['authorName'] ?? 'Sinh viên ẩn danh',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: TextStyle(
-                                                fontFamily: 'Encode Sans Expanded',
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14,
-                                                color: isDarkMode
-                                                    ? Colors.white
-                                                    : const Color(0xFF2C2C2C),
-                                              ),
-                                            ),
-                                          ),
-                                          if (showOwnAnonymousBadge) ...[
-                                            const SizedBox(width: 6),
-                                            Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF5893D8).withOpacity(0.12),
-                                                borderRadius: BorderRadius.circular(999),
-                                              ),
-                                              child: const Text(
-                                                "Của bạn",
-                                                style: TextStyle(
-                                                  fontFamily: 'Encode Sans Expanded',
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: Color(0xFF5893D8),
+                                      _buildAuthorAvatar(avatarData, isDarkMode),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Người dùng'),
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      fontFamily: 'Encode Sans Expanded',
+                                                      fontWeight: FontWeight.w700,
+                                                      fontSize: 14,
+                                                      color: isDarkMode
+                                                          ? Colors.white
+                                                          : const Color(0xFF2C2C2C),
+                                                    ),
+                                                  ),
                                                 ),
+                                                if (showOwnAnonymousBadge) ...[
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                    decoration: BoxDecoration(
+                                                      color: const Color(0xFF5893D8).withOpacity(0.12),
+                                                      borderRadius: BorderRadius.circular(999),
+                                                    ),
+                                                    child: const Text(
+                                                      "Của bạn",
+                                                      style: TextStyle(
+                                                        fontFamily: 'Encode Sans Expanded',
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.w700,
+                                                        color: Color(0xFF5893D8),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              data['timestamp'] != null
+                                                  ? timeago.format(
+                                                (data['timestamp'] as Timestamp)
+                                                    .toDate(),
+                                                locale: 'vi',
+                                              )
+                                                  : 'Vừa xong',
+                                              style: TextStyle(
+                                                fontFamily:
+                                                'Encode Sans Expanded',
+                                                fontSize: 12,
+                                                color: isDarkMode
+                                                    ? Colors.white60
+                                                    : const Color(0xFF667085),
                                               ),
                                             ),
                                           ],
-                                        ],
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        data['timestamp'] != null
-                                            ? timeago.format(
-                                          (data['timestamp'] as Timestamp)
-                                              .toDate(),
-                                          locale: 'vi',
-                                        )
-                                            : 'Vừa xong',
-                                        style: TextStyle(
-                                          fontFamily:
-                                          'Encode Sans Expanded',
-                                          fontSize: 12,
-                                          color: isDarkMode
-                                              ? Colors.white60
-                                              : const Color(0xFF667085),
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
+
+                                if (data['hashtags'] != null &&
+                                    (data['hashtags'] as List).isNotEmpty)
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: (data['hashtags'] as List)
+                                          .map((tag) => _buildTagChip(tag, isDarkMode))
+                                          .toList(),
+                                    ),
+                                  ),
+
+                                if (content.trim().isNotEmpty)
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                                    child: Text(
+                                      content,
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 15,
+                                        color: isDarkMode
+                                            ? Colors.white70
+                                            : const Color(0xFF4B5563),
+                                        height: 1.6,
+                                      ),
+                                    ),
+                                  ),
+
+                                if (data['imageUrl'] != null &&
+                                    data['imageUrl'].toString().isNotEmpty)
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                                    child: _buildSafeImage(context, data['imageUrl']),
+                                  ),
+
+                                if (data['poll'] != null)
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                                    child: PollWidget(docId: docId, pollData: data['poll']),
+                                  ),
+
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: isDarkMode
+                                          ? Colors.white.withOpacity(0.03)
+                                          : const Color(0xFFF8FAFC),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: GestureDetector(
+                                      onTap: () {},
+                                      behavior: HitTestBehavior.opaque,
+                                      child: PostActionRow(
+                                        docId: docId,
+                                        data: data,
+                                        onSave: widget.onSave,
+                                        collectionPath: 'forum_posts',
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               ],
                             ),
                           ),
-
-                          if (data['hashtags'] != null &&
-                              (data['hashtags'] as List).isNotEmpty)
-                            Padding(
-                              padding:
-                              const EdgeInsets.fromLTRB(14, 0, 14, 10),
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: (data['hashtags'] as List)
-                                    .map((tag) => _buildTagChip(tag, isDarkMode))
-                                    .toList(),
-                              ),
-                            ),
-
-                          if (content.trim().isNotEmpty)
-                            Padding(
-                              padding:
-                              const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                              child: Text(
-                                content,
-                                style: TextStyle(
-                                  fontFamily: 'Encode Sans Expanded',
-                                  fontSize: 15,
-                                  color: isDarkMode
-                                      ? Colors.white70
-                                      : const Color(0xFF4B5563),
-                                  height: 1.6,
-                                ),
-                              ),
-                            ),
-
-                          if (data['imageUrl'] != null &&
-                              data['imageUrl'].toString().isNotEmpty)
-                            Padding(
-                              padding:
-                              const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                              child: _buildSafeImage(context, data['imageUrl']),
-                            ),
-
-                          if (data['poll'] != null)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 14),
-                              child: PollWidget(docId: docId, pollData: data['poll']),
-                            ),
-
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? Colors.white.withOpacity(0.03)
-                                    : const Color(0xFFF8FAFC),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: GestureDetector(
-                                onTap: () {},
-                                behavior: HitTestBehavior.opaque,
-                                child: PostActionRow(
-                                  docId: docId,
-                                  data: data,
-                                  onSave: widget.onSave,
-                                  collectionPath: 'forum_posts',
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          )));
+              ),
+            ),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(

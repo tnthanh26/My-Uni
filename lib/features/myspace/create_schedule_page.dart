@@ -323,6 +323,16 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       return;
     }
 
+    final int startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final int endMinutes = _endTime.hour * 60 + _endTime.minute;
+
+    if (startMinutes >= endMinutes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Giờ bắt đầu phải nhỏ hơn giờ kết thúc')),
+      );
+      return;
+    }
+
     try {
       // 1. Lấy danh sách lịch học hiện tại từ máy (đã bao gồm mock data nếu máy trống)
       List<StudyClass> currentSchedule = await LocalStorageHelper.getSchedule();

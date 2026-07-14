@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './models/myspace_models.dart';
@@ -88,6 +89,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       _focusedDate = DateTime.now();
       selectedWeekday = _focusedDate.weekday + 1;
     });
+    // _prepareWeatherFuture(); // Tạm ẩn để tránh gọi API lặp lại khi chuyển tab
   }
 
   void _prepareWeatherFuture() {
@@ -164,8 +166,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           setState(() {
             _userUniversity = university;
           });
-          // Hiển thị cảnh báo thời tiết
-          //_prepareWeatherFuture();
+          // Hiển thị cảnh báo thời tiết sau khi đã nạp xong thông tin trường đại học
+          _prepareWeatherFuture();
         }
       }
 
@@ -285,10 +287,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   void _toggleDeadline(String id) async {
     final index = mockDeadlines.indexWhere((d) => d.id == id);
     if (index != -1) {
+      HapticFeedback.lightImpact();
       setState(() {
         mockDeadlines[index].isCompleted = !mockDeadlines[index].isCompleted;
       });
-      if (mockDeadlines[index].isCompleted) _showSuccessSnackBar(mockDeadlines[index].title);
 
       // Lưu trạng thái mới vào máy
       await LocalStorageHelper.saveDeadlines(mockDeadlines);
@@ -300,6 +302,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   void _deleteDeadline(String id) async {
     final index = mockDeadlines.indexWhere((d) => d.id == id);
     if (index != -1) {
+      HapticFeedback.mediumImpact();
       final deadline = mockDeadlines[index];
       for (var nid in deadline.notificationIds) {
         await NotificationService.cancelNotification(nid);
@@ -313,12 +316,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
       // Nếu có mạng thì xóa trên Firebase
       await _firebaseService.deleteDeadline(id);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã xóa deadline thành công!")),
-        );
-      }
     }
   }
 
@@ -398,15 +395,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     await _firebaseService.saveAutoDeadlineConfig(normalized);
 
     if (!mounted) return;
+    HapticFeedback.lightImpact();
     setState(() {
       _autoDeadlineConfig = normalized;
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Đã lưu cấu hình auto-update deadline.'),
-      ),
-    );
   }
 
   Future<void> _showAutoDeadlineConfigSheet() async {
@@ -528,15 +520,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     return html.replaceAll(RegExp(r'<[^>]*>'), '').trim();
   }
 
-  void _showSuccessSnackBar(String title) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("Chúc mừng bạn đã xong: $title"),
-        backgroundColor: hcmusTeal,
-        duration: const Duration(seconds: 2),
-      ),
-    );
-  }
+
 
   String _formatTime24h(dynamic time) {
     // Trường hợp 1: Nếu đầu vào là TimeOfDay (thường dùng cho Deadline)
@@ -612,6 +596,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         // Cập nhật selectedWeekday để khớp với ngày vừa chọn
         selectedWeekday = picked.weekday + 1;
       });
+      _prepareWeatherFuture();
     }
   }
 
@@ -1074,11 +1059,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
           return Expanded(
             child: GestureDetector(
-              onTap: () {
+               onTap: () {
                 setState(() {
                   selectedWeekday = weekdayValue;
                   _focusedDate = dayDate;
                 });
+                _prepareWeatherFuture();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -1471,6 +1457,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 selectedWeekday = d['value'];
                 _focusedDate = d['fullDate'];
               });
+              _prepareWeatherFuture();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),

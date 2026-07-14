@@ -44,7 +44,9 @@ class _MySpaceWeatherBannerSectionState
   Future<WeatherAlertResult> _loadWeatherAlert() async {
     try {
       final campusId = mapUniversityToCampusId(widget.userUniversity);
+      debugPrint('[WeatherBanner] Bắt đầu nạp thời tiết cho trường: ${widget.userUniversity} (campusId: $campusId)');
       if (campusId == null) {
+        debugPrint('[WeatherBanner] Không tìm thấy campusId phù hợp cho trường này.');
         return WeatherAlertResult.none();
       }
 
@@ -59,15 +61,21 @@ class _MySpaceWeatherBannerSectionState
         );
       }).toList();
 
+      debugPrint('[WeatherBanner] Số lượng môn học hôm nay cần kiểm tra: ${scheduleItems.length}');
+
       final coordinator = MySpaceWeatherCoordinator(
         weatherService: WeatherService(),
         alertService: WeatherAlertService(),
       );
 
-      return await coordinator.buildWeatherAlertForToday(
+      final result = await coordinator.buildWeatherAlertForToday(
         schedules: scheduleItems,
       );
-    } catch (_) {
+
+      debugPrint('[WeatherBanner] Kết quả phân tích thời tiết: level=${result.level}, title="${result.title}", shouldShow=${result.shouldShow}');
+      return result;
+    } catch (e) {
+      debugPrint('[WeatherBanner] Lỗi trong quá trình nạp thời tiết: $e');
       return WeatherAlertResult.none();
     }
   }

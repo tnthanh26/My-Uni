@@ -58,7 +58,6 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
             color: Colors.black.withOpacity(0.45),
           ),
         ),
-
         // Logo & HCMUS Text & Notification - Cố định
         SafeArea(
           child: Padding(
@@ -199,6 +198,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
               Expanded(
                 child: Container(
                   width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -221,8 +221,10 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                         ),
                         child: TabBar(
                           controller: _tabController,
-                          isScrollable: false,
+                          isScrollable: true,
+                          tabAlignment: TabAlignment.center,
                           indicatorSize: TabBarIndicatorSize.tab,
+                          labelPadding: const EdgeInsets.symmetric(horizontal: 24),
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           indicator: BoxDecoration(
                             gradient: const LinearGradient(
@@ -240,12 +242,17 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                             ],
                           ),
                           labelColor: Colors.white,
-                          unselectedLabelColor: isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                          unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
                           dividerColor: Colors.transparent,
                           labelStyle: const TextStyle(
                             fontFamily: 'Nunito',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
                           ),
                           tabs: const [
                             Tab(text: 'Cá nhân'),

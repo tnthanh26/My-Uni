@@ -622,7 +622,7 @@ class _MyEventTabState extends State<MyEventTab>
                             listText,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                              fontSize: 14,
                               color: _primaryTextColor(isDarkMode),
                             ),
                           ),
@@ -633,7 +633,7 @@ class _MyEventTabState extends State<MyEventTab>
                             calendarText,
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 15,
+                              fontSize: 14,
                               color: _primaryTextColor(isDarkMode),
                             ),
                           ),
@@ -648,6 +648,7 @@ class _MyEventTabState extends State<MyEventTab>
           );
         },
       ),
+
     )));
   }
 

@@ -1,5 +1,8 @@
+import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:my_uni/theme/app_colors.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,6 +22,49 @@ import 'package:my_uni/models/notification_model.dart';
 import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
 import 'package:my_uni/features/services/daily_active_service.dart';
+import 'package:my_uni/features/myspace/models/weather_models.dart';
+import 'package:my_uni/features/myspace/services/weather_alert_service.dart';
+import 'package:my_uni/features/myspace/services/weather_service.dart';
+import 'package:my_uni/features/myspace/services/myspace_weather_coordinator.dart';
+import 'package:my_uni/features/myspace/myspace_firebase_service.dart';
+import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
+
+class WeatherAlertTheme {
+  final Color accent;
+  final String lottieAsset;
+  final String fallbackAsset;
+
+  const WeatherAlertTheme({
+    required this.accent,
+    required this.lottieAsset,
+    required this.fallbackAsset,
+  });
+
+  static const thunderstorm = WeatherAlertTheme(
+    accent: AppColors.hcmusAmber, // Vàng cam giông sét
+    lottieAsset: 'assets/icons/rainy.json',
+    fallbackAsset: 'assets/images/rain_icon.png',
+  );
+
+  static const heavyRain = WeatherAlertTheme(
+    accent: AppColors.hcmusBlue, // Xanh dương mưa lớn
+    lottieAsset: 'assets/icons/rainy.json',
+    fallbackAsset: 'assets/images/rain_icon.png',
+  );
+
+  static const lightRain = WeatherAlertTheme(
+    accent: AppColors.hcmusBlueLight, // Xanh dương nhạt mưa nhỏ
+    lottieAsset: 'assets/icons/rainy.json',
+    fallbackAsset: 'assets/images/rain_icon.png',
+  );
+
+  static const none = WeatherAlertTheme(
+    accent: AppColors.hcmusTeal, // Xanh lá thời tiết đẹp
+    lottieAsset: 'assets/icons/rainy.json',
+    fallbackAsset: 'assets/images/rain_icon.png',
+  );
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,6 +81,11 @@ class HomePageState extends State<HomePage> {
   bool _showWalkthrough = false;
   int _walkthroughStep = 0;
 
+  // Pending weather alerts state
+  WeatherAlertResult? _pendingWeatherAlert;
+  WeatherAlertTheme? _pendingWeatherTheme;
+  bool _hasShownWeatherAlert = false;
+
   @override
   void initState() {
     super.initState();
@@ -43,8 +94,318 @@ class HomePageState extends State<HomePage> {
     _checkOnboarding();
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
     _syncExistingProfileData();
+    _checkWeatherAlertAndShowDialog();
   }
 
+  DateTime _combineTodayAndTime(String time) {
+    final input = time.trim().toUpperCase();
+    final now = DateTime.now();
+    try {
+      DateTime parsed;
+      if (input.contains('AM') || input.contains('PM')) {
+        parsed = DateFormat('h:mm a').parse(input);
+      } else {
+        parsed = DateFormat('HH:mm').parse(input);
+      }
+      return DateTime(
+        now.year,
+        now.month,
+        now.day,
+        parsed.hour,
+        parsed.minute,
+      );
+    } catch (e) {
+      debugPrint('Cannot parse schedule time: $time, error: $e');
+      return DateTime(now.year, now.month, now.day, 7, 30);
+    }
+  }
+
+  Future<void> _checkWeatherAlertAndShowDialog() async {
+    // -------------------------------------------------------------
+    // CHẾ ĐỘ DEBUG: Luôn hiển thị Dialog cảnh báo để test UI khi vừa mở app
+    // Khi nạp ổn rồi, chỉ cần comment phần MOCK này và uncomment phần thực tế bên dưới.
+    // -------------------------------------------------------------
+    /*
+    final testResult = WeatherAlertResult(
+      shouldShow: true,
+      level: WeatherAlertLevel.thunderstorm,
+      title: "Hôm nay đi học, trời có thể mưa đấy.",
+      subtitle: "Đừng để bị ướt nhé!",
+    );
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWeatherAlertDialog(testResult, theme: WeatherAlertTheme.thunderstorm);
+    });
+    */
+
+    // LOGIC THỰC TẾ (Bỏ comment để khôi phục khi debug xong)
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data();
+      if (userData == null) return;
+      final String userUniversity = userData['university'] ?? '';
+
+      String? campusId;
+      switch (userUniversity.trim()) {
+        case 'VNU - HCMUS (CS1)':
+          campusId = 'us_cs1';
+          break;
+        case 'VNU - HCMUS (CS2)':
+          campusId = 'us_cs2';
+          break;
+        default:
+          campusId = null;
+      }
+      if (campusId == null) return;
+
+      final localSchedule = await MySpaceFirebaseService().getSchedule();
+      final todayWeekday = DateTime.now().weekday + 1; // T2=2, T3=3... CN=8
+      final todayClasses = localSchedule.where((c) => c.weekday == todayWeekday).toList();
+      if (todayClasses.isEmpty) return;
+
+      final scheduleItems = todayClasses.map((c) {
+        return ScheduleItem(
+          id: c.id,
+          title: c.name,
+          startTime: _combineTodayAndTime(c.start),
+          endTime: _combineTodayAndTime(c.end),
+          campusId: campusId!,
+          room: c.room,
+        );
+      }).toList();
+
+      final coordinator = MySpaceWeatherCoordinator(
+        weatherService: WeatherService(),
+        alertService: WeatherAlertService(),
+      );
+
+      final result = await coordinator.buildWeatherAlertForToday(
+        schedules: scheduleItems,
+      );
+
+      if (result.shouldShow && mounted) {
+        WeatherAlertTheme theme;
+        switch (result.level) {
+          case WeatherAlertLevel.thunderstorm:
+            theme = WeatherAlertTheme.thunderstorm;
+            break;
+          case WeatherAlertLevel.heavyRain:
+            theme = WeatherAlertTheme.heavyRain;
+            break;
+          case WeatherAlertLevel.lightRain:
+            theme = WeatherAlertTheme.lightRain;
+            break;
+          case WeatherAlertLevel.none:
+            theme = WeatherAlertTheme.none;
+            break;
+        }
+
+        if (_selectedIndex == 0) {
+          _hasShownWeatherAlert = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _selectedIndex == 0) {
+              _showWeatherAlertDialog(result, theme: theme);
+            } else {
+              _pendingWeatherAlert = result;
+              _pendingWeatherTheme = theme;
+              _hasShownWeatherAlert = false;
+            }
+          });
+        } else {
+          _pendingWeatherAlert = result;
+          _pendingWeatherTheme = theme;
+        }
+      }
+    } catch (e) {
+      debugPrint('[WeatherDialog] Lỗi kiểm tra thời tiết: $e');
+    }
+  }
+
+  void _showWeatherAlertDialog(
+    WeatherAlertResult result, {
+    WeatherAlertTheme theme = WeatherAlertTheme.thunderstorm,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.45),
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.9, end: 1.0),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  width: 320,
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        const Color(0xFF2C4A6E).withOpacity(0.48),
+                        const Color(0xFF16283F).withOpacity(0.96),
+                      ],
+                    ),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.08),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.35),
+                        blurRadius: 30,
+                        offset: const Offset(0, 12),
+                      ),
+                      BoxShadow(
+                        color: theme.accent.withOpacity(0.15),
+                        blurRadius: 40,
+                        spreadRadius: -10,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: theme.accent,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'CẢNH BÁO THỜI TIẾT',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.8,
+                              color: Colors.white.withOpacity(0.8),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: RadialGradient(
+                                colors: [
+                                  theme.accent.withOpacity(0.18),
+                                  theme.accent.withOpacity(0.0),
+                                ],
+                              ),
+                            ),
+                            child: Lottie.asset(
+                              theme.lottieAsset,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  theme.fallbackAsset,
+                                  fit: BoxFit.contain,
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "Hôm nay đi học có thể gặp trời mưa đấy",
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFFF2F6FA),
+                                    height: 1.3,
+                                  ),
+                                ),
+                                const SizedBox(height: 7),
+                                Text(
+                                  "Đừng để bị ướt nhé!",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        const Color(0xFFE6EEF4).withOpacity(0.8),
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: Material(
+                          color: AppColors.hcmusBlue,
+                          borderRadius: BorderRadius.circular(100),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(100),
+                            onTap: () => Navigator.pop(context),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 10,
+                              ),
+                              child: Text(
+                                'Đã hiểu',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
   Future<void> _syncExistingProfileData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -273,6 +634,25 @@ class HomePageState extends State<HomePage> {
     });
     HomePage.activeTabNotifier.value = index;
     EventPageNotifier.isActive.value = (index == 1);
+
+    if (index == 0 && _pendingWeatherAlert != null && !_hasShownWeatherAlert) {
+      final alert = _pendingWeatherAlert!;
+      final theme = _pendingWeatherTheme ?? WeatherAlertTheme.thunderstorm;
+
+      _pendingWeatherAlert = null;
+      _pendingWeatherTheme = null;
+      _hasShownWeatherAlert = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _selectedIndex == 0) {
+          _showWeatherAlertDialog(alert, theme: theme);
+        } else {
+          _pendingWeatherAlert = alert;
+          _pendingWeatherTheme = theme;
+          _hasShownWeatherAlert = false;
+        }
+      });
+    }
   }
 
   Widget _buildHeaderBackground(BuildContext context) {
@@ -415,6 +795,7 @@ class HomePageState extends State<HomePage> {
               Expanded(
                 child: Container(
                   width: double.infinity,
+                  clipBehavior: Clip.antiAlias,
                   decoration: BoxDecoration(
                     color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -462,6 +843,7 @@ class HomePageState extends State<HomePage> {
                           ],
                         ),
                       ),
+
                       // Nội dung các Tab
                       Expanded(
                         child: TabBarView(

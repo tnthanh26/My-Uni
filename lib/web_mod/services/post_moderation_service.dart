@@ -87,10 +87,12 @@ class PostModerationService {
     }
 
     int totalToDelete = 1 + repliesSnapshot.docs.length;
-    final postRef = firestore.collection(collection).doc(postId);
-    batch.update(postRef, {
-      'commentCount': FieldValue.increment(-totalToDelete),
-    });
+    if (collection != 'forum_posts') {
+      final postRef = firestore.collection(collection).doc(postId);
+      batch.update(postRef, {
+        'commentCount': FieldValue.increment(-totalToDelete),
+      });
+    }
 
     await batch.commit();
 

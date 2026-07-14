@@ -66,7 +66,7 @@ class WeatherAlertService {
       return WeatherAlertResult(
         shouldShow: true,
         level: WeatherAlertLevel.thunderstorm,
-        title: 'Có khả năng giông mưa',
+        title: 'Dự báo Giông Sét',
         subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
@@ -77,7 +77,7 @@ class WeatherAlertService {
       return WeatherAlertResult(
         shouldShow: true,
         level: WeatherAlertLevel.heavyRain,
-        title: 'Có thể mưa lớn trong giờ học',
+        title: 'Khả năng mưa ≥70%',
         subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
@@ -88,15 +88,15 @@ class WeatherAlertService {
       return WeatherAlertResult(
         shouldShow: true,
         level: WeatherAlertLevel.lightRain,
-        title: 'Có khả năng mưa',
+        title: 'Khả năng mưa ≥40%',
         subtitle: 'Trong khung $timeRange.',
         classStart: schedule.startTime,
         classEnd: schedule.endTime,
       );
     }
 
-    //return WeatherAlertResult.none();
-
+    return WeatherAlertResult.none();
+    /*
     return WeatherAlertResult(
       shouldShow: true,
       level: WeatherAlertLevel.heavyRain,
@@ -105,7 +105,7 @@ class WeatherAlertService {
       classStart: schedule.startTime,
       classEnd: schedule.endTime,
     );
-
+    */
   }
 
   bool _isHourRelevantToClass(
