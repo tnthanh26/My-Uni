@@ -27,6 +27,10 @@ class PostActionRow extends StatefulWidget {
 
 class _PostActionRowState extends State<PostActionRow> {
   DateTime _lastLikeTapTime = DateTime.fromMillisecondsSinceEpoch(0);
+  
+  // Trạng thái local tối ưu (Optimistic UI) để phản hồi tức thì
+  bool? _localIsLiked;
+  int? _localLikeCount;
 
   Future<void> _sendNotification({
     required String targetUserId,
@@ -49,13 +53,6 @@ class _PostActionRowState extends State<PostActionRow> {
   }
 
   Future<void> _handleLike(bool isLiked, int currentLikeCount) async {
-    final now = DateTime.now();
-    // 500ms synchronous debounce check to completely prevent double-click / spam race conditions
-    if (now.difference(_lastLikeTapTime) < const Duration(milliseconds: 500)) {
-      return;
-    }
-    _lastLikeTapTime = now;
-
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -64,14 +61,11 @@ class _PostActionRowState extends State<PostActionRow> {
       final userLikeRef = postRef.collection('likes').doc(user.uid);
 
       if (isLiked) {
-        // Direct write to trigger Firestore's local cache optimistic update instantly
-        // Check to prevent likeCount from dropping below 0
         final newLikeCount = currentLikeCount > 0 ? FieldValue.increment(-1) : 0;
-        postRef.update({'likeCount': newLikeCount});
+        await postRef.update({'likeCount': newLikeCount});
         userLikeRef.delete();
       } else {
-        // Direct write to trigger Firestore's local cache optimistic update instantly
-        postRef.update({'likeCount': FieldValue.increment(1)});
+        await postRef.update({'likeCount': FieldValue.increment(1)});
         userLikeRef.set({
           'userId': user.uid,
           'timestamp': FieldValue.serverTimestamp(),
@@ -155,12 +149,46 @@ class _PostActionRowState extends State<PostActionRow> {
           .doc(user?.uid ?? 'guest')
           .snapshots(),
       builder: (context, snapshot) {
-        bool isLiked = snapshot.hasData && snapshot.data!.exists;
+        bool isLikedFromServer = snapshot.hasData && snapshot.data!.exists;
+
+        // Áp dụng trạng thái Optimistic UI
+        bool displayLiked = _localIsLiked ?? isLikedFromServer;
+        int displayLikeCount = _localLikeCount ?? likeCount;
+
+        // Đồng bộ hóa lại local state sau khi render xong (tránh lỗi thay đổi state trong build phase)
+        if (_localIsLiked == isLikedFromServer && _localIsLiked != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _localIsLiked = null;
+                _localLikeCount = null;
+              });
+            }
+          });
+        }
+
         return _buildActionButton(
-          icon: isLiked ? Icons.favorite : Icons.favorite_border,
-          label: '$likeCount',
-          color: isLiked ? Colors.redAccent : defaultColor,
-          onTap: () => _handleLike(isLiked, likeCount),
+          icon: displayLiked ? Icons.favorite : Icons.favorite_border,
+          label: '$displayLikeCount',
+          color: displayLiked ? Colors.redAccent : defaultColor,
+          isLikedButton: true,
+          isLiked: displayLiked,
+          onTap: () {
+            final now = DateTime.now();
+            if (now.difference(_lastLikeTapTime) < const Duration(milliseconds: 400)) {
+              return; // Chặn spam click
+            }
+            _lastLikeTapTime = now;
+
+            final nextLiked = !displayLiked;
+            setState(() {
+              _localIsLiked = nextLiked;
+              _localLikeCount = likeCount + (nextLiked ? 1 : -1);
+              if (_localLikeCount! < 0) _localLikeCount = 0;
+            });
+
+            _handleLike(isLikedFromServer, likeCount);
+          },
         );
       },
     );
@@ -204,6 +232,8 @@ class _PostActionRowState extends State<PostActionRow> {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    bool isLikedButton = false,
+    bool isLiked = false,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -211,8 +241,16 @@ class _PostActionRowState extends State<PostActionRow> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 20, color: color),
+            isLikedButton
+                ? AnimatedScale(
+                    scale: isLiked ? 1.25 : 1.0,
+                    duration: const Duration(milliseconds: 150),
+                    curve: Curves.easeOutBack,
+                    child: Icon(icon, size: 20, color: color),
+                  )
+                : Icon(icon, size: 20, color: color),
             const SizedBox(width: 6),
             Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)),
           ],
