@@ -1956,7 +1956,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final bool isOwner = _user?.uid == data['authorId'];
     final bool isAnonymous =
         (data['isAnonymous'] == true) ||
-            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
+            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
     final bool showOwnAnonymousBadge = isOwner && isAnonymous;
     final String timeText = data['timestamp'] != null
         ? timeago.format(
@@ -1974,9 +1975,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
             children: [
               Expanded(
                 child: _buildAuthorRow(
-                  data['authorName'] ?? 'Sinh viên ẩn danh',
+                  isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Sinh viên ẩn danh'),
                   timeText,
-                  avatarBase64: data['authorAvatar'],
+                  avatarBase64: isAnonymous ? null : data['authorAvatar'],
                 ),
               ),
 

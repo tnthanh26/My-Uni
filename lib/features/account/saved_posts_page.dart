@@ -453,6 +453,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   Widget _buildForumCard(Map<String, dynamic> data, String docId) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
+    final bool isAnonymous =
+        (data['isAnonymous'] == true) ||
+            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -517,10 +521,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     backgroundColor:
                     isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
                     backgroundImage:
-                    (avatarData != null && avatarData.isNotEmpty)
+                    (!isAnonymous && avatarData != null && avatarData.isNotEmpty)
                         ? MemoryImage(base64Decode(avatarData))
                         : null,
-                    child: (avatarData == null || avatarData.isEmpty)
+                    child: (isAnonymous || avatarData == null || avatarData.isEmpty)
                         ? Icon(
                       Icons.person,
                       color: isDarkMode
@@ -535,7 +539,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data['authorName'] ?? 'Sinh viên ẩn danh',
+                          isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Sinh viên ẩn danh'),
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.w700,
