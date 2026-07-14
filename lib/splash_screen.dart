@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:my_uni/features/credential/blocked_account_page.dart';
+import 'package:my_uni/features/credential/deleting_account_page.dart';
 
 class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
@@ -88,17 +91,77 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Future<void> _checkAuthAndNavigate() async {
+    final user = FirebaseAuth.instance.currentUser;
+    Future<DocumentSnapshot<Map<String, dynamic>>?> userDocFuture;
+
+    if (user != null) {
+      userDocFuture = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get()
+          .timeout(const Duration(seconds: 4))
+          .then((value) => value)
+          .catchError((_) => null);
+    } else {
+      userDocFuture = Future.value(null);
+    }
+
     await Future.delayed(const Duration(milliseconds: 3200));
 
     if (!mounted || _navigated) return;
 
-    final user = FirebaseAuth.instance.currentUser;
     String route = '/welcome';
 
     if (user != null) {
       try {
         final prefs = await SharedPreferences.getInstance();
         final loginTimestamp = prefs.getInt('login_timestamp');
+
+        final userDoc = await userDocFuture;
+        bool isSuspended = false;
+        bool isDeleting = false;
+        DateTime? deleteTime;
+        String banReason = '';
+
+        if (userDoc != null && userDoc.exists) {
+          final data = userDoc.data();
+          final status = data?['status'] ?? 'active';
+          banReason = data?['banReason'] ?? '';
+
+          if (status == 'suspended') {
+            isSuspended = true;
+          } else if (status == 'deleting') {
+            isDeleting = true;
+            final scheduledDeleteAt = data?['scheduledDeleteAt'];
+            if (scheduledDeleteAt is Timestamp) {
+              deleteTime = scheduledDeleteAt.toDate();
+            }
+          }
+        }
+
+        if (isSuspended) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BlockedAccountPage(reason: banReason, status: 'suspended'),
+              ),
+            );
+            _navigated = true;
+            return;
+          }
+        } else if (isDeleting) {
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DeletingAccountPage(scheduledDeleteAt: deleteTime),
+              ),
+            );
+            _navigated = true;
+            return;
+          }
+        }
 
         if (loginTimestamp != null) {
           final loginTime = DateTime.fromMillisecondsSinceEpoch(loginTimestamp);
@@ -118,7 +181,7 @@ class _SplashPageState extends State<SplashPage>
           route = '/home';
         }
       } catch (e) {
-        debugPrint("Error checking login session age: $e");
+        debugPrint("Error checking login session age or status: $e");
         route = '/home'; // Nếu có lỗi bất ngờ, cho qua để không bị kẹt ở Splash
       }
     } else {

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/weather_models.dart';
 
@@ -16,9 +17,11 @@ class WeatherService {
           '&forecast_days=1',
     );
 
+    debugPrint('[WeatherService] Bắt đầu gọi API Open-Meteo: $uri');
     final response = await http.get(uri);
 
     if (response.statusCode != 200) {
+      debugPrint('[WeatherService] Lỗi gọi API: Mã phản hồi ${response.statusCode}');
       throw Exception('Failed to fetch weather forecast');
     }
 
@@ -44,6 +47,7 @@ class WeatherService {
       );
     }
 
+    debugPrint('[WeatherService] Tải thành công ${forecasts.length} dòng dữ liệu thời tiết theo giờ.');
     return forecasts;
   }
 }

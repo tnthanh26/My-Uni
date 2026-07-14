@@ -89,6 +89,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       _focusedDate = DateTime.now();
       selectedWeekday = _focusedDate.weekday + 1;
     });
+    // _prepareWeatherFuture(); // Tạm ẩn để tránh gọi API lặp lại khi chuyển tab
   }
 
   void _prepareWeatherFuture() {
@@ -165,8 +166,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           setState(() {
             _userUniversity = university;
           });
-          // Hiển thị cảnh báo thời tiết
-          //_prepareWeatherFuture();
+          // Hiển thị cảnh báo thời tiết sau khi đã nạp xong thông tin trường đại học
+          _prepareWeatherFuture();
         }
       }
 
@@ -595,6 +596,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         // Cập nhật selectedWeekday để khớp với ngày vừa chọn
         selectedWeekday = picked.weekday + 1;
       });
+      _prepareWeatherFuture();
     }
   }
 
@@ -1057,11 +1059,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
           return Expanded(
             child: GestureDetector(
-              onTap: () {
+               onTap: () {
                 setState(() {
                   selectedWeekday = weekdayValue;
                   _focusedDate = dayDate;
                 });
+                _prepareWeatherFuture();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -1454,6 +1457,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 selectedWeekday = d['value'];
                 _focusedDate = d['fullDate'];
               });
+              _prepareWeatherFuture();
             },
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
