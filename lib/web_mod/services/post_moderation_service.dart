@@ -65,12 +65,22 @@ class PostModerationService {
   }) async {
     final firestore = FirebaseFirestore.instance;
 
-    final repliesSnapshot = await firestore
-        .collection(collection)
-        .doc(postId)
-        .collection('comments')
-        .where('parentCommentId', isEqualTo: commentId)
-        .get();
+    List<DocumentReference> descendantRefs = [];
+
+    Future<void> findDescendants(String id) async {
+      final replies = await firestore
+          .collection(collection)
+          .doc(postId)
+          .collection('comments')
+          .where('parentCommentId', isEqualTo: id)
+          .get();
+      for (var doc in replies.docs) {
+        descendantRefs.add(doc.reference);
+        await findDescendants(doc.id);
+      }
+    }
+
+    await findDescendants(commentId);
 
     final batch = firestore.batch();
 
@@ -82,17 +92,15 @@ class PostModerationService {
 
     batch.delete(commentRef);
 
-    for (var doc in repliesSnapshot.docs) {
-      batch.delete(doc.reference);
+    for (var ref in descendantRefs) {
+      batch.delete(ref);
     }
 
-    int totalToDelete = 1 + repliesSnapshot.docs.length;
-    if (collection != 'forum_posts') {
-      final postRef = firestore.collection(collection).doc(postId);
-      batch.update(postRef, {
-        'commentCount': FieldValue.increment(-totalToDelete),
-      });
-    }
+    int totalToDelete = 1 + descendantRefs.length;
+    final postRef = firestore.collection(collection).doc(postId);
+    batch.update(postRef, {
+      'commentCount': FieldValue.increment(-totalToDelete),
+    });
 
     await batch.commit();
 
