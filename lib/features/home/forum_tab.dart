@@ -335,7 +335,8 @@ class _ForumTabState extends State<ForumTab> {
                     final bool isOwner = currentUser?.uid == data['authorId'];
                     final bool isAnonymous =
                         (data['isAnonymous'] == true) ||
-                            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false);
+                            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+                            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
                     final bool showOwnAnonymousBadge = isOwner && isAnonymous;
 
                     return Container(
@@ -381,7 +382,7 @@ class _ForumTabState extends State<ForumTab> {
                                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                                   child: Row(
                                     children: [
-                                      _buildAuthorAvatar(avatarData, isDarkMode),
+                                      _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(

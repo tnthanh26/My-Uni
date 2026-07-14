@@ -231,7 +231,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       // --- 1. TẠO MAP CHỨA CÁC TRƯỜNG MÀ CẢ EDIT VÀ CREATE ĐỀU DÙNG ---
       final commonData = {
-        'authorName': _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
+        'authorName': _isAnonymous ? 'Sinh viên ẩn danh' : _realUserName,
         'authorAvatar': _isAnonymous ? null : _userPhotoBase64,
         'content': content,
         'hashtags': _selectedHashtags,
@@ -521,7 +521,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _isAnonymous ? 'Vô danh tiểu tốt' : _realUserName,
+                      _isAnonymous ? 'Sinh viên ẩn danh' : _realUserName,
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
                         fontWeight: FontWeight.w600,
