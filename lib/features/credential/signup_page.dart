@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
-import 'dart:math';
 import 'package:http/http.dart' as http;
 
 class SignUpPage extends StatefulWidget {

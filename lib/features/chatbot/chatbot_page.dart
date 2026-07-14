@@ -31,7 +31,6 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
   final Color primaryColor = AppColors.hcmusBlue;
 
   bool _isTyping = false;
-  bool _inputFocused = false;
   late AnimationController _typingController;
 
   final List<ChatMessage> _messages = [
@@ -804,34 +803,31 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Expanded(
-              child: Focus(
-                onFocusChange: (v) => setState(() => _inputFocused = v),
-                child: TextField(
-                  controller: _messageController,
-                  minLines: 1,
-                  maxLines: 5,
-                  keyboardType: TextInputType.text,
-                  textCapitalization: TextCapitalization.sentences,
-                  autocorrect: true,
-                  enableSuggestions: true,
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : const Color(0xFF1A1F35),
+              child: TextField(
+                controller: _messageController,
+                minLines: 1,
+                maxLines: 5,
+                keyboardType: TextInputType.text,
+                textCapitalization: TextCapitalization.sentences,
+                autocorrect: true,
+                enableSuggestions: true,
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : const Color(0xFF1A1F35),
+                  fontSize: 14,
+                ),
+                decoration: InputDecoration(
+                  hintText: "Hỏi Ú Em điều gì đó...",
+                  hintStyle: TextStyle(
+                    color: isDarkMode
+                        ? Colors.white24
+                        : Colors.black.withOpacity(0.3),
                     fontSize: 14,
                   ),
-                  decoration: InputDecoration(
-                    hintText: "Hỏi Ú Em điều gì đó...",
-                    hintStyle: TextStyle(
-                      color: isDarkMode
-                          ? Colors.white24
-                          : Colors.black.withOpacity(0.3),
-                      fontSize: 14,
-                    ),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                    isDense: true,
-                  ),
-                  onSubmitted: (_) => _handleSendMessage(),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  isDense: true,
                 ),
+                onSubmitted: (_) => _handleSendMessage(),
               ),
             ),
 

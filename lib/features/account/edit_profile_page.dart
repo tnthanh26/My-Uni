@@ -466,14 +466,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildDivider(bool isDarkMode) {
-    return Divider(
-      height: 1,
-      indent: 64,
-      color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
-    );
-  }
-
   InputDecoration _dobPartDecoration(BuildContext context, String hint) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(

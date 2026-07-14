@@ -54,6 +54,8 @@ android {
 
     buildTypes {
         release {
+            isMinifyEnabled = true
+            isShrinkResources = true
             val isSigningConfigured = keystoreProperties.getProperty("keyAlias") != null
             signingConfig = if (isSigningConfigured) {
                 signingConfigs.getByName("release")

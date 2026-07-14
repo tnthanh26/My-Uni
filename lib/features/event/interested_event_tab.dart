@@ -10,13 +10,6 @@ class InterestedEventTab extends StatelessWidget {
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color detailBlue = Color(0xFF5794F3);
 
-  Future<void> _launchURL(String urlString) async {
-    if (urlString.isEmpty) return;
-
-    final Uri url = Uri.parse(urlString);
-    await launchUrl(url, mode: LaunchMode.externalApplication);
-  }
-
   Future<void> _removeInterest(BuildContext context, String docId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
