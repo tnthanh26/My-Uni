@@ -1,6 +1,6 @@
 /* eslint-disable indent */
 import {setGlobalOptions} from "firebase-functions/v2";
-import {onDocumentCreated, onDocumentDeleted} from "firebase-functions/v2/firestore";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
 import {onCall, HttpsError} from "firebase-functions/v2/https";
 import {onSchedule} from "firebase-functions/v2/scheduler";
 import * as admin from "firebase-admin";
@@ -674,38 +674,3 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
     throw new HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
   }
 });
-
-/**
- * Tự động tăng commentCount của bài viết khi có bình luận mới
- */
-export const onCommentCreated = onDocumentCreated(
-  "forum_posts/{postId}/comments/{commentId}",
-  async (event) => {
-    if (!event.data) return;
-    const postId = event.params.postId;
-    const postRef = db.collection("forum_posts").doc(postId);
-
-    await postRef.update({
-      commentCount: admin.firestore.FieldValue.increment(1),
-    });
-    console.log(`Incremented commentCount for post ${postId}`);
-  }
-);
-
-/**
- * Tự động giảm commentCount của bài viết khi bình luận bị xóa
- */
-export const onCommentDeleted = onDocumentDeleted(
-  "forum_posts/{postId}/comments/{commentId}",
-  async (event) => {
-    if (!event.data) return;
-    const postId = event.params.postId;
-    const postRef = db.collection("forum_posts").doc(postId);
-
-    await postRef.update({
-      commentCount: admin.firestore.FieldValue.increment(-1),
-    });
-    console.log(`Decremented commentCount for post ${postId}`);
-  }
-);
-

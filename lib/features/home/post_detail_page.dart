@@ -589,12 +589,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Future<void> _deleteComment(String commentId) async {
     try {
-      final repliesSnapshot = await _firestore
-          .collection(_collectionPath)
-          .doc(widget.docId)
-          .collection('comments')
-          .where('parentCommentId', isEqualTo: commentId)
-          .get();
+      List<DocumentReference> descendantRefs = [];
+
+      Future<void> findDescendants(String id) async {
+        final replies = await _firestore
+            .collection(_collectionPath)
+            .doc(widget.docId)
+            .collection('comments')
+            .where('parentCommentId', isEqualTo: id)
+            .get();
+        for (var doc in replies.docs) {
+          descendantRefs.add(doc.reference);
+          await findDescendants(doc.id);
+        }
+      }
+
+      await findDescendants(commentId);
 
       WriteBatch batch = _firestore.batch();
 
@@ -605,19 +615,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
           .doc(commentId);
       batch.delete(mainCommentRef);
 
-      for (var doc in repliesSnapshot.docs) {
-        batch.delete(doc.reference);
+      for (var ref in descendantRefs) {
+        batch.delete(ref);
       }
 
-      int totalToDelete = 1 + repliesSnapshot.docs.length;
+      int totalToDelete = 1 + descendantRefs.length;
 
-      if (_collectionPath != 'forum_posts') {
-        DocumentReference postRef =
-            _firestore.collection(_collectionPath).doc(widget.docId);
-        batch.update(postRef, {
-          'commentCount': FieldValue.increment(-totalToDelete)
-        });
-      }
+      DocumentReference postRef =
+          _firestore.collection(_collectionPath).doc(widget.docId);
+      batch.update(postRef, {
+        'commentCount': FieldValue.increment(-totalToDelete)
+      });
 
       await batch.commit();
 
@@ -948,6 +956,30 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ? _user!.displayName!.trim()
               : "Ai đó");
 
+      String? rootCommentId;
+      String rootAuthorId = _user!.uid;
+
+      if (parentId != null) {
+        final parentDoc = await _firestore
+            .collection(_collectionPath)
+            .doc(widget.docId)
+            .collection('comments')
+            .doc(parentId)
+            .get();
+
+        if (parentDoc.exists) {
+          final parentData = parentDoc.data()!;
+
+          rootCommentId =
+              parentData['rootCommentId']?.toString() ?? parentDoc.id;
+
+          rootAuthorId =
+              parentData['rootAuthorId']?.toString() ??
+                  parentData['authorId']?.toString() ??
+                  _user!.uid;
+        }
+      }
+
       Map<String, dynamic> commentData = {
         'authorId': _user!.uid,
         'authorName': senderName,
@@ -955,6 +987,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
         'content': content,
         'timestamp': FieldValue.serverTimestamp(),
         'parentCommentId': parentId,
+
+        // Comment gốc sẽ để null.
+        // Tất cả reply lưu cùng rootCommentId và rootAuthorId.
+        'rootCommentId': rootCommentId,
+        'rootAuthorId': rootAuthorId,
+
         'likes': [],
         'status': isSensitive ? 'pending' : 'approved',
       };
@@ -975,14 +1013,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
 
       // 2. Cập nhật số lượng bình luận bài viết (Bọc riêng để không chặn luồng chính nếu lỗi phân quyền bài viết)
-      if (_collectionPath != 'forum_posts') {
-        try {
-          await _firestore.collection(_collectionPath).doc(widget.docId).update({
-            'commentCount': FieldValue.increment(1)
-          });
-        } catch (e) {
-          debugPrint("Lỗi cập nhật commentCount của bài viết: $e");
-        }
+      try {
+        await _firestore.collection(_collectionPath).doc(widget.docId).update({
+          'commentCount': FieldValue.increment(1)
+        });
+      } catch (e) {
+        debugPrint("Lỗi cập nhật commentCount của bài viết: $e");
       }
 
       // 3. Gửi thông báo đến tác giả bài đăng (Bọc riêng để tránh lỗi phân quyền ghi notifications của người khác)
@@ -2540,9 +2576,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     }
 
-    final bool isAuthor = comment['authorId'] ==
-        (widget.initialPostData['authorId'] ??
-            widget.initialPostData['uploaderId']);
+    final bool isPostAnonymous =
+        (widget.initialPostData['isAnonymous'] == true) ||
+        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+
+    final bool isAuthor = !isPostAnonymous &&
+        comment['authorId'] ==
+            (widget.initialPostData['authorId'] ??
+                widget.initialPostData['uploaderId']);
 
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);

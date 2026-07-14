@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onCommentDeleted = exports.onCommentCreated = exports.verifyOTPAndCreateUser = exports.sendRegistrationOTP = exports.cleanupDeletedAccounts = exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
+exports.verifyOTPAndCreateUser = exports.sendRegistrationOTP = exports.cleanupDeletedAccounts = exports.semanticSearch = exports.chatWithUEm = exports.moderateMaterial = exports.moderateReview = exports.moderateForumPost = void 0;
 /* eslint-disable indent */
 const v2_1 = require("firebase-functions/v2");
 const firestore_1 = require("firebase-functions/v2/firestore");
@@ -544,31 +544,5 @@ exports.verifyOTPAndCreateUser = (0, https_1.onCall)(async (request) => {
         }
         throw new https_1.HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
     }
-});
-/**
- * Tự động tăng commentCount của bài viết khi có bình luận mới
- */
-exports.onCommentCreated = (0, firestore_1.onDocumentCreated)("forum_posts/{postId}/comments/{commentId}", async (event) => {
-    if (!event.data)
-        return;
-    const postId = event.params.postId;
-    const postRef = db.collection("forum_posts").doc(postId);
-    await postRef.update({
-        commentCount: admin.firestore.FieldValue.increment(1),
-    });
-    console.log(`Incremented commentCount for post ${postId}`);
-});
-/**
- * Tự động giảm commentCount của bài viết khi bình luận bị xóa
- */
-exports.onCommentDeleted = (0, firestore_1.onDocumentDeleted)("forum_posts/{postId}/comments/{commentId}", async (event) => {
-    if (!event.data)
-        return;
-    const postId = event.params.postId;
-    const postRef = db.collection("forum_posts").doc(postId);
-    await postRef.update({
-        commentCount: admin.firestore.FieldValue.increment(-1),
-    });
-    console.log(`Decremented commentCount for post ${postId}`);
 });
 //# sourceMappingURL=index.js.map
