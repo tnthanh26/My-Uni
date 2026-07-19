@@ -46,6 +46,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   File? _commentImageFile;
   bool _isSubmittingComment = false;
+  bool _isCommentAnonymous = false;
   String _commentSortMode = 'newest'; // 'newest' hoặc 'top'
 
   Future<void> _pickCommentImage() async {
@@ -932,6 +933,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     });
 
     try {
+      FocusScope.of(context).unfocus();
       String? parentId = _replyingToId;
       String? commentImageUrl;
 
@@ -945,7 +947,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         _replyingToName = null;
         _commentImageFile = null;
       });
-      FocusScope.of(context).unfocus();
 
       final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
       final userData = userDoc.data();
@@ -955,6 +956,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
           : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
               ? _user!.displayName!.trim()
               : "Ai đó");
+
+      final String commentSenderName = _isCommentAnonymous
+          ? 'Sinh viên ẩn danh'
+          : senderName;
 
       String? rootCommentId;
       String rootAuthorId = _user!.uid;
@@ -982,8 +987,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
       Map<String, dynamic> commentData = {
         'authorId': _user!.uid,
-        'authorName': senderName,
-        'authorAvatar': userData?['photoUrl'] ?? '',
+        'authorName': commentSenderName,
+        'authorAvatar': _isCommentAnonymous ? '' : (userData?['photoUrl'] ?? ''),
+        'isAnonymous': _isCommentAnonymous,
         'content': content,
         'timestamp': FieldValue.serverTimestamp(),
         'parentCommentId': parentId,
@@ -1024,7 +1030,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       // 3. Gửi thông báo đến tác giả bài đăng (Bọc riêng để tránh lỗi phân quyền ghi notifications của người khác)
       String notificationContent = content.isNotEmpty ? content : "[Hình ảnh]";
       try {
-        await _sendCommentNotification(notificationContent, senderName);
+        await _sendCommentNotification(notificationContent, commentSenderName);
       } catch (e) {
         debugPrint("Lỗi ghi thông báo bình luận: $e");
       }
@@ -1048,7 +1054,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 'userId': parentAuthorId,
                 'type': 'comment',
                 'title': 'Phản hồi mới',
-                'content': '$senderName đã phản hồi bình luận của bạn: "$notificationContent"',
+                'content': '$commentSenderName đã phản hồi bình luận của bạn: "$notificationContent"',
                 'timestamp': FieldValue.serverTimestamp(),
                 'isRead': false,
                 'relatedPostId': widget.docId,
@@ -2581,7 +2587,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
         (widget.initialPostData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
         (widget.initialPostData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
 
+    final bool isCommentAnonymous = (comment['isAnonymous'] == true);
+
     final bool isAuthor = !isPostAnonymous &&
+        !isCommentAnonymous &&
         comment['authorId'] ==
             (widget.initialPostData['authorId'] ??
                 widget.initialPostData['uploaderId']);
@@ -2600,17 +2609,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final bool hasImage = comment['imageUrl'] != null && comment['imageUrl'].toString().isNotEmpty;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: commentAuthorId == null
+      stream: (commentAuthorId == null || isCommentAnonymous)
           ? null
           : _firestore.collection('users').doc(commentAuthorId).snapshots(),
       builder: (context, userSnapshot) {
         final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
 
-        final String liveName =
-            userData?['displayName'] ?? comment['authorName'] ?? 'Người dùng';
+        final String liveName = isCommentAnonymous
+            ? 'Sinh viên ẩn danh'
+            : (userData?['displayName'] ?? comment['authorName'] ?? 'Người dùng');
 
-        final String? liveAvatar =
-            userData?['photoUrl'] ?? comment['authorAvatar'];
+        final String? liveAvatar = isCommentAnonymous
+            ? null
+            : (userData?['photoUrl'] ?? comment['authorAvatar']);
 
         return Stack(
           clipBehavior: Clip.none,
@@ -2687,6 +2698,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                       ),
                                     ),
                                   ),
+                                  if (isCommentAnonymous && isCommentOwner) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF5893D8).withOpacity(0.12),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        "Bạn",
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w700,
+                                          color: Color(0xFF5893D8),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                   if (isAuthor) ...[
                                     const SizedBox(width: 6),
                                     Container(
@@ -2952,8 +2982,63 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ],
               ),
             ),
+          if (_isCommentAnonymous)
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? const Color(0xFF5893D8).withValues(alpha: 0.15)
+                    : const Color(0xFF5893D8).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.visibility_off,
+                    size: 14,
+                    color: Color(0xFF5893D8),
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Đang bật chế độ bình luận ẩn danh',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF5893D8),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: () => setState(() => _isCommentAnonymous = false),
+                    child: const Icon(
+                      Icons.close,
+                      size: 14,
+                      color: Color(0xFF5893D8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _isCommentAnonymous = !_isCommentAnonymous;
+                  });
+                },
+                tooltip: _isCommentAnonymous ? 'Đang bật Ẩn danh' : 'Bật bình luận ẩn danh',
+                icon: Icon(
+                  _isCommentAnonymous ? Icons.visibility_off : Icons.visibility_off_outlined,
+                  color: _isCommentAnonymous
+                      ? const Color(0xFF5893D8)
+                      : (isDarkMode ? Colors.white70 : const Color(0xFF5893D8)),
+                  size: 22,
+                ),
+              ),
               IconButton(
                 onPressed: _pickCommentImage,
                 icon: Icon(
@@ -2966,7 +3051,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isDarkMode
-                        ? Colors.white.withOpacity(0.05)
+                        ? Colors.white.withValues(alpha: 0.05)
                         : const Color(0xFFF1F2F6),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
@@ -2985,14 +3070,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     minLines: 1,
                     maxLines: 4,
                     decoration: InputDecoration(
-                      hintText: "Viết bình luận...",
+                      hintText: _isCommentAnonymous
+                          ? "Viết bình luận ẩn danh..."
+                          : "Viết bình luận...",
                       hintStyle: TextStyle(
                         color: isDarkMode ? Colors.white38 : Colors.grey,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(28),
-                        borderSide: BorderSide.none,
-                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
                       filled: false,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 18,

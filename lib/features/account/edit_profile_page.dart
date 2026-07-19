@@ -40,6 +40,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   }
 
   String? selectedFaculty;
+  String? selectedUniversity;
   String? _currentPhotoBase64;
   File? _imageFile;
   bool _isLoading = false;
@@ -48,9 +49,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
   String _initialName = '';
   String _initialDob = '';
   String? _initialFaculty;
+  String? _initialUniversity;
   String _initialStudentId = '';
   String _initialCohort = '';
   String? _initialPhotoBase64;
+
+  final List<String> universities = [
+    'VNU - HCMUS (CS1)',
+    'VNU - HCMUS (CS2)',
+  ];
 
   final List<String> faculties = [
     'Công nghệ thông tin',
@@ -77,6 +84,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     return _nameController.text != _initialName ||
         currentDob != _initialDob ||
         selectedFaculty != _initialFaculty ||
+        selectedUniversity != _initialUniversity ||
         _studentIdController.text != _initialStudentId ||
         currentCohort != _initialCohort ||
         _imageFile != null ||
@@ -147,6 +155,10 @@ class _EditProfilePageState extends State<EditProfilePage> {
             selectedFaculty = data['faculty'];
           }
 
+          if (universities.contains(data['university'])) {
+            selectedUniversity = data['university'];
+          }
+
           _studentIdController.text = data['studentId'] ?? '';
 
           // Parse dob
@@ -177,6 +189,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _initialName = _nameController.text;
           _initialDob = _getFormattedDob();
           _initialFaculty = selectedFaculty;
+          _initialUniversity = selectedUniversity;
           _initialStudentId = _studentIdController.text;
           _initialCohort = _getFormattedCohort();
           _initialPhotoBase64 = _currentPhotoBase64;
@@ -282,6 +295,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'displayName': _nameController.text.trim(),
         'dob': dobText,
         'faculty': selectedFaculty,
+        'university': selectedUniversity,
         'photoUrl': finalPhotoBase64,
         'studentId': _studentIdController.text.trim(),
         'cohort': cohortText,
@@ -301,6 +315,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
           _initialName = _nameController.text.trim();
           _initialDob = dobText;
           _initialFaculty = selectedFaculty;
+          _initialUniversity = selectedUniversity;
           _initialStudentId = _studentIdController.text.trim();
           _initialCohort = cohortText;
           _initialPhotoBase64 = finalPhotoBase64;
@@ -827,6 +842,135 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
+  Widget _buildUniversityDropdownCard(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: const Color(0xFF6797E1).withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.location_on_outlined,
+              color: Color(0xFF6797E1),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cơ sở học tập',
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                  ),
+                ),
+                const SizedBox(height: 7),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedUniversity,
+                  isExpanded: true,
+                  dropdownColor:
+                  isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
+                  icon: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: isDarkMode ? Colors.white38 : Colors.grey,
+                  ),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: isDarkMode
+                        ? Colors.white.withOpacity(0.04)
+                        : const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    isDense: true,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFE2E8F0),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF6797E1),
+                        width: 1.4,
+                      ),
+                    ),
+                  ),
+                  hint: Text(
+                    "Chọn cơ sở",
+                    style: TextStyle(
+                      color: isDarkMode ? Colors.white24 : Colors.black26,
+                      fontSize: 14,
+                      fontFamily: 'Encode Sans Expanded',
+                    ),
+                  ),
+                  selectedItemBuilder: (context) {
+                    return universities.map((u) {
+                      return Text(
+                        u,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
+                        ),
+                      );
+                    }).toList();
+                  },
+                  items: universities.map((u) {
+                    return DropdownMenuItem(
+                      value: u,
+                      child: Text(
+                        u,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 14,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (val) => setState(() => selectedUniversity = val),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildDropdownFieldCard(BuildContext context, String label) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -865,7 +1009,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
                 const SizedBox(height: 7),
                 DropdownButtonFormField<String>(
-                  value: selectedFaculty,
+                  initialValue: selectedFaculty,
                   isExpanded: true,
                   dropdownColor:
                   isDarkMode ? const Color(0xFF2C2C2C) : Colors.white,
@@ -1178,6 +1322,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                   _buildGroup(
                     isDarkMode: isDarkMode,
                     children: [
+                      _buildUniversityDropdownCard(context),
                       _buildDropdownFieldCard(context, 'Khoa'),
                       _buildTextFieldCard(
                         context,
