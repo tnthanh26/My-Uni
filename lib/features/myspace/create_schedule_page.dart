@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'myspace_firebase_service.dart';
 import 'local_storage_helper.dart';
 import 'models/myspace_models.dart';
+import 'campus_data.dart';
+import 'models/weather_models.dart';
 import 'package:intl/intl.dart';
 
 class CreateSchedulePage extends StatefulWidget {
   final StudyClass? schedule;
   final int? initialWeekday;
-  const CreateSchedulePage({super.key, this.schedule, this.initialWeekday});
+  final String? userUniversity;
+  const CreateSchedulePage({super.key, this.schedule, this.initialWeekday, this.userUniversity});
 
   @override
   State<CreateSchedulePage> createState() => _CreateSchedulePageState();
@@ -41,9 +47,15 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     const Color(0xFF8DE6D4), // Teal nhạt
   ];
 
+  String _userUniversity = '';
+  List<CampusLocation> _availableCampuses = [];
+  String? _selectedCampusId;
+
   @override
   void initState() {
     super.initState();
+    _userUniversity = widget.userUniversity ?? '';
+    _initCampuses();
     if (widget.schedule != null) {
       final schedule = widget.schedule!;
 
@@ -58,6 +70,44 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
         widget.initialWeekday! >= 2 &&
         widget.initialWeekday! <= 8) {
       _selectedWeekday = _weekdays[widget.initialWeekday! - 2];
+    }
+  }
+
+  Future<void> _initCampuses() async {
+    if (_userUniversity.isEmpty) {
+      try {
+        final currentUser = FirebaseAuth.instance.currentUser;
+        if (currentUser != null) {
+          final userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .get();
+          if (userDoc.exists) {
+            _userUniversity = userDoc.data()?['university'] ?? '';
+          }
+        }
+      } catch (e) {
+        debugPrint("Error fetching user university: $e");
+      }
+    }
+
+    _availableCampuses = CampusData.getCampusesForSchoolOf(_userUniversity);
+
+    if (widget.schedule != null && widget.schedule!.campusId != null) {
+      _selectedCampusId = widget.schedule!.campusId;
+    } else {
+      _selectedCampusId = CampusData.mapUniversityToCampusId(_userUniversity);
+    }
+
+    // Ensure selected campus is in the available list, fallback to first if not
+    if (_selectedCampusId != null && !_availableCampuses.any((c) => c.campusId == _selectedCampusId)) {
+      _selectedCampusId = _availableCampuses.isNotEmpty ? _availableCampuses.first.campusId : null;
+    } else if (_selectedCampusId == null && _availableCampuses.isNotEmpty) {
+      _selectedCampusId = _availableCampuses.first.campusId;
+    }
+
+    if (mounted) {
+      setState(() {});
     }
   }
 
@@ -80,10 +130,10 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     }
   }
 
+  @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color scaffoldBg = isDarkMode ? const Color(0xFF121212) : Colors.white;
-    final Color cardBg = isDarkMode ? const Color(0xFF1C1C1E) : fieldBg;
     final Color primaryText = isDarkMode ? Colors.white : Colors.black;
     final Color secondaryText = isDarkMode ? Colors.white70 : hintGrey;
     final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
@@ -125,7 +175,6 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
               const SizedBox(height: 24),
-
               // 1. Tên Môn học
               TextField(
                 controller: _subjectController,
@@ -207,27 +256,49 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
               ),
               const SizedBox(height: 24),
 
-              // 4. Địa điểm
+              // 4. Cơ sở trường & Chi tiết địa điểm
+              Text("Cơ sở trường",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded', color: primaryText)),
+              const SizedBox(height: 12),
               _buildRectangleField(
                 child: Row(
                   children: [
-                    Icon(Icons.location_on_outlined, size: 24, color: primaryText),
+                    Icon(Icons.school_outlined, size: 24, color: primaryText),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: TextField(
-                        controller: _locationController,
-                        style: TextStyle(fontSize: 20, fontFamily: 'Encode Sans Expanded', color: primaryText),
-                        decoration: InputDecoration(
-                          hintText: 'Địa điểm',
-                          hintStyle: TextStyle(color: secondaryText),
-                          border: InputBorder.none,
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _selectedCampusId,
+                          dropdownColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                          isExpanded: true,
+                          icon: Icon(Icons.keyboard_arrow_down, color: secondaryText),
+                          style: TextStyle(fontSize: 20, fontFamily: 'Urbanist', color: primaryText),
+                          onChanged: (String? newValue) {
+                            setState(() => _selectedCampusId = newValue);
+                          },
+                          items: _availableCampuses.map<DropdownMenuItem<String>>((CampusLocation campus) {
+                            return DropdownMenuItem<String>(
+                              value: campus.campusId,
+                              child: Text(campus.name),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-
+              const SizedBox(height: 24),
+              TextField(
+                controller: _locationController,
+                style: TextStyle(fontSize: 20, color: primaryText, fontFamily: 'Encode Sans Expanded'),
+                decoration: InputDecoration(
+                  hintText: 'Chi tiết địa điểm (Tòa, phòng...)',
+                  hintStyle: TextStyle(color: secondaryText, fontSize: 20),
+                  enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: borderColor)),
+                  focusedBorder: const UnderlineInputBorder(borderSide: BorderSide(color: headerBg)),
+                ),
+              ),
               const SizedBox(height: 24),
               Text("Màu sắc thẻ",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded', color: primaryText)),
@@ -289,17 +360,115 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   }
 
   Future<void> _selectTime(bool isStart) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: isStart ? _startTime : _endTime,
-      initialEntryMode: TimePickerEntryMode.inputOnly,
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final initialTime = isStart ? _startTime : _endTime;
+    
+    final now = DateTime.now();
+    DateTime tempDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      initialTime.hour,
+      initialTime.minute,
     );
-    if (picked != null) {
-      setState(() {
-        if (isStart) _startTime = picked;
-        else _endTime = picked;
-      });
-    }
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 280,
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDarkMode ? Colors.white10 : Colors.black12,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Text(
+                          "Hủy",
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white54 : Colors.black54,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        isStart ? "Giờ bắt đầu" : "Giờ kết thúc",
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            final selectedTime = TimeOfDay(
+                              hour: tempDateTime.hour,
+                              minute: tempDateTime.minute,
+                            );
+                             if (isStart) {
+                               _startTime = selectedTime;
+                             } else {
+                               _endTime = selectedTime;
+                             }
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          "Xong",
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontSize: 16,
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+                    ),
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.time,
+                      use24hFormat: true,
+                      initialDateTime: tempDateTime,
+                      onDateTimeChanged: (DateTime newDateTime) {
+                        tempDateTime = newDateTime;
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   int _getWeekdayInt(String dayName) {
@@ -333,6 +502,9 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       return;
     }
 
+    final startStr = _startTime.format(context);
+    final endStr = _endTime.format(context);
+
     try {
       // 1. Lấy danh sách lịch học hiện tại từ máy (đã bao gồm mock data nếu máy trống)
       List<StudyClass> currentSchedule = await LocalStorageHelper.getSchedule();
@@ -344,9 +516,10 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
       final updatedClass = StudyClass(
         id: targetId,
         name: _subjectController.text,
-        start: _startTime.format(context),
-        end: _endTime.format(context),
+        start: startStr,
+        end: endStr,
         room: _locationController.text,
+        campusId: _selectedCampusId,
         weekday: _getWeekdayInt(_selectedWeekday),
         color: _selectedColor,
       );

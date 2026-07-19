@@ -444,25 +444,25 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
                           _buildGroupSection(
                             title: "Hôm nay & Ngày mai",
                             items: todayAndTomorrow,
-                            headerColor: const Color (0xFFDC2626),
+                            headerColor: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
                             isDarkMode: isDarkMode,
                           ),
                           _buildGroupSection(
                             title: "Tuần này",
                             items: thisWeek,
-                            headerColor: const Color(0xFFEA580C),
+                            headerColor: isDarkMode ? const Color(0xFFFB923C) : const Color(0xFFEA580C),
                             isDarkMode: isDarkMode,
                           ),
                           _buildGroupSection(
                             title: "Sắp tới",
                             items: upcoming,
-                            headerColor: isDarkMode ? Colors.white70 : const Color(0xFF448E58),
+                            headerColor: isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58),
                             isDarkMode: isDarkMode,
                           ),
                           _buildGroupSection(
                             title: "Đã hoàn thành",
                             items: completed,
-                            headerColor: const Color(0xFF448E58),
+                            headerColor: isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58),
                             isDarkMode: isDarkMode,
                             isCompletedSection: true,
                           ),
@@ -954,14 +954,14 @@ class _DeadlineCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeLeftData = _getTimeLeft(deadline);
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final timeLeftData = _getTimeLeft(deadline, isDarkMode);
     return Container(
       height: 50, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF),
+        color: isDarkMode ? const Color(0xFF2C3A4D) : const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 3, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 3))],
       ),
       child: Row(
         children: [
@@ -1064,7 +1064,7 @@ class _DeadlineDetailCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 22, left: 20, right: 20), height: 94,
       child: Stack(
         children: [
-          Container(width: double.infinity, height: 94, decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF1E242B) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 32, offset: const Offset(0, 4))])),
+          Container(width: double.infinity, height: 94, decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2C3A4D) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 32, offset: const Offset(0, 4))])),
           Positioned(
             left: 14,
             top: 14,
@@ -1136,9 +1136,18 @@ void _showDeadlineActionMenu(BuildContext context, Deadline deadline, {required 
           children: [
             Text(deadline.title, style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey, fontFamily: 'Lexend Deca')),
             Divider(color: isDarkMode ? Colors.white12 : null),
-            ListTile(leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent), title: const Text('Chỉnh sửa deadline', style: TextStyle(fontFamily: 'Lexend Deca')), onTap: () { Navigator.pop(context); onEditDeadline(deadline); }),
-            ListTile(leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)), title: const Text('Xóa deadline', style: TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600, fontFamily: 'Lexend Deca')), onTap: () { Navigator.pop(context); onDeleteDeadline(deadline.id); }),
+            ListTile(
+              leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent), 
+              title: Text('Chỉnh sửa deadline', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontFamily: 'Lexend Deca')),
+              onTap: () { Navigator.pop(context); onEditDeadline(deadline); },
+            ),
+            ListTile(
+              leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)), 
+              title: Text('Xóa deadline', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontFamily: 'Lexend Deca')),
+              onTap: () { Navigator.pop(context); onDeleteDeadline(deadline.id); },
+            ),
             const SizedBox(height: 10),
+
           ],
         ),
       );
@@ -1146,11 +1155,16 @@ void _showDeadlineActionMenu(BuildContext context, Deadline deadline, {required 
   );
 }
 
-Map<String, dynamic> _getTimeLeft(Deadline deadline) {
+Map<String, dynamic> _getTimeLeft(Deadline deadline, bool isDarkMode) {
   final now = DateTime.now();
   final deadlineDateTime = DateTime(deadline.dueDate.year, deadline.dueDate.month, deadline.dueDate.day, deadline.dueTime.hour, deadline.dueTime.minute);
   final difference = deadlineDateTime.difference(now);
-  if (difference.isNegative) return {'text': 'Quá trễ rùi', 'color': const Color(0xFFDC2626)};
+  if (difference.isNegative) {
+    return {
+      'text': 'Quá trễ rùi', 
+      'color': isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)
+    };
+  }
   final int days = difference.inDays;
   final int hours = difference.inHours % 24;
   final int minutes = difference.inMinutes % 60;
@@ -1159,9 +1173,13 @@ Map<String, dynamic> _getTimeLeft(Deadline deadline) {
   else if (hours > 0) timeText += '$hours giờ $minutes phút';
   else timeText += '$minutes phút';
   late final Color textColor;
-  if (difference.inDays < 1) textColor = const Color(0xFFDC2626);
-  else if (difference.inDays < 3) textColor = const Color(0xFFEA580C);
-  else textColor = const Color(0xFF448E58);
+  if (difference.inDays < 1) {
+    textColor = isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626);
+  } else if (difference.inDays < 3) {
+    textColor = isDarkMode ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
+  } else {
+    textColor = isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58);
+  }
   return {'text': timeText, 'color': textColor};
 }
 

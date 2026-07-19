@@ -5,6 +5,7 @@ import './services/weather_alert_service.dart';
 import './models/weather_models.dart';
 import './services/weather_service.dart';
 import 'weather_alert_card.dart';
+import 'campus_data.dart';
 
 class MySpaceWeatherBannerSection extends StatefulWidget {
   final List<StudyClass> todayClasses;
@@ -43,23 +44,25 @@ class _MySpaceWeatherBannerSectionState
 
   Future<WeatherAlertResult> _loadWeatherAlert() async {
     try {
-      final campusId = mapUniversityToCampusId(widget.userUniversity);
-      debugPrint('[WeatherBanner] Bắt đầu nạp thời tiết cho trường: ${widget.userUniversity} (campusId: $campusId)');
-      if (campusId == null) {
-        debugPrint('[WeatherBanner] Không tìm thấy campusId phù hợp cho trường này.');
-        return WeatherAlertResult.none();
-      }
+      final defaultCampusId = CampusData.mapUniversityToCampusId(widget.userUniversity);
+      debugPrint('[WeatherBanner] Bắt đầu nạp thời tiết cho trường: ${widget.userUniversity} (defaultCampusId: $defaultCampusId)');
 
       final scheduleItems = widget.todayClasses.map((c) {
+        final classCampusId = c.campusId ?? defaultCampusId ?? '';
         return ScheduleItem(
           id: c.id,
           title: c.name,
           startTime: _combineTodayAndTime(c.start),
           endTime: _combineTodayAndTime(c.end),
-          campusId: campusId,
+          campusId: classCampusId,
           room: c.room,
         );
-      }).toList();
+      }).where((item) => item.campusId.isNotEmpty).toList();
+
+      if (scheduleItems.isEmpty) {
+        debugPrint('[WeatherBanner] Không tìm thấy campusId phù hợp cho môn học nào hôm nay.');
+        return WeatherAlertResult.none();
+      }
 
       debugPrint('[WeatherBanner] Số lượng môn học hôm nay cần kiểm tra: ${scheduleItems.length}');
 
@@ -93,16 +96,7 @@ class _MySpaceWeatherBannerSectionState
     );
   }
 
-  String? mapUniversityToCampusId(String university) {
-    switch (university.trim()) {
-      case 'VNU - HCMUS (CS1)':
-        return 'us_cs1';
-      case 'VNU - HCMUS (CS2)':
-        return 'us_cs2';
-      default:
-        return null;
-    }
-  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<WeatherAlertResult>(

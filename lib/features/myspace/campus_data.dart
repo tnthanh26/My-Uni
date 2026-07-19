@@ -19,4 +19,39 @@ class CampusData {
   static CampusLocation? getCampusById(String campusId) {
     return campuses[campusId];
   }
+
+  static String? mapUniversityToCampusId(String university) {
+    switch (university.trim()) {
+      case 'VNU - HCMUS (CS1)':
+        return 'us_cs1';
+      case 'VNU - HCMUS (CS2)':
+        return 'us_cs2';
+      default:
+        return null;
+    }
+  }
+
+  static List<CampusLocation> getCampusesForSchoolOf(String userUniversity) {
+    final trimmed = userUniversity.trim();
+    if (trimmed.isEmpty) return campuses.values.toList();
+
+    String schoolPrefix = trimmed;
+    final parenIndex = trimmed.indexOf(' (');
+    if (parenIndex != -1) {
+      schoolPrefix = trimmed.substring(0, parenIndex);
+    }
+
+    final matching = campuses.values.where((c) {
+      return c.name.startsWith(schoolPrefix);
+    }).toList();
+
+    if (matching.isEmpty) {
+      final directMatch = campuses.values.firstWhere(
+        (c) => c.name.toLowerCase() == trimmed.toLowerCase(),
+        orElse: () => campuses.values.first,
+      );
+      return [directMatch];
+    }
+    return matching;
+  }
 }

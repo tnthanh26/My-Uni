@@ -59,6 +59,7 @@ class MySpaceFirebaseService {
       'start': s.start,
       'end': s.end,
       'room': s.room,
+      'campusId': s.campusId,
       'weekday': s.weekday,
       'colorValue': s.color.value,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -78,6 +79,7 @@ class MySpaceFirebaseService {
           start: data['start']?.toString() ?? '',
           end: data['end']?.toString() ?? '',
           room: data['room']?.toString() ?? '',
+          campusId: data['campusId']?.toString(),
           weekday: data['weekday'] ?? 2,
           color: Color(data['colorValue'] ?? 0xFF5893D8),
         );
@@ -134,6 +136,7 @@ class MySpaceFirebaseService {
         'start': s.start,
         'end': s.end,
         'room': s.room,
+        'campusId': s.campusId,
         'weekday': s.weekday,
         'colorValue': s.color.value,
         'updatedAt': FieldValue.serverTimestamp(),
@@ -172,6 +175,7 @@ class MySpaceFirebaseService {
           start: data['start']?.toString() ?? '',
           end: data['end']?.toString() ?? '',
           room: data['room']?.toString() ?? '',
+          campusId: data['campusId']?.toString(),
           weekday: data['weekday'] ?? 2,
           color: Color(data['colorValue'] ?? 0xFF5893D8),
         );
