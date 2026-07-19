@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'myspace_firebase_service.dart';
 import 'package:intl/intl.dart';
 import 'local_storage_helper.dart';
@@ -470,12 +471,108 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
   }
 
   Future<void> _selectTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-      initialEntryMode: TimePickerEntryMode.inputOnly,
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final now = DateTime.now();
+    DateTime tempDateTime = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _selectedTime.hour,
+      _selectedTime.minute,
     );
-    if (picked != null) setState(() => _selectedTime = picked);
+
+    await showCupertinoModalPopup<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 280,
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          child: SafeArea(
+            top: false,
+            child: Column(
+              children: [
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                    border: Border(
+                      bottom: BorderSide(
+                        color: isDarkMode ? Colors.white10 : Colors.black12,
+                        width: 0.5,
+                      ),
+                    ),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: Text(
+                          "Hủy",
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontSize: 16,
+                            color: isDarkMode ? Colors.white54 : Colors.black54,
+                            fontWeight: FontWeight.w600,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        "Chọn giờ hạn chót",
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            _selectedTime = TimeOfDay(
+                              hour: tempDateTime.hour,
+                              minute: tempDateTime.minute,
+                            );
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: const Text(
+                          "Xong",
+                          style: TextStyle(
+                            fontFamily: 'Urbanist',
+                            fontSize: 16,
+                            color: Colors.blueAccent,
+                            fontWeight: FontWeight.bold,
+                            decoration: TextDecoration.none,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: CupertinoTheme(
+                    data: CupertinoThemeData(
+                      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+                    ),
+                    child: CupertinoDatePicker(
+                      mode: CupertinoDatePickerMode.time,
+                      use24hFormat: true,
+                      initialDateTime: tempDateTime,
+                      onDateTimeChanged: (DateTime newDateTime) {
+                        tempDateTime = newDateTime;
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _saveDeadline() async {

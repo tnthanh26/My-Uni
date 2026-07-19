@@ -108,6 +108,7 @@ flutter:
   - assets/images/logo.png
   - assets/images/hcmus_bg.png
   - assets/images/rain_icon.png
+  - assets/images/weather-icon.png
   - assets/images/announcement.jpg
   - assets/images/contest.jpg
   - assets/images/graduation.jpg

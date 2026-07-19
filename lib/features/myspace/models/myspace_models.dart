@@ -48,6 +48,7 @@ class StudyClass {
   final String start;
   final String end;
   final String room;
+  final String? campusId;
   final int weekday; // Giữ nguyên int: 2 cho T2, 3 cho T3...
   final Color color; // Giữ nguyên kiểu Color
 
@@ -57,6 +58,7 @@ class StudyClass {
     required this.start,
     required this.end,
     required this.room,
+    this.campusId,
     required this.weekday,
     required this.color,
   });
@@ -67,6 +69,7 @@ class StudyClass {
       'start': start,
       'end': end,
       'room': room,
+      'campusId': campusId,
       'weekday': weekday, // Đẩy lên Firebase dạng int
       'colorValue': color.value, // Firebase không hiểu Color, nên ta lưu mã int của màu
       'updatedAt': FieldValue.serverTimestamp(),

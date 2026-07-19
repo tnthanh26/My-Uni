@@ -23,6 +23,7 @@ import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
 import 'package:my_uni/features/services/daily_active_service.dart';
 import 'package:my_uni/features/myspace/models/weather_models.dart';
+import 'package:my_uni/features/myspace/campus_data.dart';
 import 'package:my_uni/features/myspace/services/weather_alert_service.dart';
 import 'package:my_uni/features/myspace/services/weather_service.dart';
 import 'package:my_uni/features/myspace/services/myspace_weather_coordinator.dart';
@@ -153,34 +154,25 @@ class HomePageState extends State<HomePage> {
       if (userData == null) return;
       final String userUniversity = userData['university'] ?? '';
 
-      String? campusId;
-      switch (userUniversity.trim()) {
-        case 'VNU - HCMUS (CS1)':
-          campusId = 'us_cs1';
-          break;
-        case 'VNU - HCMUS (CS2)':
-          campusId = 'us_cs2';
-          break;
-        default:
-          campusId = null;
-      }
-      if (campusId == null) return;
-
       final localSchedule = await MySpaceFirebaseService().getSchedule();
       final todayWeekday = DateTime.now().weekday + 1; // T2=2, T3=3... CN=8
       final todayClasses = localSchedule.where((c) => c.weekday == todayWeekday).toList();
       if (todayClasses.isEmpty) return;
 
+      final defaultCampusId = CampusData.mapUniversityToCampusId(userUniversity);
       final scheduleItems = todayClasses.map((c) {
+        final classCampusId = c.campusId ?? defaultCampusId ?? '';
         return ScheduleItem(
           id: c.id,
           title: c.name,
           startTime: _combineTodayAndTime(c.start),
           endTime: _combineTodayAndTime(c.end),
-          campusId: campusId!,
+          campusId: classCampusId,
           room: c.room,
         );
-      }).toList();
+      }).where((item) => item.campusId.isNotEmpty).toList();
+
+      if (scheduleItems.isEmpty) return;
 
       final coordinator = MySpaceWeatherCoordinator(
         weatherService: WeatherService(),

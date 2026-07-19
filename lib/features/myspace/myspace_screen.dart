@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import './models/myspace_models.dart';
+import 'campus_data.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
@@ -106,28 +108,34 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final todayClasses =
     mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
 
-    final campusId = _mapUniversityToCampusId(_userUniversity);
+    final defaultCampusId = CampusData.mapUniversityToCampusId(_userUniversity);
 
     debugPrint('=== PREPARE WEATHER FUTURE ===');
     debugPrint('_userUniversity: $_userUniversity');
-    debugPrint('campusId: $campusId');
+    debugPrint('defaultCampusId: $defaultCampusId');
     debugPrint('todayClasses length: ${todayClasses.length}');
 
-    if (campusId == null || todayClasses.isEmpty) {
+    if (todayClasses.isEmpty) {
       _weatherFuture = Future.value(WeatherAlertResult.none());
       return;
     }
 
     final schedules = todayClasses.map((c) {
+      final classCampusId = c.campusId ?? defaultCampusId ?? '';
       return ScheduleItem(
         id: c.id,
         title: c.name,
         startTime: _combineDateAndTime(DateTime.now(), c.start),
         endTime: _combineDateAndTime(DateTime.now(), c.end),
-        campusId: campusId,
+        campusId: classCampusId,
         room: c.room,
       );
-    }).toList();
+    }).where((item) => item.campusId.isNotEmpty).toList();
+
+    if (schedules.isEmpty) {
+      _weatherFuture = Future.value(WeatherAlertResult.none());
+      return;
+    }
 
     _weatherFuture = MySpaceWeatherCoordinator(
       weatherService: WeatherService(),
@@ -375,6 +383,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   MaterialPageRoute(
                     builder: (context) => CreateSchedulePage(
                       initialWeekday: selectedWeekday,
+                      userUniversity: _userUniversity,
                     ),
                   ),
                 );
@@ -700,16 +709,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     }
   }
 
-  String? _mapUniversityToCampusId(String university) {
-    switch (university.trim()) {
-      case 'VNU - HCMUS (CS1)':
-        return 'us_cs1';
-      case 'VNU - HCMUS (CS2)':
-        return 'us_cs2';
-      default:
-        return null;
-    }
-  }
+
 
   Widget _buildCompactSummaryBanner() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -811,7 +811,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     List<Deadline> top3Deadlines = sortedDeadlines.take(3).toList();
 
-    final campusId = _mapUniversityToCampusId(_userUniversity);
+
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -864,7 +864,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           if (top3Deadlines.isEmpty) _buildEmptyStateMeme(type: 'deadline'),
 
           const SizedBox(height: 20),
-          _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1)),
+          _buildSectionHeaderFigma("Thời Khóa Biểu", () => _navigateToDetail(1), isSchedule: true),
           _buildCalendarStripFigma(),
           ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
 
@@ -1211,7 +1211,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CreateSchedulePage(schedule: schedule),
+        builder: (context) => CreateSchedulePage(
+          schedule: schedule,
+          userUniversity: _userUniversity,
+        ),
       ),
     );
     if (result == true) _loadInitialMetaData(); // Tải lại dữ liệu sau khi sửa
@@ -1425,20 +1428,168 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
 
 
-  Widget _buildSectionHeaderFigma(String title, VoidCallback onPressed) {
+  void _showWeatherScheduleTipDialog() {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.9, end: 1.0),
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutBack,
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(24),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+                child: Container(
+                  width: 320,
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 20),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDarkMode
+                          ? [
+                              const Color(0xFF1E293B).withOpacity(0.82),
+                              const Color(0xFF0F172A).withOpacity(0.92),
+                            ]
+                          : [
+                              Colors.white.withOpacity(0.9),
+                              Colors.white.withOpacity(0.96),
+                            ],
+                    ),
+                    border: Border.all(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.1)
+                          : hcmusBlueAccent.withOpacity(0.2),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.25),
+                        blurRadius: 24,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: hcmusBlueAccent.withOpacity(isDarkMode ? 0.18 : 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        child: Image.asset(
+                          'assets/images/weather-icon.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Thời Tiết Lên Lớp",
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        "Việc duy trì thời khóa biểu chính xác sẽ giúp My-Uni tự động phân tích và dự báo khả năng có mưa trong suốt khung giờ học tập của bạn, giúp hành trình lên lớp luôn chủ động và an toàn.",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 13,
+                          height: 1.45,
+                          color: isDarkMode ? Colors.white70 : Colors.black87.withOpacity(0.75),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: hcmusBlueAccent,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "Đã hiểu",
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSectionHeaderFigma(String title, VoidCallback onPressed, {bool isSchedule = false}) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87)),
-        GestureDetector(
-          onTap: onPressed,
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
-            child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSchedule) ...[
+              GestureDetector(
+                onTap: _showWeatherScheduleTipDialog,
+                child: Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF545454) : hcmusLightGrey,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.wb_sunny_rounded,
+                    size: 18,
+                    color: Colors.amber,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+            ],
+            GestureDetector(
+              onTap: onPressed,
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
+                child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
+              ),
+            ),
+          ],
         )
       ],
     );
@@ -1519,18 +1670,31 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(s.name, style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey)),
+              Text(
+                s.name, 
+                style: TextStyle(
+                  fontWeight: FontWeight.bold, 
+                  color: isDarkMode ? Colors.white70 : Colors.grey,
+                  fontFamily: 'Poppins',
+                )
+              ),
               Divider(color: isDarkMode ? Colors.white12 : null),
               ListTile(
                 leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
-                title: const Text("Chỉnh sửa lịch học"),
+                title: Text(
+                  "Chỉnh sửa lịch học",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _editSchedule(s); // Gọi hàm sửa vừa tạo
@@ -1538,7 +1702,13 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               ),
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: hcmusRed),
-                title: const Text("Xóa lịch học", style: TextStyle(color: hcmusRed)),
+                title: Text(
+                  "Xóa lịch học", 
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   _deleteSchedule(s.id);
@@ -1632,12 +1802,16 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       children: [
                         const Icon(Icons.location_on, color: Colors.white, size: 16),
                         const SizedBox(width: 4),
-                        Text(
-                          c.room,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                            fontFamily: 'Poppins',
+                        Expanded(
+                          child: Text(
+                            '${c.campusId == 'us_cs1' ? 'CS1' : c.campusId == 'us_cs2' ? 'CS2' : (c.campusId ?? '')}${c.campusId != null && c.room.isNotEmpty ? ' - ' : ''}${c.room}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontFamily: 'Poppins',
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
