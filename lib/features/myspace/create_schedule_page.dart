@@ -90,7 +90,6 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
         debugPrint("Error fetching user university: $e");
       }
     }
-
     _availableCampuses = CampusData.getCampusesForSchoolOf(_userUniversity);
 
     if (widget.schedule != null && widget.schedule!.campusId != null) {
@@ -109,6 +108,125 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _showCampusSelectionBottomSheet() {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color primaryColor = Theme.of(context).primaryColor;
+    final Color primaryTextColor = isDarkMode ? Colors.white : Colors.black87;
+    final Color secondaryTextColor = isDarkMode ? Colors.white54 : Colors.black54;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 42,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                Text(
+                  'Chọn cơ sở trường',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Encode Sans Expanded',
+                    color: primaryTextColor,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _availableCampuses.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final campus = _availableCampuses[index];
+                      final isSelected = _selectedCampusId == campus.campusId;
+
+                      return InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedCampusId = campus.campusId;
+                          });
+                          Navigator.pop(context);
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? (isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFFF1F5F9))
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelected
+                                  ? (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0))
+                                  : Colors.transparent,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? primaryColor.withOpacity(0.15)
+                                      : (isDarkMode ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05)),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.school_outlined,
+                                  size: 20,
+                                  color: isSelected ? primaryColor : secondaryTextColor,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Text(
+                                  campus.name,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                                    color: isSelected ? primaryColor : primaryTextColor,
+                                    fontFamily: 'Urbanist',
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: primaryColor,
+                                  size: 22,
+                                ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   TimeOfDay _parseScheduleTime(String time) {
@@ -261,28 +379,33 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Encode Sans Expanded', color: primaryText)),
               const SizedBox(height: 12),
               _buildRectangleField(
+                onTap: _showCampusSelectionBottomSheet,
                 child: Row(
                   children: [
                     Icon(Icons.school_outlined, size: 24, color: primaryText),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedCampusId,
-                          dropdownColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                          isExpanded: true,
-                          icon: Icon(Icons.keyboard_arrow_down, color: secondaryText),
-                          style: TextStyle(fontSize: 20, fontFamily: 'Urbanist', color: primaryText),
-                          onChanged: (String? newValue) {
-                            setState(() => _selectedCampusId = newValue);
-                          },
-                          items: _availableCampuses.map<DropdownMenuItem<String>>((CampusLocation campus) {
-                            return DropdownMenuItem<String>(
-                              value: campus.campusId,
-                              child: Text(campus.name),
-                            );
-                          }).toList(),
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _availableCampuses.firstWhere(
+                                (c) => c.campusId == _selectedCampusId,
+                                orElse: () => _availableCampuses.isNotEmpty
+                                    ? _availableCampuses.first
+                                    : CampusLocation(campusId: '', name: 'Chọn cơ sở', latitude: 0, longitude: 0),
+                              ).name,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontFamily: 'Urbanist',
+                                color: primaryText,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Icon(Icons.keyboard_arrow_down, color: secondaryText),
+                        ],
                       ),
                     ),
                   ],
