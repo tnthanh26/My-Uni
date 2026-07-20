@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import '../home/official_content_helper.dart';
 import '../home/post_detail_page.dart';
 import 'course_review_list_page.dart';
 
@@ -48,6 +49,15 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     "Tân sinh viên",
   ];
 
+  final List<String> officialQuickTags = [
+    "Sự kiện",
+    "Học bổng",
+    "Tuyển dụng",
+    "Hội thảo",
+    "Cuộc thi",
+    "Thông báo",
+  ];
+
   MyUniSearchDelegate({required this.currentScope})
       : super(
     searchFieldLabel: _getSearchLabel(currentScope),
@@ -57,7 +67,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   static String _getSearchLabel(SearchScope scope) {
     switch (scope) {
       case SearchScope.official:
-        return 'Tìm thông tin chính thức...';
+        return 'Tìm bài viết, sự kiện chính thức...';
       case SearchScope.forum:
         return 'Bạn muốn biết điều gì quanh trường?';
       case SearchScope.review:
@@ -448,18 +458,22 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   }
 
   Widget _buildFilterBar(StateSetter setState, BuildContext context) {
-    if (currentScope != SearchScope.forum) return const SizedBox.shrink();
+    if (currentScope != SearchScope.forum && currentScope != SearchScope.official) {
+      return const SizedBox.shrink();
+    }
 
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final List<String> visibleTags = [
-      ...quickHashtags,
-      ...selectedHashtags.where(
-            (tag) =>
-        tag != 'Tất cả' &&
-            !quickHashtags.contains(tag) &&
-            availableHashtags.contains(tag),
-      ),
-    ];
+    final List<String> visibleTags = (currentScope == SearchScope.official)
+        ? officialQuickTags
+        : [
+            ...quickHashtags,
+            ...selectedHashtags.where(
+              (tag) =>
+                  tag != 'Tất cả' &&
+                  !quickHashtags.contains(tag) &&
+                  availableHashtags.contains(tag),
+            ),
+          ];
 
     return Container(
       width: double.infinity,
@@ -470,28 +484,29 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: ActionChip(
-                avatar: const Icon(
-                  Icons.grid_view_rounded,
-                  size: 16,
-                  color: Color(0xFF6797E1),
+            if (currentScope == SearchScope.forum)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: ActionChip(
+                  avatar: const Icon(
+                    Icons.grid_view_rounded,
+                    size: 16,
+                    color: Color(0xFF6797E1),
+                  ),
+                  label: const Text('Xem tất cả'),
+                  labelStyle: const TextStyle(
+                    color: Color(0xFF6797E1),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  backgroundColor: _secondarySurface(isDarkMode),
+                  side: BorderSide(color: _borderColor(isDarkMode)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  onPressed: () => _showHashtagPicker(context, setState),
                 ),
-                label: const Text('Xem tất cả'),
-                labelStyle: const TextStyle(
-                  color: Color(0xFF6797E1),
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold,
-                ),
-                backgroundColor: _secondarySurface(isDarkMode),
-                side: BorderSide(color: _borderColor(isDarkMode)),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                onPressed: () => _showHashtagPicker(context, setState),
               ),
-            ),
             ...visibleTags.map((tag) {
               final bool isSelected = selectedHashtags.contains(tag);
 
@@ -531,15 +546,15 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
           return StatefulBuilder(
             builder: (context, setState) {
               final List<String> activeTags =
-              selectedHashtags.where((t) => t != 'Tất cả').toList();
+                  selectedHashtags.where((t) => t != 'Tất cả').toList();
               final bool hasNoSearchInput =
                   query.trim().isEmpty && activeTags.isEmpty;
 
               return Column(
                 children: [
-                  if (currentScope == SearchScope.forum)
+                  if (currentScope == SearchScope.forum || currentScope == SearchScope.official)
                     _buildFilterBar(setState, context),
-                  if (currentScope == SearchScope.forum)
+                  if (currentScope == SearchScope.forum || currentScope == SearchScope.official)
                     Divider(
                       height: 1,
                       thickness: 0.5,
@@ -550,91 +565,93 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                   Expanded(
                     child: hasNoSearchInput
                         ? Center(
-                      child: Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 24),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 24,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _surfaceColor(isDarkMode),
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(color: _borderColor(isDarkMode)),
-                          boxShadow: _cardShadow(isDarkMode),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.search_rounded,
-                              size: 36,
-                              color: _secondaryText(isDarkMode),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              currentScope == SearchScope.forum
-                                  ? 'Nhập từ khóa hoặc chọn hashtag để bắt đầu tìm kiếm'
-                                  : 'Nhập từ khóa để bắt đầu tìm kiếm',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: _primaryText(isDarkMode),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 24),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 20,
+                                vertical: 24,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _surfaceColor(isDarkMode),
+                                borderRadius: BorderRadius.circular(22),
+                                border: Border.all(color: _borderColor(isDarkMode)),
+                                boxShadow: _cardShadow(isDarkMode),
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.search_rounded,
+                                    size: 36,
+                                    color: _secondaryText(isDarkMode),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    currentScope == SearchScope.forum || currentScope == SearchScope.official
+                                        ? 'Nhập từ khóa hoặc chọn filter bên trên để tìm kiếm'
+                                        : 'Nhập từ khóa để bắt đầu tìm kiếm',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: _primaryText(isDarkMode),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Kết quả phù hợp sẽ hiện ra ở đây.',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: _secondaryText(isDarkMode),
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Kết quả phù hợp sẽ hiện ra ở đây.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: _secondaryText(isDarkMode),
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
+                          )
                         : FutureBuilder<List<dynamic>>(
-                      key: ValueKey(
-                        '${query}_${selectedHashtags.join()}_${currentSort}_$trigger',
-                      ),
-                      future: query.trim().isEmpty
-                          ? _fetchForumPostsByTags(activeTags)
-                          : _performSemanticSearch(query, currentScope),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Center(
-                            child: CircularProgressIndicator(
-                              color: Color(0xFF6797E1),
+                            key: ValueKey(
+                              '${query}_${selectedHashtags.join()}_${currentSort}_$trigger',
                             ),
-                          );
-                        }
+                            future: query.trim().isEmpty
+                                ? (currentScope == SearchScope.official
+                                    ? _fetchOfficialPostsByTags(activeTags)
+                                    : _fetchForumPostsByTags(activeTags))
+                                : _performSemanticSearch(query, currentScope),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    color: Color(0xFF6797E1),
+                                  ),
+                                );
+                              }
 
-                        if (snapshot.hasError) {
-                          return const Center(
-                            child: Text(
-                              'Không thể tải kết quả',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          );
-                        }
+                              if (snapshot.hasError) {
+                                return const Center(
+                                  child: Text(
+                                    'Không thể tải kết quả',
+                                    style: TextStyle(color: Colors.red),
+                                  ),
+                                );
+                              }
 
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return Center(
-                            child: Text(
-                              'Không tìm thấy kết quả',
-                              style: TextStyle(
-                                color: _secondaryText(isDarkMode),
-                              ),
-                            ),
-                          );
-                        }
+                              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    'Không tìm thấy kết quả',
+                                    style: TextStyle(
+                                      color: _secondaryText(isDarkMode),
+                                    ),
+                                  ),
+                                );
+                              }
 
-                        return _buildResultList(context, snapshot.data!);
-                      },
-                    ),
+                              return _buildResultList(context, snapshot.data!);
+                            },
+                          ),
                   ),
                 ],
               );
@@ -648,10 +665,41 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   @override
   Widget buildSuggestions(BuildContext context) => buildResults(context);
 
+  bool _isOfficialMatchTag(Map<String, dynamic> data, String tag) {
+    final String title = data['title']?.toString() ?? '';
+    final String summary = data['summary']?.toString() ?? '';
+    final String content = '$title $summary'.toLowerCase();
+
+    switch (tag.trim().toLowerCase()) {
+      case 'sự kiện':
+        return OfficialContentHelper.isOfficialEvent(data['title'], data['summary']);
+      case 'học bổng':
+        return content.contains('học bổng') || content.contains('scholarship');
+      case 'tuyển dụng':
+        return content.contains('tuyển dụng') ||
+            content.contains('việc làm') ||
+            content.contains('intern') ||
+            content.contains('thực tập');
+      case 'hội thảo':
+        return content.contains('hội thảo') ||
+            content.contains('seminar') ||
+            content.contains('workshop') ||
+            content.contains('talkshow');
+      case 'cuộc thi':
+        return content.contains('cuộc thi') ||
+            content.contains('contest') ||
+            content.contains('giải thưởng');
+      case 'thông báo':
+        return content.contains('thông báo') || content.contains('quy định');
+      default:
+        return content.contains(tag.trim().toLowerCase());
+    }
+  }
+
   Future<List<dynamic>> _performSemanticSearch(
-      String query,
-      SearchScope scope,
-      ) async {
+    String query,
+    SearchScope scope,
+  ) async {
     if (query.trim().isEmpty) return [];
 
     final String scopeString = scope.toString().split('.').last;
@@ -659,8 +707,10 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
 
     final cleanQuery = query.trim();
     final List<String> activeTags =
-    selectedHashtags.where((t) => t != 'Tất cả').toList();
-    final String tagParam = activeTags.isEmpty ? '' : activeTags.join(',');
+        selectedHashtags.where((t) => t != 'Tất cả').toList();
+    final String tagParam = (scope == SearchScope.official || activeTags.isEmpty)
+        ? ''
+        : activeTags.join(',');
 
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -688,13 +738,103 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       if (response.statusCode == 200) {
         final data = jsonDecode(utf8.decode(response.bodyBytes));
         final result = data['result'];
-        return result is List ? result : [];
+        List<dynamic> list = result is List ? result : [];
+
+        if (scope == SearchScope.official && activeTags.isNotEmpty) {
+          list = list.where((item) {
+            final itemData =
+                Map<String, dynamic>.from((item as Map)['data'] ?? {});
+            return activeTags.any((tag) => _isOfficialMatchTag(itemData, tag));
+          }).toList();
+        }
+
+        if (list.isEmpty && scope == SearchScope.official) {
+          return _fetchOfficialPostsFallback(cleanQuery, activeTags);
+        }
+
+        return list;
       } else {
         throw Exception('Search API error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint("Lỗi Search: $e");
+      debugPrint("Lỗi Search API: $e. Thử tìm Firestore trực tiếp...");
+      if (scope == SearchScope.official) {
+        return _fetchOfficialPostsFallback(cleanQuery, activeTags);
+      }
       rethrow;
+    }
+  }
+
+  Future<List<dynamic>> _fetchOfficialPostsFallback(
+      String cleanQuery, List<String> activeTags) async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('official_news')
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      final lowerQuery = cleanQuery.toLowerCase();
+      final List<String> queryWords = lowerQuery
+          .split(RegExp(r'\s+'))
+          .where((w) => w.trim().isNotEmpty)
+          .toList();
+      final isQueryEvent =
+          lowerQuery.contains('sự kiện') || lowerQuery.contains('su kien');
+
+      final List<dynamic> results = snapshot.docs
+          .map((doc) {
+            return {
+              'id': doc.id,
+              'data': {
+                ...doc.data() as Map<String, dynamic>,
+                'scope': 'official_news',
+              }
+            };
+          })
+          .where((item) {
+            final Map<String, dynamic> data =
+                Map<String, dynamic>.from((item as Map)['data'] as Map);
+            final String title = data['title']?.toString().toLowerCase() ?? '';
+            final String summary = data['summary']?.toString().toLowerCase() ?? '';
+            final String content = '$title $summary';
+
+            bool matchesQuery = cleanQuery.isEmpty ||
+                queryWords.every((word) => content.contains(word));
+            if (!matchesQuery && isQueryEvent) {
+              matchesQuery = OfficialContentHelper.isOfficialEvent(
+                  data['title'], data['summary']);
+            }
+
+            if (!matchesQuery) return false;
+
+            if (activeTags.isNotEmpty) {
+              return activeTags.any((tag) => _isOfficialMatchTag(data, tag));
+            }
+
+            return true;
+          })
+          .toList();
+
+      results.sort((a, b) {
+        final dataA = Map<String, dynamic>.from((a as Map)['data'] as Map);
+        final dataB = Map<String, dynamic>.from((b as Map)['data'] as Map);
+
+        final int tsA =
+            _timestampToMillis(dataA['publishedAt'] ?? dataA['timestamp']);
+        final int tsB =
+            _timestampToMillis(dataB['publishedAt'] ?? dataB['timestamp']);
+
+        if (currentSort == 'asc') {
+          return tsA.compareTo(tsB);
+        } else {
+          return tsB.compareTo(tsA);
+        }
+      });
+
+      return results;
+    } catch (e) {
+      debugPrint("Error in fallback official search: $e");
+      return [];
     }
   }
 
@@ -715,6 +855,55 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     }
 
     return 0;
+  }
+
+  Future<List<dynamic>> _fetchOfficialPostsByTags(
+      List<String> activeTags) async {
+    try {
+      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('official_news')
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      final List<dynamic> results = snapshot.docs
+          .map((doc) {
+            return {
+              'id': doc.id,
+              'data': {
+                ...doc.data() as Map<String, dynamic>,
+                'scope': 'official_news',
+              }
+            };
+          })
+          .where((item) {
+            final Map<String, dynamic> data =
+                Map<String, dynamic>.from((item as Map)['data'] as Map);
+            if (activeTags.isEmpty) return true;
+            return activeTags.any((tag) => _isOfficialMatchTag(data, tag));
+          })
+          .toList();
+
+      results.sort((a, b) {
+        final dataA = Map<String, dynamic>.from((a as Map)['data'] as Map);
+        final dataB = Map<String, dynamic>.from((b as Map)['data'] as Map);
+
+        final int tsA =
+            _timestampToMillis(dataA['publishedAt'] ?? dataA['timestamp']);
+        final int tsB =
+            _timestampToMillis(dataB['publishedAt'] ?? dataB['timestamp']);
+
+        if (currentSort == 'asc') {
+          return tsA.compareTo(tsB);
+        } else {
+          return tsB.compareTo(tsA);
+        }
+      });
+
+      return results;
+    } catch (e) {
+      debugPrint("Error fetching official posts by tags: $e");
+      rethrow;
+    }
   }
 
   Future<List<dynamic>> _fetchForumPostsByTags(List<String> activeTags) async {
@@ -976,11 +1165,15 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   }
 
   Widget _buildOfficialItem(
-      BuildContext context,
-      Map<String, dynamic> data,
-      VoidCallback onTap,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> data,
+    VoidCallback onTap,
+  ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isEvent = OfficialContentHelper.isOfficialEvent(
+      data['title'],
+      data['summary'],
+    );
 
     return GestureDetector(
       onTap: onTap,
@@ -999,12 +1192,12 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
               Container(
                 width: 46,
                 height: 46,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF6797E1),
+                decoration: BoxDecoration(
+                  color: isEvent ? const Color(0xFF3B82F6) : const Color(0xFF6797E1),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.campaign_rounded,
+                child: Icon(
+                  isEvent ? Icons.event_available_rounded : Icons.campaign_rounded,
                   color: Colors.white,
                 ),
               ),
@@ -1013,6 +1206,41 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: isEvent
+                                ? (isDarkMode ? const Color(0xFF1E3A8A).withOpacity(0.4) : const Color(0xFFE0F2FE))
+                                : (isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isEvent ? Icons.event_rounded : Icons.article_rounded,
+                                size: 12,
+                                color: isEvent ? const Color(0xFF3B82F6) : Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                isEvent ? 'Sự kiện' : 'Tin chính thức',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isEvent
+                                      ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
+                                      : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
                     Text(
                       data['title'] ?? '',
                       maxLines: 2,
@@ -1036,7 +1264,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Từ: ${data['authorName'] ?? 'MyUni'}',
+                            'Từ: ${data['department'] ?? data['authorName'] ?? 'MyUni'}',
                             style: TextStyle(
                               fontSize: 12,
                               color: _secondaryText(isDarkMode),
@@ -1045,7 +1273,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            'Ngày: ${data['date'] ?? ''}',
+                            'Ngày: ${data['publishedDateText'] ?? data['date'] ?? ''}',
                             style: TextStyle(
                               fontSize: 12,
                               color: _secondaryText(isDarkMode),
