@@ -50,6 +50,7 @@ node_modules/
 
 # Local markdown and LaTeX documents
 *.md
+!README.md
 *.tex
 *.aux
 *.toc
