@@ -15,6 +15,15 @@ class OfficialContentHelper {
       'sự kiện',
       'mời tham gia',
       'đăng ký tham gia',
+      'event',
+      'webinar',
+      'tọa đàm',
+      'diễn đàn',
+      'giao lưu',
+      'fest',
+      'festival',
+      'hội thao',
+      'hội diễn',
     ];
 
     final String content = "$title $summary";
