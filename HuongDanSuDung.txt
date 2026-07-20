@@ -1,0 +1,48 @@
+========================================================================
+                      HƯỚNG DẪN SỬ DỤNG
+========================================================================
+Tên đề tài: MyUni - Ứng dụng di động & Web hỗ trợ cộng đồng sinh viên
+            và Trợ lý học thuật AI
+
+------------------------------------------------------------------------
+1. CÁCH BIÊN DỊCH VÀ CHẠY ỨNG DỤNG DI ĐỘNG (MOBILE APP - ANDROID/IOS)
+------------------------------------------------------------------------
+LƯU Ý VỀ MÔI TRƯỜNG BIÊN DỊCH:
+- Nền tảng Android: Có thể biên dịch và chạy trên mọi HĐH (Windows, macOS, Linux).
+- Nền tảng iOS: Yêu cầu máy tính chạy HĐH macOS đã cài đặt Xcode để biên dịch.
+
+Các bước khởi chạy:
+Bước 1: Mở Terminal tại thư mục `src/`.
+
+Bước 2: Chuẩn bị thiết bị chạy:
+- Đối với Android (Windows/macOS): Kết nối điện thoại Android thật (bật USB Debugging) hoặc bật Android Emulator.
+- Đối với iOS (macOS): Bật iOS Simulator hoặc kết nối iPhone qua Xcode.
+
+Bước 3: Biên dịch và chạy ứng dụng:
+- Đảm bảo đã chạy `flutter pub get` ở bước cài đặt.
+- Chạy lệnh sau để ứng dụng tự động biên dịch và cài đặt lên thiết bị:
+    
+    flutter run
+
+------------------------------------------------------------------------
+2. CÁCH BIÊN DỊCH VÀ CHẠY BẢNG QUẢN TRỊ WEB (ADMINISTRATION WEB PANEL)
+------------------------------------------------------------------------
+Giao diện quản trị Admin/Collaborator/Moderator được tối ưu cho màn hình 
+máy tính (Desktop Web Browser).
+
+- Mở Terminal tại thư mục `src/`.
+- Thực thi lệnh chạy ứng dụng trên trình duyệt Chrome:
+    
+    flutter run -d chrome
+
+------------------------------------------------------------------------
+3. CÁCH BIÊN DỊCH BẢN BUILD PHÁT HÀNH (RELEASE BUILD - NẾU CẦN)
+------------------------------------------------------------------------
+- Biên dịch gói Android (APK):
+    flutter build apk --release
+  (File `.apk` sản phẩm sẽ nằm tại: `build/app/outputs/flutter-apk/app-release.apk`)
+
+- Biên dịch gói Web Panel:
+    flutter build web --release
+  (Sản phẩm Web nằm tại thư mục: `build/web/`)
+========================================================================
