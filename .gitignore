@@ -47,3 +47,14 @@ app.*.map.json
 
 # Node related
 node_modules/
+
+# Local markdown and LaTeX documents
+*.md
+!README.md
+*.tex
+*.aux
+*.toc
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz

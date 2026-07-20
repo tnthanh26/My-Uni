@@ -1,0 +1,48 @@
+========================================================================
+                      HƯỚNG DẪN CÀI ĐẶT
+========================================================================
+Tên đề tài: MyUni - Ứng dụng di động & Web hỗ trợ cộng đồng sinh viên
+            và Trợ lý học thuật AI
+
+------------------------------------------------------------------------
+1. CÔNG CỤ VÀ MÔI TRƯỜNG PHÁT TRIỂN
+------------------------------------------------------------------------
+- Môi trường phát triển (IDE): Android Studio (mới nhất) hoặc Visual Studio Code.
+- SDK Lập trình:
+  + Flutter SDK: Phiên bản >= 3.0.0 (khuyên dùng Flutter 3.19.x hoặc mới hơn).
+  + Dart SDK: Tự động đi kèm theo Flutter SDK.
+  + Java Development Kit (JDK): JDK 17 hoặc JDK 11 (phục vụ build Android).
+- Backend & Firebase:
+  + Node.js: Phiên bản >= 18.0.0 (phục vụ chạy Firebase Functions).
+  + npm: Đi kèm Node.js.
+  + Firebase CLI: Cài đặt qua lệnh `npm install -g firebase-tools`.
+
+------------------------------------------------------------------------
+2. CÁCH THỨC CÀI ĐẶT THƯ VIỆN
+------------------------------------------------------------------------
+LƯU Ý: Mã nguồn (src) đã được loại bỏ hoàn toàn các thư mục rác/cache 
+và thư viện tải sẵn (build, .dart_tool, node_modules) theo đúng quy định.
+
+Để cài đặt tự động toàn bộ thư viện cần thiết, thực hiện các bước sau:
+
+Step 1: Cài đặt thư viện Flutter (Mobile & Web App)
+- Mở cửa sổ Terminal/Command Prompt tại thư mục `src/`.
+- Thực thi lệnh sau để tự động tải tất cả dependencies được khai báo trong file pubspec.yaml:
+    
+    flutter pub get
+
+Step 2: Cài đặt thư viện Backend (Firebase Cloud Functions - nếu cần)
+- Chuyển vào thư mục `src/functions/`:
+    
+    cd functions
+
+- Thực thi lệnh cài đặt các gói Node.js:
+    
+    npm install
+
+------------------------------------------------------------------------
+3. CẤU HÌNH DỊCH VỤ CLOUD & BẢO MẬT
+------------------------------------------------------------------------
+- Dự án đã tích hợp sẵn file cấu hình Firebase (`google-services.json`, `firebase_options.dart`).
+- Dịch vụ mã hóa dữ liệu cục bộ sử dụng gói `flutter_secure_storage` tự động tương thích với Keychain (iOS) và Keystore (Android).
+========================================================================
