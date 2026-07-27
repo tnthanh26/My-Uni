@@ -628,51 +628,83 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
-      body: Stack(
-        children: [
-          // 1. Phần Header cố định (Fixed Header)
-          _buildFixedHeader(context),
+    return PopScope(
+      canPop: !_isDetailView,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_isDetailView) {
+          _backToDashboard();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
+        body: Stack(
+          children: [
+            // 1. Phần Header cố định (Fixed Header)
+            _buildFixedHeader(context),
 
-          // 2. Phần nội dung có thể cuộn (Scrollable Content)
-          Column(
-            children: [
-              // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
-              SizedBox(height: MediaQuery.of(context).padding.top + 64.0),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+            // 2. Phần nội dung có thể cuộn (Scrollable Content)
+            Column(
+              children: [
+                // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
+                SizedBox(height: MediaQuery.of(context).padding.top + 64.0),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 600.0),
-                      child: _isDetailView
-                          ? _buildDetailViewContent() // Hiển thị nội dung DI
-                          : _buildDashboardContent(), // Hiển thị nội dung 3.1
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.05, 0.0),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _isDetailView
+                              ? KeyedSubtree(
+                                  key: const ValueKey('detailView'),
+                                  child: _buildDetailViewContent(),
+                                )
+                              : KeyedSubtree(
+                                  key: const ValueKey('dashboardView'),
+                                  child: _buildDashboardContent(),
+                                ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+          ],
+        ),
 
-      floatingActionButton: _isDetailView
-          ? FloatingActionButton(
-        onPressed: () => _showCreateOptions(context),
-        backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
-        child: const Icon(Icons.add, size: 36, color: Colors.white),
-      )
-          : null,
+        floatingActionButton: _isDetailView
+            ? FloatingActionButton(
+          onPressed: () => _showCreateOptions(context),
+          backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
+          child: const Icon(Icons.add, size: 36, color: Colors.white),
+        )
+            : null,
+      ),
     );
   }
 
@@ -932,95 +964,103 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildDetailViewContent() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Stack(
-      children: [
-        // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 160,
-          child: Container(
-            decoration: BoxDecoration(
-              color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Vuốt từ trái sang phải (swipe right) để trở về trang chính MySpace
+        if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+          _backToDashboard();
+        }
+      },
+      child: Stack(
+        children: [
+          // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 160,
+            child: Container(
+              decoration: BoxDecoration(
+                color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+              ),
             ),
           ),
-        ),
 
-        // 2. Nội dung thực tế (Lịch, Toggle, List)
-        Column(
-          children: [
-            // Header của Detail (Tháng X, Y)
-             Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+          // 2. Nội dung thực tế (Lịch, Toggle, List)
+          Column(
+            children: [
+              // Header của Detail (Tháng X, Y)
+               Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      onPressed: _backToDashboard,
                     ),
-                    onPressed: _backToDashboard,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () => _selectDate(context),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(width: 2),
-                            Text(
-                              "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                    Expanded(
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => _selectDate(context),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 2),
+                              Text(
+                                "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 20,
-                              color: isDarkMode ? Colors.white : Colors.black54,
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                                color: isDarkMode ? Colors.white : Colors.black54,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+                    const SizedBox(width: 48),
+                  ],
+                ),
               ),
-            ),
 
-            _buildDetailCalendarStrip(),
-            const SizedBox(height: 24),
-            _buildSlidingToggle(),
-            const SizedBox(height: 2),
+              _buildDetailCalendarStrip(),
+              const SizedBox(height: 24),
+              _buildSlidingToggle(),
+              const SizedBox(height: 2),
 
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  MySpaceDeadlineDetailList(
-                    deadlines: mockDeadlines,
-                    selectedWeekday: selectedWeekday,
-                    currentWeek: _getCurrentWeekDays(),
-                    onToggleDeadline: _toggleDeadline,
-                    onDeleteDeadline: _deleteDeadline,
-                    onEditDeadline: _editDeadline,
-                    initialShowAll: _deadlineShowAll,
-                  ),
-                  _buildScheduleDetailList(),
-                ],
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    MySpaceDeadlineDetailList(
+                      deadlines: mockDeadlines,
+                      selectedWeekday: selectedWeekday,
+                      currentWeek: _getCurrentWeekDays(),
+                      onToggleDeadline: _toggleDeadline,
+                      onDeleteDeadline: _deleteDeadline,
+                      onEditDeadline: _editDeadline,
+                      initialShowAll: _deadlineShowAll,
+                    ),
+                    _buildScheduleDetailList(),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
-      ],
+            ],
+          ),
+        ],
+      ),
     );
   }
   int _countDeadlinesForDate(DateTime date) {
@@ -1660,7 +1700,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       ),
     );
   }
-
 
   void _showScheduleActionMenu(StudyClass s) {
     showModalBottomSheet(
