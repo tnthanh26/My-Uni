@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 import 'services/activity_service.dart';
 
 class StudentQrScannerDialog extends StatefulWidget {
@@ -167,7 +168,7 @@ class _StudentQrScannerDialogState extends State<StudentQrScannerDialog> {
       _isProcessing = false;
     });
 
-    _messageTimer = Timer(const Duration(seconds: 2), () {
+    _messageTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
       setState(() {
         _errorMessage = null;
@@ -175,21 +176,46 @@ class _StudentQrScannerDialogState extends State<StudentQrScannerDialog> {
     });
   }
 
+  Future<void> _pickImageFromGallery() async {
+    if (_isProcessing || _pendingStudentData != null) return;
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+      if (image == null) return;
+
+      setState(() {
+        _isProcessing = true;
+        _errorMessage = null;
+        _successMessage = null;
+      });
+
+      final BarcodeCapture? capture = await _controller.analyzeImage(image.path);
+      if (capture != null && capture.barcodes.isNotEmpty) {
+        await _handleDetect(capture);
+      } else {
+        _showError('Không tìm thấy mã QR trong ảnh đã chọn.');
+      }
+    } catch (e) {
+      _showError('Lỗi đọc ảnh từ thư viện: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final hasMessage = _successMessage != null || _errorMessage != null;
 
     return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        width: 520,
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(26),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+      elevation: 0,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 480),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
           children: [
             Row(
               children: [
@@ -225,6 +251,7 @@ class _StudentQrScannerDialogState extends State<StudentQrScannerDialog> {
                 child: Stack(
                   children: [
                     MobileScanner(
+                      fit: BoxFit.cover,
                       controller: _controller,
                       onDetect: _handleDetect,
                     ),
@@ -405,18 +432,68 @@ class _StudentQrScannerDialogState extends State<StudentQrScannerDialog> {
 
             const SizedBox(height: 14),
 
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                IconButton(
+                  onPressed: () => _controller.toggleTorch(),
+                  icon: const Icon(Icons.flash_on_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade200,
+                    foregroundColor: Colors.black87,
+                  ),
+                  tooltip: 'Bật/Tắt Flash',
+                ),
+                ElevatedButton.icon(
+                  onPressed: (_isProcessing || _pendingStudentData != null) ? null : _pickImageFromGallery,
+                  icon: const Icon(Icons.photo_library_rounded, size: 18),
+                  label: const Text(
+                    'Tải ảnh QR',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => _controller.switchCamera(),
+                  icon: const Icon(Icons.cameraswitch_rounded),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.grey.shade200,
+                    foregroundColor: Colors.black87,
+                  ),
+                  tooltip: 'Đổi camera',
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 12),
+
             const Text(
-              'Đưa mã QR sinh viên vào khung camera ngay ngắn và đợi một xíu bạn nhé!',
+              'Đưa mã QR sinh viên vào khung quét hoặc tải ảnh từ thư viện!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 color: Color(0xFF667085),
+                fontSize: 12,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }

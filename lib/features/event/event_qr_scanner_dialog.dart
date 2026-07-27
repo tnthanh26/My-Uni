@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:my_uni/web_mod/services/activity_service.dart';
@@ -18,6 +20,8 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
     detectionSpeed: DetectionSpeed.noDuplicates,
   );
 
+  final ImagePicker _imagePicker = ImagePicker();
+
   bool _isProcessing = false;
   String? _errorMessage;
   String? _successMessage;
@@ -31,11 +35,74 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
   }
 
   Future<void> _handleDetect(BarcodeCapture capture) async {
+    if (capture.barcodes.isEmpty) return;
+
+    final rawValue = capture.barcodes.first.rawValue;
+
+    await _handleQrValue(rawValue);
+  }
+
+  Future<void> _scanQrFromGallery() async {
     if (_isProcessing) return;
 
-    final rawValue = capture.barcodes.isNotEmpty
-        ? capture.barcodes.first.rawValue
-        : null;
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 100,
+      );
+
+      if (image == null || !mounted) return;
+
+      setState(() {
+        _isProcessing = true;
+        _errorMessage = null;
+        _successMessage = null;
+      });
+
+      final BarcodeCapture? capture =
+      await _controller.analyzeImage(image.path);
+
+      if (!mounted) return;
+
+      if (capture == null || capture.barcodes.isEmpty) {
+        _showError(
+          'Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh rõ hơn.',
+        );
+        return;
+      }
+
+      String? rawValue;
+
+      for (final barcode in capture.barcodes) {
+        final value = barcode.rawValue;
+
+        if (value != null && value.trim().isNotEmpty) {
+          rawValue = value;
+          break;
+        }
+      }
+
+      if (rawValue == null || rawValue.trim().isEmpty) {
+        _showError('Không đọc được nội dung mã QR trong ảnh.');
+        return;
+      }
+
+      setState(() {
+        _isProcessing = false;
+      });
+
+      await _handleQrValue(rawValue);
+    } catch (e) {
+      if (!mounted) return;
+
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+
+      _showError('Không thể đọc ảnh QR: $errorMsg');
+    }
+  }
+
+  Future<void> _handleQrValue(String? rawValue) async {
+    if (_isProcessing) return;
 
     if (rawValue == null || rawValue.trim().isEmpty) return;
 
@@ -48,18 +115,20 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
     try {
       final decoded = jsonDecode(rawValue);
 
-      if (decoded is! Map<String, dynamic>) {
+      if (decoded is! Map) {
         _showError('Mã QR không đúng định dạng sự kiện.');
         return;
       }
 
-      if (decoded['type'] != 'myuni_event_qr') {
+      final qrData = Map<String, dynamic>.from(decoded);
+
+      if (qrData['type'] != 'myuni_event_qr') {
         _showError('Đây không phải mã QR điểm danh sự kiện của MyUni.');
         return;
       }
 
-      final activityId = decoded['activityId']?.toString().trim();
-      final title = decoded['title']?.toString() ?? 'Sự kiện';
+      final activityId = qrData['activityId']?.toString().trim();
+      final title = qrData['title']?.toString() ?? 'Sự kiện';
 
       if (activityId == null || activityId.isEmpty) {
         _showError('Mã QR không có thông tin sự kiện.');
@@ -68,6 +137,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
 
       // Fetch current user data from Firestore
       final user = FirebaseAuth.instance.currentUser;
+
       if (user == null) {
         _showError('Bạn cần đăng nhập để điểm danh.');
         return;
@@ -89,7 +159,9 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
       if (studentId == null ||
           studentId.isEmpty ||
           studentId == 'Chưa cập nhật MSSV') {
-        _showError('Vui lòng cập nhật MSSV tại trang cá nhân trước khi điểm danh.');
+        _showError(
+          'Vui lòng cập nhật MSSV tại trang cá nhân trước khi điểm danh.',
+        );
         return;
       }
 
@@ -97,7 +169,8 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
       userData['email'] = user.email ?? '';
 
       // Call service to check-in
-      final isNewCheckIn = await ActivityService.checkInToEventFromStudent(
+      final isNewCheckIn =
+      await ActivityService.checkInToEventFromStudent(
         activityId: activityId,
         studentUid: user.uid,
         studentData: userData,
@@ -110,6 +183,8 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
       } else {
         _showSuccess('Bạn đã điểm danh sự kiện này trước đó rồi.');
       }
+    } on FormatException {
+      _showError('Mã QR không chứa dữ liệu hợp lệ.');
     } catch (e) {
       final errorMsg = e.toString().replaceFirst('Exception: ', '');
       _showError(errorMsg);
@@ -127,6 +202,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
 
     _messageTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
+
       setState(() {
         _successMessage = null;
       });
@@ -144,6 +220,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
 
     _messageTimer = Timer(const Duration(seconds: 3), () {
       if (!mounted) return;
+
       setState(() {
         _errorMessage = null;
       });
@@ -181,7 +258,9 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
                       fontFamily: 'Nunito',
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
-                      color: isDarkMode ? Colors.white : const Color(0xFF1A1F37),
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF1A1F37),
                     ),
                   ),
                 ),
@@ -307,15 +386,43 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
               ),
             ),
 
+            const SizedBox(height: 14),
+
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _isProcessing ? null : _scanQrFromGallery,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Chọn ảnh QR từ thư viện'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF6C63FF),
+                  side: const BorderSide(
+                    color: Color(0xFF6C63FF),
+                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  textStyle: const TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+
             const SizedBox(height: 12),
 
             Text(
-              'Đưa mã QR của hoạt động/sự kiện vào khung quét bạn nhé!',
+              'Quét trực tiếp bằng camera hoặc chọn ảnh QR có sẵn trong thư viện.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 13,
-                color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
+                color: isDarkMode
+                    ? Colors.white60
+                    : const Color(0xFF667085),
                 fontWeight: FontWeight.w500,
               ),
             ),
