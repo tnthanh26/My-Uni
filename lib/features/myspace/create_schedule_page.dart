@@ -636,6 +636,90 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
       // 2. Tạo đối tượng StudyClass mới từ thông tin đã nhập
       final String targetId = widget.schedule?.id ?? DateTime.now().millisecondsSinceEpoch.toString();
+      final int targetWeekday = _getWeekdayInt(_selectedWeekday);
+
+      // Kiểm tra trùng lịch học trong cùng ngày
+      final overlappingSchedules = currentSchedule.where((s) {
+        if (s.id == targetId) return false; // Không so sánh với chính môn đang sửa
+        if (s.weekday != targetWeekday) return false;
+
+        final sStartMins = (StudyClass.parseTimeToHourFraction(s.start) * 60).round();
+        final sEndMins = (StudyClass.parseTimeToHourFraction(s.end) * 60).round();
+
+        // Điều kiện trùng khung giờ: startA < endB && startB < endA
+        return (startMinutes < sEndMins) && (sStartMins < endMinutes);
+      }).toList();
+
+      if (overlappingSchedules.isNotEmpty) {
+        final conflict = overlappingSchedules.first;
+        if (mounted) {
+          final bool? proceed = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28.0),
+              ),
+              icon: const Icon(
+                Icons.schedule_rounded,
+                size: 32,
+                color: Color(0xFFE67C73),
+              ),
+              title: const Text(
+                'Lịch học bị trùng khung giờ',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.2,
+                ),
+              ),
+              content: Text(
+                'Môn học này trùng thời gian với "${conflict.name}" (${conflict.start} - ${conflict.end}).\n\nBạn vẫn muốn tiếp tục lưu lịch này?',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.45,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white70
+                      : Colors.black87,
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.end,
+              actionsPadding: const EdgeInsets.only(right: 16, bottom: 16, top: 8),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text('Chỉnh sửa'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF039BE5),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: const Text(
+                    'Vẫn lưu',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          );
+
+          if (proceed != true) {
+            return;
+          }
+        }
+      }
 
       // 3. Tạo đối tượng môn học mới từ thông tin đã nhập
       final updatedClass = StudyClass(
