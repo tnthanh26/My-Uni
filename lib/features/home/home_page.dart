@@ -18,9 +18,6 @@ import 'package:my_uni/features/event/my_event_tab.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
-import 'package:my_uni/features/chat/pages/chat_list_page.dart';
-import 'package:my_uni/features/chat/services/chat_service.dart';
-import 'package:my_uni/features/chat/models/chat_models.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
@@ -727,48 +724,12 @@ class HomePageState extends State<HomePage> {
                   const SizedBox(width: 8),
                   const Text("|", style: TextStyle(color: Colors.white38)),
                   const SizedBox(width: 8),
-                  // Nút Chat
-                  StreamBuilder<List<ChatRoom>>(
-                    stream: ChatService().getUserChatRoomsStream(),
-                    builder: (context, snapshot) {
-                      final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-                      final rooms = snapshot.data ?? [];
-                      final unreadChatsCount = rooms.fold<int>(0, (sum, room) => sum + room.getUnreadCount(myUid));
-
-                      return GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ChatListPage()),
-                          );
-                        },
-                        child: Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-                            if (unreadChatsCount > 0)
-                              const Positioned(
-                                right: -2,
-                                top: -2,
-                                child: CircleAvatar(
-                                  radius: 6,
-                                  backgroundColor: AppColors.hcmusTeal,
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  const Text("|", style: TextStyle(color: Colors.white38)),
-                  const SizedBox(width: 8),
                   // Nút Notification
                   GestureDetector(
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => NotificationScreen()),
+                        MaterialPageRoute(builder: (context) => const NotificationScreen()),
                       );
                     },
                     child: StreamBuilder<List<MyUniNotification>>(
@@ -792,7 +753,7 @@ class HomePageState extends State<HomePage> {
                                     style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                              )
+                              ),
                           ],
                         );
                       },

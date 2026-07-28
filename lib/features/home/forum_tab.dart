@@ -15,6 +15,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:my_uni/theme/app_colors.dart';
 import 'package:my_uni/features/chat/services/chat_service.dart';
 import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
+import 'package:my_uni/features/chat/widgets/student_identity_card.dart';
+import 'package:my_uni/utils/anonymous_utils.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -385,7 +387,25 @@ class _ForumTabState extends State<ForumTab> {
                                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                                   child: Row(
                                     children: [
-                                      _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          if (isAnonymous) return;
+                                          final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
+                                          if (authorId.isEmpty) return;
+                                          final info = await ChatService().getStudentVerificationInfo(authorId);
+                                          if (context.mounted) {
+                                            StudentIdentitySheet.show(
+                                              context,
+                                              info ?? {
+                                                'uid': authorId,
+                                                'displayName': data['authorName'] ?? 'Sinh viên',
+                                                'photoURL': avatarData ?? '',
+                                              },
+                                            );
+                                          }
+                                        },
+                                        child: _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -395,17 +415,35 @@ class _ForumTabState extends State<ForumTab> {
                                             Row(
                                               children: [
                                                 Expanded(
-                                                  child: Text(
-                                                    isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Người dùng'),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: TextStyle(
-                                                      fontFamily: 'Encode Sans Expanded',
-                                                      fontWeight: FontWeight.w700,
-                                                      fontSize: 14,
-                                                      color: isDarkMode
-                                                          ? Colors.white
-                                                          : const Color(0xFF2C2C2C),
+                                                  child: GestureDetector(
+                                                    onTap: () async {
+                                                      if (isAnonymous) return;
+                                                      final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
+                                                      if (authorId.isEmpty) return;
+                                                      final info = await ChatService().getStudentVerificationInfo(authorId);
+                                                      if (context.mounted) {
+                                                        StudentIdentitySheet.show(
+                                                          context,
+                                                          info ?? {
+                                                            'uid': authorId,
+                                                            'displayName': data['authorName'] ?? 'Sinh viên',
+                                                            'photoURL': avatarData ?? '',
+                                                          },
+                                                        );
+                                                      }
+                                                    },
+                                                    child: Text(
+                                                      isAnonymous ? AnonymousUtils.getAnonymousName((data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString(), docId) : (data['authorName'] ?? 'Người dùng'),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontFamily: 'Encode Sans Expanded',
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 14,
+                                                        color: isDarkMode
+                                                            ? Colors.white
+                                                            : const Color(0xFF2C2C2C),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),
@@ -424,75 +462,6 @@ class _ForumTabState extends State<ForumTab> {
                                                         fontSize: 10,
                                                         fontWeight: FontWeight.w700,
                                                         color: Color(0xFF5893D8),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                                if (!isAnonymous && !isOwner && data['authorId'] != null) ...[
-                                                  const SizedBox(width: 8),
-                                                  InkWell(
-                                                    onTap: () async {
-                                                      try {
-                                                        final authorId = data['authorId']?.toString() ?? '';
-                                                        final authorName = data['authorName'] ?? 'Sinh viên';
-                                                        final authorPhoto = avatarData ?? '';
-
-                                                        if (authorId.isEmpty) {
-                                                          ScaffoldMessenger.of(context).showSnackBar(
-                                                            const SnackBar(content: Text('Không tìm thấy thông tin tác giả')),
-                                                          );
-                                                          return;
-                                                        }
-
-                                                        final roomId = await ChatService().getOrCreateChatRoom(
-                                                          authorId,
-                                                          targetName: authorName,
-                                                          targetPhoto: authorPhoto,
-                                                        );
-
-                                                        if (context.mounted && roomId.isNotEmpty) {
-                                                          Navigator.push(
-                                                            context,
-                                                            MaterialPageRoute(
-                                                              builder: (context) => ChatDetailPage(
-                                                                roomId: roomId,
-                                                                targetUserId: authorId,
-                                                                targetUserName: authorName,
-                                                                targetUserPhoto: authorPhoto,
-                                                              ),
-                                                            ),
-                                                          );
-                                                        }
-                                                      } catch (e) {
-                                                        debugPrint("Error opening chat: $e");
-                                                        if (context.mounted) {
-                                                          final msg = e.toString().replaceAll('Exception: ', '');
-                                                          ScaffoldMessenger.of(context).showSnackBar(
-                                                            SnackBar(content: Text(msg)),
-                                                          );
-                                                        }
-                                                      }
-                                                    },
-                                                    child: const Padding(
-                                                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                                      child: Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          Icon(
-                                                            Icons.chat_bubble_outline_rounded,
-                                                            size: 16,
-                                                            color: AppColors.hcmusTeal,
-                                                          ),
-                                                          SizedBox(width: 4),
-                                                          Text(
-                                                            'Nhắn tin',
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: AppColors.hcmusTeal,
-                                                            ),
-                                                          ),
-                                                        ],
                                                       ),
                                                     ),
                                                   ),

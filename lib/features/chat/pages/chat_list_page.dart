@@ -5,6 +5,7 @@ import '../../../theme/app_colors.dart';
 import '../models/chat_models.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_page.dart';
+import 'search_user_page.dart';
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -48,6 +49,18 @@ class _ChatListPageState extends State<ChatListPage> {
             letterSpacing: -0.4,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_search_rounded, color: AppColors.hcmusTeal),
+            tooltip: 'Tìm sinh viên',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SearchUserPage()),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

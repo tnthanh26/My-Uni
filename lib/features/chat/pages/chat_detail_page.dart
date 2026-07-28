@@ -36,12 +36,27 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final ScrollController _scrollController = ScrollController();
 
   Map<String, dynamic>? _targetUserInfo;
+  bool _isTyping = false;
+  bool _showActions = false;
 
   @override
   void initState() {
     super.initState();
     _chatService.markRoomAsRead(widget.roomId);
     _loadTargetUserInfo();
+    _messageController.addListener(_onMessageTextChanged);
+  }
+
+  void _onMessageTextChanged() {
+    final isNotEmpty = _messageController.text.trim().isNotEmpty;
+    if (isNotEmpty != _isTyping) {
+      setState(() {
+        _isTyping = isNotEmpty;
+        if (!isNotEmpty) {
+          _showActions = false;
+        }
+      });
+    }
   }
 
   Future<void> _loadTargetUserInfo() async {
@@ -55,6 +70,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   @override
   void dispose() {
+    _messageController.removeListener(_onMessageTextChanged);
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -200,6 +216,52 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 
+  Widget _buildBrandChip(
+    String type,
+    String label,
+    IconData icon,
+    Color brandColor,
+    String selectedType,
+    Function(String) onSelect,
+    bool isDark,
+  ) {
+    final isSelected = selectedType == type;
+    return InkWell(
+      onTap: () => onSelect(type),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? brandColor.withValues(alpha: isDark ? 0.25 : 0.12)
+              : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? brandColor : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 16, color: isSelected ? brandColor : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? (isDark ? Colors.white : brandColor) : (isDark ? Colors.white70 : const Color(0xFF334155)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showShareContactDialog() async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final myUser = FirebaseAuth.instance.currentUser;
@@ -218,113 +280,184 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final phoneController = TextEditingController(text: savedContacts['phone'] ?? '');
     final discordController = TextEditingController(text: savedContacts['discord'] ?? '');
 
-    String selectedType = 'zalo';
-    bool saveAsDefault = true;
+    String selectedType = 'facebook';
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             TextEditingController currentController;
-            String labelText;
             String hintText;
+            IconData typeIcon;
+            Color typeColor;
 
-            if (selectedType == 'zalo') {
-              currentController = zaloController;
-              labelText = 'Số điện thoại Zalo';
-              hintText = '0901234567';
-            } else if (selectedType == 'facebook') {
+            if (selectedType == 'facebook') {
               currentController = fbController;
-              labelText = 'Link / Tên Facebook';
-              hintText = 'fb.com/username';
-            } else if (selectedType == 'phone') {
-              currentController = phoneController;
-              labelText = 'Số điện thoại gọi';
-              hintText = '0901234567';
-            } else {
+              hintText = 'facebook.com/username';
+              typeIcon = Icons.facebook_rounded;
+              typeColor = const Color(0xFF1877F2);
+            } else if (selectedType == 'zalo') {
+              currentController = zaloController;
+              hintText = '0901234567 hoặc zalo.me/090...';
+              typeIcon = Icons.chat_bubble_rounded;
+              typeColor = const Color(0xFF0068FF);
+            } else if (selectedType == 'discord') {
               currentController = discordController;
-              labelText = 'Tên / Tag Discord';
               hintText = 'username#1234';
+              typeIcon = Icons.headset_mic_rounded;
+              typeColor = const Color(0xFF5865F2);
+            } else {
+              currentController = phoneController;
+              hintText = '0901234567';
+              typeIcon = Icons.phone_android_rounded;
+              typeColor = const Color(0xFF10B981);
             }
 
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-              title: const Row(
-                children: [
-                  Icon(Icons.contact_mail_rounded, color: AppColors.hcmusTeal),
-                  SizedBox(width: 10),
-                  Text(
-                    'Chia sẻ thông tin liên hệ',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ],
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
               ),
-              content: SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Chọn loại liên hệ bạn muốn gửi cho đối phương:',
-                      style: TextStyle(fontSize: 13, color: Colors.grey),
+                    Center(
+                      child: Container(
+                        width: 38,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white24 : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
+                    const SizedBox(height: 16),
+                    Row(
                       children: [
-                        ChoiceChip(
-                          label: const Text('Zalo'),
-                          selected: selectedType == 'zalo',
-                          onSelected: (val) => setDialogState(() => selectedType = 'zalo'),
-                          selectedColor: AppColors.hcmusTeal.withValues(alpha: 0.2),
-                        ),
-                        ChoiceChip(
-                          label: const Text('Facebook'),
-                          selected: selectedType == 'facebook',
-                          onSelected: (val) => setDialogState(() => selectedType = 'facebook'),
-                          selectedColor: AppColors.hcmusTeal.withValues(alpha: 0.2),
-                        ),
-                        ChoiceChip(
-                          label: const Text('SĐT'),
-                          selected: selectedType == 'phone',
-                          onSelected: (val) => setDialogState(() => selectedType = 'phone'),
-                          selectedColor: AppColors.hcmusTeal.withValues(alpha: 0.2),
-                        ),
-                        ChoiceChip(
-                          label: const Text('Discord'),
-                          selected: selectedType == 'discord',
-                          onSelected: (val) => setDialogState(() => selectedType = 'discord'),
-                          selectedColor: const Color(0xFF5865F2).withValues(alpha: 0.2),
+                        Text(
+                          'Chia sẻ thông tin liên hệ',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 16),
+                    // Brand Selector Segment Chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _buildBrandChip('facebook', 'Facebook', Icons.facebook_rounded, const Color(0xFF1877F2), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          const SizedBox(width: 8),
+                          _buildBrandChip('zalo', 'Zalo', Icons.chat_bubble_rounded, const Color(0xFF0068FF), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          const SizedBox(width: 8),
+                          _buildBrandChip('discord', 'Discord', Icons.headset_mic_rounded, const Color(0xFF5865F2), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          const SizedBox(width: 8),
+                          _buildBrandChip('phone', 'SĐT', Icons.phone_android_rounded, const Color(0xFF10B981), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 18),
                     TextField(
                       controller: currentController,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
                       decoration: InputDecoration(
-                        labelText: labelText,
+                        prefixIcon: Icon(typeIcon, color: typeColor, size: 20),
                         hintText: hintText,
+                        hintStyle: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          color: isDark ? Colors.white38 : Colors.grey[400],
+                          fontSize: 13,
+                        ),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F7),
+                        fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(
+                            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          borderSide: BorderSide(color: typeColor, width: 1.5),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 20),
                     Row(
                       children: [
-                        Checkbox(
-                          value: saveAsDefault,
-                          activeColor: AppColors.hcmusTeal,
-                          onChanged: (val) => setDialogState(() => saveAsDefault = val ?? true),
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: Text(
+                              'Hủy',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                color: isDark ? Colors.white60 : Colors.grey[600],
+                              ),
+                            ),
+                          ),
                         ),
-                        const Expanded(
-                          child: Text(
-                            'Lưu lại làm thông tin mặc định',
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: typeColor,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
+                            ),
+                            onPressed: () async {
+                              final String val = currentController.text.trim();
+                              if (val.isEmpty) return;
+
+                              Navigator.pop(context);
+
+                              final myName = myUser?.displayName ?? 'Sinh viên';
+
+                              await _chatService.sendMessage(
+                                widget.roomId,
+                                '',
+                                contactShare: {
+                                  'type': selectedType,
+                                  'value': val,
+                                  'name': myName,
+                                },
+                              );
+                              _scrollToBottom();
+                            },
+                            icon: const Icon(Icons.send_rounded, size: 16),
+                            label: const Text(
+                              'Gửi ngay',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -332,44 +465,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Hủy'),
-                ),
-                FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.hcmusTeal,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () async {
-                    final String val = currentController.text.trim();
-                    if (val.isEmpty) return;
-
-                    Navigator.pop(context);
-
-                    // Lưu vào hồ sơ nếu được tick chọn
-                    if (saveAsDefault && myUid.isNotEmpty) {
-                      savedContacts[selectedType] = val;
-                      await _chatService.saveUserSocialContacts(myUid, savedContacts);
-                    }
-
-                    final myName = myUser?.displayName ?? 'Sinh viên';
-
-                    await _chatService.sendMessage(
-                      widget.roomId,
-                      'Tôi gửi bạn thông tin liên hệ:',
-                      contactShare: {
-                        'type': selectedType,
-                        'value': val,
-                        'name': myName,
-                      },
-                    );
-                    _scrollToBottom();
-                  },
-                  child: const Text('Chia sẻ'),
-                ),
-              ],
             );
           },
         );
@@ -621,27 +716,52 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Nút Gửi Ảnh
-                    IconButton(
-                      icon: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.hcmusTeal, size: 22),
-                      tooltip: 'Gửi hình ảnh',
-                      onPressed: _pickAndSendImage,
+                    // Các nút thao tác đính kèm (Ảnh, Tệp, Liên hệ)
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 200),
+                      crossFadeState: (_isTyping && !_showActions)
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      firstChild: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        physics: const BouncingScrollPhysics(),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: const EdgeInsets.all(2),
+                              icon: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.hcmusTeal, size: 20),
+                              tooltip: 'Gửi hình ảnh',
+                              onPressed: _pickAndSendImage,
+                            ),
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: const EdgeInsets.all(2),
+                              icon: const Icon(Icons.attach_file_rounded, color: AppColors.hcmusTeal, size: 20),
+                              tooltip: 'Gửi tệp đính kèm',
+                              onPressed: _pickAndSendFile,
+                            ),
+                            IconButton(
+                              constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                              padding: const EdgeInsets.all(2),
+                              icon: const Icon(Icons.badge_rounded, color: AppColors.hcmusTeal, size: 20),
+                              tooltip: 'Chia sẻ thông tin liên hệ',
+                              onPressed: _showShareContactDialog,
+                            ),
+                          ],
+                        ),
+                      ),
+                      secondChild: IconButton(
+                        constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+                        padding: const EdgeInsets.all(4),
+                        icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.hcmusTeal, size: 22),
+                        tooltip: 'Mở rộng công cụ',
+                        onPressed: () => setState(() => _showActions = true),
+                      ),
                     ),
 
-                    // Nút Gửi File Tài liệu
-                    IconButton(
-                      icon: const Icon(Icons.attach_file_rounded, color: AppColors.hcmusTeal, size: 22),
-                      tooltip: 'Gửi tệp đính kèm',
-                      onPressed: _pickAndSendFile,
-                    ),
-
-                    // Nút Chia sẻ liên hệ
-                    IconButton(
-                      icon: const Icon(Icons.badge_outlined, color: AppColors.hcmusTeal, size: 22),
-                      tooltip: 'Chia sẻ thông tin liên hệ Zalo/FB',
-                      onPressed: _showShareContactDialog,
-                    ),
-
+                    const SizedBox(width: 4),
                     // Khung nhập tin nhắn
                     Expanded(
                       child: TextField(
@@ -671,9 +791,12 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       shape: const CircleBorder(),
                       child: InkWell(
                         customBorder: const CircleBorder(),
-                        onTap: _sendMessage,
+                        onTap: () {
+                          _sendMessage();
+                          setState(() => _showActions = false);
+                        },
                         child: const Padding(
-                          padding: EdgeInsets.all(9),
+                          padding: EdgeInsets.fromLTRB(12, 9, 9, 9),
                           child: Icon(
                             Icons.send_rounded,
                             size: 18,

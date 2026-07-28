@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../models/notification_model.dart';
 import '../services/notification_service.dart';
 import '../home/post_detail_page.dart';
+import '../chat/pages/chat_detail_page.dart';
+import '../chat/services/chat_service.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -223,6 +225,26 @@ class NotificationScreen extends StatelessWidget {
       MyUniNotification noti,
       ) async {
     NotificationService.markAsRead(noti.id);
+
+    if (noti.type == 'chat' || noti.roomId != null) {
+      final roomId = noti.roomId;
+      if (roomId != null && roomId.isNotEmpty) {
+        final currentUid = ChatService().currentUserId ?? '';
+        final peerUid = noti.senderId ?? roomId.split('_').firstWhere((id) => id != currentUid, orElse: () => '');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ChatDetailPage(
+              roomId: roomId,
+              targetUserId: peerUid,
+              targetUserName: noti.senderName ?? noti.title,
+              targetUserPhoto: noti.senderAvatar ?? '',
+            ),
+          ),
+        );
+        return;
+      }
+    }
 
     if (noti.relatedPostId != null && noti.collectionPath != null) {
       showDialog(
@@ -658,6 +680,11 @@ class NotificationScreen extends StatelessWidget {
         iconData = Icons.warning_amber_rounded;
         iconColor = Colors.redAccent;
         bgColor = Colors.redAccent.withOpacity(0.14);
+        break;
+      case 'chat':
+        iconData = Icons.mark_chat_unread_rounded;
+        iconColor = const Color(0xFF10B981);
+        bgColor = const Color(0xFF10B981).withOpacity(0.14);
         break;
       case 'comment':
         iconData = Icons.chat_bubble_outline_rounded;

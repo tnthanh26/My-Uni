@@ -448,13 +448,13 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
                             isDarkMode: isDarkMode,
                           ),
                           _buildGroupSection(
-                            title: "Tuần này",
+                            title: "Trong 7 ngày tới",
                             items: thisWeek,
                             headerColor: isDarkMode ? const Color(0xFFFB923C) : const Color(0xFFEA580C),
                             isDarkMode: isDarkMode,
                           ),
                           _buildGroupSection(
-                            title: "Sắp tới",
+                            title: "Xa hơn (Trên 7 ngày)",
                             items: upcoming,
                             headerColor: isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58),
                             isDarkMode: isDarkMode,

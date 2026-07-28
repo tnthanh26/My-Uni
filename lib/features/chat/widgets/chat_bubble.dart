@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../theme/app_colors.dart';
 import '../models/chat_models.dart';
 
@@ -157,6 +158,7 @@ class ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bool isOnlyContact = message.contactShare != null && message.text.isEmpty && !message.isRecalled;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
@@ -173,29 +175,33 @@ class ChatBubble extends StatelessWidget {
                 constraints: BoxConstraints(
                   maxWidth: MediaQuery.of(context).size.width * 0.75,
                 ),
-                decoration: BoxDecoration(
-                  color: message.isRecalled
-                      ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
-                      : (isMe
-                          ? AppColors.hcmusTeal
-                          : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F7))),
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(18),
-                    topRight: const Radius.circular(18),
-                    bottomLeft: Radius.circular(isMe ? 18 : 4),
-                    bottomRight: Radius.circular(isMe ? 4 : 18),
-                  ),
-                  boxShadow: message.isRecalled
-                      ? null
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 3,
-                            offset: const Offset(0, 1),
-                          ),
-                        ],
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: isOnlyContact
+                    ? const BoxDecoration(color: Colors.transparent)
+                    : BoxDecoration(
+                        color: message.isRecalled
+                            ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
+                            : (isMe
+                                ? AppColors.hcmusTeal
+                                : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F7))),
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(18),
+                          topRight: const Radius.circular(18),
+                          bottomLeft: Radius.circular(isMe ? 18 : 4),
+                          bottomRight: Radius.circular(isMe ? 4 : 18),
+                        ),
+                        boxShadow: message.isRecalled
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.03),
+                                  blurRadius: 3,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
+                      ),
+                padding: isOnlyContact
+                    ? EdgeInsets.zero
+                    : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
@@ -320,20 +326,19 @@ class ChatBubble extends StatelessWidget {
 
     if (ext == 'pdf') {
       fileIcon = Icons.picture_as_pdf_rounded;
-      iconColor = Colors.red;
-    } else if (ext == 'doc' || ext == 'docx') {
+      iconColor = Colors.redAccent;
+    } else if (['doc', 'docx'].contains(ext)) {
       fileIcon = Icons.description_rounded;
-      iconColor = Colors.blue;
-    } else if (ext == 'xls' || ext == 'xlsx') {
+      iconColor = Colors.blueAccent;
+    } else if (['xls', 'xlsx'].contains(ext)) {
       fileIcon = Icons.table_chart_rounded;
       iconColor = Colors.green;
-    } else if (ext == 'zip' || ext == 'rar') {
+    } else if (['zip', 'rar', '7z'].contains(ext)) {
       fileIcon = Icons.folder_zip_rounded;
       iconColor = Colors.amber;
     }
 
     return Container(
-      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isMe
             ? Colors.white.withValues(alpha: 0.15)
@@ -343,6 +348,7 @@ class ChatBubble extends StatelessWidget {
           color: isMe ? Colors.white24 : (isDark ? Colors.white12 : Colors.black12),
         ),
       ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -393,137 +399,244 @@ class ChatBubble extends StatelessWidget {
     bool isMe,
     bool isDark,
   ) {
-    final type = contact['type'] ?? 'zalo';
+    final type = (contact['type'] ?? 'zalo').toLowerCase();
     final value = contact['value'] ?? '';
     final name = contact['name'] ?? 'Sinh viên';
 
-    IconData typeIcon = Icons.contact_page_rounded;
-    Color iconColor = AppColors.hcmusTeal;
-    String label = 'Thông tin liên hệ';
+    IconData brandIcon;
+    Color brandColor;
+    String brandName;
+    String actionLabel = 'Sao chép';
+    bool isUrl = false;
 
-    if (type == 'zalo') {
-      typeIcon = Icons.chat_bubble_outline_rounded;
-      iconColor = const Color(0xFF0068FF);
-      label = 'Số điện thoại Zalo';
-    } else if (type == 'facebook') {
-      typeIcon = Icons.facebook_rounded;
-      iconColor = const Color(0xFF1877F2);
-      label = 'Liên kết Facebook';
-    } else if (type == 'phone') {
-      typeIcon = Icons.phone_in_talk_rounded;
-      iconColor = const Color(0xFF34C759);
-      label = 'Số điện thoại';
-    } else if (type == 'discord') {
-      typeIcon = Icons.headset_mic_rounded;
-      iconColor = const Color(0xFF5865F2);
-      label = 'Tài khoản Discord';
+    switch (type) {
+      case 'facebook':
+        brandIcon = Icons.facebook_rounded;
+        brandColor = const Color(0xFF1877F2);
+        brandName = 'Facebook';
+        isUrl = value.contains('facebook.com') || value.startsWith('http');
+        if (isUrl) actionLabel = 'Mở trang';
+        break;
+      case 'discord':
+        brandIcon = Icons.headset_mic_rounded;
+        brandColor = const Color(0xFF5865F2);
+        brandName = 'Discord';
+        break;
+      case 'phone':
+        brandIcon = Icons.phone_android_rounded;
+        brandColor = const Color(0xFF10B981);
+        brandName = 'Số điện thoại';
+        actionLabel = 'Sao chép';
+        break;
+      case 'zalo':
+      default:
+        brandIcon = Icons.chat_bubble_rounded;
+        brandColor = const Color(0xFF0068FF);
+        brandName = 'Zalo';
+        isUrl = value.contains('zalo.me') || value.startsWith('http');
+        if (isUrl) actionLabel = 'Mở Zalo';
+        break;
     }
 
+    final Color cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color cardBorder = isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final Color textColorPrimary = isDark ? Colors.white : const Color(0xFF0F172A);
+    final Color textColorSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final Color valueBoxBg = isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9);
+
     return Container(
+      width: 250,
       decoration: BoxDecoration(
-        color: isMe
-            ? Colors.white.withValues(alpha: 0.15)
-            : (isDark ? const Color(0xFF3A3A3C) : Colors.white),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isMe
-              ? Colors.white24
-              : (isDark ? Colors.white12 : Colors.black12),
-        ),
-      ),
-      padding: const EdgeInsets.all(10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(typeIcon, size: 18, color: iconColor),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isMe
-                            ? Colors.white70
-                            : (isDark ? Colors.white60 : Colors.black54),
-                      ),
-                    ),
-                    Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
-                        color: isMe
-                            ? Colors.white
-                            : (isDark ? Colors.white : Colors.black87),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: isMe
-                  ? Colors.black.withValues(alpha: 0.15)
-                  : (isDark ? Colors.black26 : const Color(0xFFF2F4F7)),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: SelectableText(
-                    value,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'monospace',
-                      color: isMe
-                          ? Colors.white
-                          : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
-                    ),
-                  ),
-                ),
-                InkWell(
-                  onTap: () async {
-                    await Clipboard.setData(ClipboardData(text: value));
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Đã sao chép $label: $value'),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(
-                      Icons.copy_rounded,
-                      size: 16,
-                      color: isMe ? Colors.white : AppColors.hcmusTeal,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorder, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Solid Brand Banner Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: brandColor.withValues(alpha: isDark ? 0.2 : 0.1),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: brandColor,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: brandColor.withValues(alpha: 0.4),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Icon(brandIcon, size: 18, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          brandName,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: textColorPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Liên hệ của $name',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 10,
+                            color: textColorSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Card Body: Contact Value & Action Button
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: valueBoxBg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: cardBorder),
+                    ),
+                    child: SelectableText(
+                      value,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: textColorPrimary,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () async {
+                            if (isUrl) {
+                              try {
+                                String url = value;
+                                if (!url.startsWith('http')) url = 'https://$url';
+                                final uri = Uri.parse(url);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                  return;
+                                }
+                              } catch (_) {}
+                            }
+                            await Clipboard.setData(ClipboardData(text: value));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Đã sao chép $brandName: $value'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: brandColor,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  isUrl ? Icons.open_in_new_rounded : Icons.copy_rounded,
+                                  size: 14,
+                                  color: Colors.white,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  actionLabel,
+                                  style: const TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (isUrl) ...[
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () async {
+                            await Clipboard.setData(ClipboardData(text: value));
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Đã sao chép liên kết $brandName'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.white10 : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: cardBorder),
+                            ),
+                            child: Icon(
+                              Icons.copy_rounded,
+                              size: 15,
+                              color: brandColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

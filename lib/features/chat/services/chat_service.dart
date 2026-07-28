@@ -203,6 +203,32 @@ class ChatService {
     } catch (e) {
       debugPrint("Error updating room document: $e");
     }
+
+    // 3. Gửi thông báo tin nhắn 1-1 cho người nhận
+    if (otherUid.isNotEmpty) {
+      try {
+        final senderDoc = await _firestore.collection('users').doc(myUid).get();
+        final senderData = senderDoc.data();
+        final senderName = (senderData?['displayName']?.toString().trim().isNotEmpty == true)
+            ? senderData!['displayName']
+            : 'Một sinh viên';
+
+        await _firestore.collection('notifications').add({
+          'userId': otherUid,
+          'type': 'chat',
+          'title': senderName,
+          'content': displayLastMsg,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'roomId': roomId,
+          'senderId': myUid,
+          'senderName': senderName,
+          'senderAvatar': senderData?['photoUrl'] ?? '',
+        });
+      } catch (e) {
+        debugPrint("Error creating chat notification: $e");
+      }
+    }
   }
 
   /// Đánh dấu đã đọc phòng chat
@@ -295,6 +321,7 @@ class ChatService {
       if (!doc.exists) return null;
       final data = doc.data() ?? {};
       return {
+        'uid': userId,
         'displayName': data['displayName'] ?? data['name'] ?? 'Sinh viên',
         'email': data['email'] ?? '',
         'university': data['university'] ?? 'HCMUS - ĐH Khoa học Tự nhiên',

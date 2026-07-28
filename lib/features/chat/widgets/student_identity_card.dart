@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/base64_image_cache.dart';
+import '../services/chat_service.dart';
+import '../pages/chat_detail_page.dart';
 
 class StudentIdentitySheet extends StatelessWidget {
   final Map<String, dynamic> userInfo;
@@ -21,220 +25,211 @@ class StudentIdentitySheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final String name = userInfo['displayName'] ?? 'Sinh viên';
-    final String email = userInfo['email'] ?? '';
-    final String university = userInfo['university'] ?? 'HCMUS - ĐH Khoa học Tự nhiên';
-    final String faculty = userInfo['faculty'] ?? 'Chưa cập nhật Khoa';
-    final String studentId = userInfo['studentId'] ?? '';
-    final String photoURL = userInfo['photoURL'] ?? '';
+    final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Drag handle indicator
-          Container(
-            width: 36,
-            height: 4,
-            decoration: BoxDecoration(
-              color: isDark ? Colors.white24 : Colors.black12,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(height: 20),
+    final String name = userInfo['displayName'] ?? userInfo['name'] ?? userInfo['authorName'] ?? 'Sinh viên';
+    final String photoURL = userInfo['photoURL'] ?? userInfo['avatar'] ?? userInfo['authorAvatar'] ?? '';
+    final String targetUid = userInfo['uid'] ?? userInfo['userId'] ?? userInfo['id'] ?? userInfo['authorId'] ?? userInfo['uploaderId'] ?? userInfo['targetUserId'] ?? '';
+    final bool isSelf = currentUid.isNotEmpty && targetUid.isNotEmpty && currentUid == targetUid;
 
-          // Avatar với Badge xác thực Google M3
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 42,
-                backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                backgroundImage: photoURL.isNotEmpty ? NetworkImage(photoURL) : null,
-                child: photoURL.isEmpty
-                    ? Text(
-                        name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                        style: const TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.hcmusTeal,
-                        ),
-                      )
-                    : null,
-              ),
-              Positioned(
-                right: 0,
-                bottom: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.verified_user_rounded,
-                    color: AppColors.hcmusTeal,
-                    size: 22,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+    ImageProvider? avatarProvider;
+    if (photoURL.isNotEmpty) {
+      if (photoURL.startsWith('http')) {
+        avatarProvider = NetworkImage(photoURL);
+      } else {
+        try {
+          avatarProvider = MemoryImage(Base64ImageCache.decode(photoURL));
+        } catch (_) {
+          avatarProvider = null;
+        }
+      }
+    }
 
-          // Tên sinh viên
-          Text(
-            name,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              letterSpacing: -0.3,
-            ),
-          ),
-          const SizedBox(height: 4),
-
-          // Badge Sinh viên xác thực
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-            decoration: BoxDecoration(
-              color: AppColors.hcmusTeal.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.hcmusTeal.withValues(alpha: 0.3)),
-            ),
-            child: const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.verified_rounded, size: 14, color: AppColors.hcmusTeal),
-                SizedBox(width: 6),
-                Text(
-                  'Sinh viên HCMUS đã xác thực',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.hcmusTeal,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Thẻ thông tin xác thực chi tiết
-          Container(
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
+              color: isDark ? const Color(0xFF1E2430) : Colors.white,
+              borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: isDark ? Colors.white12 : Colors.black.withValues(alpha: 0.06),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppColors.hcmusTeal.withValues(alpha: 0.2),
+                width: 1.5,
               ),
-            ),
-            child: Column(
-              children: [
-                _buildInfoRow(
-                  context,
-                  Icons.school_rounded,
-                  'Trường',
-                  university,
-                  isDark,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
                 ),
-                const Divider(height: 20),
-                _buildInfoRow(
-                  context,
-                  Icons.account_tree_rounded,
-                  'Khoa / Ngành',
-                  faculty,
-                  isDark,
-                ),
-                if (email.isNotEmpty) ...[
-                  const Divider(height: 20),
-                  _buildInfoRow(
-                    context,
-                    Icons.alternate_email_rounded,
-                    'Email xác thực',
-                    email,
-                    isDark,
-                  ),
-                ],
-                if (studentId.isNotEmpty) ...[
-                  const Divider(height: 20),
-                  _buildInfoRow(
-                    context,
-                    Icons.badge_rounded,
-                    'Mã sinh viên (MSSV)',
-                    studentId,
-                    isDark,
-                  ),
-                ],
               ],
             ),
-          ),
-          const SizedBox(height: 24),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // GÓC TRÁI: Avatar sinh viên
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppColors.hcmusTeal.withValues(alpha: 0.4),
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 26,
+                          backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
+                          backgroundImage: avatarProvider,
+                          child: avatarProvider == null
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : 'S',
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.hcmusTeal,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                      Positioned(
+                        right: -1,
+                        bottom: -1,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E2430) : Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.verified_user_rounded,
+                            color: AppColors.hcmusTeal,
+                            size: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 12),
 
-          // Nút Đóng
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.hcmusTeal,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-              ),
-              child: const Text(
-                'Đóng',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  // Ở GIỮA: Tên sinh viên & Xác thực
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: -0.2,
+                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 13,
+                              color: AppColors.hcmusTeal,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                'Tài khoản đã xác thực',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.hcmusTeal.withValues(alpha: 0.9),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // LỀ PHẢI: Nút Nhắn tin (Chỉ hiện khi không phải chính mình)
+                  if (!isSelf && targetUid.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.hcmusTeal,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        minimumSize: const Size(0, 38),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      icon: const Icon(Icons.chat_bubble_rounded, size: 15),
+                      label: const Text(
+                        'Nhắn tin',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      onPressed: () async {
+                        final navigator = Navigator.of(context);
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
+                        try {
+                          final roomId = await ChatService().getOrCreateChatRoom(
+                            targetUid,
+                            targetName: name,
+                            targetPhoto: photoURL,
+                          );
+                          navigator.pop();
+                          if (roomId.isNotEmpty) {
+                            navigator.push(
+                              MaterialPageRoute(
+                                builder: (context) => ChatDetailPage(
+                                  roomId: roomId,
+                                  targetUserId: targetUid,
+                                  targetUserName: name,
+                                  targetUserPhoto: photoURL,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (navigator.mounted) navigator.pop();
+                          scaffoldMessenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Không thể bắt đầu chat: ${e.toString().replaceAll('Exception: ', '')}',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                    ),
+                  ],
+                ],
               ),
             ),
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(
-    BuildContext context,
-    IconData icon,
-    String label,
-    String value,
-    bool isDark,
-  ) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: AppColors.hcmusTeal),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? Colors.white54 : Colors.black45,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
