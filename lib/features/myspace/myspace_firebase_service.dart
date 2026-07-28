@@ -89,7 +89,7 @@ class MySpaceFirebaseService {
       list.sort((a, b) {
         final dayCompare = a.weekday.compareTo(b.weekday);
         if (dayCompare != 0) return dayCompare;
-        return a.start.compareTo(b.start);
+        return a.startHourFraction.compareTo(b.startHourFraction);
       });
 
       return list;
@@ -183,7 +183,7 @@ class MySpaceFirebaseService {
       list.sort((a, b) {
         final dayCompare = a.weekday.compareTo(b.weekday);
         if (dayCompare != 0) return dayCompare;
-        return a.start.compareTo(b.start);
+        return a.startHourFraction.compareTo(b.startHourFraction);
       });
       return list;
     });

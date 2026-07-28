@@ -106,8 +106,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       return;
     }
 
-    final todayClasses =
-    mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+    final todayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
+      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
     final defaultCampusId = CampusData.mapUniversityToCampusId(_userUniversity);
 
@@ -821,8 +821,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildDashboardContent() {
-    final todayClasses =
-    mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+    final todayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
+      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
     List<Deadline> sortedDeadlines = List.from(mockDeadlines);
     sortedDeadlines.sort((a, b) {
@@ -1067,42 +1067,23 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   double _parseTimeToHourFraction(String timeStr) {
-    try {
-      final cleaned = timeStr.trim().toUpperCase();
-      int hour = 0;
-      int minute = 0;
-
-      if (cleaned.contains('PM') || cleaned.contains('AM')) {
-        final parts = cleaned.split(' ');
-        final timeParts = parts[0].split(':');
-        hour = int.parse(timeParts[0]);
-        minute = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;
-        if (cleaned.contains('PM') && hour < 12) hour += 12;
-        if (cleaned.contains('AM') && hour == 12) hour = 0;
-      } else {
-        final parts = cleaned.split(':');
-        hour = int.parse(parts[0]);
-        minute = parts.length > 1 ? int.parse(parts[1]) : 0;
-      }
-      return hour + (minute / 60.0);
-    } catch (e) {
-      return 7.0;
-    }
+    return StudyClass.parseTimeToHourFraction(timeStr);
   }
 
   Widget _buildScheduleCalendarGridBody() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
+      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
     const double hourHeight = 64.0;
-    const int startHourGrid = 7;
-    const int totalHours = 13; // 7:00 to 19:00
+    const int startHourGrid = 6;
+    const int totalHours = 16; // 6:00 to 21:00
 
     final now = DateTime.now();
     final isTodaySelected = _focusedDate.year == now.year &&
         _focusedDate.month == now.month &&
         _focusedDate.day == now.day;
     final currentHourFraction = now.hour + (now.minute / 60.0);
-    final showNowLine = isTodaySelected && currentHourFraction >= 7.0 && currentHourFraction <= 19.0;
+    final showNowLine = isTodaySelected && currentHourFraction >= 6.0 && currentHourFraction <= 21.0;
     final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
 
     return SingleChildScrollView(
@@ -1497,7 +1478,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
 
   Widget _buildScheduleDetailList() {
-    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
+      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
     if (dayClasses.isEmpty) {
       return Center(child: Text("Hôm nay không có lịch học", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.grey)));

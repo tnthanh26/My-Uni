@@ -75,6 +75,33 @@ class StudyClass {
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
+
+  /// Chuyển đổi chuỗi thời gian (e.g. "07:30", "13:00", "7:30 AM") thành số giờ thập phân để so sánh chính xác
+  static double parseTimeToHourFraction(String timeStr) {
+    try {
+      final cleaned = timeStr.trim().toUpperCase();
+      int hour = 0;
+      int minute = 0;
+
+      if (cleaned.contains('PM') || cleaned.contains('AM')) {
+        final parts = cleaned.split(' ');
+        final timeParts = parts[0].split(':');
+        hour = int.parse(timeParts[0]);
+        minute = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;
+        if (cleaned.contains('PM') && hour < 12) hour += 12;
+        if (cleaned.contains('AM') && hour == 12) hour = 0;
+      } else {
+        final parts = cleaned.split(':');
+        hour = int.parse(parts[0]);
+        minute = parts.length > 1 ? int.parse(parts[1]) : 0;
+      }
+      return hour + (minute / 60.0);
+    } catch (e) {
+      return 6.0;
+    }
+  }
+
+  double get startHourFraction => parseTimeToHourFraction(start);
 }
 
 class AutoDeadlineConfig {
