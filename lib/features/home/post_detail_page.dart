@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -48,6 +49,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   // State to track expanded comment threads
   final Set<String> _expandedComments = {};
+
+  late Map<String, dynamic> _postData;
+  StreamSubscription<DocumentSnapshot>? _postSub;
 
   File? _commentImageFile;
   bool _isSubmittingComment = false;
@@ -113,11 +117,34 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   void initState() {
     super.initState();
+    _postData = Map<String, dynamic>.from(widget.initialPostData);
     timeago.setLocaleMessages('vi', CustomViMessages());
+    _subscribePostRealtime();
+  }
+
+  void _subscribePostRealtime() {
+    _postSub?.cancel();
+    _postSub = _firestore
+        .collection(_collectionPath)
+        .doc(widget.docId)
+        .snapshots()
+        .listen(
+      (doc) {
+        if (doc.exists && doc.data() != null && mounted) {
+          setState(() {
+            _postData = doc.data() as Map<String, dynamic>;
+          });
+        }
+      },
+      onError: (error) {
+        debugPrint("Post realtime stream error (handled): $error");
+      },
+    );
   }
 
   @override
   void dispose() {
+    _postSub?.cancel();
     _commentController.dispose();
     super.dispose();
   }
@@ -343,7 +370,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       });
 
       final authorId =
-          widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+          _postData['authorId'] ?? _postData['uploaderId'];
       if (authorId != null) {
         await _firestore.collection('notifications').add({
           'userId': authorId,
@@ -833,7 +860,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _sendCommentNotification(String content, String senderName) async {
     if (_collectionPath == 'official_news') return;
     final authorId =
-        widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+        _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
@@ -851,7 +878,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _sendLikeNotification() async {
     if (_collectionPath == 'official_news') return;
     final authorId =
-        widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+        _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
@@ -1282,9 +1309,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  void _navigateToEdit() {
+  void _navigateToEdit() async {
     Widget targetPage;
-    final data = widget.initialPostData;
+    final data = _postData;
     if (_collectionPath == 'study_materials') {
       targetPage = CreateMaterialPage(docId: widget.docId, existingData: data);
     } else if (_collectionPath == 'course_reviews') {
@@ -1292,10 +1319,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } else {
       targetPage = CreatePostPage(docId: widget.docId, existingData: data);
     }
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => targetPage),
     );
+    _refreshPostData();
+  }
+
+  Future<void> _refreshPostData() async {
+    try {
+      final doc = await _firestore.collection(_collectionPath).doc(widget.docId).get();
+      if (doc.exists && doc.data() != null && mounted) {
+        setState(() {
+          _postData = doc.data() as Map<String, dynamic>;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error refreshing post data: $e");
+    }
   }
 
   void _confirmDeletePost() {
@@ -1365,13 +1406,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isOwner = _user?.uid ==
-        (widget.initialPostData['authorId'] ??
-            widget.initialPostData['uploaderId']);
+        (_postData['authorId'] ??
+            _postData['uploaderId']);
 
     bool canEditPost = isOwner;
-    if (canEditPost && widget.initialPostData['timestamp'] != null) {
+    if (canEditPost && _postData['timestamp'] != null) {
       try {
-        final Timestamp ts = widget.initialPostData['timestamp'] as Timestamp;
+        final Timestamp ts = _postData['timestamp'] as Timestamp;
         final DateTime postTime = ts.toDate();
         if (DateTime.now().difference(postTime).inHours >= 12) {
           canEditPost = false;
@@ -1470,7 +1511,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: PostActionRow(
                       docId: widget.docId,
-                      data: widget.initialPostData,
+                      data: _postData,
                       onSave: (id, data) => _toggleSavePost(
                         context: context,
                         docId: id,
@@ -1506,7 +1547,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildDynamicHeader() {
-    final data = widget.initialPostData;
+    final data = _postData;
     if (_collectionPath == 'official_news') return _buildOfficialUI(data);
     if (_collectionPath == 'course_reviews') return _buildReviewUI(data);
     if (_collectionPath == 'study_materials') return _buildMaterialUI(data);
@@ -1757,9 +1798,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildReviewUI(Map<String, dynamic> data) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final int rating = (data['rating'] ?? 0) is int
-        ? data['rating'] ?? 0
-        : ((data['rating'] ?? 0) as num).toInt();
+    final int rating = (data['rating'] is num)
+        ? (data['rating'] as num).toInt()
+        : int.tryParse(data['rating']?.toString() ?? '0') ?? 0;
+
+    final String contentStr = (data['content'] ?? '').toString().trim();
+    final bool hasContent = contentStr.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 12, 10, 10),
@@ -1772,15 +1816,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+        padding: EdgeInsets.fromLTRB(16, 18, 16, hasContent ? 18 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1856,18 +1900,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            Text(
-              data['content'] ?? '',
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 15,
-                height: 1.7,
-                color: isDarkMode
-                    ? Colors.white70
-                    : const Color(0xFF4B5563),
+            if (hasContent) ...[
+              const SizedBox(height: 16),
+              Text(
+                contentStr,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 15,
+                  height: 1.7,
+                  color: isDarkMode
+                      ? Colors.white70
+                      : const Color(0xFF4B5563),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -2580,8 +2626,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     final bool isCommentOwner = _user?.uid == comment['authorId'];
     final bool isPostOwner = _user?.uid ==
-        (widget.initialPostData['authorId'] ??
-            widget.initialPostData['uploaderId']);
+        (_postData['authorId'] ??
+            _postData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
     bool canEdit = isCommentOwner;
 
@@ -2598,17 +2644,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
 
     final bool isPostAnonymous =
-        (widget.initialPostData['isAnonymous'] == true) ||
-        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+        (_postData['isAnonymous'] == true) ||
+        (_postData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+        (_postData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
 
     final bool isCommentAnonymous = (comment['isAnonymous'] == true);
 
     final bool isAuthor = !isPostAnonymous &&
         !isCommentAnonymous &&
         comment['authorId'] ==
-            (widget.initialPostData['authorId'] ??
-                widget.initialPostData['uploaderId']);
+            (_postData['authorId'] ??
+                _postData['uploaderId']);
 
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);
