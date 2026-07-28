@@ -261,14 +261,16 @@ class _ForumTabState extends State<ForumTab> {
 
           List<QueryDocumentSnapshot> posts = snapshot.data!.docs;
 
-          // Hàm tính điểm xu hướng (Trending Score) để xếp hạng bài viết
+          // Hàm tính điểm xu hướng (Trending Score) cho cộng đồng ~30 người dùng
+          // Đã tinh chỉnh K (denominator): 1 ngày trôi qua = +10 điểm tương tác (thay vì +100 điểm)
+          // Giúp bài viết nhiều like/comment ngày hôm qua vẫn đứng trên bài mới 0 tương tác hôm nay
           double calculateTrendingScore(Map<String, dynamic> data) {
             final double likes = (data['likeCount'] ?? 0).toDouble();
             final double comments = (data['commentCount'] ?? 0).toDouble();
             final Timestamp? time = data['timestamp'] as Timestamp?;
             double score = likes * 1.5 + comments * 3.0;
             if (time != null) {
-              score += time.toDate().millisecondsSinceEpoch / (1000 * 864.0);
+              score += time.toDate().millisecondsSinceEpoch / (1000 * 8640.0);
             }
             return score;
           }
