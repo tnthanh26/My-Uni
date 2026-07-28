@@ -10,6 +10,7 @@ import 'setting_page.dart';
 import 'my_post_page.dart';
 import 'my_review_page.dart';
 import 'saved_posts_page.dart';
+import 'user_search_widget.dart';
 import '../home/onboarding_dialog.dart';
 
 class AccountPage extends StatelessWidget {
@@ -582,6 +583,10 @@ class AccountPage extends StatelessWidget {
                     photoBase64: photoBase64,
                     isVerified: isVerified,
                   ),
+                  const SizedBox(height: 22),
+
+                  _buildSectionTitle('Tìm kiếm người dùng', isDarkMode),
+                  const UserSearchWidget(),
                   const SizedBox(height: 22),
 
                   _buildSectionTitle('Tài khoản', isDarkMode),
