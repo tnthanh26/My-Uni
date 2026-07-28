@@ -12,6 +12,9 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'poll_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_uni/theme/app_colors.dart';
+import 'package:my_uni/features/chat/services/chat_service.dart';
+import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -421,6 +424,75 @@ class _ForumTabState extends State<ForumTab> {
                                                         fontSize: 10,
                                                         fontWeight: FontWeight.w700,
                                                         color: Color(0xFF5893D8),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                                if (!isAnonymous && !isOwner && data['authorId'] != null) ...[
+                                                  const SizedBox(width: 8),
+                                                  InkWell(
+                                                    onTap: () async {
+                                                      try {
+                                                        final authorId = data['authorId']?.toString() ?? '';
+                                                        final authorName = data['authorName'] ?? 'Sinh viên';
+                                                        final authorPhoto = avatarData ?? '';
+
+                                                        if (authorId.isEmpty) {
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            const SnackBar(content: Text('Không tìm thấy thông tin tác giả')),
+                                                          );
+                                                          return;
+                                                        }
+
+                                                        final roomId = await ChatService().getOrCreateChatRoom(
+                                                          authorId,
+                                                          targetName: authorName,
+                                                          targetPhoto: authorPhoto,
+                                                        );
+
+                                                        if (context.mounted && roomId.isNotEmpty) {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (context) => ChatDetailPage(
+                                                                roomId: roomId,
+                                                                targetUserId: authorId,
+                                                                targetUserName: authorName,
+                                                                targetUserPhoto: authorPhoto,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        }
+                                                      } catch (e) {
+                                                        debugPrint("Error opening chat: $e");
+                                                        if (context.mounted) {
+                                                          final msg = e.toString().replaceAll('Exception: ', '');
+                                                          ScaffoldMessenger.of(context).showSnackBar(
+                                                            SnackBar(content: Text(msg)),
+                                                          );
+                                                        }
+                                                      }
+                                                    },
+                                                    child: const Padding(
+                                                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                                      child: Row(
+                                                        mainAxisSize: MainAxisSize.min,
+                                                        children: [
+                                                          Icon(
+                                                            Icons.chat_bubble_outline_rounded,
+                                                            size: 16,
+                                                            color: AppColors.hcmusTeal,
+                                                          ),
+                                                          SizedBox(width: 4),
+                                                          Text(
+                                                            'Nhắn tin',
+                                                            style: TextStyle(
+                                                              fontSize: 11,
+                                                              fontWeight: FontWeight.w600,
+                                                              color: AppColors.hcmusTeal,
+                                                            ),
+                                                          ),
+                                                        ],
                                                       ),
                                                     ),
                                                   ),
