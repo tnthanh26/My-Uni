@@ -22,6 +22,7 @@ import 'weather_alert_card.dart';
 import 'myspace_deadline_section.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'dart:math' as math;
 
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusTeal = Color(0xFF279E95);
@@ -628,51 +629,84 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
-      body: Stack(
-        children: [
-          // 1. Phần Header cố định (Fixed Header)
-          _buildFixedHeader(context),
+    return PopScope(
+      canPop: !_isDetailView,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_isDetailView) {
+          _backToDashboard();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: isDarkMode ? const Color(0xFF121212) : Colors.white,
+        body: Stack(
+          children: [
+            // 1. Phần Header cố định (Fixed Header)
+            _buildFixedHeader(context),
 
-          // 2. Phần nội dung có thể cuộn (Scrollable Content)
-          Column(
-            children: [
-              // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
-              SizedBox(height: MediaQuery.of(context).padding.top + 64.0),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+            // 2. Phần nội dung có thể cuộn (Scrollable Content)
+            Column(
+              children: [
+                // Khoảng trống để lộ phần Header Logo & HCMUS (Khớp với top 102px trong Figma)
+                SizedBox(height: MediaQuery.of(context).padding.top + 64.0),
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
                     ),
-                  ),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 600.0),
-                      child: _isDetailView
-                          ? _buildDetailViewContent() // Hiển thị nội dung DI
-                          : _buildDashboardContent(), // Hiển thị nội dung 3.1
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600.0),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 250),
+                          switchInCurve: Curves.easeOutCubic,
+                          switchOutCurve: Curves.easeInCubic,
+                          transitionBuilder: (Widget child, Animation<double> animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.05, 0.0),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: _isDetailView
+                              ? KeyedSubtree(
+                                  key: const ValueKey('detailView'),
+                                  child: _buildDetailViewContent(),
+                                )
+                              : KeyedSubtree(
+                                  key: const ValueKey('dashboardView'),
+                                  child: _buildDashboardContent(),
+                                ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+          ],
+        ),
 
-      floatingActionButton: _isDetailView
-          ? FloatingActionButton(
-        onPressed: () => _showCreateOptions(context),
-        backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
-        child: const Icon(Icons.add, size: 36, color: Colors.white),
-      )
-          : null,
+        floatingActionButton: FloatingActionButton(
+          heroTag: "fab_myspace_tab",
+          onPressed: () => _showCreateOptions(context),
+          backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
+          elevation: 5,
+          shape: const CircleBorder(),
+          child: const Icon(Icons.add, size: 28, color: Colors.white),
+        ),
+      ),
     );
   }
 
@@ -932,95 +966,335 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildDetailViewContent() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Stack(
-      children: [
-        // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 160,
-          child: Container(
-            decoration: BoxDecoration(
-              color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
-              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+    return GestureDetector(
+      onHorizontalDragEnd: (details) {
+        // Vuốt từ trái sang phải (swipe right) để trở về trang chính MySpace
+        if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
+          _backToDashboard();
+        }
+      },
+      child: Stack(
+        children: [
+          // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 150,
+            child: Container(
+              decoration: BoxDecoration(
+                color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
+                borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+              ),
             ),
           ),
-        ),
 
-        // 2. Nội dung thực tế (Lịch, Toggle, List)
-        Column(
-          children: [
-            // Header của Detail (Tháng X, Y)
-             Padding(
-              padding: const EdgeInsets.all(8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: isDarkMode ? Colors.white : Colors.black87,
+          // 2. Nội dung thực tế (Lịch, Toggle, List)
+          Column(
+            children: [
+              // Header của Detail (Tháng X, Y)
+               Padding(
+                padding: const EdgeInsets.all(8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_back_ios_new_rounded,
+                        size: 20,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      onPressed: _backToDashboard,
                     ),
-                    onPressed: _backToDashboard,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () => _selectDate(context),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const SizedBox(width: 2),
-                            Text(
-                              "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : Colors.black87,
+                    Expanded(
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => _selectDate(context),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const SizedBox(width: 2),
+                              Text(
+                                "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDarkMode ? Colors.white : Colors.black87,
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 20,
-                              color: isDarkMode ? Colors.white : Colors.black54,
-                            ),
-                          ],
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.keyboard_arrow_down_rounded,
+                                size: 20,
+                                color: isDarkMode ? Colors.white : Colors.black54,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 48),
-                ],
+                    const SizedBox(width: 48),
+                  ],
+                ),
               ),
+
+              _buildDetailCalendarStrip(),
+              const SizedBox(height: 24),
+              _buildSlidingToggle(),
+              const SizedBox(height: 2),
+
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    MySpaceDeadlineDetailList(
+                      deadlines: mockDeadlines,
+                      selectedWeekday: selectedWeekday,
+                      currentWeek: _getCurrentWeekDays(),
+                      onToggleDeadline: _toggleDeadline,
+                      onDeleteDeadline: _deleteDeadline,
+                      onEditDeadline: _editDeadline,
+                      initialShowAll: _deadlineShowAll,
+                    ),
+                    _buildScheduleCalendarGridBody(),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _parseTimeToHourFraction(String timeStr) {
+    try {
+      final cleaned = timeStr.trim().toUpperCase();
+      int hour = 0;
+      int minute = 0;
+
+      if (cleaned.contains('PM') || cleaned.contains('AM')) {
+        final parts = cleaned.split(' ');
+        final timeParts = parts[0].split(':');
+        hour = int.parse(timeParts[0]);
+        minute = timeParts.length > 1 ? int.parse(timeParts[1]) : 0;
+        if (cleaned.contains('PM') && hour < 12) hour += 12;
+        if (cleaned.contains('AM') && hour == 12) hour = 0;
+      } else {
+        final parts = cleaned.split(':');
+        hour = int.parse(parts[0]);
+        minute = parts.length > 1 ? int.parse(parts[1]) : 0;
+      }
+      return hour + (minute / 60.0);
+    } catch (e) {
+      return 7.0;
+    }
+  }
+
+  Widget _buildScheduleCalendarGridBody() {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList();
+    const double hourHeight = 64.0;
+    const int startHourGrid = 7;
+    const int totalHours = 13; // 7:00 to 19:00
+
+    final now = DateTime.now();
+    final isTodaySelected = _focusedDate.year == now.year &&
+        _focusedDate.month == now.month &&
+        _focusedDate.day == now.day;
+    final currentHourFraction = now.hour + (now.minute / 60.0);
+    final showNowLine = isTodaySelected && currentHourFraction >= 7.0 && currentHourFraction <= 19.0;
+    final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
+
+    return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
+      child: Container(
+        padding: const EdgeInsets.only(top: 12, bottom: 24, left: 12, right: 16),
+        child: Stack(
+          children: [
+            // Background Hour Grid Lines
+            Column(
+              children: List.generate(totalHours, (index) {
+                final hour = startHourGrid + index;
+                final timeText = "${hour.toString().padLeft(2, '0')}:00";
+                return SizedBox(
+                  height: hourHeight,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Text(
+                          timeText,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDarkMode ? Colors.white38 : Colors.black45,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          height: 1,
+                          color: isDarkMode ? Colors.white12 : Colors.black12,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
             ),
 
-            _buildDetailCalendarStrip(),
-            const SizedBox(height: 24),
-            _buildSlidingToggle(),
-            const SizedBox(height: 2),
-
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  MySpaceDeadlineDetailList(
-                    deadlines: mockDeadlines,
-                    selectedWeekday: selectedWeekday,
-                    currentWeek: _getCurrentWeekDays(),
-                    onToggleDeadline: _toggleDeadline,
-                    onDeleteDeadline: _deleteDeadline,
-                    onEditDeadline: _editDeadline,
-                    initialShowAll: _deadlineShowAll,
+            // Empty State Watermark
+            if (dayClasses.isEmpty)
+              Positioned(
+                top: 120,
+                left: 60,
+                right: 20,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: (isDarkMode ? Colors.black26 : Colors.white).withValues(alpha: 0.8),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.event_available, color: isDarkMode ? Colors.white54 : Colors.black45),
+                        const SizedBox(width: 8),
+                        Text(
+                          "Hôm nay không có tiết học",
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: isDarkMode ? Colors.white60 : Colors.black54,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  _buildScheduleDetailList(),
-                ],
+                ),
               ),
-            ),
+
+            // Class Blocks Positioned by Start & End Time (Google Calendar Solid Fill Style)
+            ...dayClasses.map((c) {
+              final startH = _parseTimeToHourFraction(c.start);
+              var endH = _parseTimeToHourFraction(c.end);
+              if (endH <= startH) endH = startH + 1.5;
+
+              final topPos = (startH - startHourGrid) * hourHeight + 8;
+              final blockHeight = math.max(48.0, (endH - startH) * hourHeight - 4);
+
+              // Solid fill color matching Google Calendar theme
+              final Color cardColor = isDarkMode
+                  ? Color.alphaBlend(Colors.black.withValues(alpha: 0.15), c.color)
+                  : c.color;
+
+              return Positioned(
+                top: topPos,
+                left: 56.0,
+                right: 0.0,
+                height: blockHeight,
+                child: GestureDetector(
+                  onTap: () => _editSchedule(c),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        // Class Name - Bold White Text (Top-Left aligned)
+                        Text(
+                          c.name,
+                          maxLines: blockHeight < 55 ? 1 : 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            fontFamily: 'Poppins',
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        // Time & Room - White Text
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_rounded,
+                              size: 12,
+                              color: Colors.white.withValues(alpha: 0.9),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              "${c.start} - ${c.end}",
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white.withValues(alpha: 0.9),
+                              ),
+                            ),
+                            if (c.room.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Text(
+                                "• ${c.room.startsWith('Phòng') ? c.room : 'Phòng ${c.room}'}",
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white.withValues(alpha: 0.95),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+
+            // Red Current Time Line Indicator
+            if (showNowLine)
+              Positioned(
+                top: nowTop + 8,
+                left: 44,
+                right: 0,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: Colors.redAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
-      ],
+      ),
     );
   }
   int _countDeadlinesForDate(DateTime date) {
@@ -1660,7 +1934,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       ),
     );
   }
-
 
   void _showScheduleActionMenu(StudyClass s) {
     showModalBottomSheet(

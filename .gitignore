@@ -58,3 +58,6 @@ node_modules/
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+
+# Usability testing and survey assets
+survey/

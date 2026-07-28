@@ -38,13 +38,15 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
   late Color _selectedColor = widget.schedule?.color ?? const Color(0xFFFFC374);
 
-  // Danh sách các màu "Pastel" phù hợp với UI hiện đại
+  // Bảng màu Google Calendar Event Colors
   final List<Color> _colorOptions = [
-    const Color(0xFFFFC374), // Vàng
-    const Color(0xFF92B9E6), // Xanh dương hcmus
-    const Color(0xFFFFA3A3), // Đỏ nhạt
-    const Color(0xFFD492E6), // Tím
-    const Color(0xFF8DE6D4), // Teal nhạt
+    const Color(0xFF039BE5), // Peacock (Xanh dương)
+    const Color(0xFFE67C73), // Flamingo (Hồng cam)
+    const Color(0xFF33B679), // Sage (Xanh lá nhạt)
+    const Color(0xFF8E24AA), // Grape (Tím)
+    const Color(0xFFF4511E), // Tangerine (Cam)
+    const Color(0xFFF6BF26), // Banana (Vàng)
+    const Color(0xFF7986CB), // Lavender (Tím nhạt)
   ];
 
   String _userUniversity = '';
