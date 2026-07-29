@@ -713,7 +713,7 @@ class HomePageState extends State<HomePage> {
     });
     HomePage.activeTabNotifier.value = index;
     EventPageNotifier.isActive.value = (index == 1);
-
+    
     if (index == 0 && _pendingWeatherAlert != null && !_hasShownWeatherAlert) {
       final alert = _pendingWeatherAlert!;
       final theme = _pendingWeatherTheme ?? WeatherAlertTheme.thunderstorm;

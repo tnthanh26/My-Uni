@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/base64_image_cache.dart';
 import '../models/chat_models.dart';
 
 class ChatBubble extends StatelessWidget {
@@ -286,20 +286,16 @@ class ChatBubble extends StatelessWidget {
 
   Widget _buildImageContent(String imageSource) {
     if (imageSource.startsWith('data:image') || imageSource.length > 500) {
-      try {
-        final cleanBase64 = imageSource.contains(',') ? imageSource.split(',')[1] : imageSource;
-        final bytes = base64Decode(cleanBase64.trim());
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.memory(
-            bytes,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white70),
-          ),
-        );
-      } catch (e) {
-        return const Icon(Icons.broken_image, color: Colors.white70);
-      }
+      final provider = Base64ImageCache.getMemoryImage(imageSource);
+      if (provider == null) return const Icon(Icons.broken_image, color: Colors.white70);
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Image(
+          image: provider,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.broken_image, color: Colors.white70),
+        ),
+      );
     }
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),

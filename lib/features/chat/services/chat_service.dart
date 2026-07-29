@@ -152,11 +152,23 @@ class ChatService {
 
     final roomRef = _firestore.collection('chat_rooms').doc(roomId);
 
-    // Tách otherUid từ roomId dạng "uid1_uid2"
+    // Tách otherUid từ roomId dạng "uid1_uid2" hoặc fetch từ roomDoc
     final roomParts = roomId.split('_');
     String otherUid = '';
-    if (roomParts.length == 2) {
+    if (roomParts.length >= 2) {
       otherUid = roomParts.firstWhere((id) => id != myUid, orElse: () => '');
+    }
+
+    if (otherUid.isEmpty) {
+      try {
+        final roomDoc = await roomRef.get();
+        if (roomDoc.exists) {
+          final participants = List<String>.from(roomDoc.data()?['participants'] ?? []);
+          otherUid = participants.firstWhere((id) => id != myUid, orElse: () => '');
+        }
+      } catch (e) {
+        debugPrint("Error resolving target user ID: $e");
+      }
     }
 
     String displayLastMsg = trimmedText;
@@ -187,7 +199,9 @@ class ChatService {
     // 2. Cập nhật hoặc khởi tạo thông tin phòng chat
     Map<String, dynamic> roomUpdateData = {
       'id': roomId,
-      'participants': roomParts.length == 2 ? roomParts : FieldValue.arrayUnion([myUid]),
+      'participants': (otherUid.isNotEmpty)
+          ? [myUid, otherUid]
+          : (roomParts.length >= 2 ? roomParts : FieldValue.arrayUnion([myUid])),
       'lastMessage': displayLastMsg,
       'lastMessageSenderId': myUid,
       'lastMessageTime': Timestamp.fromDate(now),
@@ -204,7 +218,31 @@ class ChatService {
       debugPrint("Error updating room document: $e");
     }
 
-    // 3. Cập nhật thông báo tin nhắn (Xử lý trực tiếp qua unreadCounts trong chat_rooms)
+    // 3. Gửi bản ghi thông báo hệ thống ngầm để kích hoạt Push Notification cho thiết bị nhận
+    if (otherUid.isNotEmpty) {
+      try {
+        final senderDoc = await _firestore.collection('users').doc(myUid).get();
+        final senderData = senderDoc.data();
+        final senderName = (senderData?['displayName']?.toString().trim().isNotEmpty == true)
+            ? senderData!['displayName']
+            : 'Một sinh viên';
+
+        await _firestore.collection('notifications').add({
+          'userId': otherUid,
+          'type': 'chat',
+          'title': senderName,
+          'content': displayLastMsg,
+          'timestamp': FieldValue.serverTimestamp(),
+          'isRead': false,
+          'roomId': roomId,
+          'senderId': myUid,
+          'senderName': senderName,
+          'senderAvatar': senderData?['photoUrl'] ?? '',
+        });
+      } catch (e) {
+        debugPrint("Error creating chat notification trigger: $e");
+      }
+    }
   }
 
   /// Đánh dấu đã đọc phòng chat
