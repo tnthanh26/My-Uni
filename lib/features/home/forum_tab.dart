@@ -17,6 +17,7 @@ import 'package:my_uni/features/chat/services/chat_service.dart';
 import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
 import 'package:my_uni/features/chat/widgets/student_identity_card.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -126,43 +127,57 @@ class _ForumTabState extends State<ForumTab> {
   Widget _buildTagChip(dynamic tag, bool isDarkMode) {
     final String tagText = tag.toString();
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        color: isDarkMode
-            ? Colors.white10
-            : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
+    return GestureDetector(
+      onTap: () {
+        final cleanTag = tagText.replaceAll('#', '').trim();
+        if (cleanTag.isNotEmpty) {
+          showSearch(
+            context: context,
+            delegate: MyUniSearchDelegate(
+              currentScope: SearchScope.forum,
+              initialHashtag: cleanTag,
+            ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 10,
+          vertical: 6,
+        ),
+        decoration: BoxDecoration(
           color: isDarkMode
               ? Colors.white10
-              : const Color(0xFFE2E8F0),
+              : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDarkMode
+                ? Colors.white10
+                : const Color(0xFFE2E8F0),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.tag_rounded,
-            size: 14,
-            color: Color(0xFF306CFE),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            tagText,
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: isDarkMode
-                  ? Colors.white70
-                  : const Color(0xFF344054),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.tag_rounded,
+              size: 14,
+              color: Color(0xFF306CFE),
             ),
-          ),
-        ],
+            const SizedBox(width: 5),
+            Text(
+              tagText,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white70
+                    : const Color(0xFF344054),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'official_content_helper.dart';
 import 'daily_digest_card.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
 class OfficialTab extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -59,6 +60,7 @@ class OfficialTab extends StatelessWidget {
   }
 
   Widget _buildCategoryChip({
+    required BuildContext context,
     required bool isDarkMode,
     required bool isEvent,
   }) {
@@ -72,36 +74,47 @@ class OfficialTab extends StatelessWidget {
         ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
         : (isDarkMode ? Colors.white70 : const Color(0xFF475569));
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isEvent
-              ? const Color(0xFF66ACFE).withOpacity(0.35)
-              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+    return GestureDetector(
+      onTap: () {
+        showSearch(
+          context: context,
+          delegate: MyUniSearchDelegate(
+            currentScope: SearchScope.official,
+            initialHashtag: isEvent ? "Sự kiện" : "Thông báo",
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isEvent
+                ? const Color(0xFF66ACFE).withOpacity(0.35)
+                : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+          ),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.tag_rounded,
-            size: 14,
-            color: Color(0xFF306CFE),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: textColor,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.tag_rounded,
+              size: 14,
+              color: Color(0xFF306CFE),
             ),
-          ),
-        ],
+            const SizedBox(width: 5),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -374,6 +387,7 @@ class OfficialTab extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               _buildCategoryChip(
+                                context: context,
                                 isDarkMode: isDarkMode,
                                 isEvent: isEvent,
                               ),

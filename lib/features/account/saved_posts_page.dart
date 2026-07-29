@@ -11,6 +11,7 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
 class SavedPostsPage extends StatefulWidget {
   const SavedPostsPage({super.key});
@@ -581,13 +582,27 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   runSpacing: 8,
                   children: (data['hashtags'] as List)
                       .map(
-                        (tag) => _buildInfoChip(
-                      icon: Icons.tag_rounded,
-                      label: tag,
-                      isDarkMode: isDarkMode,
-                      customIconColor: const Color(0xFF306CFE),
-                    ),
-                  )
+                        (tag) => GestureDetector(
+                          onTap: () {
+                            final cleanTag = tag.toString().replaceAll('#', '').trim();
+                            if (cleanTag.isNotEmpty) {
+                              showSearch(
+                                context: context,
+                                delegate: MyUniSearchDelegate(
+                                  currentScope: SearchScope.forum,
+                                  initialHashtag: cleanTag,
+                                ),
+                              );
+                            }
+                          },
+                          child: _buildInfoChip(
+                            icon: Icons.tag_rounded,
+                            label: tag,
+                            isDarkMode: isDarkMode,
+                            customIconColor: const Color(0xFF306CFE),
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),

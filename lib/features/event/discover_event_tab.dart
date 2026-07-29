@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
 class DiscoverEventTab extends StatelessWidget {
   final bool useNestedScrollOverlap;
@@ -306,7 +307,7 @@ class DiscoverEventTab extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: (data['hashtags'] as List)
-                            .map((tag) => _buildTagChip(tag, isDark))
+                            .map((tag) => _buildTagChip(context, tag, isDark))
                             .toList(),
                       ),
                     ),
@@ -382,35 +383,50 @@ class DiscoverEventTab extends StatelessWidget {
     );
   }
 
-  Widget _buildTagChip(dynamic tag, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(
-            Icons.tag_rounded,
-            size: 14,
-            color: Color(0xFF306CFE),
-          ),
-          const SizedBox(width: 5),
-          Text(
-            tag.toString(),
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.white70 : const Color(0xFF344054),
+  Widget _buildTagChip(BuildContext context, dynamic tag, bool isDark) {
+    final String tagText = tag.toString();
+    return GestureDetector(
+      onTap: () {
+        final cleanTag = tagText.replaceAll('#', '').trim();
+        if (cleanTag.isNotEmpty) {
+          showSearch(
+            context: context,
+            delegate: MyUniSearchDelegate(
+              currentScope: SearchScope.official,
+              initialHashtag: cleanTag,
             ),
+          );
+        }
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
           ),
-        ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.tag_rounded,
+              size: 14,
+              color: Color(0xFF306CFE),
+            ),
+            const SizedBox(width: 5),
+            Text(
+              tagText,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: isDark ? Colors.white70 : const Color(0xFF344054),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
