@@ -11,6 +11,7 @@ import '../models/chat_models.dart';
 import '../services/chat_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/student_identity_card.dart';
+import '../../../utils/base64_image_cache.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final String roomId;
@@ -505,9 +506,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                backgroundImage: widget.targetUserPhoto.isNotEmpty
-                    ? NetworkImage(widget.targetUserPhoto)
-                    : null,
+                backgroundImage: Base64ImageCache.getAvatarProvider(widget.targetUserPhoto),
                 child: widget.targetUserPhoto.isEmpty
                     ? Text(
                         widget.targetUserName.isNotEmpty

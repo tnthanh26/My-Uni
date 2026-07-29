@@ -105,6 +105,23 @@ class NotificationService {
     );
   }
 
+  static Stream<List<MyUniNotification>> getMessageNotifications() {
+    final String? uid = _auth.currentUser?.uid;
+    if (uid == null) return Stream.value([]);
+
+    return _db
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+          .map((doc) => MyUniNotification.fromFirestore(doc))
+          .where((n) => n.type == 'chat' || n.roomId != null)
+          .toList(),
+    );
+  }
+
   static Future<void> markAsRead(String docId) async {
     try {
       await _db.collection('notifications').doc(docId).update({
@@ -166,6 +183,55 @@ class NotificationService {
       batch.update(doc.reference, {
         'isRead': true,
       });
+    }
+
+    await batch.commit();
+  }
+
+  static Future<void> markAllMessageNotificationsAsRead() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .where('isRead', isEqualTo: false)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final type = data['type'];
+      final roomId = data['roomId'];
+      if (type == 'chat' || roomId != null) {
+        batch.update(doc.reference, {
+          'isRead': true,
+        });
+      }
+    }
+
+    await batch.commit();
+  }
+
+  static Future<void> deleteAllMessageNotifications() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final snapshot = await FirebaseFirestore.instance
+        .collection('notifications')
+        .where('userId', isEqualTo: uid)
+        .get();
+
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final type = data['type'];
+      final roomId = data['roomId'];
+      if (type == 'chat' || roomId != null) {
+        batch.delete(doc.reference);
+      }
     }
 
     await batch.commit();

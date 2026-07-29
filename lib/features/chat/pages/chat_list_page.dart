@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../theme/app_colors.dart';
+import '../../../utils/base64_image_cache.dart';
 import '../models/chat_models.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_page.dart';
@@ -148,7 +149,6 @@ class _ChatListPageState extends State<ChatListPage> {
                     final otherUid = room.getOtherUserId(currentUid);
                     final otherName = room.getOtherUserName(currentUid);
                     final otherPhoto = room.getOtherUserPhoto(currentUid);
-                    final unreadCount = room.getUnreadCount(currentUid);
 
                     String timeStr = '';
                     if (room.lastMessageTime != null) {
@@ -162,7 +162,7 @@ class _ChatListPageState extends State<ChatListPage> {
                           CircleAvatar(
                             radius: 26,
                             backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                            backgroundImage: otherPhoto.isNotEmpty ? NetworkImage(otherPhoto) : null,
+                            backgroundImage: Base64ImageCache.getAvatarProvider(otherPhoto),
                             child: otherPhoto.isEmpty
                                 ? Text(
                                     otherName.isNotEmpty ? otherName[0].toUpperCase() : 'S',
@@ -179,8 +179,8 @@ class _ChatListPageState extends State<ChatListPage> {
                             bottom: 0,
                             child: Container(
                               padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.white,
+                              decoration: BoxDecoration(
+                                color: isDark ? AppColors.surfaceDark : Colors.white,
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -197,9 +197,9 @@ class _ChatListPageState extends State<ChatListPage> {
                           Expanded(
                             child: Text(
                               otherName,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 16,
-                                fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.w600,
+                                fontWeight: FontWeight.bold,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -208,55 +208,29 @@ class _ChatListPageState extends State<ChatListPage> {
                           if (timeStr.isNotEmpty)
                             Text(
                               timeStr,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 11,
-                                color: unreadCount > 0 ? AppColors.hcmusTeal : Colors.grey,
-                                fontWeight: unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
+                                color: Colors.grey,
                               ),
                             ),
                         ],
                       ),
                       subtitle: Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                room.lastMessage.isNotEmpty
-                                    ? room.lastMessage
-                                    : 'Bắt đầu cuộc trò chuyện',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: unreadCount > 0
-                                      ? (isDark ? Colors.white : Colors.black87)
-                                      : Colors.grey,
-                                  fontWeight: unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (unreadCount > 0)
-                              Container(
-                                margin: const EdgeInsets.only(left: 8),
-                                padding: const EdgeInsets.all(6),
-                                decoration: const BoxDecoration(
-                                  color: AppColors.hcmusTeal,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  unreadCount > 9 ? '9+' : '$unreadCount',
-                                  style: const TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                          ],
+                        child: Text(
+                          room.lastMessage.isNotEmpty
+                              ? room.lastMessage
+                              : 'Bắt đầu cuộc trò chuyện',
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       onTap: () {
+                        _chatService.markRoomAsRead(room.id);
                         Navigator.push(
                           context,
                           MaterialPageRoute(

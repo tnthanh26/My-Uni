@@ -33,11 +33,24 @@ class ChatRoom {
       return {};
     }
 
-    Map<String, int> parseIntMap(dynamic mapData) {
+    Map<String, int> parseIntMap(dynamic mapData, Map<String, dynamic> rawData) {
+      final Map<String, int> result = {};
+      // 1. Đọc các key dính dấu chấm cấp cao cũ (nếu có)
+      rawData.forEach((k, v) {
+        if (k.startsWith('unreadCounts.') && v is num) {
+          final uid = k.substring('unreadCounts.'.length);
+          result[uid] = v.toInt();
+        }
+      });
+      // 2. Map lồng nhau chuẩn luôn được ưu tiên GHI ĐÈ dữ liệu mới nhất
       if (mapData is Map) {
-        return mapData.map((k, v) => MapEntry(k.toString(), (v as num).toInt()));
+        mapData.forEach((k, v) {
+          if (v is num) {
+            result[k.toString()] = v.toInt();
+          }
+        });
       }
-      return {};
+      return result;
     }
 
     return ChatRoom(
@@ -48,7 +61,7 @@ class ChatRoom {
       lastMessage: data['lastMessage'] ?? '',
       lastMessageSenderId: data['lastMessageSenderId'] ?? '',
       lastMessageTime: (data['lastMessageTime'] as Timestamp?)?.toDate(),
-      unreadCounts: parseIntMap(data['unreadCounts']),
+      unreadCounts: parseIntMap(data['unreadCounts'], data),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
     );
   }

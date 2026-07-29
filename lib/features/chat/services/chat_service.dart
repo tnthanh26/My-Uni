@@ -197,23 +197,36 @@ class ChatService {
     await messageRef.set(message.toMap());
 
     // 2. Cập nhật hoặc khởi tạo thông tin phòng chat
-    Map<String, dynamic> roomUpdateData = {
-      'id': roomId,
-      'participants': (otherUid.isNotEmpty)
-          ? [myUid, otherUid]
-          : (roomParts.length >= 2 ? roomParts : FieldValue.arrayUnion([myUid])),
-      'lastMessage': displayLastMsg,
-      'lastMessageSenderId': myUid,
-      'lastMessageTime': Timestamp.fromDate(now),
-      'updatedAt': Timestamp.fromDate(now),
-    };
-
-    if (otherUid.isNotEmpty) {
-      roomUpdateData['unreadCounts.$otherUid'] = FieldValue.increment(1);
-    }
-
     try {
-      await roomRef.set(roomUpdateData, SetOptions(merge: true));
+      final roomDoc = await roomRef.get();
+      if (roomDoc.exists) {
+        final updateMap = <String, dynamic>{
+          'lastMessage': displayLastMsg,
+          'lastMessageSenderId': myUid,
+          'lastMessageTime': Timestamp.fromDate(now),
+          'updatedAt': Timestamp.fromDate(now),
+          'unreadCounts.$myUid': 0,
+        };
+        if (otherUid.isNotEmpty) {
+          updateMap['unreadCounts.$otherUid'] = FieldValue.increment(1);
+        }
+        await roomRef.update(updateMap);
+      } else {
+        await roomRef.set({
+          'id': roomId,
+          'participants': (otherUid.isNotEmpty)
+              ? [myUid, otherUid]
+              : (roomParts.length >= 2 ? roomParts : [myUid]),
+          'lastMessage': displayLastMsg,
+          'lastMessageSenderId': myUid,
+          'lastMessageTime': Timestamp.fromDate(now),
+          'updatedAt': Timestamp.fromDate(now),
+          'unreadCounts': {
+            myUid: 0,
+            if (otherUid.isNotEmpty) otherUid: 1,
+          },
+        });
+      }
     } catch (e) {
       debugPrint("Error updating room document: $e");
     }
@@ -251,11 +264,46 @@ class ChatService {
     if (myUid == null) return;
 
     try {
-      await _firestore.collection('chat_rooms').doc(roomId).update({
-        'unreadCounts.$myUid': 0,
-      });
+      final roomRef = _firestore.collection('chat_rooms').doc(roomId);
+      final roomDoc = await roomRef.get();
+      if (roomDoc.exists) {
+        final data = roomDoc.data() ?? {};
+        final updateData = <String, dynamic>{
+          'unreadCounts.$myUid': 0,
+        };
+        // Xóa key dính dấu chấm cấp cao cũ nếu tồn tại
+        if (data.containsKey('unreadCounts.$myUid')) {
+          updateData['unreadCounts.$myUid'] = FieldValue.delete();
+        }
+        await roomRef.update(updateData);
+      }
     } catch (e) {
-      debugPrint('Mark room as read error: $e');
+      debugPrint('Mark room as read error in chat_rooms: $e');
+      try {
+        await _firestore.collection('chat_rooms').doc(roomId).set({
+          'unreadCounts': {myUid: 0},
+        }, SetOptions(merge: true));
+      } catch (err) {
+        debugPrint('Fallback mark room as read error: $err');
+      }
+    }
+
+    // Đồng thời đánh dấu đã đọc các bản ghi thông báo trong notifications collection
+    try {
+      final notiDocs = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: myUid)
+          .where('roomId', isEqualTo: roomId)
+          .where('isRead', isEqualTo: false)
+          .get();
+
+      final batch = _firestore.batch();
+      for (var doc in notiDocs.docs) {
+        batch.update(doc.reference, {'isRead': true});
+      }
+      await batch.commit();
+    } catch (e) {
+      debugPrint("Error marking room notifications as read: $e");
     }
   }
 
