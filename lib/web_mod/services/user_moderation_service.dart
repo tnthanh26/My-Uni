@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
 import 'mod_log_service.dart';
 import 'mod_notification_service.dart';
@@ -122,31 +124,51 @@ class UserModerationService {
     );
   }
 
-  static Future<int> migrateLegacyUsers() async {
-    final snapshot = await FirebaseFirestore.instance.collection('users').get();
-    int count = 0;
-    final batch = FirebaseFirestore.instance.batch();
-
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final status = data['verificationStatus'];
-
-      if (status == null) {
-        batch.set(
-          doc.reference,
-          {
-            'isVerified': true,
-            'verificationStatus': 'approved',
-          },
-          SetOptions(merge: true),
-        );
-        count++;
+  static Future<void> deleteUserAccount({
+    required String uid,
+    required Map<String, dynamic> data,
+    required String reason,
+  }) async {
+    try {
+      final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      final Map<String, String> headers = {
+        "Content-Type": "application/json; charset=utf-8",
+      };
+      if (idToken != null && idToken.isNotEmpty) {
+        headers["Authorization"] = "Bearer $idToken";
       }
-    }
 
-    if (count > 0) {
-      await batch.commit();
+      final deleteUrl = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/deleteUserAccountByMod');
+      final response = await http.post(
+        deleteUrl,
+        headers: headers,
+        body: json.encode({
+          "data": {
+            "targetUid": uid,
+            "reason": reason,
+          }
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode != 200) {
+        // If Cloud Function endpoint fails or returns error, execute Firestore fallback delete
+        await ModLogService.addUserActionLog(
+          targetUserId: uid,
+          targetUserEmail: data['email'] ?? '',
+          action: 'delete_user_account',
+          reason: reason,
+        );
+        await FirebaseFirestore.instance.collection('users').doc(uid).delete();
+      }
+    } catch (_) {
+      // Fallback: delete Firestore document directly if HTTP call fails
+      await ModLogService.addUserActionLog(
+        targetUserId: uid,
+        targetUserEmail: data['email'] ?? '',
+        action: 'delete_user_account',
+        reason: reason,
+      );
+      await FirebaseFirestore.instance.collection('users').doc(uid).delete();
     }
-    return count;
   }
 }

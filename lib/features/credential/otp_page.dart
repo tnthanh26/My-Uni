@@ -120,7 +120,7 @@ class _OtpPageState extends State<OtpPage> {
             "userData": userData,
           }
         }),
-      ).timeout(const Duration(seconds: 20));
+      ).timeout(const Duration(seconds: 45));
 
       if (!mounted) return;
 
@@ -165,8 +165,14 @@ class _OtpPageState extends State<OtpPage> {
         }
         _showSnackBar(errorMessage, isError: true);
       }
+    } on TimeoutException {
+      if (mounted) {
+        _showSnackBar('Quá trình phản hồi từ máy chủ mất nhiều thời gian. Vui lòng thử bấm Xác nhận lại.', isError: true);
+      }
     } catch (e) {
-      _showSnackBar('Đã có lỗi xảy ra: $e', isError: true);
+      if (mounted) {
+        _showSnackBar('Đã có lỗi xảy ra: $e', isError: true);
+      }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
     }

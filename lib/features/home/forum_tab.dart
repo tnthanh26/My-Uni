@@ -586,13 +586,16 @@ class _ForumTabState extends State<ForumTab> {
             if (doc.exists) {
               final data = doc.data();
               final String? verificationStatus = data?['verificationStatus'];
-              if (verificationStatus == 'pending') {
+              final bool isVerified = data?['isVerified'] ?? false;
+              if (verificationStatus == 'pending' || verificationStatus == 'rejected' || (!isVerified && verificationStatus != 'approved')) {
                 if (context.mounted) {
+                  final isRejected = verificationStatus == 'rejected';
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text(
-                          'Tài khoản của bạn đang chờ Mod duyệt xác thực nên chưa thể tạo bài viết.'),
-                      backgroundColor: Colors.amber.shade900,
+                      content: Text(isRejected
+                          ? 'Tài khoản của bạn đã bị từ chối xác thực nên chưa thể tạo bài viết.'
+                          : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể tạo bài viết.'),
+                      backgroundColor: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );

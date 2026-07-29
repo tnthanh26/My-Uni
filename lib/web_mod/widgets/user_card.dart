@@ -13,6 +13,7 @@ class UserCard extends StatelessWidget {
     required this.onViewActivity,
     this.onApproveVerification,
     this.onRejectVerification,
+    this.onDeleteUser,
   });
 
   final String uid;
@@ -23,6 +24,7 @@ class UserCard extends StatelessWidget {
   final VoidCallback onViewActivity;
   final VoidCallback? onApproveVerification;
   final VoidCallback? onRejectVerification;
+  final VoidCallback? onDeleteUser;
 
   @override
   Widget build(BuildContext context) {
@@ -260,66 +262,78 @@ class UserCard extends StatelessWidget {
             const SizedBox(height: 10),
 
             // ACTIONS
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                if (onApproveVerification != null &&
-                    (verificationStatus == 'pending' || !isVerified)) ...[
+            Align(
+              alignment: Alignment.centerRight,
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (onApproveVerification != null &&
+                      (verificationStatus == 'pending' || verificationStatus == 'rejected' || !isVerified))
+                    SizedBox(
+                      width: 140,
+                      height: 38,
+                      child: ModActionButton(
+                        icon: Icons.verified_user_outlined,
+                        label: verificationStatus == 'rejected' ? "Duyệt lại" : "Duyệt xác thực",
+                        color: Colors.green,
+                        onPressed: onApproveVerification!,
+                      ),
+                    ),
+                  if (onRejectVerification != null &&
+                      (verificationStatus == 'pending' || (!isVerified && verificationStatus != 'rejected')))
+                    SizedBox(
+                      width: 110,
+                      height: 38,
+                      child: ModActionButton(
+                        icon: Icons.cancel_outlined,
+                        label: "Từ chối",
+                        color: Colors.redAccent,
+                        onPressed: onRejectVerification!,
+                      ),
+                    ),
+                  if (onDeleteUser != null && verificationStatus == 'rejected')
+                    SizedBox(
+                      width: 135,
+                      height: 38,
+                      child: ModActionButton(
+                        icon: Icons.delete_forever_outlined,
+                        label: "Xóa tài khoản",
+                        color: Colors.red.shade900,
+                        onPressed: onDeleteUser!,
+                      ),
+                    ),
                   SizedBox(
-                    width: 140,
+                    width: 130,
                     height: 38,
                     child: ModActionButton(
-                      icon: Icons.verified_user_outlined,
-                      label: "Duyệt xác thực",
-                      color: Colors.green,
-                      onPressed: onApproveVerification!,
+                      icon: Icons.history_outlined,
+                      label: "Hoạt động",
+                      color: Colors.blueGrey,
+                      onPressed: onViewActivity,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                ],
-                if (onRejectVerification != null &&
-                    (verificationStatus == 'pending' || !isVerified)) ...[
                   SizedBox(
                     width: 110,
                     height: 38,
-                    child: ModActionButton(
-                      icon: Icons.cancel_outlined,
-                      label: "Từ chối",
-                      color: Colors.redAccent,
-                      onPressed: onRejectVerification!,
-                    ),
+                    child: status == 'active'
+                        ? ModActionButton(
+                            icon: Icons.lock_outline,
+                            label: "Khóa",
+                            color: Colors.orange,
+                            onPressed: onSuspend,
+                          )
+                        : ModActionButton(
+                            icon: Icons.lock_open_outlined,
+                            label: "Mở khóa",
+                            color: Colors.green,
+                            onPressed: onRestore,
+                          ),
                   ),
-                  const SizedBox(width: 8),
                 ],
-                SizedBox(
-                  width: 130,
-                  height: 38,
-                  child: ModActionButton(
-                    icon: Icons.history_outlined,
-                    label: "Hoạt động",
-                    color: Colors.blueGrey,
-                    onPressed: onViewActivity,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  width: 110,
-                  height: 38,
-                  child: status == 'active'
-                      ? ModActionButton(
-                          icon: Icons.lock_outline,
-                          label: "Khóa",
-                          color: Colors.orange,
-                          onPressed: onSuspend,
-                        )
-                      : ModActionButton(
-                          icon: Icons.lock_open_outlined,
-                          label: "Mở khóa",
-                          color: Colors.green,
-                          onPressed: onRestore,
-                        ),
-                ),
-              ],
+              ),
             ),
           ],
         ),

@@ -197,7 +197,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      DateFormat('EEE, dd/MM/yyyy').format(_selectedDate),
+                                      DateFormat('EEEE, dd/MM/yyyy', 'vi_VN').format(_selectedDate),
                                       textAlign: TextAlign.right,
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1,
@@ -466,6 +466,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2025),
       lastDate: DateTime(2030),
+      locale: const Locale('vi', 'VN'),
     );
     if (picked != null) setState(() => _selectedDate = picked);
   }

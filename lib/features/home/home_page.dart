@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:my_uni/features/home/official_tab.dart';
 import 'package:my_uni/features/home/review_tab.dart';
 import 'package:my_uni/features/home/material_tab.dart';
 import 'package:my_uni/features/account/account_page.dart';
+import 'package:my_uni/features/account/edit_profile_page.dart';
 import 'package:my_uni/features/chatbot/chatbot_page.dart';
 import 'package:my_uni/features/event/event_page.dart';
 import 'package:my_uni/features/event/my_event_tab.dart';
@@ -87,6 +89,8 @@ class HomePageState extends State<HomePage> {
   WeatherAlertTheme? _pendingWeatherTheme;
   bool _hasShownWeatherAlert = false;
 
+  StreamSubscription<DocumentSnapshot>? _userDocSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -96,6 +100,53 @@ class HomePageState extends State<HomePage> {
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
     _syncExistingProfileData();
     _checkWeatherAlertAndShowDialog();
+    _listenToUserDocChanges();
+  }
+
+  void _listenToUserDocChanges() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _userDocSubscription?.cancel();
+    _userDocSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((snapshot) async {
+      if (snapshot.exists) return;
+
+      // User document was deleted from Firestore (e.g. by Mod)
+      _userDocSubscription?.cancel();
+
+      if (mounted) {
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('Tài khoản đã bị xóa', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+            content: const Text(
+              'Tài khoản của bạn đã bị xóa khỏi hệ thống bởi kiểm duyệt viên.\n\nBạn sẽ được tự động đăng xuất để có thể đăng ký tài khoản mới.',
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+                child: const Text('Đồng ý', style: TextStyle(color: Colors.white)),
+              ),
+            ],
+          ),
+        );
+
+        await FirebaseAuth.instance.signOut();
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('user_token');
+        await prefs.remove('saved_user');
+
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+        }
+      }
+    });
   }
 
   DateTime _combineTodayAndTime(String time) {
@@ -536,6 +587,7 @@ class HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _userDocSubscription?.cancel();
     HomePage.showWalkthroughNotifier.removeListener(_onWalkthroughTriggered);
     super.dispose();
   }
@@ -623,18 +675,18 @@ class HomePageState extends State<HomePage> {
   bool _isUserPendingVerification(Map<String, dynamic>? data) {
     if (data == null) return false;
     final status = data['verificationStatus'];
-    if (status == 'pending') return true;
-    if (status == 'approved' || status == 'rejected') return false;
+    if (status == 'pending' || status == 'rejected') return true;
+    if (status == 'approved') return false;
 
     // Legacy accounts created before 2-step verification feature:
     final isVerified = data['isVerified'];
-    if (isVerified == false && status == 'pending') return true;
+    if (isVerified == false) return true;
     return false;
   }
 
   void _onItemTapped(int index) async {
-    // Allow Tab 0 (Bảng tin) and Tab 4 (Tài khoản để xem & Đăng xuất)
-    if (index != 0 && index != 4) {
+    // Only allow Tab 0 (Bảng tin) for unapproved/restricted users
+    if (index != 0) {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final userDoc = await FirebaseFirestore.instance
@@ -644,8 +696,9 @@ class HomePageState extends State<HomePage> {
         if (userDoc.exists) {
           final data = userDoc.data();
           if (_isUserPendingVerification(data)) {
+            final isRejected = data?['verificationStatus'] == 'rejected';
             if (mounted) {
-              _showPendingTabBlockedDialog(context);
+              _showPendingTabBlockedDialog(context, isRejected: isRejected);
             }
             return;
           }
@@ -679,7 +732,7 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  void _showPendingTabBlockedDialog(BuildContext context) {
+  void _showPendingTabBlockedDialog(BuildContext context, {bool isRejected = false}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
@@ -697,18 +750,18 @@ class HomePageState extends State<HomePage> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.amber.withValues(alpha: 0.12),
+                  color: (isRejected ? Colors.red : Colors.amber).withValues(alpha: 0.12),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.lock_clock_outlined,
-                  color: Colors.amber,
+                child: Icon(
+                  isRejected ? Icons.cancel_outlined : Icons.lock_clock_outlined,
+                  color: isRejected ? Colors.redAccent : Colors.amber,
                   size: 36,
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Tài khoản chờ duyệt xác thực',
+                isRejected ? 'Tài khoản bị từ chối xác thực' : 'Tài khoản chờ duyệt xác thực',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
@@ -719,7 +772,9 @@ class HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Hồ sơ sinh viên của bạn đang chờ Ban Quản trị (Mod) kiểm tra và duyệt xác thực.\n\nTrong thời gian chờ duyệt, bạn có thể xem bảng tin hoặc vào Tài khoản để đăng xuất.',
+                isRejected
+                    ? 'Hồ sơ sinh viên của bạn đã bị kiểm duyệt viên từ chối xác thực.\n\nBạn chỉ có thể xem bảng tin hoặc đăng xuất. Vui lòng liên hệ bộ phận hỗ trợ nếu cần thêm thông tin.'
+                    : 'Hồ sơ sinh viên của bạn đang chờ kiểm duyệt viên kiểm tra và duyệt xác thực.\n\nTrong thời gian chờ phê duyệt, một số tính năng sẽ tạm thời bị hạn chế. Bạn vẫn có thể xem bảng tin hoặc đăng xuất.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
@@ -785,6 +840,39 @@ class HomePageState extends State<HomePage> {
                   ),
                 ],
               ),
+              if (isRejected) ...[
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const EditProfilePage(),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.edit_note, color: Colors.white, size: 20),
+                    label: const Text(
+                      'Sửa thông tin & Gửi lại xác thực',
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -953,43 +1041,82 @@ class HomePageState extends State<HomePage> {
                             return const SizedBox();
                           }
                           final data = snapshot.data!.data();
-                          if (_isUserPendingVerification(data)) {
+                          final status = data?['verificationStatus'];
+                          final isVerified = data?['isVerified'] ?? false;
+                          final isPending = status == 'pending' || (!isVerified && status != 'approved' && status != 'rejected');
+                          final isRejected = status == 'rejected';
+
+                          if (isPending || isRejected) {
+                            final Color bg = isRejected
+                                ? (isDarkMode ? const Color(0xFF3B181A) : const Color(0xFFFDE8E8))
+                                : (isDarkMode ? const Color(0xFF332611) : const Color(0xFFFFF7E6));
+                            final Color borderColor = isRejected ? Colors.red.shade700 : Colors.amber.shade700;
+                            final Color iconColor = isRejected ? Colors.red.shade800 : Colors.amber.shade800;
+                            final Color textColor = isRejected
+                                ? (isDarkMode ? Colors.red.shade200 : Colors.red.shade900)
+                                : (isDarkMode ? Colors.amber.shade200 : Colors.amber.shade900);
+
                             return Container(
                               width: double.infinity,
                               margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 10),
                               decoration: BoxDecoration(
-                                color: isDarkMode
-                                    ? const Color(0xFF332611)
-                                    : const Color(0xFFFFF7E6),
+                                color: bg,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
-                                  color: Colors.amber.shade700
-                                      .withValues(alpha: 0.4),
+                                  color: borderColor.withValues(alpha: 0.4),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
-                                    Icons.lock_clock_outlined,
-                                    color: Colors.amber.shade800,
+                                    isRejected ? Icons.cancel_outlined : Icons.lock_clock_outlined,
+                                    color: iconColor,
                                     size: 20,
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: Text(
-                                      'Tài khoản đang chờ Mod duyệt xác thực. Bạn chỉ có thể xem bảng tin và chưa thể tương tác hoặc đổi tab.',
+                                      isRejected
+                                          ? 'Tài khoản của bạn đã bị từ chối xác thực bởi kiểm duyệt viên. Bạn chỉ có thể xem bảng tin và chưa thể tương tác hoặc đổi tab.'
+                                          : 'Tài khoản đang chờ kiểm duyệt viên xác thực. Bạn chỉ có thể xem bảng tin và chưa thể tương tác hoặc đổi tab.',
                                       style: TextStyle(
                                         fontFamily: 'Encode Sans Expanded',
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: isDarkMode
-                                            ? Colors.amber.shade200
-                                            : Colors.amber.shade900,
+                                        color: textColor,
                                       ),
                                     ),
                                   ),
+                                  if (isRejected) ...[
+                                    const SizedBox(width: 8),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const EditProfilePage(),
+                                          ),
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        backgroundColor: Colors.red.shade900,
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: const Text(
+                                        'Sửa hồ sơ',
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 11.5,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             );
@@ -1073,6 +1200,9 @@ class HomePageState extends State<HomePage> {
         HomePage.activeTabNotifier.value = _selectedIndex;
       } else {
         _showWalkthrough = false;
+        _selectedIndex = 0;
+        EventPageNotifier.isActive.value = false;
+        HomePage.activeTabNotifier.value = 0;
         _saveOnboardingDone();
       }
     });
@@ -1092,6 +1222,9 @@ class HomePageState extends State<HomePage> {
   void _skipWalkthrough() {
     setState(() {
       _showWalkthrough = false;
+      _selectedIndex = 0;
+      EventPageNotifier.isActive.value = false;
+      HomePage.activeTabNotifier.value = 0;
       _saveOnboardingDone();
     });
   }

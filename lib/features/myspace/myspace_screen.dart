@@ -579,6 +579,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       initialDate: _focusedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2030),
+      locale: const Locale('vi', 'VN'),
       builder: (context, child) {
         final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
         return Theme(

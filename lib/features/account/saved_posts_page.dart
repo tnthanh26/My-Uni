@@ -1078,6 +1078,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   }
 
   Widget _buildSavedList(String type) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<QuerySnapshot>(

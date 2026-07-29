@@ -151,53 +151,25 @@ class _ModDashboardState extends State<ModDashboard> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                SizedBox(
-                                  width: 360,
-                                  height: 46,
-                                  child: TextField(
-                                    onChanged: (value) {
-                                      setState(() => _userSearchKeyword = value);
-                                    },
-                                    decoration: InputDecoration(
-                                      hintText: "Tìm theo tên hoặc email...",
-                                      prefixIcon: const Icon(Icons.search, size: 20),
-                                      filled: true,
-                                      fillColor: const Color(0xFFF5F7FA),
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide.none,
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                                    ),
+                            SizedBox(
+                              width: 360,
+                              height: 46,
+                              child: TextField(
+                                onChanged: (value) {
+                                  setState(() => _userSearchKeyword = value);
+                                },
+                                decoration: InputDecoration(
+                                  hintText: "Tìm theo tên hoặc email...",
+                                  prefixIcon: const Icon(Icons.search, size: 20),
+                                  filled: true,
+                                  fillColor: const Color(0xFFF5F7FA),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide.none,
                                   ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                                 ),
-                                const SizedBox(width: 12),
-                                SizedBox(
-                                  height: 46,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _handleMigrateLegacyUsers,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF6797E1),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(horizontal: 18),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    icon: const Icon(Icons.sync_rounded, size: 18),
-                                    label: const Text(
-                                      "Đồng bộ user cũ",
-                                      style: TextStyle(
-                                        fontFamily: 'Nunito',
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                             const SizedBox(height: 12),
                           ],
@@ -307,9 +279,7 @@ class _ModDashboardState extends State<ModDashboard> {
 
   Widget _buildMainContent() {
     if (_isUsers) {
-      final query = FirebaseFirestore.instance
-          .collection('users')
-          .orderBy('lastUpdated', descending: true);
+      final query = FirebaseFirestore.instance.collection('users');
 
       return StreamBuilder<QuerySnapshot>(
         key: const ValueKey('users-stream-stable'),
@@ -318,7 +288,33 @@ class _ModDashboardState extends State<ModDashboard> {
           if (snapshot.hasError) return _buildErrorState(snapshot.error.toString());
 
           final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
-          final allDocs = snapshot.data?.docs ?? [];
+          final allDocs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
+
+          // Sort in memory: Pending verification accounts first, then by lastUpdated/createdAt descending
+          allDocs.sort((a, b) {
+            final dataA = a.data() as Map<String, dynamic>;
+            final dataB = b.data() as Map<String, dynamic>;
+
+            final bool isVerifiedA = dataA['isVerified'] ?? false;
+            final String statusA = dataA['verificationStatus'] ?? (isVerifiedA ? 'approved' : 'pending');
+            final bool isPendingA = (statusA == 'pending') || (!isVerifiedA && statusA != 'approved' && statusA != 'rejected');
+
+            final bool isVerifiedB = dataB['isVerified'] ?? false;
+            final String statusB = dataB['verificationStatus'] ?? (isVerifiedB ? 'approved' : 'pending');
+            final bool isPendingB = (statusB == 'pending') || (!isVerifiedB && statusB != 'approved' && statusB != 'rejected');
+
+            // 1. Pending accounts first
+            if (isPendingA && !isPendingB) return -1;
+            if (!isPendingA && isPendingB) return 1;
+
+            // 2. Sort by timestamp descending
+            final Timestamp? tA = dataA['lastUpdated'] as Timestamp? ?? dataA['createdAt'] as Timestamp?;
+            final Timestamp? tB = dataB['lastUpdated'] as Timestamp? ?? dataB['createdAt'] as Timestamp?;
+            if (tA == null && tB == null) return 0;
+            if (tA == null) return 1;
+            if (tB == null) return -1;
+            return tB.compareTo(tA);
+          });
 
           // Local filtering based on keyword
           final keyword = _userSearchKeyword.trim().toLowerCase();
@@ -489,6 +485,7 @@ class _ModDashboardState extends State<ModDashboard> {
       onViewActivity: () => _showUserActivity(uid, data),
       onApproveVerification: () => _handleApproveVerification(uid, data),
       onRejectVerification: () => _handleRejectVerification(uid, data),
+      onDeleteUser: () => _handleDeleteUserAccount(uid, data),
     );
   }
 
@@ -524,37 +521,59 @@ class _ModDashboardState extends State<ModDashboard> {
     if (_isActionInProgress) return;
 
     final reasonController = TextEditingController();
+    bool deleteAfterReject = false;
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Từ chối xác thực tài khoản", style: TextStyle(fontWeight: FontWeight.bold)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("Nhập lý do từ chối xác thực cho ${data['displayName'] ?? 'người dùng'}:"),
-            const SizedBox(height: 12),
-            TextField(
-              controller: reasonController,
-              decoration: const InputDecoration(
-                hintText: "VD: MSSV hoặc thông tin khoa chưa đúng",
-                border: OutlineInputBorder(),
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text("Từ chối xác thực tài khoản", style: TextStyle(fontWeight: FontWeight.bold)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Nhập lý do từ chối xác thực cho ${data['displayName'] ?? 'người dùng'}:"),
+              const SizedBox(height: 12),
+              TextField(
+                controller: reasonController,
+                decoration: const InputDecoration(
+                  hintText: "VD: MSSV hoặc thông tin khoa chưa đúng",
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 2,
               ),
-              maxLines: 2,
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                activeColor: Colors.redAccent,
+                title: const Text(
+                  "Xóa luôn tài khoản khỏi hệ thống (Giúp người dùng có thể tạo lại tài khoản mới với email này)",
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.redAccent),
+                ),
+                value: deleteAfterReject,
+                onChanged: (val) {
+                  setDialogState(() {
+                    deleteAfterReject = val ?? false;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Hủy"),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: Text(
+                deleteAfterReject ? "Từ chối & Xóa TK" : "Từ chối",
+                style: const TextStyle(color: Colors.white),
+              ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text("Hủy"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-            child: const Text("Từ chối", style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
 
@@ -566,25 +585,40 @@ class _ModDashboardState extends State<ModDashboard> {
           ? "Thông tin hồ sơ sinh viên không hợp lệ"
           : reasonController.text.trim();
 
-      await UserModerationService.rejectVerification(
-        uid: uid,
-        data: data,
-        reason: reason,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Đã từ chối xác thực cho ${data['displayName'] ?? ''}"),
-            backgroundColor: Colors.orange,
-          ),
+      if (deleteAfterReject) {
+        await UserModerationService.deleteUserAccount(
+          uid: uid,
+          data: data,
+          reason: "Từ chối xác thực & Xóa tài khoản ($reason)",
         );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Đã từ chối xác thực và XÓA TÀI KHOẢN của ${data['displayName'] ?? ''} khỏi hệ thống."),
+              backgroundColor: Colors.red.shade900,
+            ),
+          );
+        }
+      } else {
+        await UserModerationService.rejectVerification(
+          uid: uid,
+          data: data,
+          reason: reason,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Đã từ chối xác thực cho ${data['displayName'] ?? ''}"),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Lỗi từ chối xác thực: $e"),
+            content: Text("Lỗi: $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -594,17 +628,45 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleMigrateLegacyUsers() async {
+  Future<void> _handleDeleteUserAccount(String uid, Map<String, dynamic> data) async {
     if (_isActionInProgress) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Xóa tài khoản người dùng", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        content: Text(
+          "Bạn có chắc chắn muốn xóa dữ liệu tài khoản ${data['displayName'] ?? ''} (${data['email'] ?? ''}) khỏi hệ thống?\n\nHành động này sẽ giải phóng email để người dùng có thể đăng ký lại tài khoản mới.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Hủy"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade900),
+            child: const Text("Xóa tài khoản", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
     _isActionInProgress = true;
 
     try {
-      final count = await UserModerationService.migrateLegacyUsers();
+      await UserModerationService.deleteUserAccount(
+        uid: uid,
+        data: data,
+        reason: "Mod xóa tài khoản bị từ chối xác thực",
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Đã đồng bộ thành công $count tài khoản cũ!"),
-            backgroundColor: Colors.green,
+            content: Text("Đã xóa tài khoản ${data['displayName'] ?? ''} khỏi hệ thống."),
+            backgroundColor: Colors.red.shade900,
           ),
         );
       }
@@ -612,7 +674,7 @@ class _ModDashboardState extends State<ModDashboard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Lỗi đồng bộ tài khoản: $e"),
+            content: Text("Lỗi khi xóa tài khoản: $e"),
             backgroundColor: Colors.red,
           ),
         );

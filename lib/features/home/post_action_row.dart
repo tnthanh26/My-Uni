@@ -52,27 +52,43 @@ class _PostActionRowState extends State<PostActionRow> {
     });
   }
 
-  Future<void> _handleLike(bool isLiked, int currentLikeCount) async {
+  Future<bool> _isUserPending() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
+    if (user == null) return false;
 
     final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
     if (userDoc.exists) {
       final data = userDoc.data();
       final String? verificationStatus = data?['verificationStatus'];
-      if (verificationStatus == 'pending') {
+      final bool isVerified = data?['isVerified'] ?? false;
+      final bool isRestricted = (verificationStatus == 'pending') ||
+          (verificationStatus == 'rejected') ||
+          (!isVerified && verificationStatus != 'approved');
+
+      if (isRestricted) {
         if (mounted) {
+          final isRejected = verificationStatus == 'rejected';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Tài khoản của bạn đang chờ Mod duyệt xác thực nên chưa thể tương tác.'),
-              backgroundColor: Colors.amber.shade900,
+              content: Text(isRejected
+                  ? 'Tài khoản của bạn đã bị từ chối xác thực nên chưa thể tương tác.'
+                  : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể tương tác.'),
+              backgroundColor: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
               behavior: SnackBarBehavior.floating,
             ),
           );
         }
-        return;
+        return true;
       }
     }
+    return false;
+  }
+
+  Future<void> _handleLike(bool isLiked, int currentLikeCount) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (await _isUserPending()) return;
 
     try {
       final postRef = FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId);
@@ -123,36 +139,56 @@ class _PostActionRowState extends State<PostActionRow> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return const SizedBox.shrink();
+
     final Color defaultColor = isDarkMode ? Colors.white60 : Colors.grey[600]!;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId).snapshots(),
-      builder: (context, postSnapshot) {
-        final postData = postSnapshot.hasData && postSnapshot.data!.exists
-            ? postSnapshot.data!.data() as Map<String, dynamic>
-            : widget.data;
+      stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
+          final String? verificationStatus = userData['verificationStatus'];
+          final bool isVerified = userData['isVerified'] ?? false;
+          final bool isRestricted = (verificationStatus == 'pending') ||
+              (verificationStatus == 'rejected') ||
+              (!isVerified && verificationStatus != 'approved');
 
-        final int rawLikeCount = postData['likeCount'] ?? 0;
-        final int currentLikeCount = rawLikeCount < 0 ? 0 : rawLikeCount;
-        final int currentCommentCount = postData['commentCount'] ?? 0;
+          if (isRestricted) {
+            return const SizedBox.shrink();
+          }
+        }
 
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildLikeButton(user, isDarkMode, defaultColor, currentLikeCount),
+        return StreamBuilder<DocumentSnapshot>(
+          stream: FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId).snapshots(),
+          builder: (context, postSnapshot) {
+            final postData = postSnapshot.hasData && postSnapshot.data!.exists
+                ? postSnapshot.data!.data() as Map<String, dynamic>
+                : widget.data;
 
-              _buildActionButton(
-                icon: Icons.chat_bubble_outline,
-                label: '$currentCommentCount',
-                color: defaultColor,
-                onTap: () => _navigateToDetail(context),
+            final int rawLikeCount = postData['likeCount'] ?? 0;
+            final int currentLikeCount = rawLikeCount < 0 ? 0 : rawLikeCount;
+            final int currentCommentCount = postData['commentCount'] ?? 0;
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildLikeButton(user, isDarkMode, defaultColor, currentLikeCount),
+
+                  _buildActionButton(
+                    icon: Icons.chat_bubble_outline,
+                    label: '$currentCommentCount',
+                    color: defaultColor,
+                    onTap: () => _navigateToDetail(context),
+                  ),
+
+                  _buildSaveButton(user, isDarkMode, defaultColor),
+                ],
               ),
-
-              _buildSaveButton(user, isDarkMode, defaultColor),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -191,11 +227,12 @@ class _PostActionRowState extends State<PostActionRow> {
           color: displayLiked ? Colors.redAccent : defaultColor,
           isLikedButton: true,
           isLiked: displayLiked,
-          onTap: () {
+          onTap: () async {
             final now = DateTime.now();
             if (now.difference(_lastLikeTapTime) < const Duration(milliseconds: 400)) {
               return; // Chặn spam click
             }
+            if (await _isUserPending()) return;
             _lastLikeTapTime = now;
 
             final nextLiked = !displayLiked;
@@ -226,7 +263,10 @@ class _PostActionRowState extends State<PostActionRow> {
           icon: isSaved ? Icons.bookmark : Icons.bookmark_add_outlined,
           label: 'Lưu',
           color: isSaved ? Colors.amber : defaultColor,
-          onTap: () => widget.onSave(widget.docId, widget.data),
+          onTap: () async {
+            if (await _isUserPending()) return;
+            widget.onSave(widget.docId, widget.data);
+          },
         );
       },
     );
