@@ -100,6 +100,7 @@ class NotificationService {
         .map(
           (snapshot) => snapshot.docs
           .map((doc) => MyUniNotification.fromFirestore(doc))
+          .where((n) => n.type != 'chat' && n.type != 'message' && n.roomId == null)
           .toList(),
     );
   }

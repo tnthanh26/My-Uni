@@ -56,6 +56,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     "Hội thảo",
     "Cuộc thi",
     "Thông báo",
+    "Tin chính thức",
   ];
 
   final String? initialHashtag;
@@ -703,6 +704,8 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
             content.contains('giải thưởng');
       case 'thông báo':
         return content.contains('thông báo') || content.contains('quy định');
+      case 'tin chính thức':
+        return true;
       default:
         return content.contains(tag.trim().toLowerCase());
     }
@@ -1220,35 +1223,53 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: isEvent
-                                ? (isDarkMode ? const Color(0xFF1E3A8A).withOpacity(0.4) : const Color(0xFFE0F2FE))
-                                : (isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9)),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isEvent ? Icons.event_rounded : Icons.article_rounded,
-                                size: 12,
-                                color: isEvent ? const Color(0xFF3B82F6) : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                isEvent ? 'Sự kiện' : 'Tin chính thức',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: isEvent
-                                      ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
-                                      : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+                        Builder(
+                          builder: (context) {
+                            final String categoryTag = OfficialContentHelper.getOfficialCategoryTag(
+                              data['title'],
+                              data['summary'],
+                              data['hashtags'],
+                            );
+                            final bool isHighlight = isEvent || categoryTag == "Học bổng" || categoryTag == "Tuyển dụng";
+
+                            return GestureDetector(
+                              onTap: () {
+                                selectedHashtags = [categoryTag];
+                                query = '#$categoryTag';
+                                _forceRefresh(context);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: isHighlight
+                                      ? (isDarkMode ? const Color(0xFF1E3A8A).withOpacity(0.4) : const Color(0xFFE0F2FE))
+                                      : (isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9)),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      isEvent ? Icons.event_rounded : Icons.article_rounded,
+                                      size: 12,
+                                      color: isHighlight ? const Color(0xFF3B82F6) : Colors.grey,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      categoryTag,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isHighlight
+                                            ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
+                                            : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
                       ],
                     ),
