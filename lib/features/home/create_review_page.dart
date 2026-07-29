@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/content_service.dart';
+import '../../utils/course_teacher_data.dart';
+import '../../widgets/searchable_autocomplete_field.dart';
 
 class CreateReviewPage extends StatefulWidget {
   final String? docId;
@@ -27,6 +29,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   @override
   void initState() {
     super.initState();
+    CourseTeacherData.initDynamicSync();
     _courseController =
         TextEditingController(text: widget.existingData?['courseName'] ?? '');
     _teacherController =
@@ -100,6 +103,11 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     }
 
     final fullSemester = "HK$_selectedSemester $startYear-$endYear";
+
+    CourseTeacherData.addCustomItemToFirebase(
+      newCourse: _courseController.text,
+      newTeacher: _teacherController.text,
+    );
 
     String combinedText =
         "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
@@ -325,11 +333,21 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Khóa học"),
-              _buildUnderlineTextField(context, _courseController, "Tên môn học"),
+              SearchableAutocompleteField(
+                controller: _courseController,
+                hintText: "Chọn hoặc nhập tên môn học",
+                options: CourseTeacherData.hcmusCourses,
+                prefixIcon: Icons.menu_book_rounded,
+              ),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Giảng viên"),
-              _buildUnderlineTextField(context, _teacherController, "Tên giảng viên"),
+              SearchableAutocompleteField(
+                controller: _teacherController,
+                hintText: "Chọn hoặc nhập tên giảng viên",
+                options: CourseTeacherData.hcmusTeachers,
+                prefixIcon: Icons.person_search_rounded,
+              ),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Trải nghiệm của bạn về khóa học này?"),
@@ -567,42 +585,6 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
         borderSide: const BorderSide(
           color: Color(0xFF6797E1),
           width: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnderlineTextField(
-      BuildContext context,
-      TextEditingController ctrl,
-      String hint, {
-        List<TextInputFormatter>? inputFormatters,
-        TextInputType? keyboardType,
-      }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.only(left: 8),
-      child: TextField(
-        controller: ctrl,
-        inputFormatters: inputFormatters,
-        keyboardType: keyboardType,
-        style: TextStyle(
-          fontFamily: 'Encode Sans Expanded',
-          fontSize: 15,
-          color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            fontSize: 15,
-            color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: 8,
-          ),
         ),
       ),
     );

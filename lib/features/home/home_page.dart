@@ -729,7 +729,7 @@ class HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => NotificationScreen()),
+                        MaterialPageRoute(builder: (context) => const NotificationScreen()),
                       );
                     },
                     child: StreamBuilder<List<MyUniNotification>>(
@@ -753,7 +753,7 @@ class HomePageState extends State<HomePage> {
                                     style: const TextStyle(color: Colors.white, fontSize: 7, fontWeight: FontWeight.bold),
                                   ),
                                 ),
-                              )
+                              ),
                           ],
                         );
                       },

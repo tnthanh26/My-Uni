@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +19,11 @@ import 'create_review_page.dart';
 import '../services/content_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import '../../theme/app_colors.dart';
+import '../chat/services/chat_service.dart';
+import '../chat/pages/chat_detail_page.dart';
+import '../chat/widgets/student_identity_card.dart';
+import '../../utils/anonymous_utils.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -44,6 +50,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
   // State to track expanded comment threads
   final Set<String> _expandedComments = {};
 
+  late Map<String, dynamic> _postData;
+  StreamSubscription<DocumentSnapshot>? _postSub;
+
   File? _commentImageFile;
   bool _isSubmittingComment = false;
   bool _isCommentAnonymous = false;
@@ -55,7 +64,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       setState(() => _commentImageFile = File(pickedFile.path));
     }
   }
-
+  
   Future<String?> _processImageToBase64(File file) async {
     final bytes = await file.readAsBytes();
     var compressedBytes = await FlutterImageCompress.compressWithList(
@@ -108,11 +117,34 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   void initState() {
     super.initState();
+    _postData = Map<String, dynamic>.from(widget.initialPostData);
     timeago.setLocaleMessages('vi', CustomViMessages());
+    _subscribePostRealtime();
+  }
+
+  void _subscribePostRealtime() {
+    _postSub?.cancel();
+    _postSub = _firestore
+        .collection(_collectionPath)
+        .doc(widget.docId)
+        .snapshots()
+        .listen(
+      (doc) {
+        if (doc.exists && doc.data() != null && mounted) {
+          setState(() {
+            _postData = doc.data() as Map<String, dynamic>;
+          });
+        }
+      },
+      onError: (error) {
+        debugPrint("Post realtime stream error (handled): $error");
+      },
+    );
   }
 
   @override
   void dispose() {
+    _postSub?.cancel();
     _commentController.dispose();
     super.dispose();
   }
@@ -338,7 +370,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       });
 
       final authorId =
-          widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+          _postData['authorId'] ?? _postData['uploaderId'];
       if (authorId != null) {
         await _firestore.collection('notifications').add({
           'userId': authorId,
@@ -828,7 +860,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _sendCommentNotification(String content, String senderName) async {
     if (_collectionPath == 'official_news') return;
     final authorId =
-        widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+        _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
@@ -846,7 +878,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Future<void> _sendLikeNotification() async {
     if (_collectionPath == 'official_news') return;
     final authorId =
-        widget.initialPostData['authorId'] ?? widget.initialPostData['uploaderId'];
+        _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
@@ -1277,9 +1309,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  void _navigateToEdit() {
+  void _navigateToEdit() async {
     Widget targetPage;
-    final data = widget.initialPostData;
+    final data = _postData;
     if (_collectionPath == 'study_materials') {
       targetPage = CreateMaterialPage(docId: widget.docId, existingData: data);
     } else if (_collectionPath == 'course_reviews') {
@@ -1287,10 +1319,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } else {
       targetPage = CreatePostPage(docId: widget.docId, existingData: data);
     }
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => targetPage),
     );
+    _refreshPostData();
+  }
+
+  Future<void> _refreshPostData() async {
+    try {
+      final doc = await _firestore.collection(_collectionPath).doc(widget.docId).get();
+      if (doc.exists && doc.data() != null && mounted) {
+        setState(() {
+          _postData = doc.data() as Map<String, dynamic>;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error refreshing post data: $e");
+    }
   }
 
   void _confirmDeletePost() {
@@ -1360,13 +1406,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isOwner = _user?.uid ==
-        (widget.initialPostData['authorId'] ??
-            widget.initialPostData['uploaderId']);
+        (_postData['authorId'] ??
+            _postData['uploaderId']);
 
     bool canEditPost = isOwner;
-    if (canEditPost && widget.initialPostData['timestamp'] != null) {
+    if (canEditPost && _postData['timestamp'] != null) {
       try {
-        final Timestamp ts = widget.initialPostData['timestamp'] as Timestamp;
+        final Timestamp ts = _postData['timestamp'] as Timestamp;
         final DateTime postTime = ts.toDate();
         if (DateTime.now().difference(postTime).inHours >= 12) {
           canEditPost = false;
@@ -1465,7 +1511,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: PostActionRow(
                       docId: widget.docId,
-                      data: widget.initialPostData,
+                      data: _postData,
                       onSave: (id, data) => _toggleSavePost(
                         context: context,
                         docId: id,
@@ -1501,7 +1547,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildDynamicHeader() {
-    final data = widget.initialPostData;
+    final data = _postData;
     if (_collectionPath == 'official_news') return _buildOfficialUI(data);
     if (_collectionPath == 'course_reviews') return _buildReviewUI(data);
     if (_collectionPath == 'study_materials') return _buildMaterialUI(data);
@@ -1752,9 +1798,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildReviewUI(Map<String, dynamic> data) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final int rating = (data['rating'] ?? 0) is int
-        ? data['rating'] ?? 0
-        : ((data['rating'] ?? 0) as num).toInt();
+    final int rating = (data['rating'] is num)
+        ? (data['rating'] as num).toInt()
+        : int.tryParse(data['rating']?.toString() ?? '0') ?? 0;
+
+    final String contentStr = (data['content'] ?? '').toString().trim();
+    final bool hasContent = contentStr.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 12, 10, 10),
@@ -1767,15 +1816,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+        padding: EdgeInsets.fromLTRB(16, 18, 16, hasContent ? 18 : 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1851,18 +1900,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            Text(
-              data['content'] ?? '',
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 15,
-                height: 1.7,
-                color: isDarkMode
-                    ? Colors.white70
-                    : const Color(0xFF4B5563),
+            if (hasContent) ...[
+              const SizedBox(height: 16),
+              Text(
+                contentStr,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 15,
+                  height: 1.7,
+                  color: isDarkMode
+                      ? Colors.white70
+                      : const Color(0xFF4B5563),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -2017,9 +2068,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
             children: [
               Expanded(
                 child: _buildAuthorRow(
-                  isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Sinh viên ẩn danh'),
+                  isAnonymous
+                      ? AnonymousUtils.getAnonymousName(data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'], widget.docId)
+                      : (data['authorName'] ?? data['uploaderName'] ?? data['userName'] ?? 'Sinh viên'),
                   timeText,
-                  avatarBase64: isAnonymous ? null : data['authorAvatar'],
+                  avatarBase64: isAnonymous ? null : (data['authorAvatar'] ?? data['uploaderAvatar'] ?? data['userAvatar']),
+                  authorId: isAnonymous ? null : (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid']),
                 ),
               ),
 
@@ -2177,52 +2231,49 @@ class _PostDetailPageState extends State<PostDetailPage> {
       String name,
       String sub, {
         String? avatarBase64,
+        String? authorId,
         bool isOfficial = false,
       }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    Widget avatarWidget;
-    if (isOfficial) {
-      avatarWidget = Image.asset(
-        'assets/images/logo.png',
-        fit: BoxFit.contain,
-        width: 46,
-        height: 46,
-      );
-    } else {
-      if (avatarBase64 != null && avatarBase64.isNotEmpty) {
-        avatarWidget = ClipOval(
-          child: Image.memory(
-            Base64ImageCache.decode(avatarBase64),
-            fit: BoxFit.cover,
-            width: 46,
-            height: 46,
-          ),
-        );
-      } else {
-        avatarWidget = Icon(
-          Icons.person,
-          color: isDarkMode ? Colors.white38 : Colors.grey,
-          size: 28,
-        );
+    void handleAuthorTap() async {
+      if (authorId != null && authorId.isNotEmpty && !isOfficial && !name.contains('ẩn danh')) {
+        final info = await ChatService().getStudentVerificationInfo(authorId);
+        if (mounted) {
+          StudentIdentitySheet.show(
+            context,
+            info ?? {
+              'uid': authorId,
+              'displayName': name,
+              'photoURL': avatarBase64 ?? '',
+            },
+          );
+        }
       }
     }
+
+
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        CircleAvatar(
-          radius: 23,
-          backgroundColor:
-          isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
-          child: avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
-              ? CircleAvatar(
-            radius: 21,
-            backgroundImage: MemoryImage(Base64ImageCache.decode(avatarBase64)),
-          )
-              : Padding(
-            padding: const EdgeInsets.all(2.0),
-            child: avatarWidget,
+        GestureDetector(
+          onTap: handleAuthorTap,
+          child: CircleAvatar(
+            radius: 23,
+            backgroundColor:
+            isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
+            child: avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
+                ? CircleAvatar(
+              radius: 21,
+              backgroundImage: MemoryImage(Base64ImageCache.decode(avatarBase64)),
+            )
+                : Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: isOfficial
+                  ? Image.asset('assets/images/logo.png', width: 46, height: 46)
+                  : Icon(Icons.person, color: isDarkMode ? Colors.white38 : Colors.grey, size: 28),
+            ),
           ),
         ),
         const SizedBox(width: 12),
@@ -2234,15 +2285,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
-                    child: Text(
-                      name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontWeight: FontWeight.w700,
-                        fontSize: 15,
-                        color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
+                    child: GestureDetector(
+                      onTap: handleAuthorTap,
+                      child: Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
+                        ),
                       ),
                     ),
                   ),
@@ -2313,15 +2367,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
           rootComments.sort((a, b) {
             final List<dynamic> aLikes = a['likes'] ?? [];
             final List<dynamic> bLikes = b['likes'] ?? [];
-            return bLikes.length.compareTo(aLikes.length);
+            final cmp = bLikes.length.compareTo(aLikes.length);
+            if (cmp != 0) return cmp;
+            final Timestamp? aTime = a['timestamp'] as Timestamp?;
+            final Timestamp? bTime = b['timestamp'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return -1;
+            if (bTime == null) return 1;
+            return bTime.compareTo(aTime);
           });
         } else if (_commentSortMode == 'newest') {
           rootComments.sort((a, b) {
             final Timestamp? aTime = a['timestamp'] as Timestamp?;
             final Timestamp? bTime = b['timestamp'] as Timestamp?;
             if (aTime == null && bTime == null) return 0;
-            if (aTime == null) return 1;
-            if (bTime == null) return -1;
+            if (aTime == null) return -1; // Bình luận mới tạo (đang chờ serverTimestamp) nằm ngay ĐẦU
+            if (bTime == null) return 1;
             return bTime.compareTo(aTime); // Mới nhất lên đầu
           });
         }
@@ -2565,8 +2626,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     final bool isCommentOwner = _user?.uid == comment['authorId'];
     final bool isPostOwner = _user?.uid ==
-        (widget.initialPostData['authorId'] ??
-            widget.initialPostData['uploaderId']);
+        (_postData['authorId'] ??
+            _postData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
     bool canEdit = isCommentOwner;
 
@@ -2583,17 +2644,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
 
     final bool isPostAnonymous =
-        (widget.initialPostData['isAnonymous'] == true) ||
-        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-        (widget.initialPostData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+        (_postData['isAnonymous'] == true) ||
+        (_postData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+        (_postData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
 
     final bool isCommentAnonymous = (comment['isAnonymous'] == true);
 
     final bool isAuthor = !isPostAnonymous &&
         !isCommentAnonymous &&
         comment['authorId'] ==
-            (widget.initialPostData['authorId'] ??
-                widget.initialPostData['uploaderId']);
+            (_postData['authorId'] ??
+                _postData['uploaderId']);
 
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);
@@ -2616,12 +2677,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
         final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
 
         final String liveName = isCommentAnonymous
-            ? 'Sinh viên ẩn danh'
+            ? AnonymousUtils.getAnonymousName(commentAuthorId, widget.docId)
             : (userData?['displayName'] ?? comment['authorName'] ?? 'Người dùng');
 
         final String? liveAvatar = isCommentAnonymous
             ? null
             : (userData?['photoUrl'] ?? comment['authorAvatar']);
+
+        void handleCommentUserTap() async {
+          if (commentAuthorId != null && commentAuthorId.isNotEmpty && !isCommentAnonymous) {
+            final info = await ChatService().getStudentVerificationInfo(commentAuthorId);
+            if (mounted) {
+              StudentIdentitySheet.show(
+                context,
+                info ?? {
+                  'uid': commentAuthorId,
+                  'displayName': liveName,
+                  'photoURL': liveAvatar ?? '',
+                },
+              );
+            }
+          }
+        }
 
         return Stack(
           clipBehavior: Clip.none,
@@ -2655,22 +2732,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    radius: 18,
-                    backgroundColor:
-                    isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
-                    child: (liveAvatar == null || liveAvatar.isEmpty)
-                        ? Icon(
-                      Icons.person,
-                      size: 20,
-                      color: isDarkMode ? Colors.white38 : Colors.grey,
-                    )
-                        : ClipOval(
-                      child: Image.memory(
-                        Base64ImageCache.decode(liveAvatar),
-                        fit: BoxFit.cover,
-                        width: 36,
-                        height: 36,
+                  GestureDetector(
+                    onTap: handleCommentUserTap,
+                    child: CircleAvatar(
+                      radius: 18,
+                      backgroundColor:
+                      isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
+                      child: (liveAvatar == null || liveAvatar.isEmpty)
+                          ? Icon(
+                        Icons.person,
+                        size: 20,
+                        color: isDarkMode ? Colors.white38 : Colors.grey,
+                      )
+                          : ClipOval(
+                        child: Image.memory(
+                          Base64ImageCache.decode(liveAvatar),
+                          fit: BoxFit.cover,
+                          width: 36,
+                          height: 36,
+                        ),
                       ),
                     ),
                   ),
@@ -2686,15 +2766,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
                               child: Row(
                                 children: [
                                   Flexible(
-                                    child: Text(
-                                      liveName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontFamily: 'Encode Sans Expanded',
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                        color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                    child: GestureDetector(
+                                      onTap: handleCommentUserTap,
+                                      child: Text(
+                                        liveName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13,
+                                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -2767,7 +2850,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     size: 16,
                                     color: isDarkMode ? Colors.white38 : const Color(0xFF777777),
                                   ),
-                                  onSelected: (val) {
+                                  onSelected: (val) async {
                                     if (val == 'delete') _showDeleteConfirmation(comment['id']);
                                     if (val == 'edit') _showEditCommentDialog(comment);
                                     if (val == 'report') _showReportCommentOptions(comment);
@@ -2820,7 +2903,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           ),
                         ],
                         const SizedBox(height: 12),
-                        // Bottom Actions (Like & Reply)
+                        // Bottom Actions (Like & Reply & Chat)
                         Row(
                           children: [
                             GestureDetector(
@@ -2863,6 +2946,232 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  void _showCommentIdentitySelector() async {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final uid = _user?.uid;
+    if (uid == null) return;
+
+    String realName = _user?.displayName ?? 'Sinh viên';
+    String? userPhotoBase64;
+    try {
+      final userDoc = await _firestore.collection('users').doc(uid).get();
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        final rawName = data?['displayName']?.toString().trim();
+        if (rawName != null && rawName.isNotEmpty) {
+          realName = rawName;
+        }
+        userPhotoBase64 = data?['photoUrl'];
+      }
+    } catch (_) {}
+
+    final anonName = AnonymousUtils.getAnonymousName(uid, widget.docId);
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 38,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white24 : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  Row(
+                    children: [
+                      Text(
+                        "Bình luận dưới tên",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Chọn danh tính bạn muốn hiển thị khi bình luận vào bài viết này",
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 12,
+                      color: isDarkMode ? Colors.white60 : const Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Option 1: Profile thật
+                  InkWell(
+                    onTap: () {
+                      setState(() => _isCommentAnonymous = false);
+                      Navigator.pop(context);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: !_isCommentAnonymous
+                            ? (isDarkMode ? const Color(0xFF5893D8).withValues(alpha: 0.15) : const Color(0xFFEBF5FF))
+                            : (isDarkMode ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC)),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: !_isCommentAnonymous
+                              ? const Color(0xFF5893D8)
+                              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                          width: !_isCommentAnonymous ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: isDarkMode ? Colors.white10 : Colors.grey[200],
+                            backgroundImage: (userPhotoBase64 != null && userPhotoBase64.isNotEmpty)
+                                ? MemoryImage(Base64ImageCache.decode(userPhotoBase64))
+                                : null,
+                            child: (userPhotoBase64 == null || userPhotoBase64.isEmpty)
+                                ? Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey[600])
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  realName,
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Trang cá nhân của bạn",
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    color: isDarkMode ? Colors.white54 : const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Radio<bool>(
+                            value: false,
+                            groupValue: _isCommentAnonymous,
+                            activeColor: const Color(0xFF5893D8),
+                            onChanged: (val) {
+                              setState(() => _isCommentAnonymous = false);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Option 2: Thành viên ẩn danh
+                  InkWell(
+                    onTap: () {
+                      setState(() => _isCommentAnonymous = true);
+                      Navigator.pop(context);
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: _isCommentAnonymous
+                            ? (isDarkMode ? const Color(0xFF5893D8).withValues(alpha: 0.15) : const Color(0xFFEBF5FF))
+                            : (isDarkMode ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC)),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: _isCommentAnonymous
+                              ? const Color(0xFF5893D8)
+                              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                          width: _isCommentAnonymous ? 1.5 : 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 20,
+                            backgroundColor: isDarkMode ? const Color(0xFF334155) : const Color(0xFF475569),
+                            child: const Icon(Icons.person_outline, color: Colors.white, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  anonName,
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "Tên và ảnh đại diện của bạn sẽ được ẩn",
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    color: isDarkMode ? Colors.white54 : const Color(0xFF6B7280),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Radio<bool>(
+                            value: true,
+                            groupValue: _isCommentAnonymous,
+                            activeColor: const Color(0xFF5893D8),
+                            onChanged: (val) {
+                              setState(() => _isCommentAnonymous = true);
+                              Navigator.pop(context);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );
@@ -2983,60 +3292,93 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           if (_isCommentAnonymous)
-            Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? const Color(0xFF5893D8).withValues(alpha: 0.15)
-                    : const Color(0xFF5893D8).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.visibility_off,
-                    size: 14,
-                    color: Color(0xFF5893D8),
+            GestureDetector(
+              onTap: _showCommentIdentitySelector,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? const Color(0xFF5893D8).withValues(alpha: 0.15)
+                      : const Color(0xFF5893D8).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF5893D8).withValues(alpha: 0.3),
                   ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Đang bật chế độ bình luận ẩn danh',
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.person_outline,
+                      size: 15,
                       color: Color(0xFF5893D8),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  GestureDetector(
-                    onTap: () => setState(() => _isCommentAnonymous = false),
-                    child: const Icon(
-                      Icons.close,
-                      size: 14,
+                    const SizedBox(width: 6),
+                    Text(
+                      'Đang ẩn danh: ${AnonymousUtils.getAnonymousName(_user?.uid, widget.docId)}',
+                      style: const TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF5893D8),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_drop_down,
+                      size: 18,
                       color: Color(0xFF5893D8),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           Row(
             children: [
-              IconButton(
-                onPressed: () {
-                  setState(() {
-                    _isCommentAnonymous = !_isCommentAnonymous;
-                  });
-                },
-                tooltip: _isCommentAnonymous ? 'Đang bật Ẩn danh' : 'Bật bình luận ẩn danh',
-                icon: Icon(
-                  _isCommentAnonymous ? Icons.visibility_off : Icons.visibility_off_outlined,
-                  color: _isCommentAnonymous
-                      ? const Color(0xFF5893D8)
-                      : (isDarkMode ? Colors.white70 : const Color(0xFF5893D8)),
-                  size: 22,
+              GestureDetector(
+                onTap: _showCommentIdentitySelector,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 15,
+                        backgroundColor: _isCommentAnonymous
+                            ? (isDarkMode ? const Color(0xFF334155) : const Color(0xFF475569))
+                            : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                        child: Icon(
+                          _isCommentAnonymous ? Icons.person_outline : Icons.person,
+                          size: 18,
+                          color: _isCommentAnonymous ? Colors.white : (isDarkMode ? Colors.white70 : const Color(0xFF5893D8)),
+                        ),
+                      ),
+                      Positioned(
+                        right: -2,
+                        bottom: -2,
+                        child: Container(
+                          padding: const EdgeInsets.all(1),
+                          decoration: BoxDecoration(
+                            color: isDarkMode ? const Color(0xFF111315) : Colors.white,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Container(
+                            padding: const EdgeInsets.all(1.5),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF5893D8),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.sync_alt_rounded,
+                              size: 8,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               IconButton(
