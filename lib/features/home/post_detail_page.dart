@@ -189,26 +189,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _showReportOptions() async {
-    final currentUser = _user;
-    if (currentUser != null) {
-      final doc = await _firestore.collection('users').doc(currentUser.uid).get();
-      if (doc.exists) {
-        final data = doc.data();
-        final String? verificationStatus = data?['verificationStatus'];
-        if (verificationStatus == 'pending') {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể báo cáo bài viết.'),
-                backgroundColor: Colors.amber.shade900,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-          return;
-        }
-      }
-    }
+
 
     final List<String> reportReasons = [
       "Ngôn từ gây hấn/Xúc phạm",
@@ -420,26 +401,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _showReportCommentOptions(Map<String, dynamic> comment) async {
-    final currentUser = _user;
-    if (currentUser != null) {
-      final doc = await _firestore.collection('users').doc(currentUser.uid).get();
-      if (doc.exists) {
-        final data = doc.data();
-        final String? verificationStatus = data?['verificationStatus'];
-        if (verificationStatus == 'pending') {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể báo cáo bình luận.'),
-                backgroundColor: Colors.amber.shade900,
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
-          }
-          return;
-        }
-      }
-    }
+
 
     final List<String> reportReasons = [
       "Nội dung thô tục, nhạy cảm",
@@ -950,24 +912,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     if (_user == null || (content.isEmpty && _commentImageFile == null)) return;
     if (_isSubmittingComment) return;
 
-    // 0. Kiểm tra tài khoản chờ duyệt
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(_user!.uid).get();
-    if (userDoc.exists) {
-      final userData = userDoc.data();
-      final String? verificationStatus = userData?['verificationStatus'];
-      if (verificationStatus == 'pending') {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể đăng bình luận.'),
-              backgroundColor: Colors.amber.shade900,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
-        }
-        return;
-      }
-    }
+
 
     // 1. Kiểm tra từ cấm
     if (content.isNotEmpty) {
@@ -3293,68 +3238,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildCommentInputField() {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final currentUser = _user;
-
-    if (currentUser != null) {
-      return StreamBuilder<DocumentSnapshot>(
-        stream: _firestore.collection('users').doc(currentUser.uid).snapshots(),
-        builder: (context, userSnapshot) {
-          if (userSnapshot.hasData && userSnapshot.data!.exists) {
-            final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-            final String? verificationStatus = userData['verificationStatus'];
-            final bool isVerified = userData['isVerified'] ?? false;
-            final bool isPending = (verificationStatus == 'pending') ||
-                (!isVerified && verificationStatus != 'approved' && verificationStatus != 'rejected');
-            final bool isRejected = (verificationStatus == 'rejected');
-
-            if (isPending || isRejected) {
-              return Container(
-                padding: EdgeInsets.fromLTRB(16, 14, 16, MediaQuery.of(context).padding.bottom + 14),
-                decoration: BoxDecoration(
-                  color: isRejected
-                      ? (isDarkMode ? const Color(0xFF3B181A) : Colors.red.shade50)
-                      : (isDarkMode ? const Color(0xFF111315) : Colors.amber.shade50),
-                  border: Border(
-                    top: BorderSide(
-                      color: isRejected
-                          ? (isDarkMode ? Colors.white10 : Colors.red.shade200)
-                          : (isDarkMode ? Colors.white10 : Colors.amber.shade200),
-                    ),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isRejected ? Icons.cancel_outlined : Icons.lock_clock_outlined,
-                      color: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        isRejected
-                            ? 'Tài khoản của bạn đã bị từ chối xác thực. Chức năng bình luận bị khóa.'
-                            : 'Tài khoản đang chờ kiểm duyệt viên xác thực. Chức năng bình luận tạm thời bị khóa.',
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 12.5,
-                          color: isRejected
-                              ? (isDarkMode ? Colors.red.shade200 : Colors.red.shade900)
-                              : (isDarkMode ? Colors.amber.shade200 : Colors.amber.shade900),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-          }
-          return _buildActualCommentInputField(isDarkMode);
-        },
-      );
-    }
-
     return _buildActualCommentInputField(isDarkMode);
   }
 

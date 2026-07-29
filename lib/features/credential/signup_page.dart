@@ -141,8 +141,8 @@ class _SignUpPageState extends State<SignUpPage> {
               'university': _selectedUniversity,
               'studentId': _studentIdController.text.trim(),
               'cohort': cohortString,
-              'isVerified': false,
-              'verificationStatus': 'pending',
+              'isVerified': true,
+              'verificationStatus': 'approved',
             }
           },
         );

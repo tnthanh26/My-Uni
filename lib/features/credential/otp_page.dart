@@ -133,21 +133,14 @@ class _OtpPageState extends State<OtpPage> {
           // Đăng nhập bằng Custom Token nhận được từ server
           UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
-          // Cập nhật trạng thái chờ duyệt xác thực bởi Mod cho sinh viên mới
-          try {
-            final uid = userCredential.user!.uid;
-            await FirebaseFirestore.instance.collection('users').doc(uid).set({
-              'isVerified': false,
-              'verificationStatus': 'pending',
-              'verificationSubmittedAt': FieldValue.serverTimestamp(),
-            }, SetOptions(merge: true));
-
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('show_onboarding_$uid', true);
-            await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
-          } catch (e) {
-            debugPrint("Error saving onboarding or verification data: $e");
-          }
+          // Lưu SharedPreferences cho người dùng mới
+          final uid = userCredential.user!.uid;
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setBool('show_onboarding_$uid', true);
+            prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+          }).catchError((e) {
+            debugPrint("Error saving onboarding data: $e");
+          });
 
           if (mounted) {
             Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
