@@ -626,10 +626,10 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
       photoUrl: "",
       status: "active",
       isBanned: false,
-      role: "student",
-      isVerified: true,
+      isVerified: false,
+      verificationStatus: "pending",
       verificationMethod: "edu_email_otp",
-      verifiedAt: admin.firestore.FieldValue.serverTimestamp(),
+      verificationSubmittedAt: admin.firestore.FieldValue.serverTimestamp(),
       verificationLevel: "student",
       violationCount: 0,
       suspensionCount: 0,
@@ -672,5 +672,313 @@ export const verifyOTPAndCreateUser = onCall(async (request) => {
       throw new HttpsError("already-exists", "Email này đã được đăng ký.");
     }
     throw new HttpsError("internal", "Lỗi tạo tài khoản: " + (err.message || ""));
+  }
+});
+
+const DELETE_ACCOUNT_MOD_EMAIL = "nhatthanhtran2606@gmail.com";
+
+type FirebaseErrorLike = {
+  code?: string;
+  message?: string;
+  stack?: string;
+};
+
+function getErrorDetails(error: unknown): FirebaseErrorLike {
+  if (typeof error !== "object" || error === null) {
+    return {
+      message: String(error),
+    };
+  }
+
+  const value = error as Record<string, unknown>;
+
+  return {
+    code: typeof value.code === "string" ? value.code : undefined,
+    message:
+      typeof value.message === "string" ?
+        value.message :
+        "Lỗi không xác định",
+    stack: typeof value.stack === "string" ? value.stack : undefined,
+  };
+}
+
+/**
+ * Chỉ Moderator có email cố định mới được xóa hoàn toàn tài khoản.
+ *
+ * Hàm tìm Firebase Authentication user bằng email,
+ * không giả định Firestore document ID trùng với Auth UID.
+ */
+export const deleteUserAccountByMod = onCall(async (request) => {
+  // 1. Bắt buộc đăng nhập
+  if (!request.auth) {
+    throw new HttpsError(
+      "unauthenticated",
+      "Bạn phải đăng nhập để thực hiện thao tác này.",
+    );
+  }
+
+  const callerUid = request.auth.uid;
+  const callerEmail = String(
+    request.auth.token.email || "",
+  ).trim().toLowerCase();
+
+  // 2. Chỉ duy nhất email Moderator này có quyền xóa
+  if (callerEmail !== DELETE_ACCOUNT_MOD_EMAIL) {
+    throw new HttpsError(
+      "permission-denied",
+      "Bạn không có quyền xóa tài khoản người dùng.",
+    );
+  }
+
+  const targetDocumentId = String(
+    request.data?.targetUid || "",
+  ).trim();
+
+  const requestedTargetEmail = String(
+    request.data?.targetEmail || "",
+  ).trim().toLowerCase();
+
+  const suppliedReason = String(
+    request.data?.reason || "",
+  ).trim();
+
+  const reason = suppliedReason ||
+    "Mod xóa tài khoản bị từ chối xác thực";
+
+  if (!targetDocumentId && !requestedTargetEmail) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Phải cung cấp targetUid hoặc targetEmail.",
+    );
+  }
+
+  try {
+    let targetEmail = requestedTargetEmail;
+    let firestoreDocumentId = targetDocumentId;
+
+    /*
+     * 3. Thử lấy email từ users/{targetDocumentId}.
+     */
+    if (targetDocumentId) {
+      try {
+        const targetDocument = await db
+          .collection("users")
+          .doc(targetDocumentId)
+          .get();
+
+        if (targetDocument.exists) {
+          firestoreDocumentId = targetDocument.id;
+
+          const emailFromDocument = String(
+            targetDocument.data()?.email || "",
+          ).trim().toLowerCase();
+
+          if (emailFromDocument) {
+            targetEmail = emailFromDocument;
+          }
+        }
+      } catch (error: unknown) {
+        const details = getErrorDetails(error);
+
+        console.warn("Không thể đọc user theo document ID:", {
+          targetDocumentId,
+          code: details.code,
+          message: details.message,
+        });
+      }
+    }
+
+    /*
+     * 4. Nếu chưa xác định được document,
+     * tìm document Firestore bằng email.
+     */
+    if (targetEmail) {
+      try {
+        const userQuery = await db
+          .collection("users")
+          .where("email", "==", targetEmail)
+          .limit(1)
+          .get();
+
+        if (!userQuery.empty) {
+          const matchedDocument = userQuery.docs[0];
+
+          firestoreDocumentId = matchedDocument.id;
+
+          const matchedEmail = String(
+            matchedDocument.data().email || "",
+          ).trim().toLowerCase();
+
+          if (matchedEmail) {
+            targetEmail = matchedEmail;
+          }
+        }
+      } catch (error: unknown) {
+        const details = getErrorDetails(error);
+
+        console.warn("Không thể tìm Firestore user bằng email:", {
+          targetEmail,
+          code: details.code,
+          message: details.message,
+        });
+      }
+    }
+
+    if (!targetEmail) {
+      throw new HttpsError(
+        "not-found",
+        "Không tìm thấy email của tài khoản cần xóa.",
+      );
+    }
+
+    // Không cho Moderator tự xóa chính mình
+    if (targetEmail === callerEmail) {
+      throw new HttpsError(
+        "failed-precondition",
+        "Bạn không thể tự xóa tài khoản Moderator.",
+      );
+    }
+
+    /*
+     * 5. Tìm UID thật trong Firebase Authentication bằng email.
+     */
+    let authUser: admin.auth.UserRecord;
+
+    try {
+      authUser = await admin.auth().getUserByEmail(targetEmail);
+    } catch (error: unknown) {
+      const details = getErrorDetails(error);
+
+      console.error("Không tìm thấy Authentication user:", {
+        targetEmail,
+        code: details.code,
+        message: details.message,
+      });
+
+      if (details.code === "auth/user-not-found") {
+        throw new HttpsError(
+          "not-found",
+          `Không tìm thấy tài khoản Authentication với email ${targetEmail}.`,
+        );
+      }
+
+      throw error;
+    }
+
+    const realAuthUid = authUser.uid;
+
+    console.log("Chuẩn bị xóa tài khoản:", {
+      requestedDocumentId: targetDocumentId,
+      firestoreDocumentId,
+      realAuthUid,
+      targetEmail,
+      performedByUid: callerUid,
+      performedByEmail: callerEmail,
+    });
+
+    /*
+     * 6. Xóa Authentication trước.
+     * Nếu thất bại thì không xóa Firestore.
+     */
+    try {
+      await admin.auth().deleteUser(realAuthUid);
+    } catch (error: unknown) {
+      const details = getErrorDetails(error);
+
+      console.error("Xóa Authentication thất bại:", {
+        realAuthUid,
+        targetEmail,
+        code: details.code,
+        message: details.message,
+      });
+
+      throw new HttpsError(
+        "internal",
+        `Không thể xóa Firebase Authentication: ${
+          details.code || details.message || "unknown-error"
+        }`,
+      );
+    }
+
+    /*
+     * 7. Xóa Firestore document sau khi Auth đã xóa thành công.
+     */
+    if (firestoreDocumentId) {
+      await db
+        .collection("users")
+        .doc(firestoreDocumentId)
+        .delete();
+    }
+
+    /*
+     * Xóa thêm users/{realAuthUid} nếu document đó tồn tại
+     * và khác document vừa xóa.
+     */
+    if (
+      realAuthUid !== firestoreDocumentId
+    ) {
+      try {
+        const authUidDocument = await db
+          .collection("users")
+          .doc(realAuthUid)
+          .get();
+
+        if (authUidDocument.exists) {
+          await authUidDocument.ref.delete();
+        }
+      } catch (error: unknown) {
+        const details = getErrorDetails(error);
+
+        console.warn("Không thể kiểm tra document theo Auth UID:", {
+          realAuthUid,
+          code: details.code,
+          message: details.message,
+        });
+      }
+    }
+
+    /*
+     * 8. Ghi log sau khi xóa thành công.
+     */
+    await db.collection("mod_logs").add({
+      targetUserId: realAuthUid,
+      targetFirestoreDocId: firestoreDocumentId || null,
+      targetUserEmail: targetEmail,
+      action: "delete_user_account",
+      reason,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      performedByUid: callerUid,
+      performedByEmail: callerEmail,
+    });
+
+    return {
+      success: true,
+      message: "Đã xóa tài khoản khỏi Authentication và Firestore.",
+      deletedAuthUid: realAuthUid,
+      deletedFirestoreDocId: firestoreDocumentId || null,
+      deletedEmail: targetEmail,
+    };
+  } catch (error: unknown) {
+    const details = getErrorDetails(error);
+
+    console.error("deleteUserAccountByMod error:", {
+      code: details.code,
+      message: details.message,
+      stack: details.stack,
+      targetDocumentId,
+      requestedTargetEmail,
+      callerEmail,
+    });
+
+    if (error instanceof HttpsError) {
+      throw error;
+    }
+
+    throw new HttpsError(
+      "internal",
+      `Không thể xóa tài khoản: ${
+        details.message || "Lỗi không xác định"
+      }`,
+    );
   }
 });

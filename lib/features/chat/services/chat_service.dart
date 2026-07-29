@@ -331,7 +331,7 @@ class ChatService {
         'zalo': data['zalo'] ?? data['phone'] ?? '',
         'facebook': data['facebook'] ?? '',
         'phone': data['phone'] ?? '',
-        'isVerified': true, // Vì tất cả tài khoản đã xác thực qua OTP Email HCMUS
+        'isVerified': data['isVerified'] ?? false,
       };
     } catch (e) {
       debugPrint('Error getting verification info: $e');

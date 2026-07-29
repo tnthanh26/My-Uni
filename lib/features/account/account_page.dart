@@ -21,6 +21,23 @@ import '../chat/models/chat_models.dart';
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
+  void _navigateIfAllowed(BuildContext context, String? verificationStatus, Widget page) {
+    if ((verificationStatus == 'pending' || verificationStatus == 'rejected') && page is! EditProfilePage) {
+      final isRejected = verificationStatus == 'rejected';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isRejected
+              ? 'Tài khoản của bạn đã bị từ chối xác thực nên chưa thể truy cập tính năng này.'
+              : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể truy cập tính năng này.'),
+          backgroundColor: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    Navigator.push(context, MaterialPageRoute(builder: (context) => page));
+  }
+
   void _showLogoutDialog(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -187,6 +204,7 @@ class AccountPage extends StatelessWidget {
     required String faculty,
     required String? photoBase64,
     required bool isVerified,
+    required String? verificationStatus,
   }) {
     ImageProvider? avatarProvider;
     Widget? avatarChild;
@@ -244,14 +262,7 @@ class AccountPage extends StatelessWidget {
                 bottom: 0,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(99),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const EditProfilePage(),
-                      ),
-                    );
-                  },
+                  onTap: () => _navigateIfAllowed(context, verificationStatus, const EditProfilePage()),
                   child: Container(
                     width: 34,
                     height: 34,
@@ -548,6 +559,7 @@ class AccountPage extends StatelessWidget {
             String cohort = "Chưa cập nhật niên khóa";
             String? photoBase64;
             bool isVerified = false;
+            String? verificationStatus;
 
             if (snapshot.hasData && snapshot.data!.exists) {
               var data = snapshot.data!.data() as Map<String, dynamic>;
@@ -558,6 +570,7 @@ class AccountPage extends StatelessWidget {
               cohort = data['cohort'] ?? "Chưa cập nhật niên khóa";
               photoBase64 = data['photoUrl'];
               isVerified = data['isVerified'] ?? false;
+              verificationStatus = data['verificationStatus'] ?? (isVerified ? 'approved' : 'pending');
             }
 
             final qrData = jsonEncode({
@@ -581,6 +594,83 @@ class AccountPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (verificationStatus == 'pending' || verificationStatus == 'rejected') ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: (verificationStatus == 'rejected' ? Colors.red.shade900 : Colors.amber.shade900).withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: (verificationStatus == 'rejected' ? Colors.red.shade800 : Colors.amber.shade800).withValues(alpha: 0.3)),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                verificationStatus == 'rejected' ? Icons.cancel_outlined : Icons.hourglass_top_rounded,
+                                color: verificationStatus == 'rejected' ? Colors.red.shade800 : Colors.amber.shade800,
+                                size: 22,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  verificationStatus == 'rejected'
+                                      ? 'Tài khoản của bạn đã bị kiểm duyệt viên từ chối xác thực. Vui lòng sửa lại thông tin chính xác để gửi lại yêu cầu.'
+                                      : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực. Các tính năng tương tác, nhắn tin và chỉnh sửa hồ sơ tạm thời bị giới hạn.',
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12.5,
+                                    color: verificationStatus == 'rejected'
+                                        ? (isDarkMode ? Colors.red.shade200 : Colors.red.shade900)
+                                        : (isDarkMode ? Colors.amber.shade200 : Colors.amber.shade900),
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.3,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (verificationStatus == 'rejected') ...[
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const EditProfilePage(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.edit_note, size: 18, color: Colors.white),
+                                label: const Text(
+                                  'Sửa thông tin & Gửi lại xác thực',
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red.shade900,
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+
                   _buildProfileHeader(
                     context: context,
                     isDarkMode: isDarkMode,
@@ -588,6 +678,7 @@ class AccountPage extends StatelessWidget {
                     faculty: faculty,
                     photoBase64: photoBase64,
                     isVerified: isVerified,
+                    verificationStatus: verificationStatus,
                   ),
                   const SizedBox(height: 22),
 
@@ -628,36 +719,21 @@ class AccountPage extends StatelessWidget {
                             return const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey);
                           },
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const ChatListPage()),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const ChatListPage()),
                       ),
                       _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.person_search_rounded,
                         title: 'Tìm kiếm người dùng',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SearchUserPage()),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SearchUserPage()),
                       ),
                       _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.contact_phone_outlined,
                         title: 'Thông tin liên hệ của tôi',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SocialContactsPage()),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SocialContactsPage()),
                       ),
                     ],
                   ),
@@ -726,42 +802,21 @@ class AccountPage extends StatelessWidget {
                         context,
                         icon: Icons.article_outlined,
                         title: 'Bài đăng của tôi',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MyPostsPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const MyPostsPage()),
                       ),
                       _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.rate_review_outlined,
                         title: 'Đánh giá của tôi',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const MyReviewsPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const MyReviewsPage()),
                       ),
                       _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.bookmark_outline_rounded,
                         title: 'Bài đã lưu',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const SavedPostsPage(),
-                            ),
-                          );
-                        },
+                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SavedPostsPage()),
                       ),
                     ],
                   ),

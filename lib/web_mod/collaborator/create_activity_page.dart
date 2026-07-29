@@ -459,6 +459,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       initialDate: initial,
       firstDate: DateTime(2024),
       lastDate: DateTime(2035),
+      locale: const Locale('vi', 'VN'),
     );
 
     if (date == null) return null;

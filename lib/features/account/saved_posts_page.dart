@@ -12,6 +12,33 @@ import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
 
+String removeVietnameseDiacritics(String str) {
+  const vietnameseMap = {
+    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+    'A': 'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ',
+    'd': 'đ',
+    'D': 'Đ',
+    'e': 'èéẹẻẽêềếệểễ',
+    'E': 'ÈÉẸẺẼÊỀẾỆỂỄ',
+    'i': 'ìíịỉĩ',
+    'I': 'ÌÍỊỈĨ',
+    'o': 'òóọỏõôồốộổỗơờớợởỡ',
+    'O': 'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ',
+    'u': 'ùúụủũưừứựửữ',
+    'U': 'ÙÚỤỦŨƯỪỨỰỬỮ',
+    'y': 'ỳýỵỷỹ',
+    'Y': 'ỲÝỴỶỸ',
+  };
+
+  String result = str;
+  vietnameseMap.forEach((nonDiacritics, diacritics) {
+    for (int i = 0; i < diacritics.length; i++) {
+      result = result.replaceAll(diacritics[i], nonDiacritics);
+    }
+  });
+  return result.toLowerCase();
+}
+
 class SavedPostsPage extends StatefulWidget {
   const SavedPostsPage({super.key});
 
@@ -22,16 +49,24 @@ class SavedPostsPage extends StatefulWidget {
 class _SavedPostsPageState extends State<SavedPostsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     timeago.setLocaleMessages('vi', CustomViMessages());
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -1043,6 +1078,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   }
 
   Widget _buildSavedList(String type) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final user = FirebaseAuth.instance.currentUser;
 
     return StreamBuilder<QuerySnapshot>(
@@ -1062,12 +1098,55 @@ class _SavedPostsPageState extends State<SavedPostsPage>
         final docs = snapshot.data!.docs;
         if (docs.isEmpty) return _buildEmptyState();
 
+        final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+        final filteredDocs = docs.where((doc) {
+          if (cleanQuery.isEmpty) return true;
+          final data = doc.data() as Map<String, dynamic>;
+          final title = removeVietnameseDiacritics(
+              (data['title'] ?? data['subject'] ?? data['courseName'] ?? '').toString());
+          final content = removeVietnameseDiacritics(
+              (data['content'] ?? data['description'] ?? data['reviewContent'] ?? '').toString());
+          final author = removeVietnameseDiacritics(
+              (data['authorName'] ?? data['department'] ?? data['teacher'] ?? '').toString());
+          return title.contains(cleanQuery) ||
+              content.contains(cleanQuery) ||
+              author.contains(cleanQuery);
+        }).toList();
+
+        if (_searchQuery.isNotEmpty && filteredDocs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 40,
+                    color: isDarkMode ? Colors.white38 : Colors.black38,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Không tìm thấy bài viết đã lưu phù hợp',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          itemCount: docs.length,
+          itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
-            var data = docs[index].data() as Map<String, dynamic>;
-            String docId = docs[index].id;
+            var data = filteredDocs[index].data() as Map<String, dynamic>;
+            String docId = filteredDocs[index].id;
 
             if (data.containsKey('department')) {
               return GestureDetector(
@@ -1109,7 +1188,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
 
     return Scaffold(
       backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+          isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
@@ -1133,7 +1212,68 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       ),
       body: Column(
         children: [
-          const SizedBox(height: 12),
+          // Search Input Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F2F6),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 14),
+                  const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF5893D8),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm kiếm bài đã lưu...',
+                        hintStyle: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13.5,
+                          color: isDarkMode
+                              ? Colors.white38
+                              : const Color(0xFF94A3B8),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  if (_searchQuery.isNotEmpty)
+                    IconButton(
+                      icon: Icon(
+                        Icons.cancel_rounded,
+                        size: 18,
+                        color: isDarkMode
+                            ? Colors.white38
+                            : const Color(0xFF94A3B8),
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
           Container(
             margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
             decoration: BoxDecoration(
@@ -1152,7 +1292,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
               ),
               labelColor: Colors.white,
               unselectedLabelColor:
-              isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                  isDarkMode ? Colors.white38 : const Color(0xFF777777),
               labelStyle: const TextStyle(
                 fontFamily: 'Encode Sans Expanded',
                 fontWeight: FontWeight.bold,

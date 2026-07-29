@@ -291,7 +291,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         finalPhotoBase64 = base64Encode(compressedBytes);
       }
 
-      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      final currentStatus = userDoc.data()?['verificationStatus'];
+      final bool wasRejected = currentStatus == 'rejected';
+
+      final Map<String, dynamic> updateData = {
         'displayName': _nameController.text.trim(),
         'dob': dobText,
         'faculty': selectedFaculty,
@@ -300,7 +304,15 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'studentId': _studentIdController.text.trim(),
         'cohort': cohortText,
         'lastUpdated': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
+      };
+
+      if (wasRejected) {
+        updateData['verificationStatus'] = 'pending';
+        updateData['isVerified'] = false;
+        updateData['resubmittedAt'] = FieldValue.serverTimestamp();
+      }
+
+      await FirebaseFirestore.instance.collection('users').doc(uid).set(updateData, SetOptions(merge: true));
 
       // Sync name & avatar changes to forum posts, study materials, and comments
       final newName = _nameController.text.trim();
@@ -325,9 +337,12 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Cập nhật hồ sơ thành công!'),
-            duration: Duration(seconds: 1),
+          SnackBar(
+            content: Text(wasRejected
+                ? 'Đã cập nhật thông tin và gửi lại yêu cầu xác thực cho kiểm duyệt viên!'
+                : 'Cập nhật hồ sơ thành công!'),
+            backgroundColor: wasRejected ? Colors.green : null,
+            duration: const Duration(seconds: 2),
           ),
         );
       }

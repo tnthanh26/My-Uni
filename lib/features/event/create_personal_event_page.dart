@@ -122,6 +122,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       initialDate: _selectedDate,
       firstDate: DateTime(2024),
       lastDate: DateTime(2030),
+      locale: const Locale('vi', 'VN'),
     );
 
     if (picked != null) {
@@ -702,7 +703,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
               child: Row(
                 children: [
                   Text(
-                    DateFormat('EEE, MMM d, yyyy').format(_selectedDate),
+                    DateFormat('EEEE, dd/MM/yyyy', 'vi_VN').format(_selectedDate),
                     style: TextStyle(color: textColor),
                   ),
                   const Spacer(),

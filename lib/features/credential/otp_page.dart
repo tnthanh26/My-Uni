@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class OtpPage extends StatefulWidget {
@@ -119,7 +120,7 @@ class _OtpPageState extends State<OtpPage> {
             "userData": userData,
           }
         }),
-      ).timeout(const Duration(seconds: 20));
+      ).timeout(const Duration(seconds: 45));
 
       if (!mounted) return;
 
@@ -132,13 +133,20 @@ class _OtpPageState extends State<OtpPage> {
           // Đăng nhập bằng Custom Token nhận được từ server
           UserCredential userCredential = await FirebaseAuth.instance.signInWithCustomToken(customToken);
 
-          // Lưu cờ đánh dấu tài khoản mới đăng ký để hiển thị hướng dẫn và lưu timestamp login
+          // Cập nhật trạng thái chờ duyệt xác thực bởi Mod cho sinh viên mới
           try {
+            final uid = userCredential.user!.uid;
+            await FirebaseFirestore.instance.collection('users').doc(uid).set({
+              'isVerified': false,
+              'verificationStatus': 'pending',
+              'verificationSubmittedAt': FieldValue.serverTimestamp(),
+            }, SetOptions(merge: true));
+
             final prefs = await SharedPreferences.getInstance();
-            await prefs.setBool('show_onboarding_${userCredential.user!.uid}', true);
+            await prefs.setBool('show_onboarding_$uid', true);
             await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
           } catch (e) {
-            debugPrint("Error saving onboarding or login data: $e");
+            debugPrint("Error saving onboarding or verification data: $e");
           }
 
           if (mounted) {
@@ -157,8 +165,14 @@ class _OtpPageState extends State<OtpPage> {
         }
         _showSnackBar(errorMessage, isError: true);
       }
+    } on TimeoutException {
+      if (mounted) {
+        _showSnackBar('Quá trình phản hồi từ máy chủ mất nhiều thời gian. Vui lòng thử bấm Xác nhận lại.', isError: true);
+      }
     } catch (e) {
-      _showSnackBar('Đã có lỗi xảy ra: $e', isError: true);
+      if (mounted) {
+        _showSnackBar('Đã có lỗi xảy ra: $e', isError: true);
+      }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
     }

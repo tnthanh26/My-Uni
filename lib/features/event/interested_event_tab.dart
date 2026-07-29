@@ -1,14 +1,65 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 
-class InterestedEventTab extends StatelessWidget {
+/// Utility to remove Vietnamese diacritics for simple text search
+String removeVietnameseDiacritics(String str) {
+  const vietnameseMap = {
+    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+    'A': 'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ',
+    'd': 'đ',
+    'D': 'Đ',
+    'e': 'èéẹẻẽêềếệểễ',
+    'E': 'ÈÉẸẺẼÊỀẾỆỂỄ',
+    'i': 'ìíịỉĩ',
+    'I': 'ÌÍỊỈĨ',
+    'o': 'òóọỏõôồốộổỗơờớợởỡ',
+    'O': 'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ',
+    'u': 'ùúụủũưừứựửữ',
+    'U': 'ÙÚỤỦŨƯỪỨỰỬỮ',
+    'y': 'ỳýỵỷỹ',
+    'Y': 'ỲÝỴỶỸ',
+  };
+
+  String result = str;
+  vietnameseMap.forEach((nonDiacritics, diacritics) {
+    for (int i = 0; i < diacritics.length; i++) {
+      result = result.replaceAll(diacritics[i], nonDiacritics);
+    }
+  });
+  return result.toLowerCase();
+}
+
+class InterestedEventTab extends StatefulWidget {
   const InterestedEventTab({super.key});
 
+  @override
+  State<InterestedEventTab> createState() => _InterestedEventTabState();
+}
+
+class _InterestedEventTabState extends State<InterestedEventTab> {
   static const Color primaryBlue = Color(0xFF6797E1);
   static const Color detailBlue = Color(0xFF5794F3);
+
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   Future<void> _removeInterest(BuildContext context, String docId) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -52,17 +103,17 @@ class InterestedEventTab extends StatelessWidget {
       isDarkMode ? Colors.white70 : const Color(0xFF6B7280);
 
   Color _borderColor(bool isDarkMode) =>
-      isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFE5E7EB);
+      isDarkMode ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE5E7EB);
 
   List<BoxShadow> _cardShadow(bool isDarkMode) => isDarkMode
       ? []
       : [
-    BoxShadow(
-      color: Colors.black.withOpacity(0.05),
-      blurRadius: 14,
-      offset: const Offset(0, 6),
-    ),
-  ];
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ];
 
   @override
   Widget build(BuildContext context) {
@@ -86,96 +137,210 @@ class InterestedEventTab extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 600.0),
         child: Container(
           color: _backgroundColor(isDarkMode),
-          child: StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .doc(user.uid)
-                .collection('interested_events')
-                .orderBy('timestamp', descending: true)
-                .snapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                return Center(
-                  child: Text(
-                    'Đã xảy ra lỗi',
-                    style: TextStyle(
-                      color: _secondaryTextColor(isDarkMode),
-                      fontWeight: FontWeight.w500,
-                    ),
+          child: Column(
+            children: [
+              // Search Input Bar
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: _surfaceColor(isDarkMode),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _borderColor(isDarkMode)),
+                    boxShadow: _cardShadow(isDarkMode),
                   ),
-                );
-              }
-
-              if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(color: primaryBlue),
-                );
-              }
-
-              final docs = snapshot.data!.docs;
-
-              if (docs.isEmpty) {
-                return Center(
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 24),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 24,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _surfaceColor(isDarkMode),
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: _borderColor(isDarkMode)),
-                      boxShadow: _cardShadow(isDarkMode),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.favorite_border_rounded,
-                          size: 34,
-                          color: _secondaryTextColor(isDarkMode),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Bạn chưa quan tâm sự kiện nào.',
-                          textAlign: TextAlign.center,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 14),
+                      const Icon(
+                        Icons.search_rounded,
+                        color: primaryBlue,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextField(
+                          controller: _searchController,
                           style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 14,
                             color: _primaryTextColor(isDarkMode),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Tìm kiếm sự kiện đã lưu...',
+                            hintStyle: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 13.5,
+                              color: _secondaryTextColor(isDarkMode),
+                            ),
+                            border: InputBorder.none,
+                            isDense: true,
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Những sự kiện bạn lưu sẽ xuất hiện ở đây.',
-                          textAlign: TextAlign.center,
+                      ),
+                      if (_searchQuery.isNotEmpty)
+                        IconButton(
+                          icon: Icon(
+                            Icons.cancel_rounded,
+                            size: 18,
+                            color: _secondaryTextColor(isDarkMode),
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Content Stream List
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .collection('interested_events')
+                      .orderBy('timestamp', descending: true)
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Text(
+                          'Đã xảy ra lỗi',
                           style: TextStyle(
                             color: _secondaryTextColor(isDarkMode),
-                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                );
-              }
+                      );
+                    }
 
-              return ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
-                itemCount: docs.length,
-                itemBuilder: (context, index) {
-                  final doc = docs[index];
-                  final data = doc.data() as Map<String, dynamic>;
-                  return _buildEventCard(
-                    context,
-                    doc.id,
-                    data,
-                    isDarkMode,
-                  );
-                },
-              );
-            },
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: primaryBlue),
+                      );
+                    }
+
+                    final allDocs = snapshot.data!.docs;
+
+                    if (allDocs.isEmpty) {
+                      return Center(
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 24,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _surfaceColor(isDarkMode),
+                            borderRadius: BorderRadius.circular(22),
+                            border: Border.all(color: _borderColor(isDarkMode)),
+                            boxShadow: _cardShadow(isDarkMode),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.favorite_border_rounded,
+                                size: 34,
+                                color: _secondaryTextColor(isDarkMode),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Bạn chưa quan tâm sự kiện nào.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _primaryTextColor(isDarkMode),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Những sự kiện bạn lưu sẽ xuất hiện ở đây.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: _secondaryTextColor(isDarkMode),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    // Filter search query
+                    final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+                    final filteredDocs = allDocs.where((doc) {
+                      if (cleanQuery.isEmpty) return true;
+                      final data = doc.data() as Map<String, dynamic>;
+                      final title = removeVietnameseDiacritics(
+                          (data['title'] ?? data['eventTitle'] ?? data['name'] ?? '').toString());
+                      final desc = removeVietnameseDiacritics(
+                          (data['description'] ?? data['content'] ?? '').toString());
+                      final department = removeVietnameseDiacritics(
+                          (data['department'] ?? data['organizer'] ?? '').toString());
+                      return title.contains(cleanQuery) ||
+                          desc.contains(cleanQuery) ||
+                          department.contains(cleanQuery);
+                    }).toList();
+
+                    if (_searchQuery.isNotEmpty && filteredDocs.isEmpty) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.search_off_rounded,
+                                size: 42,
+                                color: _secondaryTextColor(isDarkMode),
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                'Không tìm thấy sự kiện phù hợp',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: _primaryTextColor(isDarkMode),
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Thử tìm với từ khóa khác.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: _secondaryTextColor(isDarkMode),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                      itemCount: filteredDocs.length,
+                      itemBuilder: (context, index) {
+                        final doc = filteredDocs[index];
+                        final data = doc.data() as Map<String, dynamic>;
+                        return _buildEventCard(
+                          context,
+                          doc.id,
+                          data,
+                          isDarkMode,
+                        );
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -183,16 +348,15 @@ class InterestedEventTab extends StatelessWidget {
   }
 
   Widget _buildEventCard(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+    bool isDarkMode,
+  ) {
     final String title = (data['title'] ?? 'Sự kiện sinh viên').toString();
     final String date = (data['date'] ?? '').toString();
     final String department =
-    (data['department'] ?? 'Cơ sở HCMUS').toString();
-    final String link = (data['link'] ?? '').toString();
+        (data['department'] ?? 'Cơ sở HCMUS').toString();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -241,8 +405,8 @@ class InterestedEventTab extends StatelessWidget {
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                         colors: [
-                          Colors.black.withOpacity(0.12),
-                          Colors.black.withOpacity(0.35),
+                          Colors.black.withValues(alpha: 0.12),
+                          Colors.black.withValues(alpha: 0.35),
                         ],
                       ),
                     ),
@@ -256,7 +420,7 @@ class InterestedEventTab extends StatelessWidget {
                     child: Container(
                       padding: const EdgeInsets.all(7),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.35),
+                        color: Colors.black.withValues(alpha: 0.35),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -276,10 +440,10 @@ class InterestedEventTab extends StatelessWidget {
                       vertical: 5,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
+                      color: Colors.white.withValues(alpha: 0.18),
                       borderRadius: BorderRadius.circular(999),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.18),
+                        color: Colors.white.withValues(alpha: 0.18),
                       ),
                     ),
                     child: const Text(

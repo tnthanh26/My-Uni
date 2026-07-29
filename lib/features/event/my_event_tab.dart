@@ -254,6 +254,7 @@ class _MyEventTabState extends State<MyEventTab>
       initialDate: _selectedDay ?? DateTime.now(),
       firstDate: DateTime(2024),
       lastDate: DateTime(2030),
+      locale: const Locale('vi', 'VN'),
       builder: (context, child) {
         return Theme(
           data: isDarkMode
