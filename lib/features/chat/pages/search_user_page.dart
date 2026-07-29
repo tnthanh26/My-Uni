@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -25,6 +26,39 @@ class _SearchUserPageState extends State<SearchUserPage> {
     super.dispose();
   }
 
+  Widget _buildUserAvatar(String photo, String name, bool isDark) {
+    final cleanPhoto = photo.trim();
+    ImageProvider? imageProvider;
+    if (cleanPhoto.isNotEmpty) {
+      if (cleanPhoto.startsWith('http://') || cleanPhoto.startsWith('https://')) {
+        imageProvider = NetworkImage(cleanPhoto);
+      } else {
+        try {
+          final bytes = base64Decode(cleanPhoto);
+          imageProvider = MemoryImage(bytes);
+        } catch (_) {
+          imageProvider = null;
+        }
+      }
+    }
+
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
+      backgroundImage: imageProvider,
+      child: imageProvider == null
+          ? Text(
+              name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'S',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.hcmusTeal,
+              ),
+            )
+          : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -48,7 +82,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
             fontSize: 16,
           ),
           decoration: InputDecoration(
-            hintText: 'Tìm sinh viên theo Tên, MSSV, Khoa...',
+            hintText: 'Tìm sinh viên theo Tên, Khoa, Niên khóa...',
             hintStyle: TextStyle(
               color: isDark ? Colors.white38 : Colors.grey,
               fontSize: 14,
@@ -89,7 +123,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Nhập Tên, MSSV, Khoa hoặc Email để bắt đầu tìm kiếm bạn học',
+                      'Nhập Tên, Khoa hoặc Niên khóa để bắt đầu tìm kiếm bạn học',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13.5,
@@ -125,14 +159,14 @@ class _SearchUserPageState extends State<SearchUserPage> {
 
                   final data = doc.data() as Map<String, dynamic>? ?? {};
                   final name = (data['displayName'] ?? data['name'] ?? '').toString().toLowerCase();
-                  final email = (data['email'] ?? '').toString().toLowerCase();
-                  final mssv = (data['studentId'] ?? data['mssv'] ?? '').toString().toLowerCase();
                   final faculty = (data['faculty'] ?? data['department'] ?? '').toString().toLowerCase();
+                  final cohort = (data['cohort'] ?? data['academicYear'] ?? data['nienKhoa'] ?? '').toString().toLowerCase();
+                  final mssv = (data['studentId'] ?? data['mssv'] ?? '').toString().toLowerCase();
 
                   return name.contains(_searchQuery) ||
-                      email.contains(_searchQuery) ||
-                      mssv.contains(_searchQuery) ||
-                      faculty.contains(_searchQuery);
+                      faculty.contains(_searchQuery) ||
+                      cohort.contains(_searchQuery) ||
+                      mssv.contains(_searchQuery);
                 }).toList();
 
                 if (filteredUsers.isEmpty) {
@@ -162,153 +196,136 @@ class _SearchUserPageState extends State<SearchUserPage> {
                   );
                 }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            itemCount: filteredUsers.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final doc = filteredUsers[index];
-              final data = doc.data() as Map<String, dynamic>? ?? {};
-              final targetUid = doc.id;
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  itemCount: filteredUsers.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    final doc = filteredUsers[index];
+                    final data = doc.data() as Map<String, dynamic>? ?? {};
+                    final targetUid = doc.id;
 
-              final name = data['displayName'] ?? data['name'] ?? 'Sinh viên HCMUS';
-              final photo = data['photoURL'] ?? data['avatar'] ?? '';
-              final email = data['email'] ?? '';
-              final mssv = data['studentId'] ?? data['mssv'] ?? '';
-              final faculty = data['faculty'] ?? data['department'] ?? '';
+                    final name = (data['displayName'] ?? data['name'] ?? 'Sinh viên HCMUS').toString();
+                    final photo = (data['photoURL'] ?? data['photoUrl'] ?? data['avatar'] ?? '').toString();
+                    final faculty = (data['faculty'] ?? data['department'] ?? '').toString().trim();
+                    final cohort = (data['cohort'] ?? data['academicYear'] ?? data['nienKhoa'] ?? '').toString().trim();
 
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.surfaceDark : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    // Avatar sinh viên
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                      backgroundImage: photo.isNotEmpty ? NetworkImage(photo) : null,
-                      child: photo.isEmpty
-                          ? Text(
-                              name.isNotEmpty ? name[0].toUpperCase() : 'S',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.hcmusTeal,
-                              ),
-                            )
-                          : null,
-                    ),
-                    const SizedBox(width: 12),
+                    // Chuẩn bị thông tin hiển thị (Chỉ hiện Khoa & Niên khóa)
+                    final infoParts = <String>[];
+                    if (faculty.isNotEmpty) {
+                      infoParts.add(faculty);
+                    }
+                    if (cohort.isNotEmpty) {
+                      infoParts.add(cohort.startsWith('Niên khóa') || cohort.startsWith('NK') ? cohort : 'Niên khóa: $cohort');
+                    }
+                    final infoText = infoParts.isNotEmpty ? infoParts.join(' • ') : 'Chưa cập nhật thông tin';
 
-                    // Thông tin sinh viên
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    return Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.surfaceDark : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Row(
                         children: [
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  name,
-                                  style: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
+                          // Avatar sinh viên (Hỗ trợ URL, Base64 & Text chữ cái đầu)
+                          _buildUserAvatar(photo, name, isDark),
+                          const SizedBox(width: 12),
+
+                          // Thông tin sinh viên (Tên + Khoa, Niên khóa)
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        name,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    const Icon(
+                                      Icons.verified_rounded,
+                                      size: 15,
+                                      color: AppColors.hcmusTeal,
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  infoText,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark ? Colors.white60 : Colors.black54,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified_rounded,
-                                size: 15,
-                                color: AppColors.hcmusTeal,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          if (mssv.toString().isNotEmpty || faculty.toString().isNotEmpty)
-                            Text(
-                              [
-                                if (mssv.toString().isNotEmpty) 'MSSV: $mssv',
-                                if (faculty.toString().isNotEmpty) faculty,
-                              ].join(' • '),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? Colors.white60 : Colors.black54,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            )
-                          else if (email.toString().isNotEmpty)
-                            Text(
-                              email,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isDark ? Colors.white60 : Colors.black54,
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                              ],
                             ),
+                          ),
+
+                          const SizedBox(width: 8),
+
+                          // Nút Nhắn tin
+                          FilledButton.icon(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.hcmusTeal,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
+                            label: const Text('Chat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                            onPressed: () async {
+                              try {
+                                final roomId = await _chatService.getOrCreateChatRoom(
+                                  targetUid,
+                                  targetName: name,
+                                  targetPhoto: photo,
+                                );
+
+                                if (context.mounted && roomId.isNotEmpty) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatDetailPage(
+                                        roomId: roomId,
+                                        targetUserId: targetUid,
+                                        targetUserName: name,
+                                        targetUserPhoto: photo,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Không thể bắt đầu chat: ${e.toString().replaceAll('Exception: ', '')}')),
+                                  );
+                                }
+                              }
+                            },
+                          ),
                         ],
                       ),
-                    ),
-
-                    const SizedBox(width: 8),
-
-                    // Nút Nhắn tin
-                    FilledButton.icon(
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.hcmusTeal,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
-                      label: const Text('Chat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      onPressed: () async {
-                        try {
-                          final roomId = await _chatService.getOrCreateChatRoom(
-                            targetUid,
-                            targetName: name,
-                            targetPhoto: photo,
-                          );
-
-                          if (context.mounted && roomId.isNotEmpty) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatDetailPage(
-                                  roomId: roomId,
-                                  targetUserId: targetUid,
-                                  targetUserName: name,
-                                  targetUserPhoto: photo,
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Không thể bắt đầu chat: ${e.toString().replaceAll('Exception: ', '')}')),
-                            );
-                          }
-                        }
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
+                    );
+                  },
+                );
+              },
+            ),
     );
   }
 }
+

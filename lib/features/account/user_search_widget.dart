@@ -115,13 +115,10 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
     final isCurrentUser = docId == currentUid;
 
     final String name = userData['displayName'] ?? 'Người dùng MyUni';
-    final String studentId = userData['studentId'] ?? 'Chưa cập nhật MSSV';
     final String faculty = userData['faculty'] ?? 'Chưa cập nhật khoa';
-    final String university = userData['university'] ?? 'Chưa cập nhật trường';
     final String cohort = userData['cohort'] ?? 'Chưa cập nhật niên khóa';
-    final String? photoUrl = userData['photoUrl'];
+    final String? photoUrl = userData['photoUrl'] ?? userData['photoURL'] ?? userData['avatar'];
     final bool isVerified = userData['isVerified'] ?? false;
-    final String email = userData['email'] ?? '';
 
     showDialog(
       context: context,
@@ -218,24 +215,16 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
               const SizedBox(height: 16),
 
               // Info Items
-              _buildModalInfoRow(
-                context: context,
-                isDarkMode: isDarkMode,
-                icon: Icons.badge_outlined,
-                label: 'MSSV',
-                value: studentId,
-                canCopy: studentId.isNotEmpty &&
-                    studentId != 'Chưa cập nhật MSSV',
-              ),
-              const SizedBox(height: 12),
-              _buildModalInfoRow(
-                context: context,
-                isDarkMode: isDarkMode,
-                icon: Icons.school_outlined,
-                label: 'Trường',
-                value: university,
-              ),
-              const SizedBox(height: 12),
+              if (faculty.isNotEmpty && faculty != 'Chưa cập nhật khoa') ...[
+                _buildModalInfoRow(
+                  context: context,
+                  isDarkMode: isDarkMode,
+                  icon: Icons.school_outlined,
+                  label: 'Khoa',
+                  value: faculty,
+                ),
+                const SizedBox(height: 12),
+              ],
               _buildModalInfoRow(
                 context: context,
                 isDarkMode: isDarkMode,
@@ -243,16 +232,6 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                 label: 'Niên khóa',
                 value: cohort,
               ),
-              if (email.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _buildModalInfoRow(
-                  context: context,
-                  isDarkMode: isDarkMode,
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  value: email,
-                ),
-              ],
 
               const SizedBox(height: 22),
 
@@ -644,15 +623,14 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
 
                           final String name =
                               data['displayName'] ?? 'Người dùng MyUni';
-                          final String studentId =
-                              data['studentId'] ?? '';
                           final String faculty = data['faculty'] ?? '';
-                          final String? photoUrl = data['photoUrl'];
+                          final String cohort = data['cohort'] ?? '';
+                          final String? photoUrl = data['photoUrl'] ?? data['photoURL'] ?? data['avatar'];
                           final bool isVerified = data['isVerified'] ?? false;
 
                           final String subtitleText = [
-                            if (studentId.isNotEmpty) 'MSSV: $studentId',
                             if (faculty.isNotEmpty) faculty,
+                            if (cohort.isNotEmpty) (cohort.startsWith('Niên khóa') || cohort.startsWith('NK') ? cohort : 'Niên khóa: $cohort'),
                           ].join(' • ');
 
                           return InkWell(
