@@ -8,6 +8,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path/path.dart' as path;
 import '../services/content_service.dart';
+import '../../utils/course_teacher_data.dart';
+import '../../widgets/searchable_autocomplete_field.dart';
 
 class CreateMaterialPage extends StatefulWidget {
   final String? docId;
@@ -36,6 +38,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   @override
   void initState() {
     super.initState();
+    CourseTeacherData.initDynamicSync();
     _courseController =
         TextEditingController(text: widget.existingData?['courseName'] ?? '');
     _teacherController =
@@ -159,6 +162,11 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     }
 
     final fullSemester = "HK$_selectedSemester $startYear-$endYear";
+
+    CourseTeacherData.addCustomItemToFirebase(
+      newCourse: _courseController.text,
+      newTeacher: _teacherController.text,
+    );
 
     String combinedText =
         "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
@@ -408,18 +416,20 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Khóa học"),
-              _buildUnderlineTextField(
-                context,
-                _courseController,
-                "Tên môn học",
+              SearchableAutocompleteField(
+                controller: _courseController,
+                hintText: "Chọn hoặc nhập tên môn học",
+                options: CourseTeacherData.hcmusCourses,
+                prefixIcon: Icons.menu_book_rounded,
               ),
               const SizedBox(height: 24),
 
               _buildSectionLabel(context, "Giảng viên"),
-              _buildUnderlineTextField(
-                context,
-                _teacherController,
-                "Tên giảng viên",
+              SearchableAutocompleteField(
+                controller: _teacherController,
+                hintText: "Chọn hoặc nhập tên giảng viên",
+                options: CourseTeacherData.hcmusTeachers,
+                prefixIcon: Icons.person_search_rounded,
               ),
               const SizedBox(height: 24),
 
@@ -711,42 +721,6 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         borderSide: const BorderSide(
           color: Color(0xFF6797E1),
           width: 1.4,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildUnderlineTextField(
-      BuildContext context,
-      TextEditingController ctrl,
-      String hint, {
-        List<TextInputFormatter>? inputFormatters,
-        TextInputType? keyboardType,
-      }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.only(left: 8),
-      child: TextField(
-        controller: ctrl,
-        inputFormatters: inputFormatters,
-        keyboardType: keyboardType,
-        style: TextStyle(
-          fontFamily: 'Encode Sans Expanded',
-          fontSize: 15,
-          color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
-        ),
-        decoration: InputDecoration(
-          hintText: hint,
-          hintStyle: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            fontSize: 15,
-            color: isDarkMode ? Colors.white30 : const Color(0xFF8E8E93),
-          ),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 8,
-            horizontal: 8,
-          ),
         ),
       ),
     );

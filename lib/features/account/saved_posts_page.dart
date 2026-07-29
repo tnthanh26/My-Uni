@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
+import 'package:my_uni/utils/anonymous_utils.dart';
 
 class SavedPostsPage extends StatefulWidget {
   const SavedPostsPage({super.key});
@@ -539,7 +540,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Sinh viên ẩn danh'),
+                          isAnonymous ? AnonymousUtils.getAnonymousName(data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'], docId) : (data['authorName'] ?? 'Sinh viên ẩn danh'),
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.w700,

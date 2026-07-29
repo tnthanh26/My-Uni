@@ -12,6 +12,11 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'poll_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:my_uni/theme/app_colors.dart';
+import 'package:my_uni/features/chat/services/chat_service.dart';
+import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
+import 'package:my_uni/features/chat/widgets/student_identity_card.dart';
+import 'package:my_uni/utils/anonymous_utils.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -256,14 +261,16 @@ class _ForumTabState extends State<ForumTab> {
 
           List<QueryDocumentSnapshot> posts = snapshot.data!.docs;
 
-          // Hàm tính điểm xu hướng (Trending Score) để xếp hạng bài viết
+          // Hàm tính điểm xu hướng (Trending Score) cho cộng đồng ~30 người dùng
+          // Đã tinh chỉnh K (denominator): 1 ngày trôi qua = +10 điểm tương tác (thay vì +100 điểm)
+          // Giúp bài viết nhiều like/comment ngày hôm qua vẫn đứng trên bài mới 0 tương tác hôm nay
           double calculateTrendingScore(Map<String, dynamic> data) {
             final double likes = (data['likeCount'] ?? 0).toDouble();
             final double comments = (data['commentCount'] ?? 0).toDouble();
             final Timestamp? time = data['timestamp'] as Timestamp?;
             double score = likes * 1.5 + comments * 3.0;
             if (time != null) {
-              score += time.toDate().millisecondsSinceEpoch / (1000 * 864.0);
+              score += time.toDate().millisecondsSinceEpoch / (1000 * 8640.0);
             }
             return score;
           }
@@ -382,7 +389,25 @@ class _ForumTabState extends State<ForumTab> {
                                   padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                                   child: Row(
                                     children: [
-                                      _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
+                                      GestureDetector(
+                                        onTap: () async {
+                                          if (isAnonymous) return;
+                                          final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
+                                          if (authorId.isEmpty) return;
+                                          final info = await ChatService().getStudentVerificationInfo(authorId);
+                                          if (context.mounted) {
+                                            StudentIdentitySheet.show(
+                                              context,
+                                              info ?? {
+                                                'uid': authorId,
+                                                'displayName': data['authorName'] ?? 'Sinh viên',
+                                                'photoURL': avatarData ?? '',
+                                              },
+                                            );
+                                          }
+                                        },
+                                        child: _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -392,17 +417,35 @@ class _ForumTabState extends State<ForumTab> {
                                             Row(
                                               children: [
                                                 Expanded(
-                                                  child: Text(
-                                                    isAnonymous ? 'Sinh viên ẩn danh' : (data['authorName'] ?? 'Người dùng'),
-                                                    maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: TextStyle(
-                                                      fontFamily: 'Encode Sans Expanded',
-                                                      fontWeight: FontWeight.w700,
-                                                      fontSize: 14,
-                                                      color: isDarkMode
-                                                          ? Colors.white
-                                                          : const Color(0xFF2C2C2C),
+                                                  child: GestureDetector(
+                                                    onTap: () async {
+                                                      if (isAnonymous) return;
+                                                      final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
+                                                      if (authorId.isEmpty) return;
+                                                      final info = await ChatService().getStudentVerificationInfo(authorId);
+                                                      if (context.mounted) {
+                                                        StudentIdentitySheet.show(
+                                                          context,
+                                                          info ?? {
+                                                            'uid': authorId,
+                                                            'displayName': data['authorName'] ?? 'Sinh viên',
+                                                            'photoURL': avatarData ?? '',
+                                                          },
+                                                        );
+                                                      }
+                                                    },
+                                                    child: Text(
+                                                      isAnonymous ? AnonymousUtils.getAnonymousName((data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString(), docId) : (data['authorName'] ?? 'Người dùng'),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        fontFamily: 'Encode Sans Expanded',
+                                                        fontWeight: FontWeight.w700,
+                                                        fontSize: 14,
+                                                        color: isDarkMode
+                                                            ? Colors.white
+                                                            : const Color(0xFF2C2C2C),
+                                                      ),
                                                     ),
                                                   ),
                                                 ),

@@ -10,8 +10,13 @@ import 'setting_page.dart';
 import 'my_post_page.dart';
 import 'my_review_page.dart';
 import 'saved_posts_page.dart';
-import 'user_search_widget.dart';
+import 'social_contacts_page.dart';
 import '../home/onboarding_dialog.dart';
+import '../../theme/app_colors.dart';
+import '../chat/pages/chat_list_page.dart';
+import '../chat/pages/search_user_page.dart';
+import '../chat/services/chat_service.dart';
+import '../chat/models/chat_models.dart';
 
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
@@ -127,6 +132,7 @@ class AccountPage extends StatelessWidget {
         required String title,
         required VoidCallback onTap,
         Color iconColor = const Color(0xFF6797E1),
+        Widget? trailing,
       }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
@@ -143,7 +149,7 @@ class AccountPage extends StatelessWidget {
                 width: 42,
                 height: 42,
                 decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.12),
+                  color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(icon, color: iconColor, size: 22),
@@ -157,12 +163,12 @@ class AccountPage extends StatelessWidget {
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
                     color: isDarkMode
-                        ? Colors.white.withOpacity(0.95)
+                        ? Colors.white.withValues(alpha: 0.95)
                         : Colors.black87,
                   ),
                 ),
               ),
-              Icon(
+              trailing ?? Icon(
                 Icons.chevron_right_rounded,
                 color: isDarkMode ? Colors.white24 : Colors.black26,
                 size: 20,
@@ -585,8 +591,76 @@ class AccountPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 22),
 
-                  _buildSectionTitle('Tìm kiếm người dùng', isDarkMode),
-                  const UserSearchWidget(),
+                  _buildSectionTitle('Tin nhắn & Kết nối', isDarkMode),
+                  _buildSettingsGroup(
+                    isDarkMode: isDarkMode,
+                    children: [
+                      _buildAccountItem(
+                        context,
+                        icon: Icons.chat_bubble_outline_rounded,
+                        title: 'Đoạn chat',
+                        trailing: StreamBuilder<List<ChatRoom>>(
+                          stream: ChatService().getUserChatRoomsStream(),
+                          builder: (context, snapshot) {
+                            final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                            final rooms = snapshot.data ?? [];
+                            final unreadCount = rooms.fold<int>(
+                              0, (sum, room) => sum + room.getUnreadCount(myUid),
+                            );
+
+                            if (unreadCount > 0) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.hcmusTeal,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  '$unreadCount mới',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              );
+                            }
+                            return const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Colors.grey);
+                          },
+                        ),
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ChatListPage()),
+                          );
+                        },
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildAccountItem(
+                        context,
+                        icon: Icons.person_search_rounded,
+                        title: 'Tìm kiếm người dùng',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SearchUserPage()),
+                          );
+                        },
+                      ),
+                      _buildDivider(isDarkMode),
+                      _buildAccountItem(
+                        context,
+                        icon: Icons.contact_phone_outlined,
+                        title: 'Thông tin liên hệ của tôi',
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SocialContactsPage()),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 22),
 
                   _buildSectionTitle('Tài khoản', isDarkMode),

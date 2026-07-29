@@ -251,7 +251,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: const Color(0xFFD85858).withOpacity(0.9),
+                color: const Color(0xFFD85858),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: const Color(0xFFD85858),
