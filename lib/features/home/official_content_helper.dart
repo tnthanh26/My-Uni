@@ -82,4 +82,44 @@ class OfficialContentHelper {
 
     return 'assets/images/news.png';
   }
+
+  static String getOfficialCategoryTag(dynamic titleData, dynamic summaryData, dynamic hashtagsData) {
+    if (hashtagsData != null && hashtagsData is List && hashtagsData.isNotEmpty) {
+      final String firstTag = hashtagsData.first.toString().replaceAll('#', '').trim();
+      if (firstTag.isNotEmpty) return firstTag;
+    }
+
+    final String title = titleData?.toString().toLowerCase() ?? "";
+    final String summary = summaryData?.toString().toLowerCase() ?? "";
+    final String text = "$title $summary";
+
+    if (text.contains('học bổng') || text.contains('scholarship')) {
+      return 'Học bổng';
+    }
+    if (text.contains('tuyển dụng') ||
+        text.contains('việc làm') ||
+        text.contains('intern') ||
+        text.contains('thực tập')) {
+      return 'Tuyển dụng';
+    }
+    if (text.contains('hội thảo') ||
+        text.contains('seminar') ||
+        text.contains('workshop') ||
+        text.contains('talkshow')) {
+      return 'Hội thảo';
+    }
+    if (text.contains('cuộc thi') ||
+        text.contains('contest') ||
+        text.contains('giải thưởng')) {
+      return 'Cuộc thi';
+    }
+    if (text.contains('thông báo') || text.contains('quy định')) {
+      return 'Thông báo';
+    }
+    if (isOfficialEvent(titleData, summaryData)) {
+      return 'Sự kiện';
+    }
+
+    return 'Tin chính thức';
+  }
 }

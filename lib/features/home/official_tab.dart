@@ -62,15 +62,21 @@ class OfficialTab extends StatelessWidget {
   Widget _buildCategoryChip({
     required BuildContext context,
     required bool isDarkMode,
-    required bool isEvent,
+    required String categoryTag,
   }) {
-    final String label = isEvent ? "Sự kiện" : "Tin chính thức";
+    final bool isHighlight = categoryTag == "Sự kiện" ||
+        categoryTag == "Học bổng" ||
+        categoryTag == "Tuyển dụng";
 
-    final Color bgColor = isEvent
-        ? (isDarkMode ? const Color(0xFF1E3A8A).withOpacity(0.3) : const Color(0xFFE0F2FE))
-        : (isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFF1F5F9));
+    final Color bgColor = isHighlight
+        ? (isDarkMode
+            ? const Color(0xFF1E3A8A).withOpacity(0.3)
+            : const Color(0xFFE0F2FE))
+        : (isDarkMode
+            ? Colors.white.withOpacity(0.08)
+            : const Color(0xFFF1F5F9));
 
-    final Color textColor = isEvent
+    final Color textColor = isHighlight
         ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
         : (isDarkMode ? Colors.white70 : const Color(0xFF475569));
 
@@ -80,7 +86,7 @@ class OfficialTab extends StatelessWidget {
           context: context,
           delegate: MyUniSearchDelegate(
             currentScope: SearchScope.official,
-            initialHashtag: isEvent ? "Sự kiện" : "Thông báo",
+            initialHashtag: categoryTag,
           ),
         );
       },
@@ -90,7 +96,7 @@ class OfficialTab extends StatelessWidget {
           color: bgColor,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isEvent
+            color: isHighlight
                 ? const Color(0xFF66ACFE).withOpacity(0.35)
                 : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
           ),
@@ -105,7 +111,7 @@ class OfficialTab extends StatelessWidget {
             ),
             const SizedBox(width: 5),
             Text(
-              label,
+              categoryTag,
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 11,
@@ -389,7 +395,11 @@ class OfficialTab extends StatelessWidget {
                               _buildCategoryChip(
                                 context: context,
                                 isDarkMode: isDarkMode,
-                                isEvent: isEvent,
+                                categoryTag: OfficialContentHelper.getOfficialCategoryTag(
+                                  data['title'],
+                                  data['summary'],
+                                  data['hashtags'],
+                                ),
                               ),
                               if (isEvent)
                                 StreamBuilder<DocumentSnapshot>(

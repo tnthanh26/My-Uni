@@ -21,6 +21,9 @@ import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
+import 'package:my_uni/features/chat/pages/chat_list_page.dart';
+import 'package:my_uni/features/chat/services/chat_service.dart';
+import 'package:my_uni/features/chat/models/chat_models.dart';
 import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
 import 'package:my_uni/features/services/daily_active_service.dart';
@@ -705,7 +708,6 @@ class HomePageState extends State<HomePage> {
         }
       }
     }
-
     setState(() {
       _selectedIndex = index;
     });
@@ -927,7 +929,7 @@ class HomePageState extends State<HomePage> {
               ],
             ),
 
-            // Cụm phải: Capsule Search & Notification
+            // Cụm phải: Capsule Search, Message & Notification
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -953,6 +955,54 @@ class HomePageState extends State<HomePage> {
                       );
                     },
                     child: const Icon(Icons.search, color: Colors.white, size: 24),
+                  ),
+                  const SizedBox(width: 8),
+                  const Text("|", style: TextStyle(color: Colors.white38)),
+                  const SizedBox(width: 8),
+                  // Nút Message (Chen giữa Search và Notification)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatListPage()),
+                      );
+                    },
+                    child: StreamBuilder<List<ChatRoom>>(
+                      stream: ChatService().getUserChatRoomsStream(),
+                      builder: (context, snapshot) {
+                        final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                        int unreadChatCount = 0;
+                        if (snapshot.hasData) {
+                          for (var room in snapshot.data!) {
+                            unreadChatCount += room.unreadCounts[myUid] ?? 0;
+                          }
+                        }
+
+                        return Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
+                            if (unreadChatCount > 0)
+                              Positioned(
+                                right: -2,
+                                top: -2,
+                                child: CircleAvatar(
+                                  radius: 6,
+                                  backgroundColor: Colors.red,
+                                  child: Text(
+                                    unreadChatCount > 9 ? "9+" : unreadChatCount.toString(),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 7,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(width: 8),
                   const Text("|", style: TextStyle(color: Colors.white38)),

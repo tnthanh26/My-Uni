@@ -204,31 +204,7 @@ class ChatService {
       debugPrint("Error updating room document: $e");
     }
 
-    // 3. Gửi thông báo tin nhắn 1-1 cho người nhận
-    if (otherUid.isNotEmpty) {
-      try {
-        final senderDoc = await _firestore.collection('users').doc(myUid).get();
-        final senderData = senderDoc.data();
-        final senderName = (senderData?['displayName']?.toString().trim().isNotEmpty == true)
-            ? senderData!['displayName']
-            : 'Một sinh viên';
-
-        await _firestore.collection('notifications').add({
-          'userId': otherUid,
-          'type': 'chat',
-          'title': senderName,
-          'content': displayLastMsg,
-          'timestamp': FieldValue.serverTimestamp(),
-          'isRead': false,
-          'roomId': roomId,
-          'senderId': myUid,
-          'senderName': senderName,
-          'senderAvatar': senderData?['photoUrl'] ?? '',
-        });
-      } catch (e) {
-        debugPrint("Error creating chat notification: $e");
-      }
-    }
+    // 3. Cập nhật thông báo tin nhắn (Xử lý trực tiếp qua unreadCounts trong chat_rooms)
   }
 
   /// Đánh dấu đã đọc phòng chat

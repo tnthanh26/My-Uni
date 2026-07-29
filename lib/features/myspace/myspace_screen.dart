@@ -12,6 +12,9 @@ import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
+import 'package:my_uni/features/chat/pages/chat_list_page.dart';
+import 'package:my_uni/features/chat/services/chat_service.dart';
+import 'package:my_uni/features/chat/models/chat_models.dart';
 import './services/myspace_weather_coordinator.dart';
 import './services/weather_alert_service.dart';
 import './services/weather_service.dart';
@@ -1575,51 +1578,104 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ),
                 ]),
 
-                // Cụm phải: Nút thông báo UI Capsule (Đã cập nhật)
-                GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => NotificationScreen()),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: const Color(0xff545454),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: StreamBuilder<List<MyUniNotification>>(
-                      stream: NotificationService.getNotifications(),
-                      builder: (context, snapshot) {
-                        // Đếm số thông báo chưa đọc thực tế
-                        final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+                // Cụm phải: Capsule Message & Notification
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xff545454),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Nút Message (Bên trái nút Notification)
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const ChatListPage()),
+                          );
+                        },
+                        child: StreamBuilder<List<ChatRoom>>(
+                          stream: ChatService().getUserChatRoomsStream(),
+                          builder: (context, snapshot) {
+                            final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+                            int unreadChatCount = 0;
+                            if (snapshot.hasData) {
+                              for (var room in snapshot.data!) {
+                                unreadChatCount += room.unreadCounts[myUid] ?? 0;
+                              }
+                            }
 
-                        return Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                            if (unreadCount > 0)
-                              Positioned(
-                                right: -2,
-                                top: -2,
-                                child: CircleAvatar(
-                                  radius: 6,
-                                  backgroundColor: Colors.red,
-                                  child: Text(
-                                    unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                    style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 7,
-                                        fontWeight: FontWeight.bold
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
+                                if (unreadChatCount > 0)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: CircleAvatar(
+                                      radius: 6,
+                                      backgroundColor: Colors.red,
+                                      child: Text(
+                                        unreadChatCount > 9 ? "9+" : unreadChatCount.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 7,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ),
-                              )
-                          ],
-                        );
-                      },
-                    ),
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text("|", style: TextStyle(color: Colors.white38)),
+                      const SizedBox(width: 8),
+                      // Nút Notification
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                          );
+                        },
+                        child: StreamBuilder<List<MyUniNotification>>(
+                          stream: NotificationService.getNotifications(),
+                          builder: (context, snapshot) {
+                            final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+
+                            return Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
+                                if (unreadCount > 0)
+                                  Positioned(
+                                    right: -2,
+                                    top: -2,
+                                    child: CircleAvatar(
+                                      radius: 6,
+                                      backgroundColor: Colors.red,
+                                      child: Text(
+                                        unreadCount > 9 ? "9+" : unreadCount.toString(),
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 7,
+                                            fontWeight: FontWeight.bold
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                              ],
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

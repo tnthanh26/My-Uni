@@ -1665,10 +1665,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildTopChip(
-                  label: isEvent ? "Sự kiện" : "Tin chính thức",
+                  label: OfficialContentHelper.getOfficialCategoryTag(
+                    data['title'],
+                    data['summary'],
+                    data['hashtags'],
+                  ),
                   icon: isEvent ? Icons.event : Icons.campaign_outlined,
                   isDarkMode: isDarkMode,
                   highlighted: isEvent,
+                  onTap: () {
+                    final tag = OfficialContentHelper.getOfficialCategoryTag(
+                      data['title'],
+                      data['summary'],
+                      data['hashtags'],
+                    );
+                    showSearch(
+                      context: context,
+                      delegate: MyUniSearchDelegate(
+                        currentScope: SearchScope.official,
+                        initialHashtag: tag,
+                      ),
+                    );
+                  },
                 ),
                 if (isEvent)
                   StreamBuilder<DocumentSnapshot>(
@@ -2280,8 +2298,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     required IconData icon,
     required bool isDarkMode,
     bool highlighted = false,
+    VoidCallback? onTap,
   }) {
-    return Container(
+    final chip = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: highlighted
@@ -2315,6 +2334,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(onTap: onTap, child: chip);
+    }
+    return chip;
   }
 
   Widget _buildAuthorRow(
