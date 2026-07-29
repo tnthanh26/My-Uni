@@ -61,6 +61,28 @@ class Base64ImageCache {
     return provider;
   }
 
+  /// Safely returns an ImageProvider (NetworkImage or MemoryImage) for avatar rendering
+  /// without throwing 'No host specified in URI' or base64 decoding errors.
+  static ImageProvider? getAvatarProvider(String? photoUrl) {
+    if (photoUrl == null) return null;
+    final trimmed = photoUrl.trim();
+    if (trimmed.isEmpty) return null;
+
+    if (trimmed.startsWith('data:image') || !trimmed.startsWith('http')) {
+      return getMemoryImage(trimmed);
+    }
+
+    try {
+      final uri = Uri.parse(trimmed);
+      if (uri.hasScheme && uri.hasAuthority && uri.host.isNotEmpty) {
+        return NetworkImage(trimmed);
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
+  }
+
   /// Clears the cache
   static void clear() {
     _cache.clear();

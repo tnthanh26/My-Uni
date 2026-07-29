@@ -10,6 +10,7 @@ import 'create_schedule_page.dart';
 import 'local_storage_helper.dart';
 import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
+import 'package:my_uni/features/notification/message_notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'package:my_uni/features/chat/pages/chat_list_page.dart';
@@ -1593,19 +1594,13 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const ChatListPage()),
+                            MaterialPageRoute(builder: (context) => const MessageNotificationScreen()),
                           );
                         },
-                        child: StreamBuilder<List<ChatRoom>>(
-                          stream: ChatService().getUserChatRoomsStream(),
+                        child: StreamBuilder<List<MyUniNotification>>(
+                          stream: NotificationService.getMessageNotifications(),
                           builder: (context, snapshot) {
-                            final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-                            int unreadChatCount = 0;
-                            if (snapshot.hasData) {
-                              for (var room in snapshot.data!) {
-                                unreadChatCount += room.unreadCounts[myUid] ?? 0;
-                              }
-                            }
+                            final unreadChatCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
 
                             return Stack(
                               clipBehavior: Clip.none,

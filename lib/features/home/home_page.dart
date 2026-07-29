@@ -19,11 +19,9 @@ import 'package:my_uni/features/event/event_page.dart';
 import 'package:my_uni/features/event/my_event_tab.dart';
 import 'package:my_uni/features/myspace/myspace_screen.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
+import 'package:my_uni/features/notification/message_notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
-import 'package:my_uni/features/chat/pages/chat_list_page.dart';
-import 'package:my_uni/features/chat/services/chat_service.dart';
-import 'package:my_uni/features/chat/models/chat_models.dart';
 import 'animated_bottom_nav.dart';
 import 'onboarding_dialog.dart';
 import 'package:my_uni/features/services/daily_active_service.dart';
@@ -713,11 +711,9 @@ class HomePageState extends State<HomePage> {
     });
     HomePage.activeTabNotifier.value = index;
     EventPageNotifier.isActive.value = (index == 1);
-    
     if (index == 0 && _pendingWeatherAlert != null && !_hasShownWeatherAlert) {
       final alert = _pendingWeatherAlert!;
       final theme = _pendingWeatherTheme ?? WeatherAlertTheme.thunderstorm;
-
       _pendingWeatherAlert = null;
       _pendingWeatherTheme = null;
       _hasShownWeatherAlert = true;
@@ -964,19 +960,13 @@ class HomePageState extends State<HomePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => const ChatListPage()),
+                        MaterialPageRoute(builder: (context) => const MessageNotificationScreen()),
                       );
                     },
-                    child: StreamBuilder<List<ChatRoom>>(
-                      stream: ChatService().getUserChatRoomsStream(),
+                    child: StreamBuilder<List<MyUniNotification>>(
+                      stream: NotificationService.getMessageNotifications(),
                       builder: (context, snapshot) {
-                        final myUid = FirebaseAuth.instance.currentUser?.uid ?? '';
-                        int unreadChatCount = 0;
-                        if (snapshot.hasData) {
-                          for (var room in snapshot.data!) {
-                            unreadChatCount += room.unreadCounts[myUid] ?? 0;
-                          }
-                        }
+                        final unreadChatCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
 
                         return Stack(
                           clipBehavior: Clip.none,
