@@ -24,6 +24,7 @@ import '../chat/services/chat_service.dart';
 import '../chat/pages/chat_detail_page.dart';
 import '../chat/widgets/student_identity_card.dart';
 import '../../utils/anonymous_utils.dart';
+import '../search/myuni_search_delegate.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -1701,46 +1702,60 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 runSpacing: 8,
                 children: (data['hashtags'] as List)
                     .map(
-                      (t) => Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? Colors.white10
-                          : const Color(0xFFF1F5F9),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: isDarkMode
-                            ? Colors.white10
-                            : const Color(0xFFE2E8F0),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.tag_rounded,
-                          size: 14,
-                          color: Color(0xFF306CFE),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          t.toString(),
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
+                      (t) => GestureDetector(
+                        onTap: () {
+                          final cleanTag = t.toString().replaceAll('#', '').trim();
+                          if (cleanTag.isNotEmpty) {
+                            showSearch(
+                              context: context,
+                              delegate: MyUniSearchDelegate(
+                                currentScope: SearchScope.forum,
+                                initialHashtag: cleanTag,
+                              ),
+                            );
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
                             color: isDarkMode
-                                ? Colors.white70
-                                : const Color(0xFF344054),
+                                ? Colors.white10
+                                : const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isDarkMode
+                                  ? Colors.white10
+                                  : const Color(0xFFE2E8F0),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.tag_rounded,
+                                size: 14,
+                                color: Color(0xFF306CFE),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                t.toString(),
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : const Color(0xFF344054),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                )
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -2168,46 +2183,60 @@ class _PostDetailPageState extends State<PostDetailPage> {
               runSpacing: 8,
               children: (data['hashtags'] as List)
                   .map(
-                    (t) => Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDarkMode
-                          ? Colors.white10
-                          : const Color(0xFFE2E8F0),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.tag_rounded,
-                        size: 14,
-                        color: Color(0xFF306CFE),
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        t.toString(),
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                    (t) => GestureDetector(
+                      onTap: () {
+                        final cleanTag = t.toString().replaceAll('#', '').trim();
+                        if (cleanTag.isNotEmpty) {
+                          showSearch(
+                            context: context,
+                            delegate: MyUniSearchDelegate(
+                              currentScope: SearchScope.forum,
+                              initialHashtag: cleanTag,
+                            ),
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
                           color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF344054),
+                              ? Colors.white10
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: isDarkMode
+                                ? Colors.white10
+                                : const Color(0xFFE2E8F0),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.tag_rounded,
+                              size: 14,
+                              color: Color(0xFF306CFE),
+                            ),
+                            const SizedBox(width: 5),
+                            Text(
+                              t.toString(),
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : const Color(0xFF344054),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-              )
+                    ),
+                  )
                   .toList(),
             ),
           ],

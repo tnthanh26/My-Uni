@@ -8,6 +8,7 @@ import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:my_uni/features/home/poll_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
+import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
 class MyPostsPage extends StatefulWidget {
   const MyPostsPage({super.key});
@@ -589,43 +590,57 @@ String removeVietnameseDiacritics(String str) {
                       spacing: 8,
                       runSpacing: 8,
                       children: (data['hashtags'] as List).map((tag) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDarkMode
-                                ? Colors.white10
-                                : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
+                        return GestureDetector(
+                          onTap: () {
+                            final cleanTag = tag.toString().replaceAll('#', '').trim();
+                            if (cleanTag.isNotEmpty) {
+                              showSearch(
+                                context: context,
+                                delegate: MyUniSearchDelegate(
+                                  currentScope: SearchScope.forum,
+                                  initialHashtag: cleanTag,
+                                ),
+                              );
+                            }
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
                               color: isDarkMode
                                   ? Colors.white10
-                                  : const Color(0xFFE2E8F0),
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? Colors.white10
+                                    : const Color(0xFFE2E8F0),
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.tag_rounded,
-                                size: 14,
-                                color: Color(0xFF306CFE),
-                              ),
-                              const SizedBox(width: 5),
-                              Text(
-                                tag.toString(),
-                                style: TextStyle(
-                                  fontFamily: 'Encode Sans Expanded',
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDarkMode
-                                      ? Colors.white70
-                                      : const Color(0xFF344054),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.tag_rounded,
+                                  size: 14,
+                                  color: Color(0xFF306CFE),
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 5),
+                                Text(
+                                  tag.toString(),
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : const Color(0xFF344054),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         );
                       }).toList(),

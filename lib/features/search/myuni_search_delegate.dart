@@ -58,11 +58,21 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     "Thông báo",
   ];
 
-  MyUniSearchDelegate({required this.currentScope})
+  final String? initialHashtag;
+
+  MyUniSearchDelegate({required this.currentScope, this.initialHashtag})
       : super(
-    searchFieldLabel: _getSearchLabel(currentScope),
-    keyboardType: TextInputType.text,
-  );
+          searchFieldLabel: _getSearchLabel(currentScope),
+          keyboardType: TextInputType.text,
+        ) {
+    if (initialHashtag != null && initialHashtag!.trim().isNotEmpty) {
+      final cleanTag = initialHashtag!.replaceAll('#', '').trim();
+      if (cleanTag.isNotEmpty) {
+        selectedHashtags = [cleanTag];
+        query = '#$cleanTag';
+      }
+    }
+  }
 
   static String _getSearchLabel(SearchScope scope) {
     switch (scope) {
@@ -298,6 +308,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return FilterChip(
+      showCheckmark: false,
       label: Text('# $tag'),
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : _secondaryText(isDarkMode),
@@ -307,8 +318,9 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       selected: isSelected,
       selectedColor: const Color(0xFF6797E1),
       backgroundColor: _secondarySurface(isDarkMode),
-      checkmarkColor: Colors.white,
-      side: BorderSide(color: _borderColor(isDarkMode)),
+      side: BorderSide(
+        color: isSelected ? const Color(0xFF6797E1) : _borderColor(isDarkMode),
+      ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(999),
       ),
