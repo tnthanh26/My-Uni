@@ -357,37 +357,11 @@ class ReviewTab extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_review_tab",
-        onPressed: () async {
-          final currentUser = FirebaseAuth.instance.currentUser;
-          if (currentUser != null) {
-            final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-            if (doc.exists) {
-              final data = doc.data();
-              final String? verificationStatus = data?['verificationStatus'];
-              final bool isVerified = data?['isVerified'] ?? false;
-              if (verificationStatus == 'pending' || verificationStatus == 'rejected' || (!isVerified && verificationStatus != 'approved')) {
-                if (context.mounted) {
-                  final isRejected = verificationStatus == 'rejected';
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(isRejected
-                          ? 'Tài khoản của bạn đã bị từ chối xác thực nên chưa thể viết đánh giá môn học.'
-                          : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể viết đánh giá môn học.'),
-                      backgroundColor: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
-                }
-                return;
-              }
-            }
-          }
-          if (context.mounted) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const CreateReviewPage()),
-            );
-          }
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreateReviewPage()),
+          );
         },
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,

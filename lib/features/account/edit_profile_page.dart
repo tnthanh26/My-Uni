@@ -291,10 +291,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         finalPhotoBase64 = base64Encode(compressedBytes);
       }
 
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      final currentStatus = userDoc.data()?['verificationStatus'];
-      final bool wasRejected = currentStatus == 'rejected';
-
       final Map<String, dynamic> updateData = {
         'displayName': _nameController.text.trim(),
         'dob': dobText,
@@ -305,12 +301,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
         'cohort': cohortText,
         'lastUpdated': FieldValue.serverTimestamp(),
       };
-
-      if (wasRejected) {
-        updateData['verificationStatus'] = 'pending';
-        updateData['isVerified'] = false;
-        updateData['resubmittedAt'] = FieldValue.serverTimestamp();
-      }
 
       await FirebaseFirestore.instance.collection('users').doc(uid).set(updateData, SetOptions(merge: true));
 
@@ -337,12 +327,9 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(wasRejected
-                ? 'Đã cập nhật thông tin và gửi lại yêu cầu xác thực cho kiểm duyệt viên!'
-                : 'Cập nhật hồ sơ thành công!'),
-            backgroundColor: wasRejected ? Colors.green : null,
-            duration: const Duration(seconds: 2),
+          const SnackBar(
+            content: Text('Cập nhật hồ sơ thành công!'),
+            duration: Duration(seconds: 2),
           ),
         );
       }

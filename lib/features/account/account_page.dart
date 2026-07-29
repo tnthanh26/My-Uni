@@ -20,19 +20,6 @@ class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
   void _navigateIfAllowed(BuildContext context, String? verificationStatus, Widget page) {
-    if ((verificationStatus == 'pending' || verificationStatus == 'rejected') && page is! EditProfilePage) {
-      final isRejected = verificationStatus == 'rejected';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isRejected
-              ? 'Tài khoản của bạn đã bị từ chối xác thực nên chưa thể truy cập tính năng này.'
-              : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực nên chưa thể truy cập tính năng này.'),
-          backgroundColor: isRejected ? Colors.red.shade900 : Colors.amber.shade900,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
-    }
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
@@ -568,7 +555,7 @@ class AccountPage extends StatelessWidget {
               cohort = data['cohort'] ?? "Chưa cập nhật niên khóa";
               photoBase64 = data['photoUrl'];
               isVerified = data['isVerified'] ?? false;
-              verificationStatus = data['verificationStatus'] ?? (isVerified ? 'approved' : 'pending');
+              verificationStatus = data['verificationStatus'] ?? 'approved';
             }
 
             final qrData = jsonEncode({
@@ -592,82 +579,7 @@ class AccountPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (verificationStatus == 'pending' || verificationStatus == 'rejected') ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: (verificationStatus == 'rejected' ? Colors.red.shade900 : Colors.amber.shade900).withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: (verificationStatus == 'rejected' ? Colors.red.shade800 : Colors.amber.shade800).withValues(alpha: 0.3)),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                verificationStatus == 'rejected' ? Icons.cancel_outlined : Icons.hourglass_top_rounded,
-                                color: verificationStatus == 'rejected' ? Colors.red.shade800 : Colors.amber.shade800,
-                                size: 22,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  verificationStatus == 'rejected'
-                                      ? 'Tài khoản của bạn đã bị kiểm duyệt viên từ chối xác thực. Vui lòng sửa lại thông tin chính xác để gửi lại yêu cầu.'
-                                      : 'Tài khoản của bạn đang chờ kiểm duyệt viên xác thực. Các tính năng tương tác, nhắn tin và chỉnh sửa hồ sơ tạm thời bị giới hạn.',
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontSize: 12.5,
-                                    color: verificationStatus == 'rejected'
-                                        ? (isDarkMode ? Colors.red.shade200 : Colors.red.shade900)
-                                        : (isDarkMode ? Colors.amber.shade200 : Colors.amber.shade900),
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.3,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (verificationStatus == 'rejected') ...[
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => const EditProfilePage(),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.edit_note, size: 18, color: Colors.white),
-                                label: const Text(
-                                  'Sửa thông tin & Gửi lại xác thực',
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red.shade900,
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                  ],
+
 
                   _buildProfileHeader(
                     context: context,

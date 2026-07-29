@@ -290,24 +290,11 @@ class _ModDashboardState extends State<ModDashboard> {
           final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
           final allDocs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
 
-          // Sort in memory: Pending verification accounts first, then by lastUpdated/createdAt descending
+          // Sort in memory by lastUpdated/createdAt descending
           allDocs.sort((a, b) {
             final dataA = a.data() as Map<String, dynamic>;
             final dataB = b.data() as Map<String, dynamic>;
 
-            final bool isVerifiedA = dataA['isVerified'] ?? false;
-            final String statusA = dataA['verificationStatus'] ?? (isVerifiedA ? 'approved' : 'pending');
-            final bool isPendingA = (statusA == 'pending') || (!isVerifiedA && statusA != 'approved' && statusA != 'rejected');
-
-            final bool isVerifiedB = dataB['isVerified'] ?? false;
-            final String statusB = dataB['verificationStatus'] ?? (isVerifiedB ? 'approved' : 'pending');
-            final bool isPendingB = (statusB == 'pending') || (!isVerifiedB && statusB != 'approved' && statusB != 'rejected');
-
-            // 1. Pending accounts first
-            if (isPendingA && !isPendingB) return -1;
-            if (!isPendingA && isPendingB) return 1;
-
-            // 2. Sort by timestamp descending
             final Timestamp? tA = dataA['lastUpdated'] as Timestamp? ?? dataA['createdAt'] as Timestamp?;
             final Timestamp? tB = dataB['lastUpdated'] as Timestamp? ?? dataB['createdAt'] as Timestamp?;
             if (tA == null && tB == null) return 0;
