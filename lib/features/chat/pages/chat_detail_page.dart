@@ -598,6 +598,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 roomId: widget.roomId,
                 currentUid: currentUid,
                 targetUserName: widget.targetUserName,
+                targetUserPhoto: widget.targetUserPhoto,
                 scrollController: _scrollController,
                 chatService: _chatService,
               ),
@@ -817,6 +818,7 @@ class _ChatMessageList extends StatelessWidget {
   final String roomId;
   final String currentUid;
   final String targetUserName;
+  final String targetUserPhoto;
   final ScrollController scrollController;
   final ChatService chatService;
 
@@ -824,6 +826,7 @@ class _ChatMessageList extends StatelessWidget {
     required this.roomId,
     required this.currentUid,
     required this.targetUserName,
+    required this.targetUserPhoto,
     required this.scrollController,
     required this.chatService,
   });
@@ -903,68 +906,76 @@ class _ChatMessageList extends StatelessWidget {
           );
         }
 
-        final reversedMessages = rawMessages.reversed.toList();
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final List<Widget> messageWidgets = [];
 
-        return ListView.builder(
-          controller: scrollController,
-          reverse: true,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          itemCount: reversedMessages.length,
-          itemBuilder: (context, index) {
-            final msg = reversedMessages[index];
-            bool showTimeHeader = false;
+            for (int i = 0; i < rawMessages.length; i++) {
+              final msg = rawMessages[i];
+              bool showTimeHeader = false;
 
-            if (index == reversedMessages.length - 1) {
-              showTimeHeader = true;
-            } else {
-              final olderMsg = reversedMessages[index + 1];
-              final diffInMinutes = msg.timestamp.difference(olderMsg.timestamp).inMinutes.abs();
-              if (diffInMinutes >= 10) {
+              if (i == 0) {
                 showTimeHeader = true;
+              } else {
+                final olderMsg = rawMessages[i - 1];
+                final diffInMinutes = msg.timestamp.difference(olderMsg.timestamp).inMinutes.abs();
+                if (diffInMinutes >= 10) {
+                  showTimeHeader = true;
+                }
               }
-            }
 
-            final bubble = RepaintBoundary(
-              child: ChatBubble(
-                key: ValueKey(msg.id),
-                message: msg,
-                isMe: msg.senderId == currentUid,
-                onRecall: () async {
-                  try {
-                    await chatService.recallMessage(roomId, msg.id);
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Không thể thu hồi tin nhắn: $e')),
-                      );
-                    }
-                  }
-                },
-                onEdit: (newText) async {
-                  try {
-                    await chatService.editMessage(roomId, msg.id, newText);
-                  } catch (e) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Không thể sửa tin nhắn: $e')),
-                      );
-                    }
-                  }
-                },
-              ),
-            );
+              if (showTimeHeader) {
+                messageWidgets.add(_buildTimeDivider(context, msg.timestamp));
+              }
 
-            if (showTimeHeader) {
-              return Column(
-                key: ValueKey('header_${msg.id}'),
-                children: [
-                  _buildTimeDivider(context, msg.timestamp),
-                  bubble,
-                ],
+              messageWidgets.add(
+                RepaintBoundary(
+                  child: ChatBubble(
+                    key: ValueKey(msg.id),
+                    message: msg,
+                    isMe: msg.senderId == currentUid,
+                    onRecall: () async {
+                      try {
+                        await chatService.recallMessage(roomId, msg.id);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Không thể thu hồi tin nhắn: $e')),
+                          );
+                        }
+                      }
+                    },
+                    onEdit: (newText) async {
+                      try {
+                        await chatService.editMessage(roomId, msg.id, newText);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Không thể sửa tin nhắn: $e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ),
               );
             }
 
-            return bubble;
+            return SingleChildScrollView(
+              controller: scrollController,
+              reverse: true,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 24).clamp(0.0, double.infinity),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: messageWidgets,
+                ),
+              ),
+            );
           },
         );
       },
