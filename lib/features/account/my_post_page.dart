@@ -19,16 +19,24 @@ class MyPostsPage extends StatefulWidget {
 class _MyPostsPageState extends State<MyPostsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     timeago.setLocaleMessages('vi', CustomViMessages());
     _tabController = TabController(length: 2, vsync: this);
+    _searchController.addListener(() {
+      setState(() {
+        _searchQuery = _searchController.text.trim();
+      });
+    });
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -311,8 +319,36 @@ class _MyPostsPageState extends State<MyPostsPage>
     );
   }
 
+String removeVietnameseDiacritics(String str) {
+  const vietnameseMap = {
+    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+    'A': 'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ',
+    'd': 'đ',
+    'D': 'Đ',
+    'e': 'èéẹẻẽêềếệểễ',
+    'E': 'ÈÉẸẺẼÊỀẾỆỂỄ',
+    'i': 'ìíịỉĩ',
+    'I': 'ÌÍỊỈĨ',
+    'o': 'òóọỏõôồốộổỗơờớợởỡ',
+    'O': 'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ',
+    'u': 'ùúụủũưừứựửữ',
+    'U': 'ÙÚỤỦŨƯỪỨỰỬỮ',
+    'y': 'ỳýỵỷỹ',
+    'Y': 'ỲÝỴỶỸ',
+  };
+
+  String result = str;
+  vietnameseMap.forEach((nonDiacritics, diacritics) {
+    for (int i = 0; i < diacritics.length; i++) {
+      result = result.replaceAll(diacritics[i], nonDiacritics);
+    }
+  });
+  return result.toLowerCase();
+}
+
   Widget _buildPostList(String collectionPath) {
     final user = FirebaseAuth.instance.currentUser;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -333,11 +369,54 @@ class _MyPostsPageState extends State<MyPostsPage>
           return _buildEmptyState(context, collectionPath);
         }
 
+        final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+        final filteredDocs = snapshot.data!.docs.where((doc) {
+          if (cleanQuery.isEmpty) return true;
+          final data = doc.data() as Map<String, dynamic>;
+          final content = removeVietnameseDiacritics(
+              (data['content'] ?? data['fileName'] ?? data['description'] ?? '').toString());
+          final subject = removeVietnameseDiacritics(
+              (data['subject'] ?? data['courseName'] ?? '').toString());
+          final hashtags = removeVietnameseDiacritics(
+              (data['hashtags'] ?? []).join(' '));
+          return content.contains(cleanQuery) ||
+              subject.contains(cleanQuery) ||
+              hashtags.contains(cleanQuery);
+        }).toList();
+
+        if (_searchQuery.isNotEmpty && filteredDocs.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.search_off_rounded,
+                    size: 40,
+                    color: isDarkMode ? Colors.white38 : Colors.black38,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Không tìm thấy bài đăng phù hợp',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
-          itemCount: snapshot.data!.docs.length,
+          itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
-            var doc = snapshot.data!.docs[index];
+            var doc = filteredDocs[index];
             var data = doc.data() as Map<String, dynamic>;
             return _buildDetailedItem(
               context,
@@ -765,6 +844,68 @@ class _MyPostsPageState extends State<MyPostsPage>
       ),
       body: Column(
         children: [
+          // Search Input Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: Container(
+              height: 46,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F2F6),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 14),
+                  const Icon(
+                    Icons.search_rounded,
+                    color: Color(0xFF5893D8),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: _searchController,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 14,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Tìm kiếm bài đăng...',
+                        hintStyle: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13.5,
+                          color: isDarkMode
+                              ? Colors.white38
+                              : const Color(0xFF94A3B8),
+                        ),
+                        border: InputBorder.none,
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  if (_searchQuery.isNotEmpty)
+                    IconButton(
+                      icon: Icon(
+                        Icons.cancel_rounded,
+                        size: 18,
+                        color: isDarkMode
+                            ? Colors.white38
+                            : const Color(0xFF94A3B8),
+                      ),
+                      onPressed: () {
+                        _searchController.clear();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
           Expanded(
             child: TabBarView(
               controller: _tabController,

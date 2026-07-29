@@ -56,6 +56,24 @@ class _PostActionRowState extends State<PostActionRow> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    if (userDoc.exists) {
+      final data = userDoc.data();
+      final String? verificationStatus = data?['verificationStatus'];
+      if (verificationStatus == 'pending') {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Tài khoản của bạn đang chờ Mod duyệt xác thực nên chưa thể tương tác.'),
+              backgroundColor: Colors.amber.shade900,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     try {
       final postRef = FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId);
       final userLikeRef = postRef.collection('likes').doc(user.uid);

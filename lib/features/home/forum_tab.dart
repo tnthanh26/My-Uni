@@ -576,10 +576,38 @@ class _ForumTabState extends State<ForumTab> {
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_forum_tab",
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreatePostPage()),
-        ),
+        onPressed: () async {
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null) {
+            final doc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .get();
+            if (doc.exists) {
+              final data = doc.data();
+              final String? verificationStatus = data?['verificationStatus'];
+              if (verificationStatus == 'pending') {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                          'Tài khoản của bạn đang chờ Mod duyệt xác thực nên chưa thể tạo bài viết.'),
+                      backgroundColor: Colors.amber.shade900,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+                return;
+              }
+            }
+          }
+          if (context.mounted) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CreatePostPage()),
+            );
+          }
+        },
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,
         shape: const CircleBorder(),

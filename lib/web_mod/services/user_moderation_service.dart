@@ -67,4 +67,86 @@ class UserModerationService {
       type: "account_restored",
     );
   }
+
+  static Future<void> approveVerification({
+    required String uid,
+    required Map<String, dynamic> data,
+  }) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'isVerified': true,
+      'verificationStatus': 'approved',
+      'verifiedAt': FieldValue.serverTimestamp(),
+      'verifiedBy': FirebaseAuth.instance.currentUser?.uid,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await ModLogService.addUserActionLog(
+      targetUserId: uid,
+      targetUserEmail: data['email'] ?? '',
+      action: 'approve_verification',
+      reason: 'Phê duyệt xác thực hồ sơ sinh viên',
+    );
+
+    await ModNotificationService.sendUserNotification(
+      userId: uid,
+      title: "Hồ sơ của bạn đã được xác thực!",
+      content: "Ban Quản trị đã duyệt thông tin sinh viên của bạn. Bạn có thể sử dụng đầy đủ các tính năng trên MyUni.",
+      type: "verification_approved",
+    );
+  }
+
+  static Future<void> rejectVerification({
+    required String uid,
+    required Map<String, dynamic> data,
+    required String reason,
+  }) async {
+    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+      'isVerified': false,
+      'verificationStatus': 'rejected',
+      'rejectionReason': reason,
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    await ModLogService.addUserActionLog(
+      targetUserId: uid,
+      targetUserEmail: data['email'] ?? '',
+      action: 'reject_verification',
+      reason: reason,
+    );
+
+    await ModNotificationService.sendUserNotification(
+      userId: uid,
+      title: "Xác thực hồ sơ bị từ chối",
+      content: "Lý do: $reason",
+      type: "verification_rejected",
+    );
+  }
+
+  static Future<int> migrateLegacyUsers() async {
+    final snapshot = await FirebaseFirestore.instance.collection('users').get();
+    int count = 0;
+    final batch = FirebaseFirestore.instance.batch();
+
+    for (var doc in snapshot.docs) {
+      final data = doc.data();
+      final status = data['verificationStatus'];
+
+      if (status == null) {
+        batch.set(
+          doc.reference,
+          {
+            'isVerified': true,
+            'verificationStatus': 'approved',
+          },
+          SetOptions(merge: true),
+        );
+        count++;
+      }
+    }
+
+    if (count > 0) {
+      await batch.commit();
+    }
+    return count;
+  }
 }

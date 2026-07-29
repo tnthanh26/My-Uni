@@ -620,7 +620,39 @@ class HomePageState extends State<HomePage> {
     }
   }
 
-  void _onItemTapped(int index) {
+  bool _isUserPendingVerification(Map<String, dynamic>? data) {
+    if (data == null) return false;
+    final status = data['verificationStatus'];
+    if (status == 'pending') return true;
+    if (status == 'approved' || status == 'rejected') return false;
+
+    // Legacy accounts created before 2-step verification feature:
+    final isVerified = data['isVerified'];
+    if (isVerified == false && status == 'pending') return true;
+    return false;
+  }
+
+  void _onItemTapped(int index) async {
+    // Allow Tab 0 (Bảng tin) and Tab 4 (Tài khoản để xem & Đăng xuất)
+    if (index != 0 && index != 4) {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+        if (userDoc.exists) {
+          final data = userDoc.data();
+          if (_isUserPendingVerification(data)) {
+            if (mounted) {
+              _showPendingTabBlockedDialog(context);
+            }
+            return;
+          }
+        }
+      }
+    }
+
     setState(() {
       _selectedIndex = index;
     });
@@ -645,6 +677,119 @@ class HomePageState extends State<HomePage> {
         }
       });
     }
+  }
+
+  void _showPendingTabBlockedDialog(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor:
+            isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.lock_clock_outlined,
+                  color: Colors.amber,
+                  size: 36,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Tài khoản chờ duyệt xác thực',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Hồ sơ sinh viên của bạn đang chờ Ban Quản trị (Mod) kiểm tra và duyệt xác thực.\n\nTrong thời gian chờ duyệt, bạn có thể xem bảng tin hoặc vào Tài khoản để đăng xuất.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  height: 1.4,
+                  color: isDarkMode ? Colors.white70 : Colors.black54,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        final nav = Navigator.of(ctx);
+                        nav.pop();
+                        await FirebaseAuth.instance.signOut();
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.remove('user_token');
+                        await prefs.remove('saved_user');
+                        if (context.mounted) {
+                          Navigator.pushNamedAndRemoveUntil(
+                              context, '/login', (route) => false);
+                        }
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.redAccent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        'Đăng xuất',
+                        style: TextStyle(
+                          color: Colors.redAccent,
+                          fontFamily: 'Encode Sans Expanded',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6797E1),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        'Đã hiểu',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildHeaderBackground(BuildContext context) {
@@ -797,6 +942,62 @@ class HomePageState extends State<HomePage> {
                   ),
                   child: Column(
                     children: [
+                      // Banner thông báo tài khoản đang chờ Mod duyệt xác thực
+                      StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .doc(FirebaseAuth.instance.currentUser?.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return const SizedBox();
+                          }
+                          final data = snapshot.data!.data();
+                          if (_isUserPendingVerification(data)) {
+                            return Container(
+                              width: double.infinity,
+                              margin: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? const Color(0xFF332611)
+                                    : const Color(0xFFFFF7E6),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: Colors.amber.shade700
+                                      .withValues(alpha: 0.4),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.lock_clock_outlined,
+                                    color: Colors.amber.shade800,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      'Tài khoản đang chờ Mod duyệt xác thực. Bạn chỉ có thể xem bảng tin và chưa thể tương tác hoặc đổi tab.',
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: isDarkMode
+                                            ? Colors.amber.shade200
+                                            : Colors.amber.shade900,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                          return const SizedBox();
+                        },
+                      ),
+
                       // TabBar được đặt ngay đầu Container nội dung
                       Container(
                         width: double.infinity,

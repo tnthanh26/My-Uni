@@ -151,24 +151,53 @@ class _ModDashboardState extends State<ModDashboard> {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            SizedBox(
-                              width: 420,
-                              child: TextField(
-                                onChanged: (value) {
-                                  setState(() => _userSearchKeyword = value);
-                                },
-                                decoration: InputDecoration(
-                                  hintText: "Tìm theo tên hoặc email...",
-                                  prefixIcon: const Icon(Icons.search),
-                                  filled: true,
-                                  fillColor: const Color(0xFFF5F7FA),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 360,
+                                  height: 46,
+                                  child: TextField(
+                                    onChanged: (value) {
+                                      setState(() => _userSearchKeyword = value);
+                                    },
+                                    decoration: InputDecoration(
+                                      hintText: "Tìm theo tên hoặc email...",
+                                      prefixIcon: const Icon(Icons.search, size: 20),
+                                      filled: true,
+                                      fillColor: const Color(0xFFF5F7FA),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                    ),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                SizedBox(
+                                  height: 46,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _handleMigrateLegacyUsers,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF6797E1),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    icon: const Icon(Icons.sync_rounded, size: 18),
+                                    label: const Text(
+                                      "Đồng bộ user cũ",
+                                      style: TextStyle(
+                                        fontFamily: 'Nunito',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 12),
                           ],
@@ -458,7 +487,139 @@ class _ModDashboardState extends State<ModDashboard> {
       onSuspend: () => _handleSuspendUser(uid, data),
       onRestore: () => _handleRestoreUser(uid, data),
       onViewActivity: () => _showUserActivity(uid, data),
+      onApproveVerification: () => _handleApproveVerification(uid, data),
+      onRejectVerification: () => _handleRejectVerification(uid, data),
     );
+  }
+
+  Future<void> _handleApproveVerification(String uid, Map<String, dynamic> data) async {
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+
+    try {
+      await UserModerationService.approveVerification(uid: uid, data: data);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Đã duyệt xác thực cho ${data['displayName'] ?? 'tài khoản'}!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Lỗi duyệt xác thực: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
+    }
+  }
+
+  Future<void> _handleRejectVerification(String uid, Map<String, dynamic> data) async {
+    if (_isActionInProgress) return;
+
+    final reasonController = TextEditingController();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Từ chối xác thực tài khoản", style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Nhập lý do từ chối xác thực cho ${data['displayName'] ?? 'người dùng'}:"),
+            const SizedBox(height: 12),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                hintText: "VD: MSSV hoặc thông tin khoa chưa đúng",
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text("Hủy"),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text("Từ chối", style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+    _isActionInProgress = true;
+
+    try {
+      final reason = reasonController.text.trim().isEmpty
+          ? "Thông tin hồ sơ sinh viên không hợp lệ"
+          : reasonController.text.trim();
+
+      await UserModerationService.rejectVerification(
+        uid: uid,
+        data: data,
+        reason: reason,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Đã từ chối xác thực cho ${data['displayName'] ?? ''}"),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Lỗi từ chối xác thực: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
+    }
+  }
+
+  Future<void> _handleMigrateLegacyUsers() async {
+    if (_isActionInProgress) return;
+    _isActionInProgress = true;
+
+    try {
+      final count = await UserModerationService.migrateLegacyUsers();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Đã đồng bộ thành công $count tài khoản cũ!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Lỗi đồng bộ tài khoản: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      _isActionInProgress = false;
+    }
   }
 
   void _viewMaterial(Map<String, dynamic> data) {
