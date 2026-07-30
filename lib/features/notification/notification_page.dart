@@ -1,76 +1,170 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../models/notification_model.dart';
-import '../services/notification_service.dart';
-import '../home/post_detail_page.dart';
 import '../chat/pages/chat_detail_page.dart';
 import '../chat/services/chat_service.dart';
+import '../home/post_detail_page.dart';
+import '../services/notification_service.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
 
+  static const Color _primaryColor = Color(0xFF5893D8);
+  static const Color _dangerColor = Color(0xFFE5484D);
+
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF101214)
+        : const Color(0xFFF8FAFC);
+
+    final Color appBarColor = isDarkMode
+        ? const Color(0xFF101214)
+        : Colors.white;
+
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color dividerColor = isDarkMode
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFEAECF0);
 
     return Scaffold(
-      backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        backgroundColor: appBarColor,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
+          tooltip: 'Quay lại',
+          onPressed: () {
+            Navigator.pop(context);
+          },
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDarkMode ? Colors.white : Colors.black,
             size: 20,
+            color: primaryTextColor,
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          "Thông báo",
+          'Thông báo',
           style: TextStyle(
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
             fontFamily: 'Nunito',
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: primaryTextColor,
           ),
         ),
         actions: [
-          IconButton(
-            tooltip: "Đọc tất cả",
-            icon: const Icon(
-              Icons.done_all_rounded,
-              color: Color(0xFF5893D8),
+          PopupMenuButton<String>(
+            tooltip: 'Tùy chọn',
+            color: isDarkMode
+                ? const Color(0xFF222427)
+                : Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-            onPressed: () async {
-              await NotificationService.markAllAsRead();
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: primaryTextColor,
+            ),
+            onSelected: (value) async {
+              if (value == 'read_all') {
+                await NotificationService.markAllAsRead();
 
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Đã đánh dấu tất cả là đã đọc"),
-                  ),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Đã đánh dấu tất cả là đã đọc',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                }
+              }
+
+              if (value == 'delete_all' &&
+                  context.mounted) {
+                _showDeleteAllDialog(context);
               }
             },
+            itemBuilder: (menuContext) {
+              final Color menuTextColor = isDarkMode
+                  ? Colors.white
+                  : const Color(0xFF344054);
+
+              return [
+                PopupMenuItem<String>(
+                  value: 'read_all',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.done_all_rounded,
+                        size: 20,
+                        color: menuTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Đánh dấu tất cả đã đọc',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: menuTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                PopupMenuItem<String>(
+                  value: 'delete_all',
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/trash.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          _dangerColor,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Xóa tất cả',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: menuTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ];
+            },
           ),
-          IconButton(
-            tooltip: "Xóa tất cả",
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.redAccent,
-            ),
-            onPressed: () => _showDeleteAllDialog(context),
-          ),
+          const SizedBox(width: 4),
         ],
-        backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
-        elevation: 0,
-        centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            width: double.infinity,
             height: 1,
+            color: dividerColor,
           ),
         ),
       ),
@@ -78,137 +172,55 @@ class NotificationScreen extends StatelessWidget {
         stream: NotificationService.getNotifications(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Đã có lỗi xảy ra",
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  color: isDarkMode ? Colors.white70 : Colors.black54,
-                ),
-              ),
-            );
+            return _buildErrorState(isDarkMode);
           }
 
           if (!snapshot.hasData) {
             return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-            );
-          }
-
-          final notifications = snapshot.data!;
-
-          if (notifications.isEmpty) {
-            return Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 28,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.notifications_none_rounded,
-                      size: 42,
-                      color: isDarkMode ? Colors.white38 : Colors.grey,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Bạn chưa có thông báo nào",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
+              child: CircularProgressIndicator(
+                color: _primaryColor,
+                strokeWidth: 2.5,
               ),
             );
           }
 
-          final unreadCount = notifications.where((n) => !n.isRead).length;
+          final List<MyUniNotification> notifications =
+          snapshot.data!;
+
+          if (notifications.isEmpty) {
+            return _buildEmptyState(isDarkMode);
+          }
+
+          final int unreadCount = notifications
+              .where((notification) => !notification.isRead)
+              .length;
 
           return Column(
             children: [
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                  boxShadow: isDarkMode
-                      ? []
-                      : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF5893D8).withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.notifications_active_outlined,
-                        color: Color(0xFF5893D8),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        unreadCount > 0
-                            ? "Bạn có $unreadCount thông báo chưa đọc"
-                            : "Bạn đã xem hết thông báo rồi",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF344054),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _buildUnreadSummary(
+                unreadCount,
+                isDarkMode,
               ),
               Expanded(
                 child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    unreadCount > 0 ? 4 : 10,
+                    16,
+                    20,
+                  ),
                   itemCount: notifications.length,
                   itemBuilder: (context, index) {
-                    final noti = notifications[index];
+                    final MyUniNotification noti =
+                    notifications[index];
 
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _buildNotificationItem(context, noti),
+                      padding:
+                      const EdgeInsets.only(bottom: 10),
+                      child: _buildNotificationItem(
+                        context,
+                        noti,
+                      ),
                     );
                   },
                 ),
@@ -220,289 +232,42 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  void _handleNotificationTap(
-      BuildContext context,
-      MyUniNotification noti,
-      ) async {
-    NotificationService.markAsRead(noti.id);
-
-    if (noti.type == 'chat' || noti.roomId != null) {
-      final roomId = noti.roomId;
-      if (roomId != null && roomId.isNotEmpty) {
-        final currentUid = ChatService().currentUserId ?? '';
-        final peerUid = noti.senderId ?? roomId.split('_').firstWhere((id) => id != currentUid, orElse: () => '');
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatDetailPage(
-              roomId: roomId,
-              targetUserId: peerUid,
-              targetUserName: noti.senderName ?? noti.title,
-              targetUserPhoto: noti.senderAvatar ?? '',
-            ),
-          ),
-        );
-        return;
-      }
-    }
-
-    if (noti.relatedPostId != null && noti.collectionPath != null) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Container(
-          color: Colors.black.withOpacity(0.18),
-          child: const Center(
-            child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-          ),
-        ),
-      );
-
-      try {
-        final postDoc = await FirebaseFirestore.instance
-            .collection(noti.collectionPath!)
-            .doc(noti.relatedPostId)
-            .get()
-            .timeout(const Duration(seconds: 5));
-
-        if (!context.mounted) return;
-        Navigator.pop(context);
-
-        final bool isCommentNotification = noti.reportedCommentId != null ||
-            noti.title.toLowerCase().contains("bình luận") ||
-            noti.content.toLowerCase().contains("bình luận");
-
-        if (postDoc.exists) {
-          final postData = postDoc.data() as Map<String, dynamic>;
-
-          if (postData['status'] == 'hidden') {
-            _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
-          } else {
-            // Nếu đây là thông báo liên quan đến bình luận cụ thể, hãy kiểm tra xem bình luận đó còn tồn tại không
-            if (noti.reportedCommentId != null) {
-              final commentDoc = await FirebaseFirestore.instance
-                  .collection(noti.collectionPath!)
-                  .doc(noti.relatedPostId)
-                  .collection('comments')
-                  .doc(noti.reportedCommentId)
-                  .get();
-
-              if (!commentDoc.exists) {
-                _showUnavailableDialog(context, noti.id, isComment: true);
-                return;
-              }
-            }
-
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostDetailPage(
-                  docId: noti.relatedPostId!,
-                  initialPostData: postData,
-                ),
-              ),
-            );
-          }
-        } else {
-          _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
-        }
-      } on FirebaseException catch (e) {
-        if (!context.mounted) return;
-        Navigator.pop(context);
-
-        final bool isCommentNotification = noti.reportedCommentId != null ||
-            noti.title.toLowerCase().contains("bình luận") ||
-            noti.content.toLowerCase().contains("bình luận");
-
-        if (e.code == 'permission-denied' || e.code == 'not-found') {
-          _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Lỗi hệ thống: ${e.message}")),
-          );
-        }
-      } catch (e) {
-        if (!context.mounted) return;
-        Navigator.pop(context);
-        final bool isCommentNotification = noti.reportedCommentId != null ||
-            noti.title.toLowerCase().contains("bình luận") ||
-            noti.content.toLowerCase().contains("bình luận");
-        _showUnavailableDialog(context, noti.id, isComment: isCommentNotification);
-      }
-    }
-  }
-
-  void _showUnavailableDialog(BuildContext context, String notiId, {bool isComment = false}) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Thông báo",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          isComment
-              ? "Bình luận này đã bị xóa hoặc không còn tồn tại."
-              : "Bài viết này đã bị xóa hoặc không còn tồn tại.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Đóng",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              await NotificationService.deleteNotification(notiId);
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa thông báo")),
-                );
-              }
-            },
-            child: const Text(
-              "Xóa thông báo",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteAllDialog(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa tất cả thông báo",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Bạn có chắc muốn xóa toàn bộ thông báo không? Hành động này không thể hoàn tác.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              await NotificationService.deleteAllNotifications();
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa tất cả thông báo")),
-                );
-              }
-            },
-            child: const Text(
-              "Xóa tất cả",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDeleteOneDialog(
-      BuildContext context,
-      MyUniNotification noti,
+  Widget _buildUnreadSummary(
+      int unreadCount,
+      bool isDarkMode,
       ) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    if (unreadCount <= 0) {
+      return const SizedBox(height: 8);
+    }
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa thông báo",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Bạn có chắc muốn xóa thông báo này không?",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        18,
+        13,
+        18,
+        7,
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: _primaryColor,
+              shape: BoxShape.circle,
             ),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              await NotificationService.deleteNotification(noti.id);
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa thông báo")),
-                );
-              }
-            },
-            child: const Text(
-              "Xóa",
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$unreadCount thông báo chưa đọc',
               style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white60
+                    : const Color(0xFF667085),
               ),
             ),
           ),
@@ -515,147 +280,192 @@ class NotificationScreen extends StatelessWidget {
       BuildContext context,
       MyUniNotification noti,
       ) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
 
-    final Color unreadBg = isDarkMode
-        ? const Color(0xFF66ACFE).withOpacity(0.10)
-        : const Color(0xFFEEF6FF);
+    final bool isUnread = !noti.isRead;
 
-    final Color cardBg = noti.isRead
-        ? (isDarkMode ? const Color(0xFF15171A) : Colors.white)
-        : unreadBg;
+    final Color cardColor = isUnread
+        ? (isDarkMode
+        ? const Color(0xFF18212B)
+        : const Color(0xFFF3F8FF))
+        : (isDarkMode
+        ? const Color(0xFF15171A)
+        : Colors.white);
 
-    final Color borderColor = noti.isRead
-        ? (isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3))
-        : const Color(0xFF66ACFE).withOpacity(0.28);
+    final Color borderColor = isUnread
+        ? _primaryColor.withOpacity(0.25)
+        : (isDarkMode
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFEAECF0));
+
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    String displayContent = noti.content.trim();
+
+    if (displayContent.startsWith('đã ')) {
+      displayContent = 'Ai đó $displayContent';
+    } else if (displayContent.startsWith(' đã ')) {
+      displayContent = 'Ai đó$displayContent';
+    }
+
+    if (displayContent.isEmpty) {
+      displayContent = 'Bạn có một thông báo mới.';
+    }
 
     return Material(
       color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: () => _handleNotificationTap(context, noti),
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          _handleNotificationTap(context, noti);
+        },
+        onLongPress: () {
+          _showDeleteOneDialog(context, noti);
+        },
         child: Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: borderColor),
+            color: cardColor,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: borderColor,
+            ),
             boxShadow: isDarkMode
-                ? []
+                ? const []
                 : [
               BoxShadow(
-                color: Colors.black.withOpacity(0.03),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+                color:
+                Colors.black.withOpacity(0.025),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment:
+            CrossAxisAlignment.start,
             children: [
-              _getIcon(context, noti.type),
-              const SizedBox(width: 14),
+              _getNotificationIcon(
+                context,
+                noti.type,
+              ),
+              const SizedBox(width: 13),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
-                            noti.title,
+                            noti.title.trim().isNotEmpty
+                                ? noti.title
+                                : 'Thông báo mới',
+                            maxLines: 2,
+                            overflow:
+                            TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Nunito',
                               fontSize: 15,
-                              fontFamily: 'Encode Sans Expanded',
-                              color: isDarkMode ? Colors.white : Colors.black,
+                              height: 1.25,
+                              fontWeight: isUnread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                              color: primaryTextColor,
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          DateFormat('h:mm a').format(noti.timestamp),
-                          style: TextStyle(
-                            color: isDarkMode
-                                ? Colors.white38
-                                : Colors.grey[600],
-                            fontSize: 11,
-                            fontFamily: 'Encode Sans Expanded',
+                          _formatNotificationTime(
+                            noti.timestamp,
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        InkWell(
-                          borderRadius: BorderRadius.circular(20),
-                          onTap: () => _showDeleteOneDialog(context, noti),
-                          child: Padding(
-                            padding: const EdgeInsets.all(2),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 18,
-                              color: isDarkMode
-                                  ? Colors.white38
-                                  : Colors.grey[500],
-                            ),
+                          style: TextStyle(
+                            fontFamily:
+                            'Encode Sans Expanded',
+                            fontSize: 10.5,
+                            fontWeight: isUnread
+                                ? FontWeight.w600
+                                : FontWeight.w400,
+                            color: isUnread
+                                ? _primaryColor
+                                : secondaryTextColor,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-                    Builder(
-                      builder: (context) {
-                        String displayContent = noti.content;
-                        if (displayContent.startsWith(' đã ')) {
-                          displayContent = 'Ai đó$displayContent';
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            NotificationService.updateNotificationContent(noti.id, displayContent);
-                          });
-                        }
-                        return Text(
-                          displayContent,
-                          style: TextStyle(
-                            color: isDarkMode
-                                ? Colors.white70
-                                : const Color(0xFF4B5563),
-                            height: 1.45,
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 13,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        if (!noti.isRead)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF5893D8),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        if (!noti.isRead) const SizedBox(width: 8),
-                        Text(
-                          noti.isRead ? "Đã xem" : "Chưa đọc",
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: noti.isRead
-                                ? (isDarkMode
-                                ? Colors.white38
-                                : Colors.grey[600])
-                                : const Color(0xFF5893D8),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 5),
+                    Text(
+                      displayContent,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily:
+                        'Encode Sans Expanded',
+                        fontSize: 12.5,
+                        height: 1.4,
+                        fontWeight: isUnread
+                            ? FontWeight.w500
+                            : FontWeight.w400,
+                        color: isUnread
+                            ? primaryTextColor.withOpacity(
+                          0.82,
+                        )
+                            : secondaryTextColor,
+                      ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(width: 7),
+              Column(
+                crossAxisAlignment:
+                CrossAxisAlignment.center,
+                children: [
+                  InkWell(
+                    borderRadius:
+                    BorderRadius.circular(20),
+                    onTap: () {
+                      _showDeleteOneDialog(
+                        context,
+                        noti,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(3),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 17,
+                        color: isDarkMode
+                            ? Colors.white38
+                            : const Color(0xFF98A2B3),
+                      ),
+                    ),
+                  ),
+                  if (isUnread) ...[
+                    const SizedBox(height: 18),
+                    Container(
+                      width: 8,
+                      height: 8,
+                      decoration:
+                      const BoxDecoration(
+                        color: _primaryColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
@@ -664,54 +474,975 @@ class NotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _getIcon(BuildContext context, String type) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    IconData iconData;
-    Color iconColor;
-    Color bgColor;
+  Widget _getNotificationIcon(
+      BuildContext context,
+      String type,
+      ) {
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    late final IconData iconData;
+    late final Color iconColor;
 
     switch (type) {
       case 'trending':
-        iconData = Icons.whatshot_rounded;
-        iconColor = Colors.orange;
-        bgColor = Colors.orange.withOpacity(0.14);
+        iconData =
+            Icons.local_fire_department_rounded;
+        iconColor = const Color(0xFFF79009);
         break;
+
       case 'warning':
         iconData = Icons.warning_amber_rounded;
-        iconColor = Colors.redAccent;
-        bgColor = Colors.redAccent.withOpacity(0.14);
+        iconColor = const Color(0xFFF04438);
         break;
+
       case 'chat':
-        iconData = Icons.mark_chat_unread_rounded;
-        iconColor = const Color(0xFF10B981);
-        bgColor = const Color(0xFF10B981).withOpacity(0.14);
+        iconData =
+            Icons.mark_chat_unread_rounded;
+        iconColor = const Color(0xFF12B76A);
         break;
+
       case 'comment':
-        iconData = Icons.chat_bubble_outline_rounded;
-        iconColor = const Color(0xFF5893D8);
-        bgColor = const Color(0xFF5893D8).withOpacity(0.14);
+        iconData =
+            Icons.chat_bubble_outline_rounded;
+        iconColor = _primaryColor;
         break;
+
       case 'like':
-        iconData = Icons.thumb_up_off_alt_rounded;
-        iconColor = Colors.pinkAccent;
-        bgColor = Colors.pinkAccent.withOpacity(0.14);
+        iconData =
+            Icons.thumb_up_alt_outlined;
+        iconColor = const Color(0xFFEE46BC);
         break;
+
+      case 'report':
+        iconData =
+            Icons.report_outlined;
+        iconColor = const Color(0xFFF04438);
+        break;
+
+      case 'success':
+        iconData =
+            Icons.check_circle_outline_rounded;
+        iconColor = const Color(0xFF12B76A);
+        break;
+
       default:
-        iconData = Icons.notifications_none_rounded;
-        iconColor = isDarkMode ? Colors.white70 : Colors.black54;
-        bgColor = isDarkMode
-            ? Colors.white.withOpacity(0.10)
-            : Colors.black.withOpacity(0.06);
+        iconData =
+            Icons.notifications_none_rounded;
+        iconColor = isDarkMode
+            ? Colors.white70
+            : const Color(0xFF667085);
     }
 
     return Container(
-      width: 46,
-      height: 46,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
+        color: iconColor.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(13),
       ),
-      child: Icon(iconData, size: 23, color: iconColor),
+      child: Icon(
+        iconData,
+        size: 22,
+        color: iconColor,
+      ),
+    );
+  }
+
+  String _formatNotificationTime(
+      DateTime timestamp,
+      ) {
+    final DateTime now = DateTime.now();
+
+    Duration difference = now.difference(timestamp);
+
+    if (difference.isNegative) {
+      difference = Duration.zero;
+    }
+
+    if (difference.inMinutes < 1) {
+      return 'Vừa xong';
+    }
+
+    if (difference.inMinutes < 60) {
+      return '${difference.inMinutes} phút';
+    }
+
+    if (difference.inHours < 24) {
+      return '${difference.inHours} giờ';
+    }
+
+    if (difference.inDays == 1) {
+      return 'Hôm qua';
+    }
+
+    if (difference.inDays < 7) {
+      return '${difference.inDays} ngày';
+    }
+
+    if (timestamp.year == now.year) {
+      return DateFormat('dd/MM').format(timestamp);
+    }
+
+    return DateFormat('dd/MM/yy').format(timestamp);
+  }
+
+  Future<void> _handleNotificationTap(
+      BuildContext context,
+      MyUniNotification noti,
+      ) async {
+    if (!noti.isRead) {
+      await NotificationService.markAsRead(
+        noti.id,
+      );
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
+    if (noti.type == 'chat' ||
+        noti.roomId != null) {
+      final String? roomId = noti.roomId;
+
+      if (roomId != null &&
+          roomId.isNotEmpty) {
+        final String currentUid =
+            ChatService().currentUserId ?? '';
+
+        final String peerUid =
+            noti.senderId ??
+                roomId.split('_').firstWhere(
+                      (id) => id != currentUid,
+                  orElse: () => '',
+                );
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) =>
+                ChatDetailPage(
+                  roomId: roomId,
+                  targetUserId: peerUid,
+                  targetUserName:
+                  noti.senderName ?? noti.title,
+                  targetUserPhoto:
+                  noti.senderAvatar ?? '',
+                ),
+          ),
+        );
+
+        return;
+      }
+    }
+
+    if (noti.relatedPostId == null ||
+        noti.collectionPath == null) {
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return Container(
+          color: Colors.black.withOpacity(0.18),
+          child: const Center(
+            child: CircularProgressIndicator(
+              color: _primaryColor,
+            ),
+          ),
+        );
+      },
+    );
+
+    try {
+      final DocumentSnapshot<Map<String, dynamic>>
+      postDoc = await FirebaseFirestore.instance
+          .collection(noti.collectionPath!)
+          .doc(noti.relatedPostId)
+          .get()
+          .timeout(
+        const Duration(seconds: 5),
+      );
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+
+      final bool isCommentNotification =
+      _isCommentNotification(noti);
+
+      if (!postDoc.exists) {
+        _showUnavailableDialog(
+          context,
+          noti.id,
+          isComment: isCommentNotification,
+        );
+        return;
+      }
+
+      final Map<String, dynamic> postData =
+      postDoc.data()!;
+
+      if (postData['status'] == 'hidden') {
+        _showUnavailableDialog(
+          context,
+          noti.id,
+          isComment: isCommentNotification,
+        );
+        return;
+      }
+
+      if (noti.reportedCommentId != null) {
+        final commentDoc = await FirebaseFirestore
+            .instance
+            .collection(noti.collectionPath!)
+            .doc(noti.relatedPostId)
+            .collection('comments')
+            .doc(noti.reportedCommentId)
+            .get();
+
+        if (!context.mounted) {
+          return;
+        }
+
+        if (!commentDoc.exists) {
+          _showUnavailableDialog(
+            context,
+            noti.id,
+            isComment: true,
+          );
+          return;
+        }
+      }
+
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PostDetailPage(
+            docId: noti.relatedPostId!,
+            initialPostData: postData,
+          ),
+        ),
+      );
+    } on FirebaseException catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+
+      if (e.code == 'permission-denied' ||
+          e.code == 'not-found') {
+        _showUnavailableDialog(
+          context,
+          noti.id,
+          isComment:
+          _isCommentNotification(noti),
+        );
+      } else {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                'Lỗi hệ thống: ${e.message ?? e.code}',
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+      }
+    } catch (e) {
+      if (!context.mounted) {
+        return;
+      }
+
+      Navigator.pop(context);
+
+      _showUnavailableDialog(
+        context,
+        noti.id,
+        isComment:
+        _isCommentNotification(noti),
+      );
+    }
+  }
+
+  bool _isCommentNotification(
+      MyUniNotification noti,
+      ) {
+    return noti.reportedCommentId != null ||
+        noti.type == 'comment' ||
+        noti.title
+            .toLowerCase()
+            .contains('bình luận') ||
+        noti.content
+            .toLowerCase()
+            .contains('bình luận');
+  }
+
+  void _showUnavailableDialog(
+      BuildContext parentContext,
+      String notiId, {
+        bool isComment = false,
+      }) {
+    final bool isDarkMode =
+        Theme.of(parentContext).brightness ==
+            Brightness.dark;
+
+    final Color textColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1F2937);
+
+    final Color secondaryTextColor =
+    isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : const Color(0xFFE4E7EC);
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDarkMode
+              ? const Color(0xFF1C1E21)
+              : Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius:
+            BorderRadius.circular(20),
+          ),
+          titlePadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            8,
+          ),
+          contentPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          actionsPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          title: Text(
+            isComment
+                ? 'Bình luận không khả dụng'
+                : 'Bài viết không khả dụng',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          content: Text(
+            isComment
+                ? 'Bình luận này đã bị xóa hoặc không còn tồn tại.'
+                : 'Bài viết này đã bị xóa hoặc không còn tồn tại.',
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryTextColor,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+                      },
+                      style:
+                      OutlinedButton.styleFrom(
+                        foregroundColor:
+                        secondaryTextColor,
+                        side: BorderSide(
+                          color: borderColor,
+                        ),
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Đóng',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+
+                        await NotificationService
+                            .deleteNotification(
+                          notiId,
+                        );
+
+                        if (parentContext
+                            .mounted) {
+                          ScaffoldMessenger.of(
+                            parentContext,
+                          )
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Đã xóa thông báo',
+                                ),
+                                behavior:
+                                SnackBarBehavior
+                                    .floating,
+                              ),
+                            );
+                        }
+                      },
+                      style:
+                      FilledButton.styleFrom(
+                        backgroundColor:
+                        _dangerColor,
+                        foregroundColor:
+                        Colors.white,
+                        elevation: 0,
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xóa thông báo',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteAllDialog(
+      BuildContext parentContext,
+      ) {
+    final bool isDarkMode =
+        Theme.of(parentContext).brightness ==
+            Brightness.dark;
+
+    final Color textColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1F2937);
+
+    final Color secondaryTextColor =
+    isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : const Color(0xFFE4E7EC);
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDarkMode
+              ? const Color(0xFF1C1E21)
+              : Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius:
+            BorderRadius.circular(20),
+          ),
+          titlePadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            8,
+          ),
+          contentPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          actionsPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          title: Text(
+            'Xóa tất cả thông báo?',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          content: Text(
+            'Toàn bộ thông báo sẽ bị xóa và không thể khôi phục.',
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryTextColor,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+                      },
+                      style:
+                      OutlinedButton.styleFrom(
+                        foregroundColor:
+                        secondaryTextColor,
+                        side: BorderSide(
+                          color: borderColor,
+                        ),
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+
+                        await NotificationService
+                            .deleteAllNotifications();
+
+                        if (parentContext
+                            .mounted) {
+                          ScaffoldMessenger.of(
+                            parentContext,
+                          )
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Đã xóa tất cả thông báo',
+                                ),
+                                behavior:
+                                SnackBarBehavior
+                                    .floating,
+                              ),
+                            );
+                        }
+                      },
+                      style:
+                      FilledButton.styleFrom(
+                        backgroundColor:
+                        _dangerColor,
+                        foregroundColor:
+                        Colors.white,
+                        elevation: 0,
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xóa tất cả',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteOneDialog(
+      BuildContext parentContext,
+      MyUniNotification noti,
+      ) {
+    final bool isDarkMode =
+        Theme.of(parentContext).brightness ==
+            Brightness.dark;
+
+    final Color textColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1F2937);
+
+    final Color secondaryTextColor =
+    isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : const Color(0xFFE4E7EC);
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: isDarkMode
+              ? const Color(0xFF1C1E21)
+              : Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius:
+            BorderRadius.circular(20),
+          ),
+          titlePadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            20,
+            20,
+            8,
+          ),
+          contentPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          actionsPadding:
+          const EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            20,
+          ),
+          title: Text(
+            'Xóa thông báo?',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          content: Text(
+            'Bạn có chắc muốn xóa thông báo này không?',
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryTextColor,
+            ),
+          ),
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+                      },
+                      style:
+                      OutlinedButton.styleFrom(
+                        foregroundColor:
+                        secondaryTextColor,
+                        side: BorderSide(
+                          color: borderColor,
+                        ),
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Hủy',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(
+                          dialogContext,
+                        );
+
+                        await NotificationService
+                            .deleteNotification(
+                          noti.id,
+                        );
+
+                        if (parentContext
+                            .mounted) {
+                          ScaffoldMessenger.of(
+                            parentContext,
+                          )
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Đã xóa thông báo',
+                                ),
+                                behavior:
+                                SnackBarBehavior
+                                    .floating,
+                              ),
+                            );
+                        }
+                      },
+                      style:
+                      FilledButton.styleFrom(
+                        backgroundColor:
+                        _dangerColor,
+                        foregroundColor:
+                        Colors.white,
+                        elevation: 0,
+                        shape:
+                        RoundedRectangleBorder(
+                          borderRadius:
+                          BorderRadius.circular(
+                            12,
+                          ),
+                        ),
+                      ),
+                      child: const Text(
+                        'Xóa',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight:
+                          FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(
+      bool isDarkMode,
+      ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 32,
+          vertical: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(
+                  isDarkMode ? 0.14 : 0.09,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.notifications_none_rounded,
+                size: 34,
+                color: _primaryColor,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Chưa có thông báo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xFF344054),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Các thông báo về lượt thích, bình luận và hoạt động mới sẽ xuất hiện tại đây.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily:
+                'Encode Sans Expanded',
+                fontSize: 12,
+                height: 1.45,
+                color: isDarkMode
+                    ? Colors.white54
+                    : const Color(0xFF667085),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(
+      bool isDarkMode,
+      ) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 32,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 42,
+              color: isDarkMode
+                  ? Colors.white38
+                  : const Color(0xFF98A2B3),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Không thể tải thông báo',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xFF344054),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              'Vui lòng kiểm tra kết nối và thử lại.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily:
+                'Encode Sans Expanded',
+                fontSize: 12,
+                color: isDarkMode
+                    ? Colors.white54
+                    : const Color(0xFF667085),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

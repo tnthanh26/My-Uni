@@ -139,58 +139,80 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
           color: _backgroundColor(isDarkMode),
           child: Column(
             children: [
-              // Search Input Bar
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: _surfaceColor(isDarkMode),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _borderColor(isDarkMode)),
-                    boxShadow: _cardShadow(isDarkMode),
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value.trim().toLowerCase();
+                    });
+                  },
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    color: _primaryTextColor(isDarkMode),
                   ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      const Icon(
-                        Icons.search_rounded,
+                  decoration: InputDecoration(
+                    hintText: 'Tìm kiếm sự kiện đã lưu',
+                    hintStyle: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w400,
+                      color: isDarkMode
+                          ? Colors.white38
+                          : const Color(0xFF98A2B3),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      size: 21,
+                      color: isDarkMode
+                          ? Colors.white54
+                          : const Color(0xFF667085),
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                      tooltip: 'Xóa tìm kiếm',
+                      splashRadius: 18,
+                      onPressed: () {
+                        _searchController.clear();
+
+                        setState(() {
+                          _searchQuery = '';
+                        });
+                      },
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 19,
+                        color: isDarkMode
+                            ? Colors.white54
+                            : const Color(0xFF667085),
+                      ),
+                    )
+                        : null,
+                    filled: true,
+                    fillColor: isDarkMode
+                        ? const Color(0xFF1C1E21)
+                        : Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: BorderSide(
+                        color: isDarkMode
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : const Color(0xFFE4E7EC),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(15),
+                      borderSide: const BorderSide(
                         color: primaryBlue,
-                        size: 20,
+                        width: 1.4,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 14,
-                            color: _primaryTextColor(isDarkMode),
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Tìm kiếm sự kiện đã lưu...',
-                            hintStyle: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 13.5,
-                              color: _secondaryTextColor(isDarkMode),
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                          ),
-                        ),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        IconButton(
-                          icon: Icon(
-                            Icons.cancel_rounded,
-                            size: 18,
-                            color: _secondaryTextColor(isDarkMode),
-                          ),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        ),
-                    ],
+                    ),
                   ),
                 ),
               ),

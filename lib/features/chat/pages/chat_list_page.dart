@@ -65,25 +65,81 @@ class _ChatListPageState extends State<ChatListPage> {
       ),
       body: Column(
         children: [
-          // Thanh tìm kiếm Google M3 Style
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF2C2C2E) : const Color(0xFFEFF4F8),
-                borderRadius: BorderRadius.circular(24),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value.trim().toLowerCase();
+                });
+              },
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 13,
+                color: isDark
+                    ? Colors.white
+                    : const Color(0xFF1D2939),
               ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (val) => setState(() => _searchQuery = val.trim().toLowerCase()),
-                decoration: const InputDecoration(
-                  icon: Icon(Icons.search_rounded, color: Colors.grey, size: 20),
-                  hintText: 'Tìm kiếm cuộc trò chuyện...',
-                  hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 10),
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm cuộc trò chuyện',
+                hintStyle: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: isDark
+                      ? Colors.white38
+                      : const Color(0xFF98A2B3),
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 21,
+                  color: isDark
+                      ? Colors.white54
+                      : const Color(0xFF667085),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                  tooltip: 'Xóa tìm kiếm',
+                  splashRadius: 18,
+                  onPressed: () {
+                    _searchController.clear();
+
+                    setState(() {
+                      _searchQuery = '';
+                    });
+                  },
+                  icon: Icon(
+                    Icons.close_rounded,
+                    size: 19,
+                    color: isDark
+                        ? Colors.white54
+                        : const Color(0xFF667085),
+                  ),
+                )
+                    : null,
+                filled: true,
+                fillColor: isDark
+                    ? const Color(0xFF1C1E21)
+                    : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE4E7EC),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF5893D8),
+                    width: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -138,111 +194,219 @@ class _ChatListPageState extends State<ChatListPage> {
                 }
 
                 return ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                   itemCount: filteredRooms.length,
-                  separatorBuilder: (_, __) => Divider(
-                    height: 1,
-                    indent: 72,
-                    color: isDark ? Colors.white12 : Colors.black12,
-                  ),
+                  separatorBuilder: (_, __) => const SizedBox(height: 4),
                   itemBuilder: (context, index) {
                     final room = filteredRooms[index];
+
                     final otherUid = room.getOtherUserId(currentUid);
                     final otherName = room.getOtherUserName(currentUid);
                     final otherPhoto = room.getOtherUserPhoto(currentUid);
 
                     String timeStr = '';
+
                     if (room.lastMessageTime != null) {
-                      timeStr = timeago.format(room.lastMessageTime!, locale: 'vi');
+                      timeStr = timeago.format(
+                        room.lastMessageTime!,
+                        locale: 'vi',
+                      );
                     }
 
-                    return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      leading: Stack(
-                        children: [
-                          CircleAvatar(
-                            radius: 26,
-                            backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                            backgroundImage: Base64ImageCache.getAvatarProvider(otherPhoto),
-                            child: otherPhoto.isEmpty
-                                ? Text(
-                                    otherName.isNotEmpty ? otherName[0].toUpperCase() : 'S',
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: AppColors.hcmusTeal,
-                                    ),
-                                  )
+                    final unreadCount = room.unreadCounts[currentUid] ?? 0;
+                    final bool isUnread = unreadCount > 0;
+
+                    final Color itemColor = isUnread
+                        ? (
+                        isDark
+                            ? const Color(0xFF18212B)
+                            : const Color(0xFFF3F8FF)
+                    )
+                        : Colors.transparent;
+
+                    final Color primaryTextColor = isDark
+                        ? Colors.white
+                        : const Color(0xFF1D2939);
+
+                    final Color secondaryTextColor = isDark
+                        ? Colors.white60
+                        : const Color(0xFF667085);
+
+                    return Material(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(14),
+                        onTap: () {
+                          _chatService.markRoomAsRead(room.id);
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ChatDetailPage(
+                                roomId: room.id,
+                                targetUserId: otherUid,
+                                targetUserName: otherName,
+                                targetUserPhoto: otherPhoto,
+                              ),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 11,
+                          ),
+                          decoration: BoxDecoration(
+                            color: itemColor,
+                            borderRadius: BorderRadius.circular(14),
+                            border: isUnread
+                                ? Border.all(
+                              color: AppColors.hcmusTeal.withValues(
+                                alpha: isDark ? 0.24 : 0.16,
+                              ),
+                            )
                                 : null,
                           ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: BoxDecoration(
-                                color: isDark ? AppColors.surfaceDark : Colors.white,
-                                shape: BoxShape.circle,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: AppColors.hcmusTeal.withValues(
+                                      alpha: 0.15,
+                                    ),
+                                    backgroundImage:
+                                    Base64ImageCache.getAvatarProvider(
+                                      otherPhoto,
+                                    ),
+                                    child: otherPhoto.isEmpty
+                                        ? Text(
+                                      otherName.isNotEmpty
+                                          ? otherName[0].toUpperCase()
+                                          : 'S',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.hcmusTeal,
+                                      ),
+                                    )
+                                        : null,
+                                  ),
+                                  Positioned(
+                                    right: -1,
+                                    bottom: -1,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(2),
+                                      decoration: BoxDecoration(
+                                        color: isDark
+                                            ? AppColors.surfaceDark
+                                            : Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.verified_rounded,
+                                        size: 14,
+                                        color: AppColors.hcmusTeal,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                              child: const Icon(
-                                Icons.verified_rounded,
-                                size: 14,
-                                color: AppColors.hcmusTeal,
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                  CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            otherName,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontFamily: 'Nunito',
+                                              fontSize: 15.5,
+                                              height: 1.2,
+                                              fontWeight: isUnread
+                                                  ? FontWeight.w800
+                                                  : FontWeight.w700,
+                                              color: primaryTextColor,
+                                            ),
+                                          ),
+                                        ),
+                                        if (timeStr.isNotEmpty) ...[
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            timeStr,
+                                            style: TextStyle(
+                                              fontFamily:
+                                              'Encode Sans Expanded',
+                                              fontSize: 10.5,
+                                              fontWeight: isUnread
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w400,
+                                              color: isUnread
+                                                  ? AppColors.hcmusTeal
+                                                  : secondaryTextColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                    const SizedBox(height: 5),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            room.lastMessage.isNotEmpty
+                                                ? room.lastMessage
+                                                : 'Bắt đầu cuộc trò chuyện',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontFamily:
+                                              'Encode Sans Expanded',
+                                              fontSize: 12.5,
+                                              height: 1.3,
+                                              fontWeight: isUnread
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w400,
+                                              color: isUnread
+                                                  ? primaryTextColor.withValues(
+                                                alpha: 0.82,
+                                              )
+                                                  : secondaryTextColor,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isUnread) ...[
+                                          const SizedBox(width: 10),
+                                          Container(
+                                            width: 8,
+                                            height: 8,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.hcmusTeal,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
                           ),
-                        ],
-                      ),
-                      title: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              otherName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          if (timeStr.isNotEmpty)
-                            Text(
-                              timeStr,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey,
-                              ),
-                            ),
-                        ],
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          room.lastMessage.isNotEmpty
-                              ? room.lastMessage
-                              : 'Bắt đầu cuộc trò chuyện',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      onTap: () {
-                        _chatService.markRoomAsRead(room.id);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ChatDetailPage(
-                              roomId: room.id,
-                              targetUserId: otherUid,
-                              targetUserName: otherName,
-                              targetUserPhoto: otherPhoto,
-                            ),
-                          ),
-                        );
-                      },
                     );
                   },
                 );

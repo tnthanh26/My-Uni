@@ -18,8 +18,9 @@ class EventPage extends StatefulWidget {
 class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
   late TabController _tabController;
   bool _showFab = true;
-  static const Color primaryBrown = Color(0xFF545454);
-  static const Color _accent   = Color(0xFF6C63FF); // electric violet
+
+  static const Color _primaryColor = Color(0xFF5893D8);
+  static const Color _darkSurface = Color(0xFF1C1E21);
 
   @override
   void initState() {
@@ -41,6 +42,107 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  Widget _buildHeaderActionButton({
+    required String tooltip,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.black.withOpacity(0.32),
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Container(
+            width: 38,
+            height: 38,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: Colors.white.withOpacity(0.16),
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.white,
+              size: 20,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderNotificationButton({
+    required String tooltip,
+    required IconData icon,
+    required int unreadCount,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 30,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 1,
+                    top: 0,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                      ),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF04438),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF303030),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Text(
+                        unreadCount > 9
+                            ? '9+'
+                            : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFixedHeader(BuildContext context) {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Stack(
@@ -56,7 +158,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
             ),
           ),
           child: Container(
-            color: Colors.black.withOpacity(0.45),
+            color: Colors.black.withOpacity(0.38),
           ),
         ),
         // Logo & HCMUS Text & Notification - Cố định
@@ -81,131 +183,106 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontFamily: 'Nunito',
                           letterSpacing: 1.2
                       )
                   ),
                 ]),
 
-                // Cụm phải: Nút quét QR Event & Nút thông báo UI Capsule
-                Row(
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => const EventQrScannerDialog(),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(7),
-                        decoration: const BoxDecoration(
-                          color: Color(0xff545454),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: Colors.white,
-                          size: 20,
-                        ),
-                      ),
+                // Cụm phải: QR + Chat + Notification trong cùng pill
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 5,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.32),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.16),
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: const Color(0xff545454),
-                        borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Nút QR
+                      _buildHeaderNotificationButton(
+                        tooltip: 'Quét mã QR điểm danh',
+                        icon: Icons.qr_code_scanner_rounded,
+                        unreadCount: 0,
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) =>
+                            const EventQrScannerDialog(),
+                          );
+                        },
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Nút Message (Bên trái nút Notification)
-                          GestureDetector(
+                      Container(
+                        width: 1,
+                        height: 20,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: Colors.white.withOpacity(0.20),
+                      ),
+                      StreamBuilder<List<MyUniNotification>>(
+                        stream:
+                        NotificationService.getMessageNotifications(),
+                        builder: (context, snapshot) {
+                          final int unreadChatCount = snapshot.data
+                              ?.where((noti) => !noti.isRead)
+                              .length ??
+                              0;
+
+                          return _buildHeaderNotificationButton(
+                            tooltip: 'Thông báo tin nhắn',
+                            icon: Icons.chat_bubble_rounded,
+                            unreadCount: unreadChatCount,
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const MessageNotificationScreen()),
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const MessageNotificationScreen(),
+                                ),
                               );
                             },
-                            child: StreamBuilder<List<MyUniNotification>>(
-                              stream: NotificationService.getMessageNotifications(),
-                              builder: (context, snapshot) {
-                                final unreadChatCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
+                          );
+                        },
+                      ),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: Colors.white.withOpacity(0.20),
+                      ),
+                      StreamBuilder<List<MyUniNotification>>(
+                        stream:
+                        NotificationService.getNotifications(),
+                        builder: (context, snapshot) {
+                          final int unreadCount = snapshot.data
+                              ?.where((noti) => !noti.isRead)
+                              .length ??
+                              0;
 
-                                return Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-                                    if (unreadChatCount > 0)
-                                      Positioned(
-                                        right: -2,
-                                        top: -2,
-                                        child: CircleAvatar(
-                                          radius: 6,
-                                          backgroundColor: Colors.red,
-                                          child: Text(
-                                            unreadChatCount > 9 ? "9+" : unreadChatCount.toString(),
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 7,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Text("|", style: TextStyle(color: Colors.white38)),
-                          const SizedBox(width: 8),
-                          // Nút Notification
-                          GestureDetector(
+                          return _buildHeaderNotificationButton(
+                            tooltip: 'Thông báo hoạt động',
+                            icon: Icons.notifications_rounded,
+                            unreadCount: unreadCount,
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const NotificationScreen(),
+                                ),
                               );
                             },
-                            child: StreamBuilder<List<MyUniNotification>>(
-                              stream: NotificationService.getNotifications(),
-                              builder: (context, snapshot) {
-                                final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                                return Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                    if (unreadCount > 0)
-                                      Positioned(
-                                        right: -2,
-                                        top: -2,
-                                        child: CircleAvatar(
-                                          radius: 6,
-                                          backgroundColor: Colors.red,
-                                          child: Text(
-                                            unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                            style: const TextStyle(
-                                                color: Colors.white,
-                                                fontSize: 7,
-                                                fontWeight: FontWeight.bold
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                  ],
-                                );
-                              },
-                            ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -215,24 +292,36 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8F9FA),
-      floatingActionButton: _showFab
-          ? FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const CreatePersonalEventPage()),
-        ),
-        backgroundColor: primaryBrown,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
-      )
-          : null,
+        floatingActionButton: _showFab
+            ? FloatingActionButton(
+          heroTag: 'create_personal_event_fab',
+          tooltip: 'Tạo sự kiện cá nhân',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                const CreatePersonalEventPage(),
+              ),
+            );
+          },
+          backgroundColor: _primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 3,
+          shape: const CircleBorder(),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 27,
+          ),
+        )
+            : null,
       body: Stack(
         children: [
           // 1. Header cố định (Dưới cùng)
@@ -272,26 +361,27 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                           isScrollable: true,
                           tabAlignment: TabAlignment.center,
                           indicatorSize: TabBarIndicatorSize.tab,
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 24),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          dividerColor: Colors.transparent,
+                          splashBorderRadius: BorderRadius.circular(16),
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           indicator: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
                             gradient: const LinearGradient(
                               colors: [Color(0xFF6C63FF), Color(0xFF00D4AA)],
                               begin: Alignment.centerLeft,
                               end: Alignment.centerRight,
                             ),
-                            borderRadius: BorderRadius.circular(25),
-                            boxShadow: [
-                              BoxShadow(
-                                color: _accent.withValues(alpha: 0.35),
-                                blurRadius: 10,
-                                offset: const Offset(0, 3),
-                              ),
-                            ],
                           ),
                           labelColor: Colors.white,
-                          unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
-                          dividerColor: Colors.transparent,
+                          unselectedLabelColor: isDarkMode
+                              ? Colors.white70
+                              : Colors.black87,
                           labelStyle: const TextStyle(
                             fontFamily: 'Nunito',
                             fontWeight: FontWeight.w600,
@@ -303,9 +393,18 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                             fontSize: 12,
                           ),
                           tabs: const [
-                            Tab(text: 'Cá nhân'),
-                            Tab(text: 'Cộng đồng'),
-                            Tab(text: 'Điểm danh'),
+                            Tab(
+                              height: 34,
+                              text: 'Cá nhân',
+                            ),
+                            Tab(
+                              height: 34,
+                              text: 'Cộng đồng',
+                            ),
+                            Tab(
+                              height: 34,
+                              text: 'Điểm danh',
+                            ),
                           ],
                         ),
                       ),
