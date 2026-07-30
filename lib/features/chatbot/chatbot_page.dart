@@ -247,29 +247,17 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
           // Report button
           GestureDetector(
             onTap: () => _showReportDialog(context),
-            child: Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: const Color(0xFFD85858),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFD85858),
-                  width: 1,
-                ),
-              ),
-
-              child: const Icon(
-                Icons.report_gmailerrorred_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
+            child: const Icon(
+              Icons.report_gmailerrorred_rounded,
+              color: Colors.white,
+              size: 24,
             ),
           ),
         ],
       ),
     );
   }
+
 
   void _showReportDialog(BuildContext context) {
     final TextEditingController detailController = TextEditingController();
@@ -383,72 +371,211 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   ],
                 ),
               ),
+              actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.hcmusBlue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor:
+                            isDarkMode ? Colors.white70 : Colors.black54,
+                            side: BorderSide(
+                              color: isDarkMode
+                                  ? Colors.white24
+                                  : const Color(0xFFDADCE0),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                          child: const Text(
+                            'Hủy',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  ),
-                  onPressed: () async {
-                    final String details = detailController.text.trim();
-                    if (details.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Vui lòng nhập chi tiết lỗi!'),
-                          backgroundColor: Colors.redAccent,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.hcmusBlue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: EdgeInsets.zero,
+                          ),
+                          onPressed: () async {
+                            final String details =
+                            detailController.text.trim();
+
+                            if (details.isEmpty) {
+                              ScaffoldMessenger.of(context)
+                                ..hideCurrentSnackBar()
+                                ..showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Vui lòng nhập chi tiết lỗi!',
+                                    ),
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              return;
+                            }
+
+                            FocusScope.of(context).unfocus();
+                            Navigator.pop(context);
+
+                            final user =
+                                FirebaseAuth.instance.currentUser;
+                            final String userEmail =
+                                user?.email ?? 'N/A';
+                            final String userId =
+                                user?.uid ?? 'N/A';
+
+                            try {
+                              await FirebaseFirestore.instance
+                                  .collection('chatbot_reports')
+                                  .add({
+                                'category': selectedCategory,
+                                'details': details,
+                                'userEmail': userEmail,
+                                'userId': userId,
+                                'timestamp':
+                                FieldValue.serverTimestamp(),
+                              });
+                            } catch (e) {
+                              debugPrint(
+                                'Lỗi lưu report vào Firestore: $e',
+                              );
+                            }
+
+                            await _sendToDiscordWebhook(
+                              category: selectedCategory,
+                              details: details,
+                              userEmail: userEmail,
+                              userId: userId,
+                            );
+
+                            if (this.context.mounted) {
+                              _showSuccessReportDialog(
+                                'Cảm ơn đóng góp của bạn! Chúng tôi đã ghi nhận báo cáo và sẽ tiến hành cải thiện câu trả lời của Chatbot trong thời gian sớm nhất.',
+                              );
+                            }
+                          },
+                          child: const Text(
+                            'Gửi báo cáo',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                      );
-                      return;
-                    }
-
-                    Navigator.pop(context);
-
-                    final user = FirebaseAuth.instance.currentUser;
-                    final String userEmail = user?.email ?? 'N/A';
-                    final String userId = user?.uid ?? 'N/A';
-
-                    try {
-                      await FirebaseFirestore.instance.collection('chatbot_reports').add({
-                        'category': selectedCategory,
-                        'details': details,
-                        'userEmail': userEmail,
-                        'userId': userId,
-                        'timestamp': FieldValue.serverTimestamp(),
-                      });
-                    } catch (e) {
-                      debugPrint('Lỗi lưu report vào Firestore: $e');
-                    }
-
-                    // 2. Gửi thông báo đến Discord Webhook
-                    await _sendToDiscordWebhook(
-                      category: selectedCategory,
-                      details: details,
-                      userEmail: userEmail,
-                      userId: userId,
-                    );
-
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Cảm ơn đóng góp của bạn! Báo cáo đã được gửi tới hệ thống.'),
-                          backgroundColor: AppColors.hcmusBlue,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Gửi báo cáo', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             );
           },
+        );
+      },
+    );
+  }
+
+  void _showSuccessReportDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final isDarkMode = Theme.of(dialogContext).brightness == Brightness.dark;
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Gửi báo cáo thành công",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : const Color(0xFF222222),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    height: 1.45,
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF5893D8),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Đồng ý",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

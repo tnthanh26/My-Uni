@@ -7,6 +7,8 @@ class ChatService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  static final Map<String, DateTime> _lastMarkedTimes = {};
+
   String? get currentUserId => _auth.currentUser?.uid;
 
   /// Tạo ID phòng chat cố định theo thứ tự 2 User ID (ví dụ: "uid1_uid2")
@@ -258,24 +260,42 @@ class ChatService {
     }
   }
 
-  /// Đánh dấu đã đọc phòng chat
   Future<void> markRoomAsRead(String roomId) async {
     final myUid = currentUserId;
     if (myUid == null) return;
+
+    // Rate limiter: Bỏ qua nếu vừa mới gọi đánh dấu đã đọc trong vòng 2 giây qua
+    final now = DateTime.now();
+    final lastMarked = _lastMarkedTimes[roomId];
+    if (lastMarked != null && now.difference(lastMarked).inSeconds < 2) {
+      return;
+    }
+    _lastMarkedTimes[roomId] = now;
 
     try {
       final roomRef = _firestore.collection('chat_rooms').doc(roomId);
       final roomDoc = await roomRef.get();
       if (roomDoc.exists) {
         final data = roomDoc.data() ?? {};
-        final updateData = <String, dynamic>{
-          'unreadCounts.$myUid': 0,
-        };
-        // Xóa key dính dấu chấm cấp cao cũ nếu tồn tại
-        if (data.containsKey('unreadCounts.$myUid')) {
-          updateData['unreadCounts.$myUid'] = FieldValue.delete();
+        
+        // 1. Cập nhật map lồng nhau để đảm bảo unreadCounts[myUid] luôn là 0
+        final unreadCounts = Map<String, dynamic>.from(data['unreadCounts'] ?? {});
+        unreadCounts[myUid] = 0;
+        await roomRef.update({
+          'unreadCounts': unreadCounts,
+        });
+
+        // 2. Xóa các key lỗi dính dấu chấm ở root nếu có bằng set(merge: true) để tránh xóa nhầm dữ liệu trong map lồng
+        final legacyRootKey = 'unreadCounts.$myUid';
+        if (data.containsKey(legacyRootKey)) {
+          try {
+            await roomRef.set({
+              legacyRootKey: FieldValue.delete(),
+            }, SetOptions(merge: true));
+          } catch (e) {
+            debugPrint('Error deleting legacy root key: $e');
+          }
         }
-        await roomRef.update(updateData);
       }
     } catch (e) {
       debugPrint('Mark room as read error in chat_rooms: $e');
@@ -286,6 +306,34 @@ class ChatService {
       } catch (err) {
         debugPrint('Fallback mark room as read error: $err');
       }
+    }
+
+    // Đánh dấu tất cả tin nhắn đối phương gửi trong phòng này là đã đọc (isRead = true)
+    try {
+      final roomParts = roomId.split('_');
+      String otherUid = '';
+      if (roomParts.length >= 2) {
+        otherUid = roomParts.firstWhere((id) => id != myUid, orElse: () => '');
+      }
+      if (otherUid.isNotEmpty) {
+        final messagesQuery = await _firestore
+            .collection('chat_rooms')
+            .doc(roomId)
+            .collection('messages')
+            .where('senderId', isEqualTo: otherUid)
+            .where('isRead', isEqualTo: false)
+            .get();
+
+        if (messagesQuery.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (var doc in messagesQuery.docs) {
+            batch.update(doc.reference, {'isRead': true});
+          }
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      debugPrint('Mark messages as read error: $e');
     }
 
     // Đồng thời đánh dấu đã đọc các bản ghi thông báo trong notifications collection

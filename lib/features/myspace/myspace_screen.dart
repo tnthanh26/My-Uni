@@ -706,16 +706,24 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         ),
 
         floatingActionButton: FloatingActionButton(
-          heroTag: "fab_myspace_tab",
-          onPressed: () => _showCreateOptions(context),
-          backgroundColor: isDarkMode ? const Color(0xFF2C2C2E) : const Color(0xFF5A5959),
-          elevation: 5,
+          heroTag: 'fab_myspace_tab',
+          tooltip: 'Thêm nội dung',
+          onPressed: () {
+            _showCreateOptions(context);
+          },
+          backgroundColor: const Color(0xFF5893D8),
+          foregroundColor: Colors.white,
+          elevation: 3,
           shape: const CircleBorder(),
-          child: const Icon(Icons.add, size: 28, color: Colors.white),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 27,
+          ),
         ),
       ),
     );
   }
+
 
   // --- DASHBOARD CONTENT (3.1) ---
   DateTime _combineDateAndTime(DateTime date, String time) {
@@ -1533,6 +1541,73 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
+  Widget _buildHeaderNotificationButton({
+    required String tooltip,
+    required IconData icon,
+    required int unreadCount,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 30,
+            child: Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.center,
+              children: [
+                Icon(
+                  icon,
+                  color: Colors.white,
+                  size: 22,
+                ),
+                if (unreadCount > 0)
+                  Positioned(
+                    right: 1,
+                    top: 0,
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minWidth: 14,
+                        minHeight: 14,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 3,
+                      ),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF04438),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF303030),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Text(
+                        unreadCount > 9
+                            ? '9+'
+                            : unreadCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 8,
+                          height: 1,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildFixedHeader(BuildContext context) {
     final double statusBarHeight = MediaQuery.of(context).padding.top;
     return Stack(
@@ -1572,103 +1647,82 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.w800,
-                          fontSize: 24,
+                          fontSize: 22,
                           fontFamily: 'Nunito',
                           letterSpacing: 1.2
                       )
                   ),
                 ]),
 
-                // Cụm phải: Capsule Message & Notification
+                // Cụm phải: Notification pill
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
-                    color: const Color(0xff545454),
-                    borderRadius: BorderRadius.circular(16),
+                    color: Colors.black.withOpacity(0.32),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.16),
+                    ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Nút Message (Bên trái nút Notification)
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const MessageNotificationScreen()),
+                      StreamBuilder<List<MyUniNotification>>(
+                        stream: NotificationService.getMessageNotifications(),
+                        builder: (context, snapshot) {
+                          final int unreadChatCount = snapshot.data
+                              ?.where((noti) => !noti.isRead)
+                              .length ??
+                              0;
+
+                          return _buildHeaderNotificationButton(
+                            tooltip: 'Thông báo tin nhắn',
+                            icon: Icons.chat_bubble_rounded,
+                            unreadCount: unreadChatCount,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const MessageNotificationScreen(),
+                                ),
+                              );
+                            },
                           );
                         },
-                        child: StreamBuilder<List<MyUniNotification>>(
-                          stream: NotificationService.getMessageNotifications(),
-                          builder: (context, snapshot) {
-                            final unreadChatCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 22),
-                                if (unreadChatCount > 0)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: CircleAvatar(
-                                      radius: 6,
-                                      backgroundColor: Colors.red,
-                                      child: Text(
-                                        unreadChatCount > 9 ? "9+" : unreadChatCount.toString(),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 7,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
                       ),
-                      const SizedBox(width: 8),
-                      const Text("|", style: TextStyle(color: Colors.white38)),
-                      const SizedBox(width: 8),
-                      // Nút Notification
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                      Container(
+                        width: 1,
+                        height: 20,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        color: Colors.white.withOpacity(0.20),
+                      ),
+                      StreamBuilder<List<MyUniNotification>>(
+                        stream: NotificationService.getNotifications(),
+                        builder: (context, snapshot) {
+                          final int unreadCount = snapshot.data
+                              ?.where((noti) => !noti.isRead)
+                              .length ??
+                              0;
+
+                          return _buildHeaderNotificationButton(
+                            tooltip: 'Thông báo hoạt động',
+                            icon: Icons.notifications_rounded,
+                            unreadCount: unreadCount,
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                  const NotificationScreen(),
+                                ),
+                              );
+                            },
                           );
                         },
-                        child: StreamBuilder<List<MyUniNotification>>(
-                          stream: NotificationService.getNotifications(),
-                          builder: (context, snapshot) {
-                            final unreadCount = snapshot.data?.where((n) => !n.isRead).length ?? 0;
-
-                            return Stack(
-                              clipBehavior: Clip.none,
-                              children: [
-                                const Icon(Icons.notifications_none_rounded, color: Colors.white, size: 24),
-                                if (unreadCount > 0)
-                                  Positioned(
-                                    right: -2,
-                                    top: -2,
-                                    child: CircleAvatar(
-                                      radius: 6,
-                                      backgroundColor: Colors.red,
-                                      child: Text(
-                                        unreadCount > 9 ? "9+" : unreadCount.toString(),
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 7,
-                                            fontWeight: FontWeight.bold
-                                        ),
-                                      ),
-                                    ),
-                                  )
-                              ],
-                            );
-                          },
-                        ),
                       ),
                     ],
                   ),

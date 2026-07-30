@@ -187,173 +187,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     }
   }
-
   Future<void> _showReportOptions() async {
-
-
-    final List<String> reportReasons = [
-      "Ngôn từ gây hấn/Xúc phạm",
-      "Thông tin sai lệch",
-      "Spam/Quảng cáo trái phép",
-      "Nội dung không phù hợp với sinh viên",
-      "Khác"
-    ];
-
-    bool isOtherSelected = false;
-    TextEditingController customReasonController = TextEditingController();
-
-    showModalBottomSheet(
+    await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark
-          ? const Color(0xFF1E1E1E)
-          : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                    Container(
-                      width: 42,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.white24 : Colors.black12,
-                        borderRadius: BorderRadius.circular(99),
-                      ),
-                    ),
-                    Text(
-                      "Báo cáo bài viết",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
-                        fontFamily: 'Nunito',
-                        color: isDarkMode ? Colors.white : const Color(0xFF222222),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    ...reportReasons.map(
-                          (reason) => ListTile(
-                        leading: const Icon(
-                          Icons.report_problem_outlined,
-                          color: Colors.redAccent,
-                        ),
-                        title: Text(
-                          reason,
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            color: isDarkMode ? Colors.white : Colors.black87,
-                            fontWeight: (reason == "Khác" && isOtherSelected) ? FontWeight.bold : FontWeight.normal,
-                          ),
-                        ),
-                        onTap: () {
-                          if (reason == "Khác") {
-                            setModalState(() {
-                              isOtherSelected = true;
-                            });
-                          } else {
-                            Navigator.pop(context);
-                            _submitReport(reason);
-                          }
-                        },
-                      ),
-                    ),
-                    if (isOtherSelected) ...[
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: customReasonController,
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          color: isDarkMode ? Colors.white : Colors.black87,
-                          fontSize: 14,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: "Vui lòng nhập lý do cụ thể...",
-                          hintStyle: TextStyle(
-                            color: isDarkMode ? Colors.white38 : Colors.grey,
-                            fontSize: 13,
-                          ),
-                          filled: true,
-                          fillColor: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
-                            ),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide(
-                              color: isDarkMode ? Colors.white10 : const Color(0xFFEAEFF5),
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: const BorderSide(color: Color(0xFF5893D8)),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        ),
-                        maxLines: 3,
-                        minLines: 1,
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 44,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            String customReason = customReasonController.text.trim();
-                            if (customReason.isNotEmpty) {
-                              Navigator.pop(context);
-                              _submitReport("Khác: $customReason");
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text("Vui lòng nhập lý do báo cáo")),
-                              );
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF5893D8),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Gửi báo cáo",
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                ),
-              ),
-            );
-          },
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomSheetContext) {
+        return _ReportPostBottomSheet(
+          docId: widget.docId,
+          collectionPath: _collectionPath,
+          postData: _postData,
+          onSubmitReport: _submitReport,
         );
       },
     );
   }
-
   Future<void> _submitReport(String reason) async {
     if (_user == null) return;
 
@@ -389,15 +238,96 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Cảm ơn bạn! Báo cáo đã được gửi tới điều hành viên."),
-          ),
+        _showSuccessReportDialog(
+          "Cảm ơn bạn đã đóng góp ý kiến. Chúng tôi sẽ tiến hành kiểm duyệt bài viết này để xây dựng môi trường mạng lành mạnh, văn minh cho cộng đồng sinh viên.",
         );
       }
     } catch (e) {
       debugPrint("Lỗi báo cáo: $e");
     }
+  }
+
+  void _showSuccessReportDialog(String message) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        final isDarkMode = Theme.of(dialogContext).brightness == Brightness.dark;
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_rounded,
+                    color: Colors.green,
+                    size: 40,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  "Gửi báo cáo thành công",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDarkMode ? Colors.white : const Color(0xFF222222),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    height: 1.45,
+                    color: isDarkMode ? Colors.white70 : Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: FilledButton(
+                    onPressed: () => Navigator.pop(dialogContext),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF5893D8),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      "Đồng ý",
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _showReportCommentOptions(Map<String, dynamic> comment) async {
@@ -612,12 +542,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              "Cảm ơn bạn! Báo cáo bình luận đã được gửi tới điều hành viên.",
-            ),
-          ),
+        _showSuccessReportDialog(
+          "Cảm ơn bạn đã đóng góp ý kiến. Chúng tôi sẽ tiến hành kiểm duyệt bình luận này để xây dựng môi trường mạng lành mạnh, văn minh cho cộng đồng sinh viên.",
         );
       }
     } catch (e) {
@@ -3530,6 +3456,371 @@ class _PostDetailPageState extends State<PostDetailPage> {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ReportPostBottomSheet extends StatefulWidget {
+  final String docId;
+  final String collectionPath;
+  final Map<String, dynamic> postData;
+  final Function(String) onSubmitReport;
+
+  const _ReportPostBottomSheet({
+    required this.docId,
+    required this.collectionPath,
+    required this.postData,
+    required this.onSubmitReport,
+  });
+
+  @override
+  State<_ReportPostBottomSheet> createState() => _ReportPostBottomSheetState();
+}
+
+class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
+  final List<String> reportReasons = [
+    "Ngôn từ gây hấn/Xúc phạm",
+    "Thông tin sai lệch",
+    "Spam/Quảng cáo trái phép",
+    "Nội dung không phù hợp với sinh viên",
+    "Khác"
+  ];
+
+  bool isOtherSelected = false;
+  late final TextEditingController customReasonController;
+
+  @override
+  void initState() {
+    super.initState();
+    customReasonController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    customReasonController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    final Color sheetColor = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
+    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1F1F1F);
+    final Color secondaryTextColor = isDarkMode ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
+    final Color surfaceColor = isDarkMode ? const Color(0xFF292A2D) : const Color(0xFFF5F6F7);
+    final Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFE4E6EB);
+    final Color accentColor = isDarkMode ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8);
+
+    return PopScope(
+      onPopInvokedWithResult: (didPop, result) {
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.88,
+          ),
+          decoration: BoxDecoration(
+            color: sheetColor,
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(24),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 36,
+                height: 4,
+                margin: const EdgeInsets.only(
+                  top: 10,
+                  bottom: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.white24 : Colors.black12,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Báo cáo bài viết",
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: primaryTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            "Chọn lý do phù hợp nhất",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 12,
+                              color: secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: IconButton.styleFrom(
+                        backgroundColor: surfaceColor,
+                        minimumSize: const Size(38, 38),
+                      ),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: secondaryTextColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(
+                height: 1,
+                thickness: 1,
+                color: borderColor,
+              ),
+              Flexible(
+                child: SingleChildScrollView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      ...reportReasons.map((reason) {
+                        final bool isSelected = reason == "Khác" && isOtherSelected;
+
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 4),
+                          child: Material(
+                            color: isSelected
+                                ? accentColor.withOpacity(isDarkMode ? 0.14 : 0.08)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(14),
+                            child: InkWell(
+                              onTap: () {
+                                if (reason == "Khác") {
+                                  FocusScope.of(context).unfocus();
+                                  setState(() {
+                                    isOtherSelected = true;
+                                  });
+                                } else {
+                                  Navigator.pop(context);
+                                  widget.onSubmitReport(reason);
+                                }
+                              },
+                              borderRadius: BorderRadius.circular(14),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 12,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 38,
+                                      height: 38,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? accentColor.withOpacity(isDarkMode ? 0.18 : 0.10)
+                                            : surfaceColor,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        reason == "Khác" ? Icons.edit_outlined : Icons.flag_outlined,
+                                        size: 19,
+                                        color: isSelected ? accentColor : secondaryTextColor,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        reason,
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 13,
+                                          height: 1.35,
+                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                          color: primaryTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      isSelected ? Icons.expand_less_rounded : Icons.chevron_right_rounded,
+                                      size: 21,
+                                      color: isSelected ? accentColor : secondaryTextColor.withOpacity(0.6),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                      if (isOtherSelected)
+                        Padding(
+                          key: const ValueKey('custom-report-section'),
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: surfaceColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: borderColor,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        "Mô tả lý do",
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: primaryTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: () {
+                                        FocusScope.of(context).unfocus();
+                                        setState(() {
+                                          isOtherSelected = false;
+                                        });
+                                      },
+                                      borderRadius: BorderRadius.circular(20),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(4),
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          size: 18,
+                                          color: secondaryTextColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 10),
+                                TextField(
+                                  controller: customReasonController,
+                                  minLines: 3,
+                                  maxLines: 5,
+                                  maxLength: 300,
+                                  textInputAction: TextInputAction.newline,
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 13,
+                                    height: 1.4,
+                                    color: primaryTextColor,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: "Nhập nội dung cần báo cáo...",
+                                    hintStyle: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 12,
+                                      color: secondaryTextColor,
+                                    ),
+                                    counterStyle: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 10,
+                                      color: secondaryTextColor,
+                                    ),
+                                    filled: true,
+                                    fillColor: sheetColor,
+                                    contentPadding: const EdgeInsets.all(14),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: borderColor,
+                                      ),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: borderColor,
+                                      ),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(
+                                        color: accentColor,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 46,
+                                  child: FilledButton(
+                                    onPressed: () {
+                                      String customReason = customReasonController.text.trim();
+                                      if (customReason.isNotEmpty) {
+                                        Navigator.pop(context);
+                                        widget.onSubmitReport("Khác: $customReason");
+                                      } else {
+                                        ScaffoldMessenger.of(context)
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            const SnackBar(
+                                              content: Text("Vui lòng nhập lý do báo cáo"),
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                      }
+                                    },
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: accentColor,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                    child: const Text(
+                                      "Gửi báo cáo",
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

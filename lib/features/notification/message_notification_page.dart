@@ -7,6 +7,7 @@ import '../chat/pages/chat_list_page.dart';
 import '../chat/services/chat_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/base64_image_cache.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class _GroupedMessageNoti {
   final MyUniNotification latestNoti;
@@ -23,535 +24,932 @@ class _GroupedMessageNoti {
 class MessageNotificationScreen extends StatelessWidget {
   const MessageNotificationScreen({super.key});
 
-  void _showDeleteAllDialog(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+  static const Color _dangerColor = Color(0xFFE5484D);
+
+  void _showDeleteAllDialog(BuildContext parentContext) {
+    final bool isDarkMode =
+        Theme.of(parentContext).brightness == Brightness.dark;
+
+    final Color textColor =
+    isDarkMode ? Colors.white : const Color(0xFF1F2937);
+
+    final Color secondaryTextColor =
+    isDarkMode ? Colors.white60 : const Color(0xFF667085);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFE4E7EC);
 
     showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa tất cả thông báo",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
+      context: parentContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor:
+          isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
           ),
-        ),
-        content: Text(
-          "Bạn có chắc muốn xóa toàn bộ thông báo không? Hành động này không thể hoàn tác.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          title: Text(
+            "Xóa tất cả thông báo?",
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: textColor,
             ),
           ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              await NotificationService.deleteAllMessageNotifications();
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa tất cả thông báo tin nhắn")),
-                );
-              }
-            },
-            child: const Text(
-              "Xóa tất cả",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+          content: Text(
+            "Toàn bộ thông báo tin nhắn sẽ bị xóa và không thể khôi phục.",
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryTextColor,
             ),
           ),
-        ],
-      ),
-    );
-  }
+          actions: [
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: secondaryTextColor,
+                        side: BorderSide(color: borderColor),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Hủy",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
 
-  void _showDeleteGroupDialog(BuildContext context, _GroupedMessageNoti group) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                        await NotificationService
+                            .deleteAllMessageNotifications();
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa thông báo tin nhắn",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Bạn có chắc muốn xóa thông báo từ ${group.latestNoti.senderName ?? 'sinh viên này'} không?",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(context);
-
-              for (var noti in group.allNotis) {
-                await NotificationService.deleteNotification(noti.id);
-              }
-
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã xóa thông báo tin nhắn")),
-                );
-              }
-            },
-            child: const Text(
-              "Xóa",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _handleGroupTap(BuildContext context, _GroupedMessageNoti group) async {
-    // Đánh dấu tất cả thông báo thuộc người gửi này là đã đọc
-    for (var noti in group.allNotis) {
-      if (!noti.isRead) {
-        NotificationService.markAsRead(noti.id);
-      }
-    }
-
-    final roomId = group.latestNoti.roomId;
-    if (roomId != null && roomId.isNotEmpty) {
-      final currentUid = ChatService().currentUserId ?? '';
-      final peerUid = group.latestNoti.senderId ??
-          roomId.split('_').firstWhere((id) => id != currentUid, orElse: () => '');
-      ChatService().markRoomAsRead(roomId);
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ChatDetailPage(
-            roomId: roomId,
-            targetUserId: peerUid,
-            targetUserName: group.latestNoti.senderName ?? group.latestNoti.title,
-            targetUserPhoto: group.latestNoti.senderAvatar ?? '',
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _buildGroupedMessageItem(BuildContext context, _GroupedMessageNoti group, bool isDarkMode) {
-    final noti = group.latestNoti;
-    final timeStr = timeago.format(noti.timestamp, locale: 'vi');
-    final isUnread = group.unreadCount > 0;
-    final senderName = (noti.senderName != null && noti.senderName!.isNotEmpty)
-        ? noti.senderName!
-        : (noti.title.isNotEmpty ? noti.title : 'Một sinh viên');
-    final avatarUrl = noti.senderAvatar ?? '';
-
-    String previewContent = noti.content.isNotEmpty ? noti.content : 'Đã gửi cho bạn một tin nhắn';
-    if (group.unreadCount > 1) {
-      previewContent = '[${group.unreadCount} tin nhắn mới] $previewContent';
-    }
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: isUnread
-            ? (isDarkMode
-                ? AppColors.hcmusTeal.withValues(alpha: 0.12)
-                : const Color(0xFFEFF8F8))
-            : (isDarkMode ? const Color(0xFF15171A) : Colors.white),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isUnread
-              ? AppColors.hcmusTeal.withValues(alpha: 0.3)
-              : (isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3)),
-        ),
-        boxShadow: isDarkMode
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                        if (parentContext.mounted) {
+                          ScaffoldMessenger.of(parentContext)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Đã xóa tất cả thông báo tin nhắn",
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFE5484D),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Xóa tất cả",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => _handleGroupTap(context, group),
-          onLongPress: () => _showDeleteGroupDialog(context, group),
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteGroupDialog(
+      BuildContext parentContext,
+      _GroupedMessageNoti group,
+      ) {
+    final bool isDarkMode =
+        Theme.of(parentContext).brightness == Brightness.dark;
+
+    final Color textColor =
+    isDarkMode ? Colors.white : const Color(0xFF1F2937);
+
+    final Color secondaryTextColor =
+    isDarkMode ? Colors.white60 : const Color(0xFF667085);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.12)
+        : const Color(0xFFE4E7EC);
+
+    final String senderName =
+    group.latestNoti.senderName?.trim().isNotEmpty == true
+        ? group.latestNoti.senderName!
+        : "sinh viên này";
+
+    showDialog(
+      context: parentContext,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor:
+          isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+          title: Text(
+            "Xóa thông báo?",
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+            ),
+          ),
+          content: Text(
+            "Bạn có chắc muốn xóa tất cả thông báo tin nhắn từ $senderName không?",
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 13,
+              height: 1.45,
+              color: secondaryTextColor,
+            ),
+          ),
+          actions: [
+            Row(
               children: [
-                // Avatar người nhắn kèm icon nhắn tin nhỏ ở góc
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                      backgroundImage: Base64ImageCache.getAvatarProvider(avatarUrl),
-                      child: avatarUrl.isEmpty
-                          ? Text(
-                              senderName.isNotEmpty ? senderName[0].toUpperCase() : 'S',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.hcmusTeal,
-                              ),
-                            )
-                          : null,
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(dialogContext);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: secondaryTextColor,
+                        side: BorderSide(color: borderColor),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Hủy",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: FilledButton(
+                      onPressed: () async {
+                        Navigator.pop(dialogContext);
+
+                        for (final noti in group.allNotis) {
+                          await NotificationService.deleteNotification(
+                            noti.id,
+                          );
+                        }
+
+                        if (parentContext.mounted) {
+                          ScaffoldMessenger.of(parentContext)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "Đã xóa thông báo tin nhắn",
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFE5484D),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Xóa",
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _handleGroupTap(
+      BuildContext context,
+      _GroupedMessageNoti group,
+      ) async {
+    final String? roomId = group.latestNoti.roomId;
+
+    if (roomId == null || roomId.isEmpty) {
+      return;
+    }
+
+    final String currentUid =
+        ChatService().currentUserId ?? '';
+
+    String peerUid = group.latestNoti.senderId ?? '';
+
+    if (peerUid.isEmpty) {
+      peerUid = roomId.split('_').firstWhere(
+            (id) => id != currentUid,
+        orElse: () => '',
+      );
+    }
+
+    // 1. Thực hiện điều hướng NGAY LẬP TỨC để app ko bị khựng
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatDetailPage(
+          roomId: roomId,
+          targetUserId: peerUid,
+          targetUserName:
+          group.latestNoti.senderName ??
+              group.latestNoti.title,
+          targetUserPhoto:
+          group.latestNoti.senderAvatar ?? '',
+        ),
+      ),
+    );
+
+    // 2. Cập nhật trạng thái đã đọc trên Firestore chạy ngầm (không dùng await cản trở)
+    try {
+      for (final noti in group.allNotis) {
+        if (!noti.isRead) {
+          NotificationService.markAsRead(noti.id);
+        }
+      }
+      ChatService().markRoomAsRead(roomId);
+    } catch (e) {
+      debugPrint("Lỗi cập nhật trạng thái đã đọc trong chat ngầm: $e");
+    }
+  }
+
+  Widget _buildUnreadBadge(int unreadCount) {
+    final String badgeText =
+    unreadCount > 99 ? '99+' : '$unreadCount';
+
+    return Container(
+      constraints: const BoxConstraints(
+        minWidth: 20,
+        minHeight: 20,
+      ),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 6,
+        vertical: 2,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.hcmusTeal,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Text(
+        badgeText,
+        style: const TextStyle(
+          fontSize: 10,
+          height: 1.2,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGroupedMessageItem(
+      BuildContext context,
+      _GroupedMessageNoti group,
+      bool isDarkMode,
+      ) {
+    final MyUniNotification noti = group.latestNoti;
+
+    final String timeStr = timeago.format(
+      noti.timestamp,
+      locale: 'vi',
+    );
+
+    final bool isUnread = group.unreadCount > 0;
+
+    final String senderName =
+    noti.senderName?.trim().isNotEmpty == true
+        ? noti.senderName!
+        : noti.title.trim().isNotEmpty
+        ? noti.title
+        : 'Một sinh viên';
+
+    final String avatarUrl = noti.senderAvatar ?? '';
+
+    final String previewContent =
+    noti.content.trim().isNotEmpty
+        ? noti.content.trim()
+        : 'Đã gửi cho bạn một tin nhắn';
+
+    final Color primaryTextColor =
+    isDarkMode ? Colors.white : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    final Color unreadBackgroundColor = isDarkMode
+        ? AppColors.hcmusTeal.withValues(alpha: 0.08)
+        : AppColors.hcmusTeal.withValues(alpha: 0.06);
+
+    return Material(
+      color: isUnread
+          ? unreadBackgroundColor
+          : Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () {
+          _handleGroupTap(context, group);
+        },
+        onLongPress: () {
+          _showDeleteGroupDialog(context, group);
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 12,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 25,
+                    backgroundColor:
+                    AppColors.hcmusTeal.withValues(
+                      alpha: 0.14,
+                    ),
+                    backgroundImage:
+                    Base64ImageCache.getAvatarProvider(
+                      avatarUrl,
+                    ),
+                    child: avatarUrl.isEmpty
+                        ? Text(
+                      senderName.isNotEmpty
+                          ? senderName[0].toUpperCase()
+                          : 'S',
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.hcmusTeal,
+                      ),
+                    )
+                        : null,
+                  ),
+                  if (isUnread)
                     Positioned(
-                      right: -2,
-                      bottom: -2,
+                      right: 0,
+                      bottom: 0,
                       child: Container(
-                        padding: const EdgeInsets.all(3),
+                        width: 12,
+                        height: 12,
                         decoration: BoxDecoration(
-                          color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.chat_bubble_rounded,
-                          size: 12,
                           color: AppColors.hcmusTeal,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDarkMode
+                                ? const Color(0xFF101214)
+                                : Colors.white,
+                            width: 2,
+                          ),
                         ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(width: 13),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      senderName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 15,
+                        fontWeight: isUnread
+                            ? FontWeight.w800
+                            : FontWeight.w600,
+                        color: primaryTextColor,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      previewContent,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12.5,
+                        height: 1.35,
+                        fontWeight: isUnread
+                            ? FontWeight.w600
+                            : FontWeight.w400,
+                        color: isUnread
+                            ? primaryTextColor.withValues(
+                          alpha: 0.85,
+                        )
+                            : secondaryTextColor,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(width: 14),
-
-                // Nội dung tin nhắn
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              senderName,
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 15,
-                                fontWeight: isUnread ? FontWeight.w800 : FontWeight.w600,
-                                color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            timeStr,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: isUnread ? AppColors.hcmusTeal : Colors.grey,
-                              fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        previewContent,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          height: 1.35,
-                          fontWeight: isUnread ? FontWeight.w600 : FontWeight.normal,
-                          color: isUnread
-                              ? (isDarkMode ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF334155))
-                              : (isDarkMode ? Colors.white60 : Colors.black54),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Huy hiệu số tin chưa đọc (nếu > 0)
-                if (isUnread)
-                  Container(
-                    margin: const EdgeInsets.only(left: 8, top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: AppColors.hcmusTeal,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      group.unreadCount > 99 ? '99+' : '${group.unreadCount}',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment:
+                CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    timeStr,
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      fontWeight: isUnread
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: isUnread
+                          ? AppColors.hcmusTeal
+                          : secondaryTextColor,
                     ),
                   ),
-              ],
-            ),
+                  if (isUnread) ...[
+                    const SizedBox(height: 8),
+                    _buildUnreadBadge(group.unreadCount),
+                  ],
+                ],
+              ),
+            ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return const Center(
+      child: CircularProgressIndicator(
+        color: AppColors.hcmusTeal,
+        strokeWidth: 2.5,
+      ),
+    );
+  }
+
+  Widget _buildErrorState(bool isDarkMode) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 42,
+              color: isDarkMode
+                  ? Colors.white38
+                  : const Color(0xFF98A2B3),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              "Không thể tải thông báo",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xFF344054),
+              ),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              "Vui lòng kiểm tra kết nối và thử lại.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                color: isDarkMode
+                    ? Colors.white54
+                    : const Color(0xFF667085),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isDarkMode) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 32,
+          vertical: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.hcmusTeal.withValues(
+                  alpha: isDarkMode ? 0.12 : 0.08,
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.mark_chat_read_outlined,
+                size: 34,
+                color: AppColors.hcmusTeal,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              "Chưa có thông báo tin nhắn",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: isDarkMode
+                    ? Colors.white
+                    : const Color(0xFF344054),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "Thông báo về các tin nhắn mới sẽ xuất hiện tại đây.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                height: 1.45,
+                color: isDarkMode
+                    ? Colors.white54
+                    : const Color(0xFF667085),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUnreadSummary(
+      int totalUnreadGroups,
+      bool isDarkMode,
+      ) {
+    if (totalUnreadGroups <= 0) {
+      return const SizedBox(height: 8);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 13, 18, 7),
+      child: Row(
+        children: [
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: AppColors.hcmusTeal,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              "$totalUnreadGroups cuộc trò chuyện chưa đọc",
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isDarkMode
+                    ? Colors.white60
+                    : const Color(0xFF667085),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF101214)
+        : Colors.white;
+
+    final Color appBarColor = isDarkMode
+        ? const Color(0xFF101214)
+        : Colors.white;
+
+    final Color primaryIconColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color dividerColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEAECF0);
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: backgroundColor,
       appBar: AppBar(
+        backgroundColor: appBarColor,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
         leading: IconButton(
+          tooltip: "Quay lại",
+          onPressed: () {
+            Navigator.pop(context);
+          },
           icon: Icon(
             Icons.arrow_back_ios_new_rounded,
-            color: isDarkMode ? Colors.white : Colors.black,
             size: 20,
+            color: primaryIconColor,
           ),
-          onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           "Thông báo",
           style: TextStyle(
-            color: isDarkMode ? Colors.white : Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
             fontFamily: 'Nunito',
+            fontSize: 21,
+            fontWeight: FontWeight.w700,
+            color: primaryIconColor,
           ),
         ),
-
         actions: [
-          IconButton(
-            tooltip: "Đánh dấu tất cả là đã đọc",
-            icon: const Icon(
-              Icons.done_all_rounded,
-              color: Color(0xFF5893D8),
+          PopupMenuButton<String>(
+            tooltip: "Tùy chọn",
+            color: isDarkMode
+                ? const Color(0xFF222427)
+                : Colors.white,
+            surfaceTintColor: Colors.transparent,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
             ),
-            onPressed: () async {
-              await NotificationService.markAllMessageNotificationsAsRead();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Đã đánh dấu tất cả thông báo tin nhắn là đã đọc")),
-                );
+            icon: Icon(
+              Icons.more_vert_rounded,
+              color: primaryIconColor,
+            ),
+            onSelected: (value) async {
+              if (value == 'read_all') {
+                await NotificationService
+                    .markAllMessageNotificationsAsRead();
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          "Đã đánh dấu tất cả thông báo là đã đọc",
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                }
+              }
+
+              if (value == 'delete_all' &&
+                  context.mounted) {
+                _showDeleteAllDialog(context);
               }
             },
+            itemBuilder: (menuContext) {
+              final Color menuTextColor = isDarkMode
+                  ? Colors.white
+                  : const Color(0xFF344054);
+
+              return [
+                PopupMenuItem<String>(
+                  value: 'read_all',
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.done_all_rounded,
+                        size: 20,
+                        color: menuTextColor,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Đánh dấu tất cả đã đọc",
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: menuTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                PopupMenuItem<String>(
+                  value: 'delete_all',
+                  child: Row(
+                    children: [
+                      SvgPicture.asset(
+                        'assets/icons/trash.svg',
+                        width: 20,
+                        height: 20,
+                        colorFilter: const ColorFilter.mode(
+                          _dangerColor,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        "Xóa tất cả",
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: menuTextColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ];
+            },
           ),
-          IconButton(
-            tooltip: "Xóa tất cả",
-            icon: const Icon(
-              Icons.delete_outline_rounded,
-              color: Colors.redAccent,
-            ),
-            onPressed: () => _showDeleteAllDialog(context),
-          ),
+          const SizedBox(width: 4),
         ],
-        backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
-        elevation: 0,
-        centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+            width: double.infinity,
             height: 1,
+            color: dividerColor,
           ),
         ),
       ),
       body: StreamBuilder<List<MyUniNotification>>(
-        stream: NotificationService.getMessageNotifications(),
+        stream:
+        NotificationService.getMessageNotifications(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Đã có lỗi xảy ra",
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  color: isDarkMode ? Colors.white70 : Colors.black54,
-                ),
-              ),
-            );
+            return _buildErrorState(isDarkMode);
           }
 
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: AppColors.hcmusTeal),
-            );
+            return _buildLoadingState();
           }
 
-          final rawNotifications = snapshot.data!;
+          final List<MyUniNotification> rawNotifications =
+          snapshot.data!;
 
           if (rawNotifications.isEmpty) {
-            return Center(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 24),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 28,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.mark_chat_read_outlined,
-                      size: 44,
-                      color: isDarkMode ? Colors.white38 : Colors.grey,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      "Bạn chưa có thông báo tin nhắn nào",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white70 : Colors.black54,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return _buildEmptyState(isDarkMode);
           }
 
-          // Gộp danh sách thông báo theo phòng chat (roomId / senderId)
-          final Map<String, List<MyUniNotification>> groupedMap = {};
-          for (var noti in rawNotifications) {
-            final key = noti.roomId ?? noti.senderId ?? noti.id;
-            groupedMap.putIfAbsent(key, () => []).add(noti);
+          final Map<String, List<MyUniNotification>>
+          groupedMap = {};
+
+          for (final noti in rawNotifications) {
+            final String key =
+                noti.roomId ?? noti.senderId ?? noti.id;
+
+            groupedMap.putIfAbsent(
+              key,
+                  () => <MyUniNotification>[],
+            );
+
+            groupedMap[key]!.add(noti);
           }
 
           final List<_GroupedMessageNoti> groupedList = [];
+
           groupedMap.forEach((key, list) {
-            list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
-            final latest = list.first;
-            final unreadCount = list.where((n) => !n.isRead).length;
-            groupedList.add(_GroupedMessageNoti(
-              latestNoti: latest,
-              allNotis: list,
-              unreadCount: unreadCount,
-            ));
+            list.sort(
+                  (a, b) =>
+                  b.timestamp.compareTo(a.timestamp),
+            );
+
+            final MyUniNotification latest = list.first;
+
+            final int unreadCount =
+                list.where((noti) => !noti.isRead).length;
+
+            groupedList.add(
+              _GroupedMessageNoti(
+                latestNoti: latest,
+                allNotis: list,
+                unreadCount: unreadCount,
+              ),
+            );
           });
 
-          groupedList.sort((a, b) => b.latestNoti.timestamp.compareTo(a.latestNoti.timestamp));
+          groupedList.sort(
+                (a, b) => b.latestNoti.timestamp.compareTo(
+              a.latestNoti.timestamp,
+            ),
+          );
 
-          final totalUnreadGroups = groupedList.where((g) => g.unreadCount > 0).length;
+          final int totalUnreadGroups = groupedList
+              .where((group) => group.unreadCount > 0)
+              .length;
 
           return Column(
             children: [
-              // Thẻ tổng quan số thông báo chưa đọc (Style y hệt NotificationScreen)
-              Container(
-                width: double.infinity,
-                margin: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white10
-                        : const Color(0xFFE9EEF3),
-                  ),
-                  boxShadow: isDarkMode
-                      ? []
-                      : [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.03),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: AppColors.hcmusTeal.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: AppColors.hcmusTeal,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        totalUnreadGroups > 0
-                            ? "Bạn có $totalUnreadGroups cuộc trò chuyện chưa đọc"
-                            : "Bạn đã xem hết thông báo tin nhắn rồi",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode
-                              ? Colors.white70
-                              : const Color(0xFF344054),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+              _buildUnreadSummary(
+                totalUnreadGroups,
+                isDarkMode,
               ),
-
-              // Danh sách thông báo tin nhắn đã gộp gọn gàng
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 18),
+                child: ListView.separated(
+                  padding: EdgeInsets.fromLTRB(
+                    8,
+                    totalUnreadGroups > 0 ? 3 : 8,
+                    8,
+                    20,
+                  ),
                   itemCount: groupedList.length,
+                  separatorBuilder: (context, index) {
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 75),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: dividerColor,
+                      ),
+                    );
+                  },
                   itemBuilder: (context, index) {
-                    final group = groupedList[index];
-                    return _buildGroupedMessageItem(context, group, isDarkMode);
+                    final _GroupedMessageNoti group =
+                    groupedList[index];
+
+                    return _buildGroupedMessageItem(
+                      context,
+                      group,
+                      isDarkMode,
+                    );
                   },
                 ),
               ),
@@ -560,21 +958,23 @@ class MessageNotificationScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        heroTag: 'chat_list_fab',
+        heroTag: 'message_notification_chat_list_fab',
+        tooltip: 'Danh sách trò chuyện',
         backgroundColor: AppColors.hcmusTeal,
-        elevation: 4,
+        foregroundColor: Colors.white,
+        elevation: 3,
         shape: const CircleBorder(),
-        tooltip: "Danh sách cuộc trò chuyện",
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const ChatListPage()),
+            MaterialPageRoute(
+              builder: (context) => const ChatListPage(),
+            ),
           );
         },
         child: const Icon(
-          Icons.chat_rounded,
-          color: Colors.white,
-          size: 24,
+          Icons.forum_rounded,
+          size: 23,
         ),
       ),
     );
