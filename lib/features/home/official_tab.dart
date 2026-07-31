@@ -6,11 +6,22 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'official_content_helper.dart';
 import 'daily_digest_card.dart';
+import 'faculty_helper.dart';
+import 'faculty_daily_digest_card.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
 
-class OfficialTab extends StatelessWidget {
+class OfficialTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
+
   const OfficialTab({super.key, required this.onSave});
+
+  @override
+  State<OfficialTab> createState() => _OfficialTabState();
+}
+
+class _OfficialTabState extends State<OfficialTab> {
+  // Sub-tab id: 'all' (Toàn trường), 'my_faculty' (Khoa của bạn), hoặc 'fit'/'chemistry'/'physics'
+  String _selectedSubTabId = 'all';
 
   Future<void> _launchURL(String urlString) async {
     if (urlString.trim().isEmpty) return;
@@ -19,10 +30,10 @@ class OfficialTab extends StatelessWidget {
   }
 
   Future<void> _toggleInterest(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      ) async {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -41,22 +52,513 @@ class OfficialTab extends StatelessWidget {
 
     if (docSnapshot.exists) {
       await docRef.delete();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã bỏ quan tâm")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã bỏ quan tâm")),
+        );
+      }
     } else {
       await docRef.set({
         'title': data['title']?.toString() ?? '',
-        'date': data['date']?.toString() ?? '',
-        'department': data['department']?.toString() ?? '',
+        'date': data['publishedDateText'] ?? data['date']?.toString() ?? '',
+        'department': data['department'] ?? data['facultyName'] ?? '',
         'summary': data['summary'] ?? '',
         'link': data['link'] ?? '',
         'timestamp': FieldValue.serverTimestamp(),
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã thêm vào mục Đã quan tâm")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Đã thêm vào mục Đã quan tâm")),
+        );
+      }
     }
+  }
+
+  /// Dialog / BottomSheet cập nhật Khoa nhanh nếu người dùng chưa chọn Khoa
+  void _showQuickFacultyPicker(BuildContext context, String? currentFaculty) {
+    String? selected = (currentFaculty != null &&
+            currentFaculty.isNotEmpty &&
+            currentFaculty != 'Chưa cập nhật khoa')
+        ? currentFaculty
+        : FacultyHelper.allHcmusFaculties.first;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, -6),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white24 : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5893D8).withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.school_rounded,
+                          color: Color(0xFF5893D8),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Cập nhật Khoa của bạn',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Chọn Khoa đang học để xem bản tin dành riêng',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.white60
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: FacultyHelper.allHcmusFaculties.length,
+                      itemBuilder: (context, index) {
+                        final fac = FacultyHelper.allHcmusFaculties[index];
+                        final isSelected = fac == selected;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF5893D8).withOpacity(0.12)
+                                : (isDarkMode
+                                    ? Colors.white.withOpacity(0.04)
+                                    : const Color(0xFFF8FAFC)),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF5893D8)
+                                  : (isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xFFE2E8F0)),
+                            ),
+                          ),
+                          child: RadioListTile<String>(
+                            value: fac,
+                            groupValue: selected,
+                            activeColor: const Color(0xFF5893D8),
+                            title: Text(
+                              fac,
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 14,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? const Color(0xFF5893D8)
+                                    : (isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF334155)),
+                              ),
+                            ),
+                            onChanged: (val) {
+                              setModalState(() => selected = val);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null && selected != null) {
+                          final newPrimary =
+                              FacultyHelper.findFacultyByAccountString(selected);
+                          final userDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .get();
+                          List<String> followed =
+                              (userDoc.data()?['followedFaculties'] as List?)
+                                      ?.map((e) => e.toString())
+                                      .toList() ??
+                                  [];
+                          if (newPrimary != null) {
+                            followed.remove(newPrimary.id);
+                          }
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .update({
+                            'faculty': selected,
+                            'followedFaculties': followed,
+                          });
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Đã cập nhật Khoa: $selected'),
+                                backgroundColor: const Color(0xFF5893D8),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF5893D8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Xác nhận & Lưu Khoa',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// BottomSheet Quản lý theo dõi tối đa 2 Khoa khác
+  void _showManageFollowedFacultiesModal(
+    BuildContext context,
+    FacultyInfo? primaryFacultyInfo,
+    List<String> currentFollowed,
+  ) {
+    List<String> tempFollowed = List.from(currentFollowed);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, -6),
+                  )
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: isDarkMode ? Colors.white24 : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.tune_rounded,
+                          color: Color(0xFF8B5CF6),
+                          size: 24,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Theo dõi tin tức các Khoa',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF1E293B),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Theo dõi tối đa 2 Khoa khác ngoài Khoa của bạn',
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.white60
+                                    : const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Danh sách 3 khoa có sẵn tin tức
+                  ...FacultyHelper.activeFaculties.map((fac) {
+                    final bool isPrimary = primaryFacultyInfo?.id == fac.id;
+                    final bool isFollowed = tempFollowed.contains(fac.id);
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: isPrimary
+                            ? (isDarkMode
+                                ? const Color(0xFF1E3A8A).withOpacity(0.2)
+                                : const Color(0xFFEFF6FF))
+                            : (isFollowed
+                                ? (isDarkMode
+                                    ? const Color(0xFF8B5CF6).withOpacity(0.15)
+                                    : const Color(0xFFF3E8FF))
+                                : (isDarkMode
+                                    ? Colors.white.withOpacity(0.04)
+                                    : const Color(0xFFF8FAFC))),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isPrimary
+                              ? const Color(0xFF3B82F6).withOpacity(0.4)
+                              : (isFollowed
+                                  ? const Color(0xFF8B5CF6)
+                                  : (isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xFFE2E8F0))),
+                        ),
+                      ),
+                      child: CheckboxListTile(
+                        value: isPrimary || isFollowed,
+                        enabled: !isPrimary,
+                        activeColor: isPrimary
+                            ? const Color(0xFF3B82F6)
+                            : const Color(0xFF8B5CF6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        secondary: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isPrimary
+                                ? const Color(0xFF3B82F6).withOpacity(0.15)
+                                : const Color(0xFF8B5CF6).withOpacity(0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            fac.icon,
+                            size: 20,
+                            color: isPrimary
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFF8B5CF6),
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                fac.name,
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : const Color(0xFF1F2937),
+                                ),
+                              ),
+                            ),
+                            if (isPrimary) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Text(
+                                  'Khoa của bạn',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                        subtitle: Text(
+                          'Mã khoa: ${fac.code}',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 12,
+                            color: isDarkMode
+                                ? Colors.white54
+                                : const Color(0xFF64748B),
+                          ),
+                        ),
+                        onChanged: isPrimary
+                            ? null
+                            : (checked) {
+                                if (checked == true) {
+                                  if (tempFollowed.length >= 2) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                            'Bạn chỉ có thể theo dõi tối đa 2 Khoa khác.'),
+                                        duration: Duration(seconds: 2),
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  setModalState(() {
+                                    tempFollowed.add(fac.id);
+                                  });
+                                } else {
+                                  setModalState(() {
+                                    tempFollowed.remove(fac.id);
+                                  });
+                                }
+                              },
+                      ),
+                    );
+                  }),
+
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user != null) {
+                          if (primaryFacultyInfo != null) {
+                            tempFollowed.remove(primaryFacultyInfo.id);
+                          }
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .update({'followedFaculties': tempFollowed});
+                          if (ctx.mounted) Navigator.pop(ctx);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Đã lưu danh sách Khoa theo dõi!'),
+                                backgroundColor: Color(0xFF8B5CF6),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF8B5CF6),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        'Lưu thay đổi',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   Widget _buildCategoryChip({
@@ -141,24 +643,28 @@ class OfficialTab extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isInterested
-                ? (isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                ? (isDarkMode
+                    ? Colors.white.withOpacity(0.1)
+                    : const Color(0xFFF1F5F9))
                 : const Color(0xFF5893D8),
             borderRadius: BorderRadius.circular(20),
             boxShadow: isInterested || isDarkMode
                 ? []
                 : [
-              BoxShadow(
-                color: const Color(0xFF5893D8).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: const Color(0xFF5893D8).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isInterested ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                isInterested
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline_rounded,
                 size: 16,
                 color: isInterested
                     ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
@@ -183,365 +689,656 @@ class OfficialTab extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('official_news')
-          .orderBy('publishedAt', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(
-            child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-          );
-        }
-
-        if (snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text(
-              'Chưa có bài viết chính thức nào',
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 14,
-                color: isDarkMode ? Colors.white60 : Colors.black54,
-              ),
+  /// Thanh chuyển đổi Sub-Tab (Toàn trường, Khoa của bạn, Các Khoa theo dõi + Nút Thêm)
+  Widget _buildSubTabBar({
+    required BuildContext context,
+    required bool isDarkMode,
+    required String? userFacultyStr,
+    required FacultyInfo? primaryFacultyInfo,
+    required List<String> followedFaculties,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF14171D) : const Color(0xFFF8FAFC),
+        border: Border(
+          bottom: BorderSide(
+            color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+          ),
+        ),
+      ),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            // 1. Tab Toàn trường
+            _buildSubTabChip(
+              id: 'all',
+              label: 'Toàn trường',
+              icon: Icons.apartment_rounded,
+              isSelected: _selectedSubTabId == 'all',
+              isDarkMode: isDarkMode,
+              activeGradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
+              onTap: () => setState(() => _selectedSubTabId = 'all'),
             ),
-          );
-        }
+            const SizedBox(width: 8),
 
-        return Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 600.0),
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: snapshot.data!.docs.length + 1,
-              itemBuilder: (context, index) {
-            if (index == 0) {
-              return DailyDigestCard(
-                isDarkMode: isDarkMode,
+            // 2. Tab Khoa của bạn
+            _buildSubTabChip(
+              id: 'my_faculty',
+              label: primaryFacultyInfo != null
+                  ? 'Khoa của bạn (${primaryFacultyInfo.shortName})'
+                  : 'Khoa của bạn',
+              icon: primaryFacultyInfo?.icon ?? Icons.school_rounded,
+              isSelected: _selectedSubTabId == 'my_faculty',
+              isDarkMode: isDarkMode,
+              activeGradient: const [Color(0xFF059669), Color(0xFF047857)],
+              badgeText: primaryFacultyInfo == null ? 'Chưa set' : null,
+              onTap: () => setState(() => _selectedSubTabId = 'my_faculty'),
+            ),
+
+            // 3. Các Khoa đang theo dõi thêm
+            ...followedFaculties.map((facId) {
+              final facInfo = FacultyHelper.findById(facId);
+              if (facInfo == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: _buildSubTabChip(
+                  id: facInfo.id,
+                  label: facInfo.shortName,
+                  icon: facInfo.icon,
+                  isSelected: _selectedSubTabId == facInfo.id,
+                  isDarkMode: isDarkMode,
+                  activeGradient: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                  onTap: () => setState(() => _selectedSubTabId = facInfo.id),
+                ),
               );
-            }
+            }),
 
-            var doc = snapshot.data!.docs[index - 1];
-            var data = doc.data() as Map<String, dynamic>;
-            String docId = doc.id;
-            bool isEvent = OfficialContentHelper.isOfficialEvent(
-              data['title'],
-              data['summary'],
-            );
-            final String summary = data['summary']?.toString().trim() ?? '';
-            final String imagePath =
-            OfficialContentHelper.getOfficialImageByContent(
-              data['title'],
-              data['summary'],
-            );
+            const SizedBox(width: 8),
 
-            void goToDetail() => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PostDetailPage(
-                  docId: docId,
-                  initialPostData: data,
+            // 4. Nút quản lý theo dõi Khoa
+            GestureDetector(
+              onTap: () => _showManageFollowedFacultiesModal(
+                context,
+                primaryFacultyInfo,
+                followedFaculties,
+              ),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.06)
+                      : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFF8B5CF6).withOpacity(0.5),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.tune_rounded, size: 14, color: Color(0xFF8B5CF6)),
+                    SizedBox(width: 4),
+                    Text(
+                      'Theo dõi khoa',
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF8B5CF6),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            );
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1C1F26) : Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: isDarkMode
-                    ? []
-                    : [
+  Widget _buildSubTabChip({
+    required String id,
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required bool isDarkMode,
+    required List<Color> activeGradient,
+    required VoidCallback onTap,
+    String? badgeText,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: isSelected ? LinearGradient(colors: activeGradient) : null,
+          color: isSelected
+              ? null
+              : (isDarkMode
+                  ? Colors.white.withOpacity(0.06)
+                  : Colors.white),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? Colors.transparent
+                : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+          ),
+          boxShadow: isSelected
+              ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                    color: activeGradient.first.withOpacity(0.35),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  )
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 15,
+              color: isSelected
+                  ? Colors.white
+                  : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                color: isSelected
+                    ? Colors.white
+                    : (isDarkMode ? Colors.white70 : const Color(0xFF334155)),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(24),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: goToDetail,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+            if (badgeText != null) ...[
+              const SizedBox(width: 6),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.amber[700],
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  badgeText,
+                  style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Empty State khi User chưa chọn Khoa trong account
+  Widget _buildEmptyFacultySetupCard(
+      BuildContext context, bool isDarkMode, String? currentFaculty) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+            ),
+            boxShadow: isDarkMode
+                ? []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    )
+                  ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5893D8).withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.school_rounded,
+                  size: 48,
+                  color: Color(0xFF5893D8),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Chưa thiết lập Khoa',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Vui lòng cập nhật Khoa trong tài khoản của bạn để xem tin tức & thông báo chính thức từ Khoa.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  height: 1.5,
+                  color: isDarkMode ? Colors.white60 : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () =>
+                      _showQuickFacultyPicker(context, currentFaculty),
+                  icon: const Icon(Icons.edit_rounded, size: 18),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF5893D8),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  label: const Text(
+                    'Thiết lập Khoa ngay',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Thông báo khi Khoa của user chưa có kênh tin tự động (vd: Khoa Môi trường)
+  Widget _buildFacultyNotActiveCard(
+      BuildContext context, bool isDarkMode, String facultyName) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.info_outline_rounded,
+                size: 44,
+                color: Color(0xFF8B5CF6),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                '$facultyName',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Khoa của bạn hiện chưa được tích hợp kênh tin tức riêng. Bạn có thể chọn theo dõi tin tức các Khoa khác (CNTT, Hóa học, Vật lý) bên dưới.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  height: 1.5,
+                  color: isDarkMode ? Colors.white60 : const Color(0xFF64748B),
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showManageFollowedFacultiesModal(
+                    context,
+                    FacultyHelper.findFacultyByAccountString(facultyName),
+                    [],
+                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF8B5CF6),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  label: const Text(
+                    'Chọn Khoa khác để theo dõi',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Single Card hiển thị 1 bài tin tức (dùng chung cho Toàn trường & Tin Khoa)
+  Widget _buildNewsCard({
+    required BuildContext context,
+    required bool isDarkMode,
+    required String docId,
+    required Map<String, dynamic> data,
+    required String collectionPath,
+    required User? user,
+  }) {
+    final bool isEvent = OfficialContentHelper.isOfficialEvent(
+      data['title'],
+      data['summary'],
+    );
+    final String summary = data['summary']?.toString().trim() ?? '';
+    final String imagePath = OfficialContentHelper.getOfficialImageByContent(
+      data['title'],
+      data['summary'],
+    );
+
+    void goToDetail() => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PostDetailPage(
+              docId: docId,
+              initialPostData: data,
+            ),
+          ),
+        );
+
+    final String departmentDisplay = data['department']?.toString() ??
+        data['facultyName']?.toString() ??
+        data['sourceName']?.toString() ??
+        'HCMUS News';
+
+    final String dateDisplay = data['publishedDateText']?.toString() ??
+        data['date']?.toString() ??
+        '';
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1C1F26) : Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: isDarkMode
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: goToDetail,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (isEvent)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDarkMode
+                            ? [
+                                const Color(0xFF1E3A8A).withOpacity(0.3),
+                                const Color(0xFF1E40AF).withOpacity(0.1)
+                              ]
+                            : [
+                                const Color(0xFFEFF6FF),
+                                const Color(0xFFDBEAFE).withOpacity(0.5)
+                              ],
+                      ),
+                    ),
+                    child: Row(
                       children: [
-                        if (isEvent)
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 10,
+                        const Icon(
+                          Icons.tips_and_updates_rounded,
+                          size: 16,
+                          color: Color(0xFF3B82F6),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Sự kiện nổi bật dành cho bạn',
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                            color: isDarkMode
+                                ? const Color(0xFF93C5FD)
+                                : const Color(0xFF1E40AF),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDarkMode
+                                ? Colors.white12
+                                : const Color(0xFFF1F5F9),
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.all(3.0),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
                             ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: isDarkMode
-                                    ? [const Color(0xFF1E3A8A).withOpacity(0.3), const Color(0xFF1E40AF).withOpacity(0.1)]
-                                    : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE).withOpacity(0.5)],
-                              ),
-                            ),
-                            child: Row(
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(
-                                  Icons.tips_and_updates_rounded,
-                                  size: 16,
-                                  color: Color(0xFF3B82F6),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Sự kiện nổi bật dành cho bạn',
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0.3,
-                                    color: isDarkMode
-                                        ? const Color(0xFF93C5FD)
-                                        : const Color(0xFF1E40AF),
+                                Flexible(
+                                  child: Text(
+                                    departmentDisplay,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14,
+                                      letterSpacing: -0.2,
+                                      color: isDarkMode
+                                          ? Colors.white
+                                          : const Color(0xFF1E293B),
+                                    ),
                                   ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  color: Color(0xFF3B82F6),
+                                  size: 16,
                                 ),
                               ],
                             ),
-                          ),
-
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isDarkMode ? Colors.white12 : const Color(0xFFF1F5F9),
-                                    width: 2,
-                                  ),
-                                ),
-                                child: CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Colors.white,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(3.0),
-                                    child: Image.asset(
-                                      'assets/images/logo.png',
-                                      fit: BoxFit.contain,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Flexible(
-                                          child: Text(
-                                            data['department']?.toString() ?? 'HCMUS News',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontFamily: 'Encode Sans Expanded',
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 14,
-                                              letterSpacing: -0.2,
-                                              color: isDarkMode
-                                                  ? Colors.white
-                                                  : const Color(0xFF1E293B),
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        const Icon(
-                                          Icons.verified_rounded,
-                                          color: Color(0xFF3B82F6),
-                                          size: 16,
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      data['publishedDateText']?.toString() ?? '',
-                                      style: TextStyle(
-                                        fontFamily: 'Encode Sans Expanded',
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        color: isDarkMode
-                                            ? Colors.white54
-                                            : const Color(0xFF64748B),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              _buildCategoryChip(
-                                context: context,
-                                isDarkMode: isDarkMode,
-                                categoryTag: OfficialContentHelper.getOfficialCategoryTag(
-                                  data['title'],
-                                  data['summary'],
-                                  data['hashtags'],
-                                ),
-                              ),
-                              if (isEvent)
-                                StreamBuilder<DocumentSnapshot>(
-                                  stream: FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(user?.uid ?? 'guest')
-                                      .collection('interested_events')
-                                      .doc(docId)
-                                      .snapshots(),
-                                  builder: (context, favSnapshot) {
-                                    bool isInterested = favSnapshot.hasData &&
-                                        favSnapshot.data!.exists;
-                                    return _buildInterestButton(
-                                      context: context,
-                                      isDarkMode: isDarkMode,
-                                      isInterested: isInterested,
-                                      onTap: () => _toggleInterest(
-                                        context,
-                                        docId,
-                                        data,
-                                      ),
-                                    );
-                                  },
-                                ),
-                            ],
-                          ),
-                        ),
-
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                          child: Text(
-                            data['title']?.toString() ?? '',
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                              color: isDarkMode
-                                  ? Colors.white
-                                  : const Color(0xFF0F172A),
-                              height: 1.3,
-                              letterSpacing: -0.4,
-                            ),
-                          ),
-                        ),
-
-                        if (summary.isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                            child: Text(
-                              summary,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 2),
+                            Text(
+                              dateDisplay,
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
-                                fontSize: 13,
-                                height: 1.6,
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
                                 color: isDarkMode
-                                    ? Colors.white70
-                                    : const Color(0xFF475569),
+                                    ? Colors.white54
+                                    : const Color(0xFF64748B),
                               ),
                             ),
-                          ),
-
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: Stack(
-                              children: [
-                                Image.asset(
-                                  imagePath,
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Image.asset(
-                                      'assets/images/news.png',
-                                      width: double.infinity,
-                                      height: 200,
-                                      fit: BoxFit.cover,
-                                    );
-                                  },
-                                ),
-                                Positioned.fill(
-                                  child: DecoratedBox(
-                                    decoration: BoxDecoration(
-                                      gradient: LinearGradient(
-                                        begin: Alignment.topCenter,
-                                        end: Alignment.bottomCenter,
-                                        colors: [
-                                          Colors.transparent,
-                                          Colors.black.withOpacity(0.4),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
+                          ],
                         ),
-
-                        const SizedBox(height: 8),
-
-                        PostActionRow(
-                          docId: docId,
-                          data: data,
-                          onSave: onSave,
-                          collectionPath: 'official_news',
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildCategoryChip(
+                        context: context,
+                        isDarkMode: isDarkMode,
+                        categoryTag:
+                            OfficialContentHelper.getOfficialCategoryTag(
+                          data['title'],
+                          data['summary'],
+                          data['hashtags'],
                         ),
-
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: ElevatedButton(
-                              onPressed: () =>
-                                  _launchURL(data['link']?.toString() ?? ''),
-                              style: ElevatedButton.styleFrom(
-                                elevation: 0,
-                                backgroundColor: isDarkMode
-                                    ? Colors.white.withOpacity(0.05)
-                                    : const Color(0xFFF1F5F9),
-                                foregroundColor: const Color(0xFF5893D8),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
+                      ),
+                      if (isEvent)
+                        StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user?.uid ?? 'guest')
+                              .collection('interested_events')
+                              .doc(docId)
+                              .snapshots(),
+                          builder: (context, favSnapshot) {
+                            bool isInterested =
+                                favSnapshot.hasData && favSnapshot.data!.exists;
+                            return _buildInterestButton(
+                              context: context,
+                              isDarkMode: isDarkMode,
+                              isInterested: isInterested,
+                              onTap: () => _toggleInterest(
+                                context,
+                                docId,
+                                data,
                               ),
-                              child: const Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    'Xem chi tiết bài viết',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontFamily: 'Encode Sans Expanded',
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.open_in_new_rounded, size: 16),
+                            );
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                  child: Text(
+                    data['title']?.toString() ?? '',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 18,
+                      color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                      height: 1.3,
+                      letterSpacing: -0.4,
+                    ),
+                  ),
+                ),
+                if (summary.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: Text(
+                      summary,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 13,
+                        height: 1.6,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : const Color(0xFF475569),
+                      ),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Stack(
+                      children: [
+                        Image.asset(
+                          imagePath,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/announcement.jpg',
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.4),
                                 ],
                               ),
                             ),
@@ -551,10 +1348,370 @@ class OfficialTab extends StatelessWidget {
                     ),
                   ),
                 ),
+                const SizedBox(height: 8),
+                PostActionRow(
+                  docId: docId,
+                  data: data,
+                  onSave: widget.onSave,
+                  collectionPath: collectionPath,
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          _launchURL(data['link']?.toString() ?? ''),
+                      style: ElevatedButton.styleFrom(
+                        elevation: 0,
+                        backgroundColor: isDarkMode
+                            ? Colors.white.withOpacity(0.05)
+                            : const Color(0xFFF1F5F9),
+                        foregroundColor: const Color(0xFF5893D8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Xem chi tiết bài viết',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 13,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.open_in_new_rounded, size: 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Header Banner hiển thị cho 1 Khoa khi chọn xem tin Khoa
+  Widget _buildFacultyHeaderBanner(
+      FacultyInfo facultyInfo, bool isDarkMode) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDarkMode
+              ? [const Color(0xFF1E293B), const Color(0xFF0F172A)]
+              : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B82F6).withOpacity(0.18),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              facultyInfo.icon,
+              color: const Color(0xFF3B82F6),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      facultyInfo.name,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E3A8A),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Tin tức & thông báo mới nhất từ ${facultyInfo.shortName}',
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 12,
+                    color: isDarkMode
+                        ? Colors.white60
+                        : const Color(0xFF3B82F6),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user?.uid ?? 'guest')
+          .snapshots(),
+      builder: (context, userSnapshot) {
+        final userData = userSnapshot.hasData && userSnapshot.data!.exists
+            ? userSnapshot.data!.data() as Map<String, dynamic>
+            : <String, dynamic>{};
+
+        final String? userFacultyStr = userData['faculty']?.toString();
+        final List<String> rawFollowed =
+            (userData['followedFaculties'] as List?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [];
+
+        final FacultyInfo? primaryFacultyInfo =
+            FacultyHelper.findFacultyByAccountString(userFacultyStr);
+
+        // Loại bỏ Khoa chính khỏi danh sách Khoa theo dõi phụ để tránh trùng lặp tab
+        final List<String> followedFaculties = rawFollowed
+            .where((id) => id != primaryFacultyInfo?.id)
+            .toList();
+
+        // Nếu tab đang chọn trùng với ID Khoa chính vừa chuyển đổi, chuyển tab về 'my_faculty'
+        if (primaryFacultyInfo != null && _selectedSubTabId == primaryFacultyInfo.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && _selectedSubTabId == primaryFacultyInfo.id) {
+              setState(() {
+                _selectedSubTabId = 'my_faculty';
+              });
+            }
+          });
+        }
+
+        return Column(
+          children: [
+            // Thanh chuyển đổi sub-tab tin tức
+            _buildSubTabBar(
+              context: context,
+              isDarkMode: isDarkMode,
+              userFacultyStr: userFacultyStr,
+              primaryFacultyInfo: primaryFacultyInfo,
+              followedFaculties: followedFaculties,
+            ),
+
+            // Phần nội dung tin tức theo tab được chọn
+            Expanded(
+              child: _buildNewsBody(
+                context: context,
+                isDarkMode: isDarkMode,
+                user: user,
+                userFacultyStr: userFacultyStr,
+                primaryFacultyInfo: primaryFacultyInfo,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildNewsBody({
+    required BuildContext context,
+    required bool isDarkMode,
+    required User? user,
+    required String? userFacultyStr,
+    required FacultyInfo? primaryFacultyInfo,
+  }) {
+    // CASE 1: Tab Toàn trường
+    if (_selectedSubTabId == 'all') {
+      return StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('official_news')
+            .orderBy('publishedAt', descending: true)
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
+            );
+          }
+
+          if (snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                'Chưa có bài viết chính thức nào',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 14,
+                  color: isDarkMode ? Colors.white60 : Colors.black54,
+                ),
               ),
             );
-          },
-        )));
+          }
+
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 600.0),
+              child: ListView.builder(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                itemCount: snapshot.data!.docs.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return DailyDigestCard(
+                      isDarkMode: isDarkMode,
+                    );
+                  }
+
+                  var doc = snapshot.data!.docs[index - 1];
+                  var data = doc.data() as Map<String, dynamic>;
+                  return _buildNewsCard(
+                    context: context,
+                    isDarkMode: isDarkMode,
+                    docId: doc.id,
+                    data: data,
+                    collectionPath: 'official_news',
+                    user: user,
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      );
+    }
+
+    // CASE 2: Tab Khoa của bạn
+    if (_selectedSubTabId == 'my_faculty') {
+      if (userFacultyStr == null ||
+          userFacultyStr.trim().isEmpty ||
+          userFacultyStr == 'Chưa cập nhật khoa') {
+        return _buildEmptyFacultySetupCard(
+            context, isDarkMode, userFacultyStr);
+      }
+
+      if (primaryFacultyInfo == null) {
+        return _buildFacultyNotActiveCard(context, isDarkMode, userFacultyStr);
+      }
+
+      return _buildFacultyNewsStream(
+        context: context,
+        isDarkMode: isDarkMode,
+        user: user,
+        targetFacultyInfo: primaryFacultyInfo,
+      );
+    }
+
+    // CASE 3: Tab Khoa được chọn từ danh sách theo dõi
+    final FacultyInfo? targetFacultyInfo =
+        FacultyHelper.findById(_selectedSubTabId);
+
+    if (targetFacultyInfo != null) {
+      return _buildFacultyNewsStream(
+        context: context,
+        isDarkMode: isDarkMode,
+        user: user,
+        targetFacultyInfo: targetFacultyInfo,
+      );
+    }
+
+    return const Center(child: Text('Không tìm thấy dữ liệu'));
+  }
+
+  /// Stream dữ liệu từ `faculty_official_news` theo targetFacultyInfo
+  Widget _buildFacultyNewsStream({
+    required BuildContext context,
+    required bool isDarkMode,
+    required User? user,
+    required FacultyInfo targetFacultyInfo,
+  }) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('faculty_official_news')
+          .where('facultyId', isEqualTo: targetFacultyInfo.id)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: Color(0xFF5893D8)),
+          );
+        }
+
+        List<QueryDocumentSnapshot> docs = snapshot.data!.docs.toList();
+
+        // Sort theo publishedAt/timestamp/createdAt giảm dần trong bộ nhớ
+        docs.sort((a, b) {
+          final aData = a.data() as Map<String, dynamic>;
+          final bData = b.data() as Map<String, dynamic>;
+
+          DateTime getDocDate(Map<String, dynamic> d) {
+            if (d['publishedAt'] is Timestamp) {
+              return (d['publishedAt'] as Timestamp).toDate();
+            }
+            if (d['timestamp'] is Timestamp) {
+              return (d['timestamp'] as Timestamp).toDate();
+            }
+            if (d['createdAt'] is Timestamp) {
+              return (d['createdAt'] as Timestamp).toDate();
+            }
+            return DateTime.fromMillisecondsSinceEpoch(0);
+          }
+
+          return getDocDate(bData).compareTo(getDocDate(aData));
+        });
+
+        return Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600.0),
+            child: ListView.builder(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              itemCount: docs.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return FacultyDailyDigestCard(
+                    isDarkMode: isDarkMode,
+                    facultyInfo: targetFacultyInfo,
+                  );
+                }
+
+                var doc = docs[index - 1];
+                var data = doc.data() as Map<String, dynamic>;
+
+                return _buildNewsCard(
+                  context: context,
+                  isDarkMode: isDarkMode,
+                  docId: doc.id,
+                  data: data,
+                  collectionPath: 'faculty_official_news',
+                  user: user,
+                );
+              },
+            ),
+          ),
+        );
       },
     );
   }

@@ -12,6 +12,7 @@ import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
+import 'package:my_uni/features/home/official_content_helper.dart';
 
 String removeVietnameseDiacritics(String str) {
   const vietnameseMap = {
@@ -446,7 +447,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
                 child: Image.asset(
-                  'assets/images/news.png',
+                  OfficialContentHelper.getOfficialImageByContent(
+                    data['title'],
+                    data['summary'],
+                  ),
                   width: double.infinity,
                   height: 190,
                   fit: BoxFit.cover,
