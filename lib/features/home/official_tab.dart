@@ -9,6 +9,7 @@ import 'daily_digest_card.dart';
 import 'faculty_helper.dart';
 import 'faculty_daily_digest_card.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
+import 'widgets/home_skeleton.dart';
 
 class OfficialTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -1514,9 +1515,7 @@ class _OfficialTabState extends State<OfficialTab> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-            );
+            return const PostCardSkeletonListView();
           }
 
           if (snapshot.data!.docs.isEmpty) {

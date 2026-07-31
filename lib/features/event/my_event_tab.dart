@@ -499,6 +499,7 @@ class _MyEventTabState extends State<MyEventTab>
                   ),
                 );
               },
+
               icon: const Icon(Icons.explore_rounded, size: 20),
               label: const Text(
                 'Khám phá sự kiện cộng đồng',

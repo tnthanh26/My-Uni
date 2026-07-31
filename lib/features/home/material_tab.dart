@@ -9,6 +9,7 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'package:my_uni/utils/base64_image_cache.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'widgets/home_skeleton.dart';
 
 class MaterialTab extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -421,9 +422,7 @@ class MaterialTab extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-            );
+            return const MaterialSkeletonListView();
           }
 
           if (snapshot.data!.docs.isEmpty) {

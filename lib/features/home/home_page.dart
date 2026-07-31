@@ -91,6 +91,7 @@ class HomePageState extends State<HomePage> {
   bool _hasShownWeatherAlert = false;
 
   StreamSubscription<DocumentSnapshot>? _userDocSubscription;
+  Widget? _homeMainPage;
 
   @override
   void initState() {
@@ -1318,8 +1319,10 @@ class HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    _homeMainPage ??= _buildMainHomeContent();
+
     final List<Widget> pages = [
-      _buildMainHomeContent(),
+      _homeMainPage!,
       const EventPage(),
       const ChatbotPage(),
       MySpaceScreen(isActive: _selectedIndex == 3),

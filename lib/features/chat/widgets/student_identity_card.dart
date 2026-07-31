@@ -5,7 +5,7 @@ import '../../../utils/base64_image_cache.dart';
 import '../services/chat_service.dart';
 import '../pages/chat_detail_page.dart';
 
-class StudentIdentitySheet extends StatelessWidget {
+class StudentIdentitySheet extends StatefulWidget {
   final Map<String, dynamic> userInfo;
 
   const StudentIdentitySheet({
@@ -23,10 +23,18 @@ class StudentIdentitySheet extends StatelessWidget {
   }
 
   @override
+  State<StudentIdentitySheet> createState() => _StudentIdentitySheetState();
+}
+
+class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
+  bool _isLoading = false;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
+    final userInfo = widget.userInfo;
     final String name = userInfo['displayName'] ?? userInfo['name'] ?? userInfo['authorName'] ?? 'Sinh viên';
     final String photoURL = userInfo['photoURL'] ?? userInfo['avatar'] ?? userInfo['authorAvatar'] ?? '';
     final String targetUid = userInfo['uid'] ?? userInfo['userId'] ?? userInfo['id'] ?? userInfo['authorId'] ?? userInfo['uploaderId'] ?? userInfo['targetUserId'] ?? '';
@@ -181,47 +189,68 @@ class StudentIdentitySheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      icon: const Icon(Icons.chat_bubble_rounded, size: 15),
-                      label: const Text(
-                        'Nhắn tin',
-                        style: TextStyle(
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 15,
+                              height: 15,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Icon(Icons.chat_bubble_rounded, size: 15),
+                      label: Text(
+                        _isLoading ? 'Đang mở...' : 'Nhắn tin',
+                        style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      onPressed: () async {
-                        final navigator = Navigator.of(context);
-                        final scaffoldMessenger = ScaffoldMessenger.of(context);
-                        try {
-                          final roomId = await ChatService().getOrCreateChatRoom(
-                            targetUid,
-                            targetName: name,
-                            targetPhoto: photoURL,
-                          );
-                          navigator.pop();
-                          if (roomId.isNotEmpty) {
-                            navigator.push(
-                              MaterialPageRoute(
-                                builder: (context) => ChatDetailPage(
-                                  roomId: roomId,
-                                  targetUserId: targetUid,
-                                  targetUserName: name,
-                                  targetUserPhoto: photoURL,
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (navigator.mounted) navigator.pop();
-                          scaffoldMessenger.showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                'Không thể bắt đầu chat: ${e.toString().replaceAll('Exception: ', '')}',
-                              ),
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: _isLoading
+                          ? null
+                          : () async {
+                              setState(() {
+                                _isLoading = true;
+                              });
+
+                              final navigator = Navigator.of(context);
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              try {
+                                final roomId = await ChatService().getOrCreateChatRoom(
+                                  targetUid,
+                                  targetName: name,
+                                  targetPhoto: photoURL,
+                                );
+                                if (!mounted) return;
+                                navigator.pop();
+                                if (roomId.isNotEmpty) {
+                                  navigator.push(
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatDetailPage(
+                                        roomId: roomId,
+                                        targetUserId: targetUid,
+                                        targetUserName: name,
+                                        targetUserPhoto: photoURL,
+                                      ),
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (mounted) {
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+                                }
+                                if (navigator.mounted) navigator.pop();
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Không thể bắt đầu chat: ${e.toString().replaceAll('Exception: ', '')}',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
                     ),
                   ],
                 ],

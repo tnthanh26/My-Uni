@@ -13,9 +13,6 @@ import 'package:my_uni/features/notification/notification_page.dart';
 import 'package:my_uni/features/notification/message_notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
-import 'package:my_uni/features/chat/pages/chat_list_page.dart';
-import 'package:my_uni/features/chat/services/chat_service.dart';
-import 'package:my_uni/features/chat/models/chat_models.dart';
 import './services/myspace_weather_coordinator.dart';
 import './services/weather_alert_service.dart';
 import './services/weather_service.dart';
@@ -24,6 +21,7 @@ import './services/moodle_token_storage.dart';
 import './models/weather_models.dart';
 import 'weather_alert_card.dart';
 import 'myspace_deadline_section.dart';
+import 'widgets/myspace_skeleton.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:math' as math;
@@ -53,9 +51,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   AutoDeadlineConfig? _autoDeadlineConfig;
   String _userUniversity = '';
   Future<WeatherAlertResult>? _weatherFuture;
+  bool _isLoadingData = true;
   StreamSubscription<List<StudyClass>>? _scheduleSub;
   StreamSubscription<List<Deadline>>? _deadlineSub;
   final ScrollController _timetableScrollController = ScrollController();
+  final ScrollController _dashboardScrollController = ScrollController();
 
   @override
   void initState() {
@@ -78,6 +78,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   @override
   void dispose() {
+    _dashboardScrollController.dispose();
     _timetableScrollController.dispose();
     _deadlineSub?.cancel();
     _scheduleSub?.cancel();
@@ -158,13 +159,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   Future<void> _loadInitialMetaData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
 
+    final localDeadlines = await LocalStorageHelper.getDeadlines();
+    final localSchedule = await LocalStorageHelper.getSchedule();
     final localAutoConfig = await LocalStorageHelper.getAutoDeadlineConfig(
       moodleUrl: '',
     );
 
     if (mounted) {
       setState(() {
+        if (localDeadlines.isNotEmpty) mockDeadlines = localDeadlines;
+        if (localSchedule.isNotEmpty) mockSchedule = localSchedule;
         _autoDeadlineConfig = localAutoConfig;
+        if (localDeadlines.isNotEmpty || localSchedule.isNotEmpty) {
+          _isLoadingData = false;
+        }
       });
     }
 
@@ -217,6 +225,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
         setState(() {
           mockSchedule = remoteSch;
+          _isLoadingData = false;
         });
 
         await LocalStorageHelper.saveSchedule(remoteSch);
@@ -233,6 +242,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
         setState(() {
           mockSchedule = localSch;
+          _isLoadingData = false;
         });
       },
     );
@@ -249,6 +259,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
         setState(() {
           mockDeadlines = cleanedDeadlines;
+          _isLoadingData = false;
         });
 
         await LocalStorageHelper.saveDeadlines(cleanedDeadlines);
@@ -261,42 +272,16 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
         setState(() {
           mockDeadlines = localDls;
+          _isLoadingData = false;
         });
       },
     );
   }
 
   Future<List<Deadline>> _cleanupExpiredDeadlines(List<Deadline> deadlines) async {
-    final now = DateTime.now();
-    final remainingDeadlines = <Deadline>[];
-
-    for (final deadline in deadlines) {
-      final deadlineDateTime = DateTime(
-        deadline.dueDate.year,
-        deadline.dueDate.month,
-        deadline.dueDate.day,
-        deadline.dueTime.hour,
-        deadline.dueTime.minute,
-      );
-
-      final daysOverdue = now.difference(deadlineDateTime).inDays;
-
-      final shouldDelete =
-          (deadline.isCompleted && daysOverdue >= 1) ||
-              (!deadline.isCompleted && daysOverdue >= 3);
-
-      if (shouldDelete) {
-        for (var nid in deadline.notificationIds) {
-          await NotificationService.cancelNotification(nid);
-        }
-        await _firebaseService.deleteDeadline(deadline.id);
-        debugPrint('Deleted expired deadline: ${deadline.title}');
-      } else {
-        remainingDeadlines.add(deadline);
-      }
-    }
-
-    return remainingDeadlines;
+    // Không tự động xóa deadline quá hạn khi user stick hoặc hết hạn. 
+    // Người dùng sẽ chủ động xóa bằng nút Delete (Trash icon).
+    return deadlines;
   }
 
   void _toggleDeadline(String id) async {
@@ -347,6 +332,10 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _backToDashboard() {
+    _resetToToday();
+    if (_dashboardScrollController.hasClients) {
+      _dashboardScrollController.jumpTo(0.0);
+    }
     setState(() => _isDetailView = false);
   }
 
@@ -674,16 +663,19 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                           duration: const Duration(milliseconds: 250),
                           switchInCurve: Curves.easeOutCubic,
                           switchOutCurve: Curves.easeInCubic,
+                          layoutBuilder: (currentChild, previousChildren) {
+                            return Stack(
+                              alignment: Alignment.topCenter,
+                              children: <Widget>[
+                                ...previousChildren,
+                                ?currentChild,
+                              ],
+                            );
+                          },
                           transitionBuilder: (Widget child, Animation<double> animation) {
                             return FadeTransition(
                               opacity: animation,
-                              child: SlideTransition(
-                                position: Tween<Offset>(
-                                  begin: const Offset(0.05, 0.0),
-                                  end: Offset.zero,
-                                ).animate(animation),
-                                child: child,
-                              ),
+                              child: child,
                             );
                           },
                           child: _isDetailView
@@ -860,9 +852,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     List<Deadline> top3Deadlines = sortedDeadlines.take(3).toList();
 
+    if (_isLoadingData && mockDeadlines.isEmpty && mockSchedule.isEmpty) {
+      return const MySpaceDashboardSkeleton();
+    }
+
 
 
     return SingleChildScrollView(
+      controller: _dashboardScrollController,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -1121,14 +1118,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     const int startHourGrid = 0; // Từ 00:00 sáng
     const int totalHours = 24;   // 00:00 đến 23:00 (đủ 24 tiếng)
 
-    final now = DateTime.now();
-    final isTodaySelected = _focusedDate.year == now.year &&
-        _focusedDate.month == now.month &&
-        _focusedDate.day == now.day;
-    final currentHourFraction = now.hour + (now.minute / 60.0);
-    final showNowLine = isTodaySelected && currentHourFraction >= 0.0 && currentHourFraction <= 24.0;
-    final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
-
     _scrollToCurrentFocusHour();
 
     return SingleChildScrollView(
@@ -1173,37 +1162,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             ),
 
             // Empty State Watermark
-            if (dayClasses.isEmpty)
-              Positioned(
-                top: 120,
-                left: 60,
-                right: 20,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: (isDarkMode ? Colors.black26 : Colors.white).withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.event_available, color: isDarkMode ? Colors.white54 : Colors.black45),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Hôm nay không có tiết học",
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white60 : Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
+            if (dayClasses.isEmpty) const SizedBox.shrink(),
 
             // Class Blocks Positioned by Start & End Time (Google Calendar Solid Fill Style)
             ...dayClasses.map((c) {
@@ -1294,31 +1253,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               );
             }),
 
-            // Red Current Time Line Indicator
-            if (showNowLine)
-              Positioned(
-                top: nowTop + 8,
-                left: 44,
-                right: 0,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+
           ],
         ),
       ),
@@ -1522,24 +1457,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
 
-
-  Widget _buildScheduleDetailList() {
-    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
-      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
-
-    if (dayClasses.isEmpty) {
-      return Center(child: Text("Hôm nay không có lịch học", style: TextStyle(color: Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.grey)));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: dayClasses.length,
-      itemBuilder: (context, index) {
-        final c = dayClasses[index];
-        return _buildScheduleCardFigma(c);
-      },
-    );
-  }
 
   Widget _buildHeaderNotificationButton({
     required String tooltip,
