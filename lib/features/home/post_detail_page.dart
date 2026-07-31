@@ -109,6 +109,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String get _collectionPath {
+    if (widget.initialPostData.containsKey('collectionPath') &&
+        widget.initialPostData['collectionPath'] != null &&
+        widget.initialPostData['collectionPath'].toString().isNotEmpty) {
+      return widget.initialPostData['collectionPath'].toString();
+    }
     if (widget.initialPostData.containsKey('link')) return 'official_news';
     if (widget.initialPostData.containsKey('rating')) return 'course_reviews';
     if (widget.initialPostData.containsKey('fileData')) return 'study_materials';
@@ -789,7 +794,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _sendCommentNotification(String content, String senderName) async {
-    if (_collectionPath == 'official_news') return;
+    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return;
     final authorId =
         _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
@@ -807,7 +812,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _sendLikeNotification() async {
-    if (_collectionPath == 'official_news') return;
+    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return;
     final authorId =
         _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
@@ -1372,7 +1377,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         foregroundColor: isDarkMode ? Colors.white : const Color(0xFF545454),
         elevation: 0,
         actions: [
-          if (isOwner && _collectionPath != 'official_news')
+          if (isOwner && _collectionPath != 'official_news' && _collectionPath != 'faculty_official_news')
             PopupMenuButton<String>(
               onSelected: (val) {
                 if (val == 'edit') _navigateToEdit();
@@ -1413,7 +1418,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ),
               ],
             )
-          else if (_collectionPath != 'official_news')
+          else if (_collectionPath != 'official_news' && _collectionPath != 'faculty_official_news')
             IconButton(
               icon: const Icon(
                 Icons.report_gmailerrorred_outlined,
@@ -1473,7 +1478,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String _getAppBarTitle() {
-    if (_collectionPath == 'official_news') return "Chi tiết bài viết";
+    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return "Chi tiết bài viết";
     if (_collectionPath == 'course_reviews') return "Review môn học";
     if (_collectionPath == 'study_materials') return "Tài liệu học tập";
     return "Chi tiết bài đăng";
@@ -1481,7 +1486,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildDynamicHeader() {
     final data = _postData;
-    if (_collectionPath == 'official_news') return _buildOfficialUI(data);
+    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return _buildOfficialUI(data);
     if (_collectionPath == 'course_reviews') return _buildReviewUI(data);
     if (_collectionPath == 'study_materials') return _buildMaterialUI(data);
     return _buildForumUI(data);
@@ -1694,7 +1699,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
                       return Image.asset(
-                        'assets/images/news.png',
+                        'assets/images/announcement.jpg',
                         width: double.infinity,
                         height: 250,
                         fit: BoxFit.cover,
