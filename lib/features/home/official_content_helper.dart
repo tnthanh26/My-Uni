@@ -2,35 +2,21 @@ class OfficialContentHelper {
   static bool isOfficialEvent(dynamic titleData, dynamic summaryData) {
     final String title = titleData?.toString().toLowerCase() ?? "";
     final String summary = summaryData?.toString().toLowerCase() ?? "";
+    final String text = "$title $summary";
 
-    final List<String> keywords = [
-      'seminar',
-      'talkshow',
-      'hội thảo',
-      'cuộc thi',
-      'chào tân sinh viên',
-      'ngày hội',
-      'lễ tốt nghiệp',
-      'bảo vệ đề tài',
-      'bảo vệ khóa luận',
-      'bảo vệ luận văn',
-      'workshop',
-      'sự kiện',
-      'mời tham gia',
-      'đăng ký tham gia',
-      'event',
-      'webinar',
-      'tọa đàm',
-      'diễn đàn',
-      'giao lưu',
-      'fest',
-      'festival',
-      'hội thao',
-      'hội diễn',
-    ];
+    if (text.isEmpty) return false;
 
-    final String content = "$title $summary";
-    return keywords.any((k) => content.contains(k));
+    return text.contains('hội thảo') ||
+        text.contains('seminar') ||
+        text.contains('workshop') ||
+        text.contains('talkshow') ||
+        text.contains('tọa đàm') ||
+        text.contains('webinar') ||
+        text.contains('sự kiện') ||
+        text.contains('event') ||
+        text.contains('ngày hội') ||
+        text.contains('diễn đàn') ||
+        text.contains('hội thao');
   }
 
   static String getOfficialImageByContent(dynamic titleData, dynamic summaryData) {
@@ -137,6 +123,16 @@ class OfficialContentHelper {
     final String summary = summaryData?.toString().toLowerCase() ?? "";
     final String text = "$title $summary";
 
+    if (text.contains('hội thảo') ||
+        text.contains('seminar') ||
+        text.contains('workshop') ||
+        text.contains('talkshow') ||
+        text.contains('tọa đàm') ||
+        text.contains('webinar') ||
+        text.contains('sự kiện') ||
+        text.contains('event')) {
+      return 'Sự kiện';
+    }
     if (text.contains('tốt nghiệp') ||
         text.contains('bảo vệ đề tài') ||
         text.contains('bảo vệ khóa luận') ||
@@ -151,12 +147,6 @@ class OfficialContentHelper {
         text.contains('thực tập')) {
       return 'Tuyển dụng';
     }
-    if (text.contains('hội thảo') ||
-        text.contains('seminar') ||
-        text.contains('workshop') ||
-        text.contains('talkshow')) {
-      return 'Hội thảo';
-    }
     if (text.contains('cuộc thi') ||
         text.contains('contest') ||
         text.contains('giải thưởng')) {
@@ -166,9 +156,6 @@ class OfficialContentHelper {
         text.contains('quy định') ||
         text.contains('giáo vụ')) {
       return 'Thông báo';
-    }
-    if (isOfficialEvent(titleData, summaryData)) {
-      return 'Sự kiện';
     }
 
     return 'Tin chính thức';

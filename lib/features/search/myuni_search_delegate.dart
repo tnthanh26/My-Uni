@@ -51,9 +51,9 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
 
   final List<String> officialQuickTags = [
     "Sự kiện",
+    "Hội thảo",
     "Học bổng",
     "Tuyển dụng",
-    "Hội thảo",
     "Cuộc thi",
     "Thông báo",
     "Tin chính thức",
@@ -78,7 +78,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   static String _getSearchLabel(SearchScope scope) {
     switch (scope) {
       case SearchScope.official:
-        return 'Tìm bài viết, sự kiện chính thức...';
+        return 'Tìm bài viết chính thức...';
       case SearchScope.forum:
         return 'Bạn muốn biết điều gì quanh trường?';
       case SearchScope.review:
@@ -685,7 +685,8 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
 
     switch (tag.trim().toLowerCase()) {
       case 'sự kiện':
-        return OfficialContentHelper.isOfficialEvent(data['title'], data['summary']);
+      case 'hội thảo':
+        return OfficialContentHelper.isOfficialEvent(title, summary);
       case 'học bổng':
         return content.contains('học bổng') || content.contains('scholarship');
       case 'tuyển dụng':
@@ -693,11 +694,6 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
             content.contains('việc làm') ||
             content.contains('intern') ||
             content.contains('thực tập');
-      case 'hội thảo':
-        return content.contains('hội thảo') ||
-            content.contains('seminar') ||
-            content.contains('workshop') ||
-            content.contains('talkshow');
       case 'cuộc thi':
         return content.contains('cuộc thi') ||
             content.contains('contest') ||
@@ -793,8 +789,6 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
           .split(RegExp(r'\s+'))
           .where((w) => w.trim().isNotEmpty)
           .toList();
-      final isQueryEvent =
-          lowerQuery.contains('sự kiện') || lowerQuery.contains('su kien');
 
       final List<dynamic> results = snapshot.docs
           .map((doc) {
@@ -815,10 +809,6 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
 
             bool matchesQuery = cleanQuery.isEmpty ||
                 queryWords.every((word) => content.contains(word));
-            if (!matchesQuery && isQueryEvent) {
-              matchesQuery = OfficialContentHelper.isOfficialEvent(
-                  data['title'], data['summary']);
-            }
 
             if (!matchesQuery) return false;
 

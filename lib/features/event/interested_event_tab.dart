@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
@@ -61,6 +62,15 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     super.dispose();
   }
 
+  Future<void> _launchURL(String urlString) async {
+    final cleanUrl = urlString.trim();
+    if (cleanUrl.isEmpty) return;
+    final Uri url = Uri.parse(cleanUrl);
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
   Future<void> _removeInterest(BuildContext context, String docId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -73,10 +83,17 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
           .doc(docId)
           .delete();
 
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('personal_events')
+          .doc(docId)
+          .delete();
+
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã bỏ quan tâm sự kiện')),
+        const SnackBar(content: Text('Đã bỏ quan tâm sự kiện & xóa khỏi lịch cá nhân')),
       );
     } catch (_) {
       if (!context.mounted) return;
@@ -300,13 +317,20 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                       if (cleanQuery.isEmpty) return true;
                       final data = doc.data() as Map<String, dynamic>;
                       final title = removeVietnameseDiacritics(
-                          (data['title'] ?? data['eventTitle'] ?? data['name'] ?? '').toString());
+                          (data['eventName'] ?? data['title'] ?? data['eventTitle'] ?? data['name'] ?? '').toString());
                       final desc = removeVietnameseDiacritics(
                           (data['description'] ?? data['content'] ?? '').toString());
+                      final locName = removeVietnameseDiacritics(
+                          (data['locationName'] ?? '').toString());
+                      final locAddr = removeVietnameseDiacritics(
+                          (data['locationAddress'] ?? '').toString());
                       final department = removeVietnameseDiacritics(
-                          (data['department'] ?? data['organizer'] ?? '').toString());
+                          (data['facultyName'] ?? data['department'] ?? data['organizer'] ?? '').toString());
+
                       return title.contains(cleanQuery) ||
                           desc.contains(cleanQuery) ||
+                          locName.contains(cleanQuery) ||
+                          locAddr.contains(cleanQuery) ||
                           department.contains(cleanQuery);
                     }).toList();
 
@@ -375,10 +399,12 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     Map<String, dynamic> data,
     bool isDarkMode,
   ) {
-    final String title = (data['title'] ?? 'Sự kiện sinh viên').toString();
-    final String date = (data['date'] ?? '').toString();
-    final String department =
-        (data['department'] ?? 'Cơ sở HCMUS').toString();
+    final String title = (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
+    final String date = (data['eventDateText'] ?? data['date'] ?? '').toString();
+    final String department = (data['locationName'] ?? data['facultyName'] ?? data['department'] ?? 'Cơ sở HCMUS').toString();
+    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? '').toString();
+    final String? thumbnailUrl = data['thumbnailUrl'] ??
+        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -390,15 +416,13 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailPage(
-                docId: docId,
-                initialPostData: data,
-              ),
-            ),
-          );
+          if (link.isNotEmpty) {
+            _launchURL(link);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Bài viết không có đường dẫn bài gốc')),
+            );
+          }
         },
         borderRadius: BorderRadius.circular(22),
         child: Column(
@@ -410,12 +434,25 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(22),
                   ),
-                  child: Image.asset(
-                    'assets/images/news.png',
-                    height: 150,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                  ),
+                  child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                      ? Image.network(
+                          thumbnailUrl,
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/images/news.png',
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
+                        )
+                      : Image.asset(
+                          'assets/images/news.png',
+                          height: 150,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
                 ),
                 Positioned.fill(
                   child: DecoratedBox(
@@ -559,31 +596,30 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
               child: SizedBox(
                 width: double.infinity,
                 height: 40,
-                child: ElevatedButton(
+                child: ElevatedButton.icon(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PostDetailPage(
-                          docId: docId,
-                          initialPostData: data,
-                        ),
-                      ),
-                    );
+                    if (link.isNotEmpty) {
+                      _launchURL(link);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Bài viết không có đường dẫn bài gốc')),
+                      );
+                    }
                   },
+                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  label: const Text(
+                    'Xem bài gốc',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: detailBlue,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Chi tiết bài viết',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),

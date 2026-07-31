@@ -60,7 +60,7 @@ class _SignUpPageState extends State<SignUpPage> {
     }
 
     final emailRegex = RegExp(
-      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
+      r'^[a-zA-Z0-9._%+-]+@(apcs\.fitus\.edu\.vn|student\.hcmus\.edu\.vn)$',
     );
 
     return emailRegex.hasMatch(trimmedEmail);
@@ -93,7 +93,7 @@ class _SignUpPageState extends State<SignUpPage> {
     final cohortString = '$startYear - $endYear';
 
     if (!_isValidStudentEmail(email)) {
-      _showSnackBar('Chỉ chấp nhận email sinh viên (@...edu.vn)', isError: true);
+      _showSnackBar('Chỉ chấp nhận email @apcs.fitus.edu.vn hoặc @student.hcmus.edu.vn', isError: true);
       return;
     }
 
@@ -237,7 +237,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
-                decoration: _inputDecoration('Email sinh viên (.edu.vn)', Icons.email_outlined, isDarkMode),
+                decoration: _inputDecoration('Email sinh viên (@apcs.fitus.edu.vn hoặc @student.hcmus.edu.vn)', Icons.email_outlined, isDarkMode),
               ),
             ),
             const SizedBox(height: 16),
