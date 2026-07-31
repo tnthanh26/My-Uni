@@ -300,65 +300,70 @@ class _MyEventTabState extends State<MyEventTab>
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       isScrollControlled: true,
-      builder: (context) => Padding(
+      builder: (context) => Container(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    ev.title,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: _primaryTextColor(isDarkMode),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      ev.title,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryTextColor(isDarkMode),
+                      ),
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: Icon(
-                    Icons.close,
-                    color: _secondaryTextColor(isDarkMode),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: Icon(
+                      Icons.close,
+                      color: _secondaryTextColor(isDarkMode),
+                    ),
                   ),
+                ],
+              ),
+              Divider(color: _borderColor(isDarkMode)),
+              const SizedBox(height: 10),
+              _buildDetailRow(
+                Icons.access_time_filled_rounded,
+                'Thời gian',
+                DateFormat('dd/MM/yyyy HH:mm').format(ev.dateTime),
+                isDarkMode,
+              ),
+              _buildDetailRow(
+                Icons.location_on_rounded,
+                'Vị trí',
+                ev.location,
+                isDarkMode,
+              ),
+              if (ev.description?.trim().isNotEmpty == true)
+                _buildDetailRow(
+                  Icons.description_rounded,
+                  'Mô tả',
+                  ev.description!,
+                  isDarkMode,
                 ),
-              ],
-            ),
-            Divider(color: _borderColor(isDarkMode)),
-            const SizedBox(height: 10),
-            _buildDetailRow(
-              Icons.access_time_filled_rounded,
-              'Thời gian',
-              DateFormat('dd/MM/yyyy HH:mm').format(ev.dateTime),
-              isDarkMode,
-            ),
-            _buildDetailRow(
-              Icons.location_on_rounded,
-              'Vị trí',
-              ev.location,
-              isDarkMode,
-            ),
-            if (ev.description?.trim().isNotEmpty == true)
-              _buildDetailRow(
-                Icons.description_rounded,
-                'Mô tả',
-                ev.description!,
-                isDarkMode,
-              ),
-            if (ev.reminder != null &&
-                ev.reminder != 'Không' &&
-                ev.reminder != 'Đặt lời nhắc' &&
-                ev.reminder!.trim().isNotEmpty)
-              _buildDetailRow(
-                Icons.add_alert_rounded,
-                'Nhắc nhở',
-                ev.reminder!,
-                isDarkMode,
-              ),
-          ],
+              if (ev.reminder != null &&
+                  ev.reminder != 'Không' &&
+                  ev.reminder != 'Đặt lời nhắc' &&
+                  ev.reminder!.trim().isNotEmpty)
+                _buildDetailRow(
+                  Icons.add_alert_rounded,
+                  'Nhắc nhở',
+                  ev.reminder!,
+                  isDarkMode,
+                ),
+            ],
+          ),
         ),
       ),
     );

@@ -7,12 +7,7 @@ class CommunityEventPage extends StatelessWidget {
 
   // Hàm lọc CHỈ lấy những tin là Event
   bool _isRealEvent(dynamic title, dynamic summary) {
-    List<String> keywords = [
-      'seminar', 'talkshow', 'hội thảo', 'cuộc thi', 'chào tân sinh viên',
-      'ngày hội', 'lễ tốt nghiệp', 'workshop', 'sự kiện', 'mời tham gia', 'đăng ký tham gia'
-    ];
-    String content = "${title.toString()} ${summary.toString()}".toLowerCase();
-    return keywords.any((k) => content.contains(k));
+    return false;
   }
 
   @override

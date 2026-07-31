@@ -1119,49 +1119,6 @@ class _OfficialTabState extends State<OfficialTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isEvent)
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDarkMode
-                            ? [
-                                const Color(0xFF1E3A8A).withOpacity(0.3),
-                                const Color(0xFF1E40AF).withOpacity(0.1)
-                              ]
-                            : [
-                                const Color(0xFFEFF6FF),
-                                const Color(0xFFDBEAFE).withOpacity(0.5)
-                              ],
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.tips_and_updates_rounded,
-                          size: 16,
-                          color: Color(0xFF3B82F6),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Sự kiện nổi bật dành cho bạn',
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.3,
-                            color: isDarkMode
-                                ? const Color(0xFF93C5FD)
-                                : const Color(0xFF1E40AF),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Row(
@@ -1254,27 +1211,31 @@ class _OfficialTabState extends State<OfficialTab> {
                         ),
                       ),
                       if (isEvent)
-                        StreamBuilder<DocumentSnapshot>(
-                          stream: FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user?.uid ?? 'guest')
-                              .collection('interested_events')
-                              .doc(docId)
-                              .snapshots(),
-                          builder: (context, favSnapshot) {
-                            bool isInterested =
-                                favSnapshot.hasData && favSnapshot.data!.exists;
-                            return _buildInterestButton(
-                              context: context,
-                              isDarkMode: isDarkMode,
-                              isInterested: isInterested,
-                              onTap: () => _toggleInterest(
-                                context,
-                                docId,
-                                data,
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.stars_rounded,
+                                  size: 13, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                'Sự kiện nổi bật',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                            );
-                          },
+                            ],
+                          ),
                         ),
                     ],
                   ),

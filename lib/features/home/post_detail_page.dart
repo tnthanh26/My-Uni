@@ -1546,9 +1546,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     data['summary'],
                     data['hashtags'],
                   ),
-                  icon: isEvent ? Icons.event : Icons.campaign_outlined,
+                  icon: Icons.campaign_outlined,
                   isDarkMode: isDarkMode,
-                  highlighted: isEvent,
+                  highlighted: false,
                   onTap: () {
                     final tag = OfficialContentHelper.getOfficialCategoryTag(
                       data['title'],
@@ -1564,26 +1564,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     );
                   },
                 ),
-                if (isEvent)
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: _firestore
-                        .collection('users')
-                        .doc(_user?.uid ?? 'guest')
-                        .collection('interested_events')
-                        .doc(widget.docId)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      final bool isInterested =
-                          snapshot.hasData && snapshot.data!.exists;
-
-                      return _buildInterestButton(
-                        context: context,
-                        isDarkMode: isDarkMode,
-                        isInterested: isInterested,
-                        onTap: _toggleInterest,
-                      );
-                    },
-                  ),
               ],
             ),
           ),

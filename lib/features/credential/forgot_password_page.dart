@@ -151,7 +151,7 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     labelStyle: TextStyle(
                         color: isDarkMode ? Colors.white60 : Colors.grey[600]
                     ),
-                    hintText: 'user@student.edu.vn',
+                    hintText: 'user@student.hcmus.edu.vn',
                     hintStyle: TextStyle(
                         color: isDarkMode ? Colors.white24 : Colors.black26
                     ),
@@ -209,11 +209,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                     }
 
                     final RegExp emailRegex = RegExp(
-                      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.edu\.vn$',
+                      r'^[a-zA-Z0-9._%+-]+@(apcs\.fitus\.edu\.vn|student\.hcmus\.edu\.vn)$',
                     );
 
                     if (!emailRegex.hasMatch(trimmedValue)) {
-                      return 'Vui lòng sử dụng email sinh viên (.edu.vn)';
+                      return 'Vui lòng sử dụng email sinh viên (@apcs.fitus.edu.vn hoặc @student.hcmus.edu.vn)';
                     }
                     return null;
                   },
