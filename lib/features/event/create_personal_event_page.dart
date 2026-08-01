@@ -367,6 +367,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
         'notificationId':
         notificationIds.isNotEmpty ? notificationIds.first : null,
 
+        if (widget.event?.sourceArticleUrl != null)
+          'sourceArticleUrl': widget.event!.sourceArticleUrl,
+
         'updatedAt': FieldValue.serverTimestamp(),
       };
 

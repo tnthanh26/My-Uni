@@ -457,34 +457,35 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: OutlinedButton.icon(
-                  onPressed: () => _launchURL(data['link'] ?? ''),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF5893D8)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+            if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim().isNotEmpty ?? false)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _launchURL((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString() ?? ''),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF5893D8)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      backgroundColor: isDarkMode
+                          ? Colors.white.withOpacity(0.02)
+                          : const Color(0xFFF8FBFF),
                     ),
-                    backgroundColor: isDarkMode
-                        ? Colors.white.withOpacity(0.02)
-                        : const Color(0xFFF8FBFF),
-                  ),
-                  label: const Text(
-                    'Xem chi tiết bài viết',
-                    style: TextStyle(
-                      color: Color(0xFF5893D8),
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Encode Sans Expanded',
+                    label: const Text(
+                      'Xem chi tiết bài viết',
+                      style: TextStyle(
+                        color: Color(0xFF5893D8),
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Encode Sans Expanded',
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

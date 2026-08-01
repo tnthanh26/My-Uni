@@ -24,6 +24,22 @@ class _OfficialTabState extends State<OfficialTab> {
   // Sub-tab id: 'all' (Toàn trường), 'my_faculty' (Khoa của bạn), hoặc 'fit'/'chemistry'/'physics'
   String _selectedSubTabId = 'all';
 
+  String _getNewsImageUrl(Map<String, dynamic> data) {
+    final imageUrl = data['imageUrl']?.toString().trim() ?? '';
+    if (imageUrl.isNotEmpty) return imageUrl;
+
+    final thumbnailUrl = data['thumbnailUrl']?.toString().trim() ?? '';
+    if (thumbnailUrl.isNotEmpty) return thumbnailUrl;
+
+    final imageUrls = data['imageUrls'];
+    if (imageUrls is List && imageUrls.isNotEmpty) {
+      final firstUrl = imageUrls.first?.toString().trim() ?? '';
+      if (firstUrl.isNotEmpty) return firstUrl;
+    }
+
+    return '';
+  }
+
   Future<void> _launchURL(String urlString) async {
     if (urlString.trim().isEmpty) return;
     final Uri url = Uri.parse(urlString);
@@ -31,10 +47,10 @@ class _OfficialTabState extends State<OfficialTab> {
   }
 
   Future<void> _toggleInterest(
-    BuildContext context,
-    String docId,
-    Map<String, dynamic> data,
-  ) async {
+      BuildContext context,
+      String docId,
+      Map<String, dynamic> data,
+      ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,8 +94,8 @@ class _OfficialTabState extends State<OfficialTab> {
   /// Dialog / BottomSheet cập nhật Khoa nhanh nếu người dùng chưa chọn Khoa
   void _showQuickFacultyPicker(BuildContext context, String? currentFaculty) {
     String? selected = (currentFaculty != null &&
-            currentFaculty.isNotEmpty &&
-            currentFaculty != 'Chưa cập nhật khoa')
+        currentFaculty.isNotEmpty &&
+        currentFaculty != 'Chưa cập nhật khoa')
         ? currentFaculty
         : FacultyHelper.allHcmusFaculties.first;
 
@@ -97,7 +113,7 @@ class _OfficialTabState extends State<OfficialTab> {
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -182,15 +198,15 @@ class _OfficialTabState extends State<OfficialTab> {
                             color: isSelected
                                 ? const Color(0xFF5893D8).withOpacity(0.12)
                                 : (isDarkMode
-                                    ? Colors.white.withOpacity(0.04)
-                                    : const Color(0xFFF8FAFC)),
+                                ? Colors.white.withOpacity(0.04)
+                                : const Color(0xFFF8FAFC)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF5893D8)
                                   : (isDarkMode
-                                      ? Colors.white10
-                                      : const Color(0xFFE2E8F0)),
+                                  ? Colors.white10
+                                  : const Color(0xFFE2E8F0)),
                             ),
                           ),
                           child: RadioListTile<String>(
@@ -208,8 +224,8 @@ class _OfficialTabState extends State<OfficialTab> {
                                 color: isSelected
                                     ? const Color(0xFF5893D8)
                                     : (isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF334155)),
+                                    ? Colors.white
+                                    : const Color(0xFF334155)),
                               ),
                             ),
                             onChanged: (val) {
@@ -229,15 +245,15 @@ class _OfficialTabState extends State<OfficialTab> {
                         final user = FirebaseAuth.instance.currentUser;
                         if (user != null && selected != null) {
                           final newPrimary =
-                              FacultyHelper.findFacultyByAccountString(selected);
+                          FacultyHelper.findFacultyByAccountString(selected);
                           final userDoc = await FirebaseFirestore.instance
                               .collection('users')
                               .doc(user.uid)
                               .get();
                           List<String> followed =
                               (userDoc.data()?['followedFaculties'] as List?)
-                                      ?.map((e) => e.toString())
-                                      .toList() ??
+                                  ?.map((e) => e.toString())
+                                  .toList() ??
                                   [];
                           if (newPrimary != null) {
                             followed.remove(newPrimary.id);
@@ -289,10 +305,10 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// BottomSheet Quản lý theo dõi tối đa 2 Khoa khác
   void _showManageFollowedFacultiesModal(
-    BuildContext context,
-    FacultyInfo? primaryFacultyInfo,
-    List<String> currentFollowed,
-  ) {
+      BuildContext context,
+      FacultyInfo? primaryFacultyInfo,
+      List<String> currentFollowed,
+      ) {
     List<String> tempFollowed = List.from(currentFollowed);
 
     showModalBottomSheet(
@@ -309,7 +325,7 @@ class _OfficialTabState extends State<OfficialTab> {
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
                 borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -391,24 +407,24 @@ class _OfficialTabState extends State<OfficialTab> {
                       decoration: BoxDecoration(
                         color: isPrimary
                             ? (isDarkMode
-                                ? const Color(0xFF1E3A8A).withOpacity(0.2)
-                                : const Color(0xFFEFF6FF))
+                            ? const Color(0xFF1E3A8A).withOpacity(0.2)
+                            : const Color(0xFFEFF6FF))
                             : (isFollowed
-                                ? (isDarkMode
-                                    ? const Color(0xFF8B5CF6).withOpacity(0.15)
-                                    : const Color(0xFFF3E8FF))
-                                : (isDarkMode
-                                    ? Colors.white.withOpacity(0.04)
-                                    : const Color(0xFFF8FAFC))),
+                            ? (isDarkMode
+                            ? const Color(0xFF8B5CF6).withOpacity(0.15)
+                            : const Color(0xFFF3E8FF))
+                            : (isDarkMode
+                            ? Colors.white.withOpacity(0.04)
+                            : const Color(0xFFF8FAFC))),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: isPrimary
                               ? const Color(0xFF3B82F6).withOpacity(0.4)
                               : (isFollowed
-                                  ? const Color(0xFF8B5CF6)
-                                  : (isDarkMode
-                                      ? Colors.white10
-                                      : const Color(0xFFE2E8F0))),
+                              ? const Color(0xFF8B5CF6)
+                              : (isDarkMode
+                              ? Colors.white10
+                              : const Color(0xFFE2E8F0))),
                         ),
                       ),
                       child: CheckboxListTile(
@@ -485,26 +501,26 @@ class _OfficialTabState extends State<OfficialTab> {
                         onChanged: isPrimary
                             ? null
                             : (checked) {
-                                if (checked == true) {
-                                  if (tempFollowed.length >= 2) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            'Bạn chỉ có thể theo dõi tối đa 2 Khoa khác.'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  setModalState(() {
-                                    tempFollowed.add(fac.id);
-                                  });
-                                } else {
-                                  setModalState(() {
-                                    tempFollowed.remove(fac.id);
-                                  });
-                                }
-                              },
+                          if (checked == true) {
+                            if (tempFollowed.length >= 2) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      'Bạn chỉ có thể theo dõi tối đa 2 Khoa khác.'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                              return;
+                            }
+                            setModalState(() {
+                              tempFollowed.add(fac.id);
+                            });
+                          } else {
+                            setModalState(() {
+                              tempFollowed.remove(fac.id);
+                            });
+                          }
+                        },
                       ),
                     );
                   }),
@@ -573,11 +589,11 @@ class _OfficialTabState extends State<OfficialTab> {
 
     final Color bgColor = isHighlight
         ? (isDarkMode
-            ? const Color(0xFF1E3A8A).withOpacity(0.3)
-            : const Color(0xFFE0F2FE))
+        ? const Color(0xFF1E3A8A).withOpacity(0.3)
+        : const Color(0xFFE0F2FE))
         : (isDarkMode
-            ? Colors.white.withOpacity(0.08)
-            : const Color(0xFFF1F5F9));
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFF1F5F9));
 
     final Color textColor = isHighlight
         ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
@@ -645,19 +661,19 @@ class _OfficialTabState extends State<OfficialTab> {
           decoration: BoxDecoration(
             color: isInterested
                 ? (isDarkMode
-                    ? Colors.white.withOpacity(0.1)
-                    : const Color(0xFFF1F5F9))
+                ? Colors.white.withOpacity(0.1)
+                : const Color(0xFFF1F5F9))
                 : const Color(0xFF5893D8),
             borderRadius: BorderRadius.circular(20),
             boxShadow: isInterested || isDarkMode
                 ? []
                 : [
-                    BoxShadow(
-                      color: const Color(0xFF5893D8).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+              BoxShadow(
+                color: const Color(0xFF5893D8).withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -767,7 +783,7 @@ class _OfficialTabState extends State<OfficialTab> {
               ),
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
                   color: isDarkMode
                       ? Colors.white.withOpacity(0.06)
@@ -820,8 +836,8 @@ class _OfficialTabState extends State<OfficialTab> {
           color: isSelected
               ? null
               : (isDarkMode
-                  ? Colors.white.withOpacity(0.06)
-                  : Colors.white),
+              ? Colors.white.withOpacity(0.06)
+              : Colors.white),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
@@ -830,12 +846,12 @@ class _OfficialTabState extends State<OfficialTab> {
           ),
           boxShadow: isSelected
               ? [
-                  BoxShadow(
-                    color: activeGradient.first.withOpacity(0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
+            BoxShadow(
+              color: activeGradient.first.withOpacity(0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            )
+          ]
               : [],
         ),
         child: Row(
@@ -864,7 +880,7 @@ class _OfficialTabState extends State<OfficialTab> {
               const SizedBox(width: 6),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.amber[700],
                   borderRadius: BorderRadius.circular(10),
@@ -902,12 +918,12 @@ class _OfficialTabState extends State<OfficialTab> {
             boxShadow: isDarkMode
                 ? []
                 : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    )
-                  ],
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              )
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1072,20 +1088,23 @@ class _OfficialTabState extends State<OfficialTab> {
       data['summary'],
     );
     final String summary = data['summary']?.toString().trim() ?? '';
-    final String imagePath = OfficialContentHelper.getOfficialImageByContent(
+    final String uploadedImageUrl = _getNewsImageUrl(data);
+
+    final String fallbackImagePath =
+    OfficialContentHelper.getOfficialImageByContent(
       data['title'],
       data['summary'],
     );
 
     void goToDetail() => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PostDetailPage(
-              docId: docId,
-              initialPostData: data,
-            ),
-          ),
-        );
+      context,
+      MaterialPageRoute(
+        builder: (context) => PostDetailPage(
+          docId: docId,
+          initialPostData: data,
+        ),
+      ),
+    );
 
     final String departmentDisplay = data['department']?.toString() ??
         data['facultyName']?.toString() ??
@@ -1104,12 +1123,12 @@ class _OfficialTabState extends State<OfficialTab> {
         boxShadow: isDarkMode
             ? []
             : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1205,7 +1224,7 @@ class _OfficialTabState extends State<OfficialTab> {
                         context: context,
                         isDarkMode: isDarkMode,
                         categoryTag:
-                            OfficialContentHelper.getOfficialCategoryTag(
+                        OfficialContentHelper.getOfficialCategoryTag(
                           data['title'],
                           data['summary'],
                           data['hashtags'],
@@ -1278,8 +1297,34 @@ class _OfficialTabState extends State<OfficialTab> {
                     borderRadius: BorderRadius.circular(18),
                     child: Stack(
                       children: [
-                        Image.asset(
-                          imagePath,
+                        uploadedImageUrl.isNotEmpty
+                            ? Image.network(
+                          uploadedImageUrl,
+                          width: double.infinity,
+                          height: 200,
+                          fit: BoxFit.cover,
+                          webHtmlElementStrategy:
+                          WebHtmlElementStrategy.prefer,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              fallbackImagePath,
+                              width: double.infinity,
+                              height: 200,
+                              fit: BoxFit.cover,
+                              errorBuilder:
+                                  (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/announcement.jpg',
+                                  width: double.infinity,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            );
+                          },
+                        )
+                            : Image.asset(
+                          fallbackImagePath,
                           width: double.infinity,
                           height: 200,
                           fit: BoxFit.cover,
@@ -1317,42 +1362,43 @@ class _OfficialTabState extends State<OfficialTab> {
                   onSave: widget.onSave,
                   collectionPath: collectionPath,
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () =>
-                          _launchURL(data['link']?.toString() ?? ''),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: isDarkMode
-                            ? Colors.white.withOpacity(0.05)
-                            : const Color(0xFFF1F5F9),
-                        foregroundColor: const Color(0xFF5893D8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Xem chi tiết bài viết',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 13,
-                            ),
+                if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim().isNotEmpty ?? false)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () =>
+                            _launchURL((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString() ?? ''),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: isDarkMode
+                              ? Colors.white.withOpacity(0.05)
+                              : const Color(0xFFF1F5F9),
+                          foregroundColor: const Color(0xFF5893D8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          SizedBox(width: 8),
-                          Icon(Icons.open_in_new_rounded, size: 16),
-                        ],
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Xem chi tiết bài viết',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 13,
+                              ),
+                            ),
+                            SizedBox(width: 8),
+                            Icon(Icons.open_in_new_rounded, size: 16),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
@@ -1449,12 +1495,12 @@ class _OfficialTabState extends State<OfficialTab> {
         final String? userFacultyStr = userData['faculty']?.toString();
         final List<String> rawFollowed =
             (userData['followedFaculties'] as List?)
-                    ?.map((e) => e.toString())
-                    .toList() ??
+                ?.map((e) => e.toString())
+                .toList() ??
                 [];
 
         final FacultyInfo? primaryFacultyInfo =
-            FacultyHelper.findFacultyByAccountString(userFacultyStr);
+        FacultyHelper.findFacultyByAccountString(userFacultyStr);
 
         // Loại bỏ Khoa chính khỏi danh sách Khoa theo dõi phụ để tránh trùng lặp tab
         final List<String> followedFaculties = rawFollowed
@@ -1536,7 +1582,7 @@ class _OfficialTabState extends State<OfficialTab> {
               constraints: const BoxConstraints(maxWidth: 600.0),
               child: ListView.builder(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 itemCount: snapshot.data!.docs.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {
@@ -1586,7 +1632,7 @@ class _OfficialTabState extends State<OfficialTab> {
 
     // CASE 3: Tab Khoa được chọn từ danh sách theo dõi
     final FacultyInfo? targetFacultyInfo =
-        FacultyHelper.findById(_selectedSubTabId);
+    FacultyHelper.findById(_selectedSubTabId);
 
     if (targetFacultyInfo != null) {
       return _buildFacultyNewsStream(
@@ -1647,7 +1693,7 @@ class _OfficialTabState extends State<OfficialTab> {
             constraints: const BoxConstraints(maxWidth: 600.0),
             child: ListView.builder(
               padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               itemCount: docs.length + 1,
               itemBuilder: (context, index) {
                 if (index == 0) {

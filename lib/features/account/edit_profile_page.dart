@@ -640,7 +640,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     );
   }
 
-  Widget _buildCohortCard(BuildContext context) {
+  Widget _buildCohortCard(BuildContext context, {bool enabled = false}) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -678,6 +678,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       width: 75,
                       child: TextField(
                         controller: _cohortStartController,
+                        enabled: enabled,
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
@@ -689,10 +690,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
                             FocusScope.of(context).nextFocus();
                           }
                         },
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: enabled
+                              ? (isDarkMode ? Colors.white : const Color(0xFF1F2937))
+                              : (isDarkMode ? Colors.white38 : Colors.black38),
                         ),
                         decoration: _dobPartDecoration(context, 'yyyy'),
                       ),
@@ -705,16 +709,20 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       width: 75,
                       child: TextField(
                         controller: _cohortEndController,
+                        enabled: enabled,
                         textAlign: TextAlign.center,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(4),
                         ],
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
+                          color: enabled
+                              ? (isDarkMode ? Colors.white : const Color(0xFF1F2937))
+                              : (isDarkMode ? Colors.white38 : Colors.black38),
                         ),
                         decoration: _dobPartDecoration(context, 'yyyy'),
                       ),
@@ -1331,10 +1339,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         icon: Icons.badge_outlined,
                         label: 'MSSV',
                         controller: _studentIdController,
+                        enabled: false,
                         keyboardType: TextInputType.number,
                         inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       ),
-                      _buildCohortCard(context),
+                      _buildCohortCard(context, enabled: false),
                     ],
                   ),
                   const SizedBox(height: 28),

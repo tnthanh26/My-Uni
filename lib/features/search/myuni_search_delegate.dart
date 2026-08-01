@@ -50,13 +50,14 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   ];
 
   final List<String> officialQuickTags = [
+    "Thông báo",
     "Sự kiện",
     "Hội thảo",
+    "Tốt nghiệp",
     "Học bổng",
+    "Học phí",
     "Tuyển dụng",
     "Cuộc thi",
-    "Thông báo",
-    "Tin chính thức",
   ];
 
   final String? initialHashtag;
@@ -679,31 +680,78 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   Widget buildSuggestions(BuildContext context) => buildResults(context);
 
   bool _isOfficialMatchTag(Map<String, dynamic> data, String tag) {
-    final String title = data['title']?.toString() ?? '';
-    final String summary = data['summary']?.toString() ?? '';
-    final String content = '$title $summary'.toLowerCase();
+    final String cleanTag = tag.trim().replaceAll('#', '');
+    if (cleanTag.isEmpty) return true;
 
-    switch (tag.trim().toLowerCase()) {
-      case 'sự kiện':
+    // 1. Prioritize computed category tag from OfficialContentHelper
+    final String computedCategory = OfficialContentHelper.getOfficialCategoryTag(
+      data['title'],
+      data['summary'],
+      data['hashtags'],
+    );
+    if (computedCategory.toLowerCase() == cleanTag.toLowerCase()) {
+      return true;
+    }
+
+    // 2. Check explicit hashtags array in Firestore doc
+    if (data['hashtags'] != null && data['hashtags'] is List) {
+      final List rawTags = data['hashtags'] as List;
+      for (final item in rawTags) {
+        final String tagStr = item.toString().replaceAll('#', '').trim();
+        if (tagStr.toLowerCase() == cleanTag.toLowerCase()) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Fallback keyword matching for standard official categories
+    final String content = data['title']?.toString().toLowerCase() ?? '';
+
+    switch (cleanTag.toLowerCase()) {
       case 'hội thảo':
-        return OfficialContentHelper.isOfficialEvent(title, summary);
+        return content.contains('hội thảo') ||
+            content.contains('seminar') ||
+            content.contains('workshop') ||
+            content.contains('talkshow') ||
+            content.contains('tọa đàm') ||
+            content.contains('webinar');
+      case 'sự kiện':
+        return content.contains('sự kiện') ||
+            content.contains('event') ||
+            content.contains('ngày hội') ||
+            content.contains('diễn đàn') ||
+            content.contains('hội thao');
+      case 'tốt nghiệp':
+        return content.contains('tốt nghiệp') ||
+            content.contains('bảo vệ đề tài') ||
+            content.contains('bảo vệ khóa luận') ||
+            content.contains('bảo vệ luận văn') ||
+            content.contains('graduation');
       case 'học bổng':
         return content.contains('học bổng') || content.contains('scholarship');
+      case 'học phí':
+        return content.contains('học phí') ||
+            content.contains('tuition') ||
+            content.contains('lệ phí') ||
+            content.contains('nộp tiền');
       case 'tuyển dụng':
         return content.contains('tuyển dụng') ||
             content.contains('việc làm') ||
             content.contains('intern') ||
-            content.contains('thực tập');
+            content.contains('thực tập') ||
+            content.contains('recruitment');
       case 'cuộc thi':
         return content.contains('cuộc thi') ||
             content.contains('contest') ||
-            content.contains('giải thưởng');
+            content.contains('hackathon') ||
+            content.contains('olympic');
       case 'thông báo':
-        return content.contains('thông báo') || content.contains('quy định');
-      case 'tin chính thức':
-        return true;
+        return content.contains('thông báo') ||
+            content.contains('quy định') ||
+            content.contains('giáo vụ') ||
+            content.contains('lịch thi');
       default:
-        return content.contains(tag.trim().toLowerCase());
+        return content.contains(cleanTag.toLowerCase());
     }
   }
 
@@ -784,7 +832,9 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
           .get()
           .timeout(const Duration(seconds: 10));
 
-      final lowerQuery = cleanQuery.toLowerCase();
+      final String cleanQueryWithoutHash =
+          cleanQuery.replaceAll('#', '').trim();
+      final lowerQuery = cleanQueryWithoutHash.toLowerCase();
       final List<String> queryWords = lowerQuery
           .split(RegExp(r'\s+'))
           .where((w) => w.trim().isNotEmpty)
@@ -807,8 +857,19 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
             final String summary = data['summary']?.toString().toLowerCase() ?? '';
             final String content = '$title $summary';
 
-            bool matchesQuery = cleanQuery.isEmpty ||
-                queryWords.every((word) => content.contains(word));
+            bool matchesQuery;
+            if (cleanQuery.startsWith('#')) {
+              matchesQuery = _isOfficialMatchTag(data, cleanQueryWithoutHash) ||
+                  (queryWords.isNotEmpty &&
+                      queryWords.every((word) => content.contains(word)));
+            } else if (cleanQuery.isNotEmpty && activeTags.isNotEmpty) {
+              matchesQuery = (queryWords.isNotEmpty &&
+                      queryWords.every((word) => content.contains(word))) ||
+                  activeTags.any((tag) => _isOfficialMatchTag(data, tag));
+            } else {
+              matchesQuery = cleanQueryWithoutHash.isEmpty ||
+                  queryWords.every((word) => content.contains(word));
+            }
 
             if (!matchesQuery) return false;
 

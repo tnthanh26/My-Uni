@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:my_uni/features/home/post_detail_page.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
 String removeVietnameseDiacritics(String str) {
@@ -393,6 +392,22 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     );
   }
 
+  Future<bool> _checkEventExists(Map<String, dynamic> data, String docId) async {
+    final String targetDocId = (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
+    final String collectionPath = (data['collectionPath'] ?? 'faculty_events').toString();
+    if (targetDocId.isEmpty) return true;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection(collectionPath)
+          .doc(targetDocId)
+          .get();
+      return doc.exists;
+    } catch (_) {
+      return true;
+    }
+  }
+
   Widget _buildEventCard(
     BuildContext context,
     String docId,
@@ -415,15 +430,7 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
         boxShadow: _cardShadow(isDarkMode),
       ),
       child: InkWell(
-        onTap: () {
-          if (link.isNotEmpty) {
-            _launchURL(link);
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Bài viết không có đường dẫn bài gốc')),
-            );
-          }
-        },
+        onTap: link.isNotEmpty ? () => _launchURL(link) : null,
         borderRadius: BorderRadius.circular(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -490,30 +497,45 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                     ),
                   ),
                 ),
-                Positioned(
-                  left: 12,
-                  bottom: 12,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.18),
+                FutureBuilder<bool>(
+                  future: _checkEventExists(data, docId),
+                  builder: (context, snapshot) {
+                    final bool isDeleted = snapshot.hasData && snapshot.data == false;
+                    return Positioned(
+                      left: 12,
+                      bottom: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isDeleted ? Colors.redAccent : Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(999),
+                          border: Border.all(
+                            color: isDeleted ? Colors.redAccent : Colors.white.withValues(alpha: 0.18),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (isDeleted) ...[
+                              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
+                              const SizedBox(width: 4),
+                            ],
+                            Text(
+                              isDeleted ? 'Đã bị hủy' : 'Đã quan tâm',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                    child: const Text(
-                      'Đã quan tâm',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ],
             ),
@@ -522,6 +544,39 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  FutureBuilder<bool>(
+                    future: _checkEventExists(data, docId),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData && snapshot.data == false) {
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 10),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.red.shade300),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16),
+                              SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'Sự kiện đã bị BTC hủy hoặc xóa khỏi hệ thống',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.redAccent,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      return const SizedBox.shrink();
+                    },
+                  ),
                   Text(
                     title,
                     maxLines: 2,
@@ -553,7 +608,7 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                date.isEmpty ? 'Xem chi tiết bài viết' : date,
+                                date.isEmpty ? 'Chưa cập nhật ngày' : date,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: _secondaryTextColor(isDarkMode),
@@ -591,40 +646,33 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: SizedBox(
-                width: double.infinity,
-                height: 40,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    if (link.isNotEmpty) {
-                      _launchURL(link);
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Bài viết không có đường dẫn bài gốc')),
-                      );
-                    }
-                  },
-                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: const Text(
-                    'Xem bài gốc',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
+            if (link.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 40,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _launchURL(link),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                    label: const Text(
+                      'Xem bài gốc',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: detailBlue,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: detailBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
       ),

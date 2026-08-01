@@ -177,7 +177,12 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         parsedDateTime = (data['registrationDeadlineAt'] as Timestamp).toDate();
       }
 
-      String locStr = [locationName, locationAddress].where((s) => s.trim().isNotEmpty).join(' - ');
+      final List<String> locParts = [];
+      final String trimmedLocName = locationName.trim();
+      final String trimmedLocAddr = locationAddress.trim();
+      if (trimmedLocName.isNotEmpty) locParts.add(trimmedLocName);
+      if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) locParts.add(trimmedLocAddr);
+      String locStr = locParts.join(' - ');
       if (locStr.trim().isEmpty) {
         locStr = facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm';
       }
@@ -953,9 +958,12 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     final String eventDateText = (data['eventDateText'] ?? data['date'] ?? 'Xem chi tiết bài viết').toString();
     final String locationName = (data['locationName'] ?? '').toString();
     final String locationAddress = (data['locationAddress'] ?? '').toString();
-    final String locationDisplay = [locationName, locationAddress]
-        .where((s) => s.trim().isNotEmpty)
-        .join(' - ');
+    final List<String> locDisplayParts = [];
+    final String trimmedLocName = locationName.trim();
+    final String trimmedLocAddr = locationAddress.trim();
+    if (trimmedLocName.isNotEmpty) locDisplayParts.add(trimmedLocName);
+    if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) locDisplayParts.add(trimmedLocAddr);
+    final String locationDisplay = locDisplayParts.join(' - ');
     final String facultyDisplay = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
 
     final String? thumbnailUrl = data['thumbnailUrl'] ??
@@ -976,15 +984,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              if (link.isNotEmpty) {
-                _launchURL(link);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Bài viết không có đường dẫn bài gốc')),
-                );
-              }
-            },
+            onTap: link.isNotEmpty ? () => _launchURL(link) : null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

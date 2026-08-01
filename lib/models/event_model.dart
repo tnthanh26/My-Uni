@@ -8,6 +8,9 @@ class EventModel {
   final String reminder;
   final String description;
   final int? notificationId;
+  final String? sourceArticleUrl;
+  final String? facultyEventId;
+  final bool isFromFacultyEvent;
 
   EventModel({
     required this.id,
@@ -17,11 +20,15 @@ class EventModel {
     required this.reminder,
     required this.description,
     this.notificationId,
+    this.sourceArticleUrl,
+    this.facultyEventId,
+    this.isFromFacultyEvent = false,
   });
 
   // Chuyển đổi từ Firestore Document thành EventModel
   factory EventModel.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    final fId = data['facultyEventId']?.toString();
     return EventModel(
       id: doc.id,
       title: data['title'] ?? '',
@@ -31,6 +38,9 @@ class EventModel {
       reminder: data['reminder'] ?? 'Không',
       description: data['description'] ?? '',
       notificationId: data['notificationId'],
+      sourceArticleUrl: (data['sourceArticleUrl'] ?? data['link'] ?? data['registrationUrl'])?.toString(),
+      facultyEventId: fId,
+      isFromFacultyEvent: data['isFromFacultyEvent'] == true || (fId != null && fId.isNotEmpty),
     );
   }
 
@@ -43,6 +53,9 @@ class EventModel {
       'reminder': reminder,
       'description': description,
       'notificationId': notificationId,
+      'sourceArticleUrl': sourceArticleUrl,
+      'facultyEventId': facultyEventId,
+      'isFromFacultyEvent': isFromFacultyEvent,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }

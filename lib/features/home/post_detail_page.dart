@@ -53,6 +53,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   late Map<String, dynamic> _postData;
   StreamSubscription<DocumentSnapshot>? _postSub;
+  bool _hasBeenDeleted = false;
 
   File? _commentImageFile;
   bool _isSubmittingComment = false;
@@ -136,10 +137,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
         .snapshots()
         .listen(
       (doc) {
-        if (doc.exists && doc.data() != null && mounted) {
+        if (!mounted) return;
+        if (doc.exists && doc.data() != null) {
           setState(() {
             _postData = doc.data() as Map<String, dynamic>;
           });
+        } else if (!_hasBeenDeleted) {
+          _hasBeenDeleted = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Bài viết này đã bị xóa hoặc không còn tồn tại'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          if (Navigator.of(context).canPop()) {
+            Navigator.of(context).pop();
+          }
         }
       },
       onError: (error) {
@@ -1324,7 +1337,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Future<void> _deletePost() async {
     try {
+      _hasBeenDeleted = true;
+      final String? facultyEventId = _postData['facultyEventId']?.toString();
+      final String? activityId = _postData['activityId']?.toString();
+
       await _firestore.collection(_collectionPath).doc(widget.docId).delete();
+
+      if (facultyEventId != null && facultyEventId.isNotEmpty) {
+        try {
+          await _firestore.collection('faculty_events').doc(facultyEventId).delete();
+        } catch (_) {}
+      }
+
+      if (activityId != null && activityId.isNotEmpty) {
+        try {
+          await _firestore.collection('collaborator_activities').doc(activityId).delete();
+        } catch (_) {}
+      }
+
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1332,6 +1362,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         );
       }
     } catch (e) {
+      _hasBeenDeleted = false;
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("Lỗi khi xóa: $e")),
@@ -1343,9 +1374,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isOwner = _user?.uid ==
-        (_postData['authorId'] ??
-            _postData['uploaderId']);
+    final bool isOwner = _user?.uid != null &&
+        (_user!.uid == _postData['authorId'] ||
+            _user!.uid == _postData['uploaderId'] ||
+            _user!.uid == _postData['createdBy']);
 
     bool canEditPost = isOwner;
     if (canEditPost && _postData['timestamp'] != null) {
@@ -1377,7 +1409,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
         foregroundColor: isDarkMode ? Colors.white : const Color(0xFF545454),
         elevation: 0,
         actions: [
-          if (isOwner && _collectionPath != 'official_news' && _collectionPath != 'faculty_official_news')
+          if (isOwner)
             PopupMenuButton<String>(
               onSelected: (val) {
                 if (val == 'edit') _navigateToEdit();
@@ -1418,7 +1450,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ),
               ],
             )
-          else if (_collectionPath != 'official_news' && _collectionPath != 'faculty_official_news')
+          else
             IconButton(
               icon: const Icon(
                 Icons.report_gmailerrorred_outlined,
@@ -1504,6 +1536,39 @@ class _PostDetailPageState extends State<PostDetailPage> {
       data['summary'],
     );
 
+    final String uploadedImageUrl = () {
+      final imageUrl = data['imageUrl']?.toString().trim() ?? '';
+      if (imageUrl.isNotEmpty) return imageUrl;
+
+      final thumbnailUrl = data['thumbnailUrl']?.toString().trim() ?? '';
+      if (thumbnailUrl.isNotEmpty) return thumbnailUrl;
+
+      final imageUrls = data['imageUrls'];
+      if (imageUrls is List && imageUrls.isNotEmpty) {
+        final firstUrl = imageUrls.first?.toString().trim() ?? '';
+        if (firstUrl.isNotEmpty) return firstUrl;
+      }
+
+      return '';
+    }();
+
+    final String link = (data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim() ?? '';
+    final bool hasLink = link.isNotEmpty;
+    final String summaryStr = (data['summary'] ?? '').toString().trim();
+    final String contentStr = (data['content'] ?? '').toString().trim();
+
+    final String authorName = data['department']?.toString().trim().isNotEmpty == true
+        ? data['department'].toString().trim()
+        : (data['facultyName']?.toString().trim().isNotEmpty == true
+            ? data['facultyName'].toString().trim()
+            : (data['sourceName']?.toString().trim().isNotEmpty == true
+                ? data['sourceName'].toString().trim()
+                : (data['authorName']?.toString().trim().isNotEmpty == true
+                    ? data['authorName'].toString().trim()
+                    : 'Trường ĐH Khoa học Tự nhiên')));
+
+    final String dateText = _getFormattedDate(data);
+
     return Container(
       margin: const EdgeInsets.fromLTRB(10, 12, 10, 10),
       decoration: BoxDecoration(
@@ -1530,8 +1595,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
             child: _buildAuthorRow(
-              data['department'] ?? 'HCMUS',
-              data['date'] ?? '',
+              authorName,
+              dateText,
               isOfficial: true,
             ),
           ),
@@ -1648,19 +1713,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ),
-          if ((data['summary'] ?? '').toString().trim().isNotEmpty) ...[
+          if (summaryStr.isNotEmpty && (hasLink || summaryStr != contentStr)) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                data['summary'] ?? '',
+                summaryStr,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
-                  fontSize: 15,
-                  height: 1.65,
+                  fontSize: 14.5,
+                  height: 1.55,
                   color: isDarkMode
                       ? Colors.white70
-                      : const Color(0xFF5B6472),
+                      : const Color(0xFF475569),
                 ),
               ),
             ),
@@ -1672,20 +1737,45 @@ class _PostDetailPageState extends State<PostDetailPage> {
               borderRadius: BorderRadius.circular(18),
               child: Stack(
                 children: [
-                  Image.asset(
-                    imagePath,
-                    width: double.infinity,
-                    height: 250,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return Image.asset(
-                        'assets/images/announcement.jpg',
-                        width: double.infinity,
-                        height: 250,
-                        fit: BoxFit.cover,
-                      );
-                    },
-                  ),
+                  uploadedImageUrl.isNotEmpty
+                      ? Image.network(
+                          uploadedImageUrl,
+                          width: double.infinity,
+                          height: 250,
+                          fit: BoxFit.cover,
+                          webHtmlElementStrategy:
+                              WebHtmlElementStrategy.prefer,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              imagePath,
+                              width: double.infinity,
+                              height: 250,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/announcement.jpg',
+                                  width: double.infinity,
+                                  height: 250,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          imagePath,
+                          width: double.infinity,
+                          height: 250,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.asset(
+                              'assets/images/announcement.jpg',
+                              width: double.infinity,
+                              height: 250,
+                              fit: BoxFit.cover,
+                            );
+                          },
+                        ),
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(
@@ -1700,47 +1790,63 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       ),
                     ),
                   ),
-
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 18),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-            child: SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: OutlinedButton.icon(
-                onPressed: () async {
-                  final link = data['link']?.toString() ?? '';
-                  if (link.trim().isEmpty) return;
-                  await launchUrl(
-                    Uri.parse(link),
-                    mode: LaunchMode.externalApplication,
-                  );
-                },
-                icon: const Icon(Icons.open_in_new_rounded),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF5893D8)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  backgroundColor: isDarkMode
-                      ? Colors.white.withOpacity(0.02)
-                      : const Color(0xFFF8FBFF),
+          if (!hasLink && (contentStr.isNotEmpty ? contentStr : summaryStr).isNotEmpty) ...[
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: SelectableText(
+                contentStr.isNotEmpty ? contentStr : summaryStr,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 15,
+                  height: 1.7,
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.9)
+                      : const Color(0xFF1E293B),
                 ),
-                label: const Text(
-                  "Xem chi tiết bài viết",
-                  style: TextStyle(
-                    color: Color(0xFF5893D8),
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Encode Sans Expanded',
+              ),
+            ),
+          ],
+          if (hasLink) ...[
+            const SizedBox(height: 18),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    await launchUrl(
+                      Uri.parse(link),
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: Color(0xFF5893D8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    backgroundColor: isDarkMode
+                        ? Colors.white.withOpacity(0.02)
+                        : const Color(0xFFF8FBFF),
+                  ),
+                  label: const Text(
+                    "Xem chi tiết bài viết",
+                    style: TextStyle(
+                      color: Color(0xFF5893D8),
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Encode Sans Expanded',
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -2197,6 +2303,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return chip;
   }
 
+  String _getFormattedDate(Map<String, dynamic> data) {
+    final String dateText = (data['publishedDateText'] ?? data['date'])?.toString().trim() ?? '';
+    if (dateText.isNotEmpty) return dateText;
+
+    final dynamic ts = data['publishedAt'] ?? data['createdAt'] ?? data['timestamp'];
+    if (ts is Timestamp) {
+      return timeago.format(ts.toDate(), locale: 'vi');
+    }
+    if (ts is String && ts.isNotEmpty) {
+      return ts;
+    }
+    return 'Vừa xong';
+  }
+
   Widget _buildAuthorRow(
       String name,
       String sub, {
@@ -2221,8 +2341,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         }
       }
     }
-
-
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -2280,15 +2398,29 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   ],
                 ],
               ),
-              const SizedBox(height: 2),
-              Text(
-                sub,
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  fontSize: 12,
-                  color: isDarkMode ? Colors.white54 : Colors.grey,
+              if (sub.isNotEmpty) ...[
+                const SizedBox(height: 3),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.schedule_rounded,
+                      size: 13,
+                      color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      sub,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
+              ],
             ],
           ),
         ),

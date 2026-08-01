@@ -8,6 +8,7 @@ class ActivityCard extends StatelessWidget {
   final VoidCallback onClose;
   final VoidCallback onReopen;
   final VoidCallback onDelete;
+  final VoidCallback? onEdit;
   final VoidCallback? onViewRegisteredList;
 
   const ActivityCard({
@@ -18,6 +19,7 @@ class ActivityCard extends StatelessWidget {
     required this.onClose,
     required this.onReopen,
     required this.onDelete,
+    this.onEdit,
     this.onViewRegisteredList,
   });
 
@@ -266,6 +268,17 @@ class ActivityCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  if (onEdit != null)
+                    IconButton(
+                      onPressed: onEdit,
+                      icon: const Icon(
+                        Icons.edit_outlined,
+                        color: Colors.blueAccent,
+                        size: 20,
+                      ),
+                      tooltip: 'Sửa',
+                    ),
 
                   IconButton(
                     onPressed: onDelete,

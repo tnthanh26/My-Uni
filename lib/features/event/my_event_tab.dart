@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:my_uni/models/event_model.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'create_personal_event_page.dart';
@@ -333,6 +334,40 @@ class _MyEventTabState extends State<MyEventTab>
               ),
               Divider(color: _borderColor(isDarkMode)),
               const SizedBox(height: 10),
+              FutureBuilder<bool>(
+                future: _checkOriginalEventExists(ev.facultyEventId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data == false) {
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.red.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                          const SizedBox(width: 10),
+                          const Expanded(
+                            child: Text(
+                              'Sự kiện gốc này đã bị hủy hoặc xóa khỏi hệ thống bởi Ban tổ chức.',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.redAccent,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
               _buildDetailRow(
                 Icons.access_time_filled_rounded,
                 'Thời gian',
@@ -345,28 +380,76 @@ class _MyEventTabState extends State<MyEventTab>
                 ev.location,
                 isDarkMode,
               ),
-              if (ev.description?.trim().isNotEmpty == true)
+              if (ev.description.trim().isNotEmpty)
                 _buildDetailRow(
                   Icons.description_rounded,
                   'Mô tả',
-                  ev.description!,
+                  ev.description,
                   isDarkMode,
                 ),
-              if (ev.reminder != null &&
-                  ev.reminder != 'Không' &&
+              if (ev.reminder != 'Không' &&
                   ev.reminder != 'Đặt lời nhắc' &&
-                  ev.reminder!.trim().isNotEmpty)
+                  ev.reminder.trim().isNotEmpty)
                 _buildDetailRow(
                   Icons.add_alert_rounded,
                   'Nhắc nhở',
-                  ev.reminder!,
+                  ev.reminder,
                   isDarkMode,
                 ),
+              if (ev.sourceArticleUrl != null && ev.sourceArticleUrl!.trim().isNotEmpty) ...[
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _launchURL(ev.sourceArticleUrl!),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    label: const Text(
+                      'Xem bài viết gốc',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: figmaSelectionBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
+  }
+
+  Future<bool> _checkOriginalEventExists(String? facultyEventId) async {
+    if (facultyEventId == null || facultyEventId.trim().isEmpty) return true;
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('faculty_events')
+          .doc(facultyEventId.trim())
+          .get();
+      return doc.exists;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    final cleanUrl = urlString.trim();
+    if (cleanUrl.isEmpty) return;
+    final Uri url = Uri.parse(cleanUrl);
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   Widget _buildDetailRow(

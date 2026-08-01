@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/activity_service.dart';
+import '../services/image_upload_helper.dart';
 import '../widgets/activity_card.dart';
 
 class ActivitiesPage extends StatefulWidget {
@@ -111,6 +112,244 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
         }
       }
     }
+  }
+
+  Future<void> _showEditActivityDialog(
+    BuildContext context,
+    String activityId,
+    Map<String, dynamic> data,
+  ) async {
+    final titleController = TextEditingController(text: data['title'] ?? '');
+    final descriptionController = TextEditingController(text: data['description'] ?? '');
+    final locationController = TextEditingController(text: data['location'] ?? '');
+    final organizerController = TextEditingController(text: data['organizerName'] ?? '');
+    final trainingPointController = TextEditingController(text: (data['trainingPoint'] ?? 0).toString());
+    final imageUrlController = TextEditingController(text: data['imageUrl'] ?? '');
+
+    bool requiresRegistration = data['requiresRegistration'] == true;
+    bool isOnline = data['isOnline'] == true;
+    final onlineUrlController = TextEditingController(text: data['onlineUrl'] ?? '');
+    final registrationUrlController = TextEditingController(text: data['registrationUrl'] ?? '');
+
+    DateTime startTime = (data['startTime'] is Timestamp)
+        ? (data['startTime'] as Timestamp).toDate()
+        : DateTime.now();
+    DateTime endTime = (data['endTime'] is Timestamp)
+        ? (data['endTime'] as Timestamp).toDate()
+        : DateTime.now().add(const Duration(hours: 2));
+
+    bool isUploading = false;
+    bool isSaving = false;
+
+    await showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: const Row(
+                children: [
+                  Icon(Icons.edit_calendar_rounded, color: Colors.blueAccent, size: 28),
+                  SizedBox(width: 10),
+                  Text(
+                    'Chỉnh sửa hoạt động',
+                    style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 600,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextField(
+                        controller: titleController,
+                        decoration: InputDecoration(
+                          labelText: 'Tên hoạt động',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: organizerController,
+                        decoration: InputDecoration(
+                          labelText: 'Đơn vị tổ chức',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: locationController,
+                              decoration: InputDecoration(
+                                labelText: 'Địa điểm / Phòng học',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            width: 140,
+                            child: TextField(
+                              controller: trainingPointController,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                labelText: 'Điểm rèn luyện',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      TextField(
+                        controller: descriptionController,
+                        maxLines: 4,
+                        decoration: InputDecoration(
+                          labelText: 'Mô tả chi tiết',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: imageUrlController,
+                              decoration: InputDecoration(
+                                labelText: 'URL Hình ảnh',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            onPressed: isUploading
+                                ? null
+                                : () async {
+                                    setDialogState(() => isUploading = true);
+                                    try {
+                                      final url = await ImageUploadHelper.pickAndUploadImage(
+                                        folder: 'activity_images',
+                                      );
+                                      if (url != null) {
+                                        imageUrlController.text = url;
+                                      }
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Lỗi tải ảnh: $e')),
+                                        );
+                                      }
+                                    } finally {
+                                      setDialogState(() => isUploading = false);
+                                    }
+                                  },
+                            icon: isUploading
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.upload_file_rounded, size: 18),
+                            label: const Text('Tải ảnh'),
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      CheckboxListTile(
+                        value: requiresRegistration,
+                        onChanged: (val) {
+                          setDialogState(() => requiresRegistration = val ?? false);
+                        },
+                        title: const Text(
+                          'Yêu cầu sinh viên đăng ký trước khi điểm danh',
+                          style: TextStyle(fontFamily: 'Nunito', fontSize: 14),
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
+                  child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          setDialogState(() => isSaving = true);
+                          try {
+                            await ActivityService.updateActivity(
+                              activityId: activityId,
+                              title: titleController.text.trim(),
+                              description: descriptionController.text.trim(),
+                              location: locationController.text.trim(),
+                              organizerName: organizerController.text.trim(),
+                              trainingPoint: int.tryParse(trainingPointController.text.trim()) ?? 0,
+                              startTime: startTime,
+                              endTime: endTime,
+                              requiresRegistration: requiresRegistration,
+                              imageUrl: imageUrlController.text.trim(),
+                              isOnline: isOnline,
+                              onlineUrl: onlineUrlController.text.trim(),
+                              registrationUrl: registrationUrlController.text.trim(),
+                            );
+                            if (mounted) {
+                              Navigator.pop(dialogCtx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Đã cập nhật hoạt động thành công!')),
+                              );
+                            }
+                          } catch (e) {
+                            setDialogState(() => isSaving = false);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Lỗi cập nhật: $e')),
+                              );
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : const Text('Lưu thay đổi'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    titleController.dispose();
+    descriptionController.dispose();
+    locationController.dispose();
+    organizerController.dispose();
+    trainingPointController.dispose();
+    imageUrlController.dispose();
+    onlineUrlController.dispose();
+    registrationUrlController.dispose();
   }
 
   Future<void> _showRegisteredList(
@@ -359,6 +598,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                       onReopen: () async {
                         await ActivityService.reopenActivity(doc.id);
                       },
+                      onEdit: () => _showEditActivityDialog(context, doc.id, data),
                       onDelete: () => _showDeleteActivityConfirmation(
                         context,
                         doc.id,
