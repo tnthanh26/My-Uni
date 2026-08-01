@@ -34,43 +34,48 @@ class ChatService {
 
     String myName = _auth.currentUser?.displayName ?? 'Sinh viên';
     String myPhoto = _auth.currentUser?.photoURL ?? '';
+    String resolvedTargetName = (targetName != null && targetName.trim().isNotEmpty) ? targetName.trim() : 'Sinh viên';
+    String resolvedTargetPhoto = targetPhoto ?? '';
+
+    // Tối ưu hóa performance: chạy song song (parallel) các truy vấn Firestore thay vì chờ từng call nối tiếp
+    final bool needFetchTarget = targetName == null || targetName.trim().isEmpty;
+
     try {
-      final myDoc = await _firestore.collection('users').doc(myUid).get();
-      if (myDoc.exists) {
-        final myData = myDoc.data() ?? {};
+      final results = await Future.wait([
+        _firestore.collection('users').doc(myUid).get(),
+        needFetchTarget
+            ? _firestore.collection('users').doc(cleanTargetId).get()
+            : Future.value(null),
+        roomRef.get(),
+      ]);
+
+      final myDoc = results[0] as DocumentSnapshot?;
+      final targetDoc = results[1] as DocumentSnapshot?;
+      final roomDoc = results[2] as DocumentSnapshot?;
+
+      if (myDoc != null && myDoc.exists) {
+        final myData = myDoc.data() as Map<String, dynamic>? ?? {};
         myName = myData['displayName'] ?? myData['name'] ?? myName;
         myPhoto = myData['photoURL'] ?? myData['avatar'] ?? myPhoto;
       }
-    } catch (e) {
-      debugPrint("Fetch my user profile error: $e");
-    }
 
-    String resolvedTargetName = targetName ?? 'Sinh viên';
-    String resolvedTargetPhoto = targetPhoto ?? '';
-    try {
-      final targetDoc = await _firestore.collection('users').doc(cleanTargetId).get();
-      if (targetDoc.exists) {
-        final targetData = targetDoc.data() ?? {};
+      if (targetDoc != null && targetDoc.exists) {
+        final targetData = targetDoc.data() as Map<String, dynamic>? ?? {};
         resolvedTargetName = targetData['displayName'] ?? targetData['name'] ?? resolvedTargetName;
         resolvedTargetPhoto = targetData['photoURL'] ?? targetData['avatar'] ?? resolvedTargetPhoto;
       }
-    } catch (e) {
-      debugPrint("Fetch target user profile error: $e");
-    }
 
-    final participantNames = {
-      myUid: myName.toString(),
-      cleanTargetId: resolvedTargetName.toString(),
-    };
+      final participantNames = {
+        myUid: myName.toString(),
+        cleanTargetId: resolvedTargetName.toString(),
+      };
 
-    final participantPhotos = {
-      myUid: myPhoto.toString(),
-      cleanTargetId: resolvedTargetPhoto.toString(),
-    };
+      final participantPhotos = {
+        myUid: myPhoto.toString(),
+        cleanTargetId: resolvedTargetPhoto.toString(),
+      };
 
-    try {
-      final roomDoc = await roomRef.get();
-      if (!roomDoc.exists) {
+      if (roomDoc != null && !roomDoc.exists) {
         final newRoom = ChatRoom(
           id: roomId,
           participants: [myUid, cleanTargetId],
@@ -93,13 +98,6 @@ class ChatService {
       }
     } catch (e) {
       debugPrint("Chat room doc fetch/set error: $e");
-      await roomRef.set({
-        'id': roomId,
-        'participants': [myUid, cleanTargetId],
-        'participantNames': participantNames,
-        'participantPhotos': participantPhotos,
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
     }
 
     return roomId;

@@ -18,6 +18,7 @@ import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
 import 'package:my_uni/features/chat/widgets/student_identity_card.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
+import 'widgets/home_skeleton.dart';
 
 class ForumTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -229,9 +230,7 @@ class _ForumTabState extends State<ForumTab> {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-            );
+            return const PostCardSkeletonListView();
           }
 
           if (snapshot.data!.docs.isEmpty) {

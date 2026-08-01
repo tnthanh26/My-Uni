@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'create_review_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
+import 'widgets/home_skeleton.dart';
 
 class ReviewTab extends StatelessWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -289,9 +290,7 @@ class ReviewTab extends StatelessWidget {
             .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
-            return const Center(
-              child: CircularProgressIndicator(color: Color(0xFF5893D8)),
-            );
+            return const ReviewSkeletonListView();
           }
 
           if (snapshot.data!.docs.isEmpty) {
