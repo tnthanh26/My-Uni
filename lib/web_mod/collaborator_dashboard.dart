@@ -5,6 +5,8 @@ import 'collaborator/overview_page.dart';
 import 'collaborator/activities_page.dart';
 import 'collaborator/create_activity_page.dart';
 import 'collaborator/attendance_page.dart';
+import 'collaborator/create_news_page.dart';
+import 'collaborator/news_list_page.dart';
 
 class CollaboratorDashboard extends StatefulWidget {
   const CollaboratorDashboard({super.key});
@@ -14,14 +16,9 @@ class CollaboratorDashboard extends StatefulWidget {
 }
 
 class _CollaboratorDashboardState extends State<CollaboratorDashboard> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2; // Default to Overview (Tổng quan)
   String? _selectedActivityId;
   Map<String, dynamic>? _selectedActivityData;
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +35,7 @@ class _CollaboratorDashboardState extends State<CollaboratorDashboard> {
               setState(() {
                 _selectedIndex = index;
 
-                if (index == 3) {
+                if (index != 5) {
                   _selectedActivityId = null;
                   _selectedActivityData = null;
                 }
@@ -76,12 +73,16 @@ class _CollaboratorDashboardState extends State<CollaboratorDashboard> {
   String _pageTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'Tổng quan hoạt động';
+        return 'Tin tức của tôi';
       case 1:
-        return 'Hoạt động của tôi';
+        return 'Đăng tin tức mới';
       case 2:
-        return 'Tạo hoạt động mới';
+        return 'Tổng quan hoạt động';
       case 3:
+        return 'Hoạt động & Sự kiện của tôi';
+      case 4:
+        return 'Tạo hoạt động & sự kiện mới';
+      case 5:
         return 'Điểm danh sinh viên';
       default:
         return 'MYUNI CTV';
@@ -90,57 +91,74 @@ class _CollaboratorDashboardState extends State<CollaboratorDashboard> {
 
   Widget _buildContent() {
     if (_selectedIndex == 0) {
-      return OverviewPage(
-        onCreateActivity: () {
-          setState(() => _selectedIndex = 2);
-        },
-        onOpenActivities: () {
+      return NewsListPage(
+        onNavigateToCreate: () {
           setState(() => _selectedIndex = 1);
-        },
-        onOpenAttendance: (activityId, data) {
-          setState(() {
-            _selectedActivityId = activityId;
-            _selectedActivityData = data;
-            _selectedIndex = 3;
-          });
         },
       );
     }
 
     if (_selectedIndex == 1) {
+      return CreateNewsPage(
+        onCreated: () {
+          setState(() => _selectedIndex = 0);
+        },
+      );
+    }
+
+    if (_selectedIndex == 2) {
+      return OverviewPage(
+        onCreateActivity: () {
+          setState(() => _selectedIndex = 4);
+        },
+        onOpenActivities: () {
+          setState(() => _selectedIndex = 3);
+        },
+        onOpenAttendance: (activityId, data) {
+          setState(() {
+            _selectedActivityId = activityId;
+            _selectedActivityData = data;
+            _selectedIndex = 5;
+          });
+        },
+      );
+    }
+
+    if (_selectedIndex == 3) {
       return ActivitiesPage(
         onOpenAttendance: (activityId, data) {
           setState(() {
             _selectedActivityId = activityId;
             _selectedActivityData = data;
+            _selectedIndex = 5;
+          });
+        },
+      );
+    }
+
+    if (_selectedIndex == 4) {
+      return CreateActivityPage(
+        onCreated: () {
+          setState(() {
             _selectedIndex = 3;
           });
         },
       );
     }
 
-    if (_selectedIndex == 2) {
-      return CreateActivityPage(
-        onCreated: () {
-          setState(() {
-            _selectedIndex = 1;
-          });
-        },
-      );
-    }
     return AttendancePage(
       selectedActivityId: _selectedActivityId,
       selectedActivityData: _selectedActivityData,
       onBackToActivities: () {
         setState(() {
-          _selectedIndex = 1;
+          _selectedIndex = 3;
           _selectedActivityId = null;
           _selectedActivityData = null;
         });
       },
       onChooseActivity: () {
         setState(() {
-          _selectedIndex = 1;
+          _selectedIndex = 3;
         });
       },
     );

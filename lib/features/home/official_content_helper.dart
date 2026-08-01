@@ -1,8 +1,6 @@
 class OfficialContentHelper {
   static bool isOfficialEvent(dynamic titleData, dynamic summaryData) {
-    final String title = titleData?.toString().toLowerCase() ?? "";
-    final String summary = summaryData?.toString().toLowerCase() ?? "";
-    final String text = "$title $summary";
+    final String text = titleData?.toString().toLowerCase() ?? "";
 
     if (text.isEmpty) return false;
 
@@ -119,18 +117,21 @@ class OfficialContentHelper {
       if (firstTag.isNotEmpty) return firstTag;
     }
 
-    final String title = titleData?.toString().toLowerCase() ?? "";
-    final String summary = summaryData?.toString().toLowerCase() ?? "";
-    final String text = "$title $summary";
+    final String text = titleData?.toString().toLowerCase() ?? "";
 
     if (text.contains('hội thảo') ||
         text.contains('seminar') ||
         text.contains('workshop') ||
         text.contains('talkshow') ||
         text.contains('tọa đàm') ||
-        text.contains('webinar') ||
-        text.contains('sự kiện') ||
-        text.contains('event')) {
+        text.contains('webinar')) {
+      return 'Hội thảo';
+    }
+    if (text.contains('sự kiện') ||
+        text.contains('event') ||
+        text.contains('ngày hội') ||
+        text.contains('diễn đàn') ||
+        text.contains('hội thao')) {
       return 'Sự kiện';
     }
     if (text.contains('tốt nghiệp') ||
@@ -142,6 +143,12 @@ class OfficialContentHelper {
     if (text.contains('học bổng') || text.contains('scholarship')) {
       return 'Học bổng';
     }
+    if (text.contains('học phí') ||
+        text.contains('tuition') ||
+        text.contains('lệ phí') ||
+        text.contains('nộp tiền')) {
+      return 'Học phí';
+    }
     if (text.contains('tuyển dụng') ||
         text.contains('việc làm') ||
         text.contains('thực tập')) {
@@ -149,15 +156,11 @@ class OfficialContentHelper {
     }
     if (text.contains('cuộc thi') ||
         text.contains('contest') ||
-        text.contains('giải thưởng')) {
+        text.contains('hackathon') ||
+        text.contains('olympic')) {
       return 'Cuộc thi';
     }
-    if (text.contains('thông báo') ||
-        text.contains('quy định') ||
-        text.contains('giáo vụ')) {
-      return 'Thông báo';
-    }
 
-    return 'Tin chính thức';
+    return 'Thông báo';
   }
 }

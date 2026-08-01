@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class ActivityService {
   static final _firestore = FirebaseFirestore.instance;
@@ -7,6 +8,9 @@ class ActivityService {
 
   static CollectionReference<Map<String, dynamic>> get _activities =>
       _firestore.collection('student_activities');
+
+  static CollectionReference<Map<String, dynamic>> get _facultyEvents =>
+      _firestore.collection('faculty_events');
 
   static CollectionReference<Map<String, dynamic>> attendanceRef(String activityId) {
     return _activities.doc(activityId).collection('attendance');
@@ -43,11 +47,33 @@ class ActivityService {
   }
 
   static Future<void> deleteActivity(String activityId) async {
-    // 1. Mark the activity as deleted in the main document
-    await _activities.doc(activityId).update({
-      'status': 'deleted',
-      'updatedAt': FieldValue.serverTimestamp(),
-    });
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Chưa đăng nhập.');
+    }
+
+    final docRef = _activities.doc(activityId);
+    final snap = await docRef.get();
+    if (!snap.exists) return;
+
+    final data = snap.data();
+    final createdBy = data?['createdBy']?.toString();
+    final createdByEmail = data?['createdByEmail']?.toString();
+
+    // Verify ownership
+    if (createdBy != user.uid && createdByEmail != user.email) {
+      throw Exception('Bạn không có quyền xóa hoạt động này vì bạn không phải là người tạo.');
+    }
+
+    // 1. Delete corresponding faculty_events doc if present
+    final String? facultyEventId = data?['facultyEventId']?.toString();
+    if (facultyEventId != null && facultyEventId.isNotEmpty) {
+      try {
+        await _facultyEvents.doc(facultyEventId).delete();
+      } catch (e) {
+        // Silently ignore if faculty event already deleted or not existing
+      }
+    }
 
     // 2. Query all attendance documents under this activity to clean up students' history
     final attendanceSnapshot = await attendanceRef(activityId).get();
@@ -55,12 +81,11 @@ class ActivityService {
       final batch = _firestore.batch();
 
       for (var doc in attendanceSnapshot.docs) {
-        final data = doc.data();
-        String? studentUid = data['uid']?.toString();
+        final attData = doc.data();
+        String? studentUid = attData['uid']?.toString();
         final docId = doc.id;
 
         if (studentUid == null || studentUid.isEmpty) {
-          // Fallback if uid field is empty but docId is a Firebase UID
           if (docId.length == 28 || !RegExp(r'^\d+$').hasMatch(docId)) {
             studentUid = docId;
           }
@@ -75,12 +100,14 @@ class ActivityService {
           batch.delete(userAttendedDoc);
         }
 
-        // Clean up the attendance subcollection document
         batch.delete(doc.reference);
       }
 
       await batch.commit();
     }
+
+    // 3. Delete main activity document from database
+    await docRef.delete();
   }
 
   static Future<void> deleteAttendance(String activityId, String docId) async {
@@ -96,7 +123,6 @@ class ActivityService {
       String? studentUid = data?['uid']?.toString();
 
       if (studentUid == null || studentUid.isEmpty) {
-        // Fallback to docId if it looks like a Firebase UID
         if (docId.length == 28 || !RegExp(r'^\d+$').hasMatch(docId)) {
           studentUid = docId;
         }
@@ -130,6 +156,15 @@ class ActivityService {
     required DateTime endTime,
     bool requiresRegistration = false,
     List<String> registeredStudentIds = const [],
+    String? imageUrl,
+    String? contact,
+    String facultyId = 'fit',
+    String facultyCode = 'FIT',
+    String facultyName = 'Khoa Công nghệ Thông tin',
+    bool isOnline = false,
+    String? onlineUrl,
+    DateTime? registrationDeadline,
+    String? registrationUrl,
   }) async {
     final user = _auth.currentUser;
 
@@ -137,7 +172,72 @@ class ActivityService {
       throw Exception('Chưa đăng nhập.');
     }
 
-    await _activities.add({
+    final cleanImageUrl = imageUrl?.trim() ?? '';
+    final imageUrls = cleanImageUrl.isNotEmpty ? [cleanImageUrl] : <String>[];
+
+    // Format eventDateText e.g. "09h30 - 10h30, 05/08/2026"
+    final startTimeStr = DateFormat('HH:mm').format(startTime);
+    final endTimeStr = DateFormat('HH:mm').format(endTime);
+    final dateStr = DateFormat('dd/MM/yyyy').format(startTime);
+    final eventDateTextStr = '$startTimeStr - $endTimeStr, $dateStr';
+
+    final nowTs = FieldValue.serverTimestamp();
+
+    // 1. Create document in `faculty_events` so students see it in the app
+    final facultyEventDoc = await _facultyEvents.add({
+      'aiExtractionVersion': 2,
+      'articleType': 'invitation',
+      'confidence': 1.0,
+      'contact': contact ?? 'Liên hệ: $organizerName (${user.email ?? ""})',
+      'createdAt': nowTs,
+      'updatedAt': nowTs,
+      'lastExtractedAt': nowTs,
+      'description': description,
+      'endAt': Timestamp.fromDate(endTime),
+      'endDate': null,
+      'endDateTime': endTime.toIso8601String(),
+      'eventDateText': eventDateTextStr,
+      'eventName': title,
+      'eventStatus': 'upcoming',
+      'evidence': <String>[
+        '$organizerName tổ chức $title',
+        'Thời gian: $eventDateTextStr',
+        'Địa điểm: $location',
+      ],
+      'facultyCode': facultyCode,
+      'facultyId': facultyId,
+      'facultyName': facultyName,
+      'imageUrls': imageUrls,
+      'thumbnailUrl': cleanImageUrl,
+      'isAllDay': false,
+      'isOnline': isOnline,
+      'isValidEvent': true,
+      'locationAddress': '',
+      'locationName': location,
+      'missingFields': <String>[],
+      'onlineUrl': isOnline ? (onlineUrl ?? location) : null,
+      'organizer': organizerName,
+      'registrationDeadline': registrationDeadline?.toIso8601String(),
+      'registrationDeadlineAt': registrationDeadline != null
+          ? Timestamp.fromDate(registrationDeadline)
+          : null,
+      'registrationUrl': registrationUrl ?? '',
+      'rejectionReason': null,
+      'shouldPublish': true,
+      'source': 'collaborator',
+      'sourceArticleUrl': registrationUrl ?? '',
+      'sourceCandidateId': null,
+      'sourceCollection': 'collaborator_created',
+      'sourceName': organizerName,
+      'startAt': Timestamp.fromDate(startTime),
+      'startDate': null,
+      'startDateTime': startTime.toIso8601String(),
+      'createdBy': user.uid,
+      'createdByEmail': user.email ?? '',
+    });
+
+    // 2. Create document in `student_activities` so attendance management works as before
+    final studentActivityDoc = await _activities.add({
       'title': title,
       'description': description,
       'location': location,
@@ -148,11 +248,18 @@ class ActivityService {
       'status': 'active',
       'requiresRegistration': requiresRegistration,
       'registeredStudentIds': registeredStudentIds,
+      'imageUrl': cleanImageUrl,
+      'facultyEventId': facultyEventDoc.id,
       'createdBy': user.uid,
-      'createdByEmail': user.email,
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
+      'createdByEmail': user.email ?? '',
+      'createdAt': nowTs,
+      'updatedAt': nowTs,
       'attendanceCount': 0,
+    });
+
+    // Link activityId back to faculty_events doc
+    await facultyEventDoc.update({
+      'activityId': studentActivityDoc.id,
     });
   }
 
@@ -241,7 +348,6 @@ class ActivityService {
         'isExtra': requiresRegistration && !registeredStudentIds.contains(studentId),
       });
 
-      // Write to student's attended_activities history if uid exists
       if (uid != null && uid.isNotEmpty) {
         final userAttendedDoc = _firestore
             .collection('users')
@@ -285,7 +391,6 @@ class ActivityService {
         .collection('attended_activities')
         .doc(activityId);
 
-    // Get activity info to check registration & status
     final activitySnapshot = await activityDoc.get();
     if (!activitySnapshot.exists) throw Exception('Hoạt động không tồn tại.');
 
@@ -300,7 +405,6 @@ class ActivityService {
         List<String>.from(activityData['registeredStudentIds'] ?? []);
 
     if (requiresRegistration && !registeredStudentIds.contains(studentId)) {
-      // Create a pending attendance document in the attendance subcollection
       await attendanceDoc.set({
         'uid': studentUid,
         'studentId': studentId,
@@ -314,7 +418,7 @@ class ActivityService {
         'checkedInByEmail': studentData['email'] ?? '',
         'checkInMethod': 'event_qr',
         'isExtra': true,
-        'isApproved': false, // Needs CTV approval
+        'isApproved': false,
       });
       throw Exception('Chưa có ds đăng ký, vui lòng nhờ CTV xét duyệt');
     }
@@ -322,10 +426,9 @@ class ActivityService {
     return _firestore.runTransaction<bool>((transaction) async {
       final attendanceSnapshot = await transaction.get(attendanceDoc);
       if (attendanceSnapshot.exists) {
-        return false; // Already checked in
+        return false;
       }
 
-      // Add to event's attendance subcollection
       transaction.set(attendanceDoc, {
         'uid': studentUid,
         'studentId': studentId,
@@ -335,13 +438,12 @@ class ActivityService {
         'university': studentData['university'] ?? '',
         'isVerified': studentData['isVerified'] ?? false,
         'checkedInAt': FieldValue.serverTimestamp(),
-        'checkedInBy': studentUid, // Checked in by self
+        'checkedInBy': studentUid,
         'checkedInByEmail': studentData['email'] ?? '',
-        'checkInMethod': 'event_qr', // Scanned event QR code
+        'checkInMethod': 'event_qr',
         'isExtra': false,
       });
 
-      // Add to student's history
       transaction.set(userAttendedDoc, {
         'activityId': activityId,
         'title': activityData['title'] ?? '',
@@ -351,7 +453,6 @@ class ActivityService {
         'checkInMethod': 'event_qr',
       });
 
-      // Increment count
       transaction.update(activityDoc, {
         'attendanceCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -379,13 +480,11 @@ class ActivityService {
     final activityData = activitySnapshot.data()!;
 
     await _firestore.runTransaction((transaction) async {
-      // 1. Update the attendance doc to remove 'isApproved' (meaning it's approved)
       transaction.update(attendanceDoc, {
         'isApproved': FieldValue.delete(),
         'checkedInAt': FieldValue.serverTimestamp(),
       });
 
-      // 2. Add to student's history
       transaction.set(userAttendedDoc, {
         'activityId': activityId,
         'title': activityData['title'] ?? '',
@@ -395,7 +494,6 @@ class ActivityService {
         'checkInMethod': 'event_qr',
       });
 
-      // 3. Increment count
       transaction.update(activityDoc, {
         'attendanceCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -408,5 +506,99 @@ class ActivityService {
     required String studentUid,
   }) async {
     await attendanceRef(activityId).doc(studentUid).delete();
+  }
+
+  static Future<void> updateActivity({
+    required String activityId,
+    required String title,
+    required String description,
+    required String location,
+    required String organizerName,
+    required int trainingPoint,
+    required DateTime startTime,
+    required DateTime endTime,
+    bool requiresRegistration = false,
+    String? imageUrl,
+    bool isOnline = false,
+    String? onlineUrl,
+    DateTime? registrationDeadline,
+    String? registrationUrl,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      throw Exception('Chưa đăng nhập.');
+    }
+
+    final docRef = _activities.doc(activityId);
+    final snap = await docRef.get();
+    if (!snap.exists) {
+      throw Exception('Hoạt động không tồn tại.');
+    }
+
+    final data = snap.data();
+    final createdBy = data?['createdBy']?.toString();
+    final createdByEmail = data?['createdByEmail']?.toString();
+
+    if (createdBy != user.uid && createdByEmail != user.email) {
+      throw Exception('Bạn không có quyền sửa hoạt động này vì bạn không phải là người tạo.');
+    }
+
+    final cleanImageUrl = imageUrl?.trim() ?? '';
+    final imageUrls = cleanImageUrl.isNotEmpty ? [cleanImageUrl] : <String>[];
+
+    final startTimeStr = DateFormat('HH:mm').format(startTime);
+    final endTimeStr = DateFormat('HH:mm').format(endTime);
+    final dateStr = DateFormat('dd/MM/yyyy').format(startTime);
+    final eventDateTextStr = '$startTimeStr - $endTimeStr, $dateStr';
+
+    final nowTs = FieldValue.serverTimestamp();
+
+    await docRef.update({
+      'title': title,
+      'description': description,
+      'location': location,
+      'organizerName': organizerName,
+      'trainingPoint': trainingPoint,
+      'startTime': Timestamp.fromDate(startTime),
+      'endTime': Timestamp.fromDate(endTime),
+      'requiresRegistration': requiresRegistration,
+      'imageUrl': cleanImageUrl,
+      'updatedAt': nowTs,
+    });
+
+    final String? facultyEventId = data?['facultyEventId']?.toString();
+    if (facultyEventId != null && facultyEventId.isNotEmpty) {
+      try {
+        await _facultyEvents.doc(facultyEventId).update({
+          'eventName': title,
+          'description': description,
+          'locationAddress': '',
+          'locationName': location,
+          'evidence': <String>[
+            '$organizerName tổ chức $title',
+            'Thời gian: $eventDateTextStr',
+            'Địa điểm: $location',
+          ],
+          'organizer': organizerName,
+          'startAt': Timestamp.fromDate(startTime),
+          'startDateTime': startTime.toIso8601String(),
+          'endAt': Timestamp.fromDate(endTime),
+          'endDateTime': endTime.toIso8601String(),
+          'eventDateText': eventDateTextStr,
+          'isOnline': isOnline,
+          'onlineUrl': isOnline ? (onlineUrl ?? location) : null,
+          'registrationDeadline': registrationDeadline?.toIso8601String(),
+          'registrationDeadlineAt': registrationDeadline != null
+              ? Timestamp.fromDate(registrationDeadline)
+              : null,
+          'registrationUrl': registrationUrl ?? '',
+          'imageUrls': imageUrls,
+          'thumbnailUrl': cleanImageUrl,
+          'updatedAt': nowTs,
+        });
+      } catch (e) {
+        // Silently ignore if faculty event fails to update
+      }
+    }
   }
 }

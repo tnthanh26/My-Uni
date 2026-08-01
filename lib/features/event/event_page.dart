@@ -403,7 +403,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                             ),
                             Tab(
                               height: 34,
-                              text: 'Điểm danh',
+                              text: 'Hoạt động',
                             ),
                           ],
                         ),

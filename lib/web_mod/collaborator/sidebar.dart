@@ -37,13 +37,26 @@ class CollaboratorSidebar extends StatelessWidget {
               letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 34),
-          _sectionTitle('QUẢN LÝ HOẠT ĐỘNG'),
-          _menuItem(0, Icons.dashboard_outlined, 'Tổng quan'),
-          _menuItem(1, Icons.event_note_outlined, 'Hoạt động của tôi'),
-          _menuItem(2, Icons.add_circle_outline_rounded, 'Tạo hoạt động'),
-          _menuItem(3, Icons.fact_check_outlined, 'Điểm danh'),
-          const Spacer(),
+          const SizedBox(height: 28),
+
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                _sectionTitle('QUẢN LÝ TIN TỨC'),
+                _menuItem(0, Icons.article_outlined, 'Tin tức của tôi'),
+                _menuItem(1, Icons.post_add_rounded, 'Đăng tin mới'),
+
+                const SizedBox(height: 16),
+                _sectionTitle('QUẢN LÝ HOẠT ĐỘNG & SỰ KIỆN'),
+                _menuItem(2, Icons.dashboard_outlined, 'Tổng quan'),
+                _menuItem(3, Icons.event_note_outlined, 'Hoạt động của tôi'),
+                _menuItem(4, Icons.add_circle_outline_rounded, 'Tạo hoạt động mới'),
+                _menuItem(5, Icons.fact_check_outlined, 'Điểm danh sinh viên'),
+              ],
+            ),
+          ),
+
           _buildCollaboratorAvatar(context),
         ],
       ),
@@ -56,22 +69,25 @@ class CollaboratorSidebar extends StatelessWidget {
     return InkWell(
       onTap: () => onMenuSelected(index),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
           color: selected ? Colors.orangeAccent.withOpacity(0.2) : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? Colors.orangeAccent : Colors.grey),
+            Icon(icon, color: selected ? Colors.orangeAccent : Colors.grey, size: 20),
             const SizedBox(width: 14),
-            Text(
-              title,
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                color: selected ? Colors.white : Colors.grey,
-                fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  color: selected ? Colors.white : Colors.grey,
+                  fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -82,7 +98,7 @@ class CollaboratorSidebar extends StatelessWidget {
 
   Widget _sectionTitle(String title) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(32, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(28, 12, 16, 6),
       child: Align(
         alignment: Alignment.centerLeft,
         child: Text(
@@ -91,7 +107,7 @@ class CollaboratorSidebar extends StatelessWidget {
             color: Colors.white.withOpacity(0.45),
             fontSize: 11,
             fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
+            letterSpacing: 1.1,
             fontFamily: 'Nunito',
           ),
         ),
@@ -182,7 +198,7 @@ class CollaboratorSidebar extends StatelessWidget {
                   if (context.mounted) {
                     Navigator.of(context).pushNamedAndRemoveUntil(
                       '/',
-                          (route) => false,
+                      (route) => false,
                     );
                   }
                 },
@@ -203,7 +219,7 @@ class CollaboratorSidebar extends StatelessWidget {
                   side: BorderSide(
                     color: Colors.redAccent.withOpacity(0.35),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
