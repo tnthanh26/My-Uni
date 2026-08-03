@@ -184,7 +184,10 @@ class ActivityService {
     final nowTs = FieldValue.serverTimestamp();
 
     // 1. Create document in `faculty_events` so students see it in the app
-    final facultyEventDoc = await _facultyEvents.add({
+    final facultyEventRef = _facultyEvents.doc();
+    final studentActivityRef = _activities.doc();
+
+    await facultyEventRef.set({
       'aiExtractionVersion': 2,
       'articleType': 'invitation',
       'confidence': 1.0,
@@ -234,10 +237,11 @@ class ActivityService {
       'startDateTime': startTime.toIso8601String(),
       'createdBy': user.uid,
       'createdByEmail': user.email ?? '',
+      'activityId': studentActivityRef.id,
     });
 
     // 2. Create document in `student_activities` so attendance management works as before
-    final studentActivityDoc = await _activities.add({
+    await studentActivityRef.set({
       'title': title,
       'description': description,
       'location': location,
@@ -250,17 +254,12 @@ class ActivityService {
       'requiresRegistration': requiresRegistration,
       'registeredStudentIds': registeredStudentIds,
       'imageUrl': cleanImageUrl,
-      'facultyEventId': facultyEventDoc.id,
+      'facultyEventId': facultyEventRef.id,
       'createdBy': user.uid,
       'createdByEmail': user.email ?? '',
       'createdAt': nowTs,
       'updatedAt': nowTs,
       'attendanceCount': 0,
-    });
-
-    // Link activityId back to faculty_events doc
-    await facultyEventDoc.update({
-      'activityId': studentActivityDoc.id,
     });
 
     // 3. Gửi thông báo trực tiếp vào collection notifications cho các sinh viên thuộc hoặc theo dõi Khoa này
@@ -305,7 +304,7 @@ class ActivityService {
             'type': 'faculty_event',
             'timestamp': FieldValue.serverTimestamp(),
             'isRead': false,
-            'relatedPostId': facultyEventDoc.id,
+            'relatedPostId': facultyEventRef.id,
             'collectionPath': 'faculty_events',
           });
           notiCount++;
