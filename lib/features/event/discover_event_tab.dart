@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:my_uni/models/event_model.dart';
+import 'package:my_uni/features/event/create_personal_event_page.dart';
 import 'package:my_uni/features/home/faculty_helper.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
@@ -131,42 +133,16 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         const SnackBar(content: Text("Đã bỏ quan tâm & xóa khỏi Lịch cá nhân")),
       );
     } else {
-      // 2. Thêm vào interested_events
+      // 2. Mở màn hình tạo / chỉnh sửa sự kiện cá nhân với nội dung điền sẵn từ bài viết
       final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
       final String description = (data['description'] ?? '').toString();
-      final String eventDateText = (data['eventDateText'] ?? data['date'] ?? '').toString();
       final String locationName = (data['locationName'] ?? '').toString();
       final String locationAddress = (data['locationAddress'] ?? '').toString();
       final String facultyName = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
-      final String sourceArticleUrl = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? '').toString();
-      final String registrationUrl = (data['registrationUrl'] ?? '').toString();
-      final String? thumbnailUrl = data['thumbnailUrl'] ??
-          (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
+      final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+      final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
+      final String sourceArticleUrl = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
 
-      await interestedRef.set({
-        'docId': docId,
-        'facultyEventId': docId,
-        'eventName': eventName,
-        'title': eventName,
-        'description': description,
-        'eventDateText': eventDateText,
-        'date': eventDateText,
-        'locationName': locationName,
-        'locationAddress': locationAddress,
-        'facultyName': facultyName,
-        'department': facultyName,
-        'sourceArticleUrl': sourceArticleUrl,
-        'registrationUrl': registrationUrl,
-        'thumbnailUrl': thumbnailUrl,
-        'startAt': data['startAt'],
-        'startDateTime': data['startDateTime'],
-        'endAt': data['endAt'],
-        'endDateTime': data['endDateTime'],
-        'timestamp': FieldValue.serverTimestamp(),
-        'isFacultyEvent': true,
-      });
-
-      // 3. Tự động đọc ngày tháng, địa điểm & tạo 1 Personal Event ở Lịch cá nhân
       DateTime parsedDateTime = DateTime.now();
       if (data['startAt'] != null && data['startAt'] is Timestamp) {
         parsedDateTime = (data['startAt'] as Timestamp).toDate();
@@ -184,32 +160,48 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) locParts.add(trimmedLocAddr);
       String locStr = locParts.join(' - ');
       if (locStr.trim().isEmpty) {
-        locStr = facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm';
+        locStr = isOnline ? 'Online' : (facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm');
       }
 
-      String noteDesc = description.isNotEmpty ? description : 'Sự kiện được quan tâm từ thông báo Khoa.';
-      noteDesc += '\n\n📌 LƯU Ý: Vui lòng kiểm tra kỹ bài đăng chính thức để xác nhận thông tin chi tiết.';
+      final String contactStr = (data['contact'] ?? data['organizer'] ?? '').toString().trim();
+      String fullDesc = description;
+      if (contactStr.isNotEmpty && !fullDesc.contains(contactStr)) {
+        if (fullDesc.isNotEmpty) fullDesc += '\n\n';
+        fullDesc += '📞 Liên hệ: $contactStr';
+      }
 
-      await personalRef.set({
-        'title': eventName,
-        'location': locStr,
-        'description': noteDesc,
-        'dateTime': Timestamp.fromDate(parsedDateTime),
-        'reminder': '15 phút trước',
-        'facultyEventId': docId,
-        'isFromFacultyEvent': true,
-        'sourceArticleUrl': sourceArticleUrl,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
+      final prefilledEvent = EventModel(
+        id: docId,
+        title: eventName,
+        dateTime: parsedDateTime,
+        location: locStr,
+        reminder: '15 phút trước',
+        description: fullDesc,
+        sourceArticleUrl: sourceArticleUrl,
+        onlineUrl: onlineUrl,
+        isOnline: isOnline,
+        facultyEventId: docId,
+        isFromFacultyEvent: true,
+        contact: contactStr.isNotEmpty ? contactStr : null,
+      );
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Đã thêm vào mục Quan tâm & Lịch cá nhân của bạn!"),
-          backgroundColor: primaryBlue,
+
+      final saved = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreatePersonalEventPage(event: prefilledEvent),
         ),
       );
+
+      if (saved == true && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Đã lưu vào mục Quan tâm & Lịch cá nhân của bạn!"),
+            backgroundColor: primaryBlue,
+          ),
+        );
+      }
     }
   }
 
@@ -961,7 +953,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     final String? thumbnailUrl = data['thumbnailUrl'] ??
         (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
 
-    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? '').toString();
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
+    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
+    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
+    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
+    if (displayContact.isNotEmpty && !displayContact.toLowerCase().startsWith('liên hệ')) {
+      displayContact = 'Liên hệ: $displayContact';
+    }
+
+    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 18),
@@ -976,7 +979,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: link.isNotEmpty ? () => _launchURL(link) : null,
+            onTap: effectiveLink.isNotEmpty ? () => _launchURL(effectiveLink) : null,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1019,32 +1022,66 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     Positioned(
                       top: 12,
                       left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: primaryBlue,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 6,
-                            )
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.school_rounded, size: 14, color: Colors.white),
-                            const SizedBox(width: 6),
-                            Text(
-                              facultyDisplay,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 11.5,
-                                fontWeight: FontWeight.bold,
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: primaryBlue,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 6,
+                                )
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.school_rounded, size: 14, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(
+                                  facultyDisplay,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (isOnline) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF8B5CF6),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 6,
+                                  )
+                                ],
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(Icons.videocam_rounded, size: 14, color: Colors.white),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Online',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ],
@@ -1098,23 +1135,48 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                 ),
                               ],
                             ),
-                            if (locationDisplay.isNotEmpty) ...[
+                            if (locationDisplay.isNotEmpty || isOnline) ...[
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
+                                    size: 16,
+                                    color: isOnline ? const Color(0xFF8B5CF6) : primaryBlue,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      locationDisplay.isNotEmpty
+                                          ? locationDisplay
+                                          : (isOnline ? 'Sự kiện diễn ra Online' : 'Chưa cập nhật địa điểm'),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: _secondaryText(isDark),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                            if (displayContact.isNotEmpty) ...[
                               const SizedBox(height: 8),
                               Row(
                                 children: [
                                   const Icon(
-                                    Icons.location_on_rounded,
+                                    Icons.contact_phone_rounded,
                                     size: 16,
                                     color: primaryBlue,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      locationDisplay,
+                                      displayContact,
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: _secondaryText(isDark),
                                       ),
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
@@ -1126,10 +1188,31 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
                       const SizedBox(height: 14),
 
-                      // Action Row: "Xem chi tiết" và "Quan tâm"
+                      // Action Row: "Tham gia Online", "Xem bài gốc", "Quan tâm"
                       Row(
                         children: [
-                          if (link.isNotEmpty)
+                          if (onlineUrl.isNotEmpty)
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _launchURL(onlineUrl),
+                                icon: const Icon(Icons.videocam_rounded, size: 16),
+                                label: const Text(
+                                  'Tham gia Online',
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF8B5CF6),
+                                  side: const BorderSide(color: Color(0xFF8B5CF6)),
+                                  padding: const EdgeInsets.symmetric(vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (onlineUrl.isNotEmpty) const SizedBox(width: 10),
+
+                          if (link.isNotEmpty && link != onlineUrl)
                             Expanded(
                               child: OutlinedButton.icon(
                                 onPressed: () => _launchURL(link),
@@ -1148,7 +1231,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                 ),
                               ),
                             ),
-                          if (link.isNotEmpty) const SizedBox(width: 10),
+                          if (link.isNotEmpty && link != onlineUrl) const SizedBox(width: 10),
 
                           // Nút Quan tâm
                           Expanded(

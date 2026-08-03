@@ -242,6 +242,7 @@ class ActivityService {
       'description': description,
       'location': location,
       'organizerName': organizerName,
+      'contact': contact,
       'trainingPoint': trainingPoint,
       'startTime': Timestamp.fromDate(startTime),
       'endTime': Timestamp.fromDate(endTime),
@@ -261,6 +262,66 @@ class ActivityService {
     await facultyEventDoc.update({
       'activityId': studentActivityDoc.id,
     });
+
+    // 3. Gửi thông báo trực tiếp vào collection notifications cho các sinh viên thuộc hoặc theo dõi Khoa này
+    try {
+      final usersSnap = await _firestore.collection('users').get();
+      WriteBatch batch = _firestore.batch();
+      int notiCount = 0;
+
+      final String cleanFacId = facultyId.toLowerCase();
+      final String cleanFacCode = facultyCode.toLowerCase();
+
+      for (var uDoc in usersSnap.docs) {
+        final uData = uDoc.data();
+        final String uFac = (uData['faculty'] ?? '').toString().toLowerCase();
+        final List<dynamic> uFollowed =
+            uData['followedFaculties'] as List<dynamic>? ?? [];
+        final List<String> uFollowedStrs =
+            uFollowed.map((e) => e.toString().toLowerCase()).toList();
+
+        bool isUserMatch = false;
+        if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
+          if (uFac.isNotEmpty &&
+              ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
+                  (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
+            isUserMatch = true;
+          } else if ((cleanFacId.isNotEmpty && uFollowedStrs.contains(cleanFacId)) ||
+              (cleanFacCode.isNotEmpty && uFollowedStrs.contains(cleanFacCode))) {
+            isUserMatch = true;
+          }
+        }
+
+        if (isUserMatch) {
+          final notiRef = _firestore.collection('notifications').doc();
+          String bodyStr = '$facultyName';
+          if (eventDateTextStr.isNotEmpty) bodyStr += ' • $eventDateTextStr';
+          if (location.isNotEmpty) bodyStr += ' • $location';
+
+          batch.set(notiRef, {
+            'userId': uDoc.id,
+            'title': '📌 Sự kiện mới: $title',
+            'content': bodyStr,
+            'type': 'faculty_event',
+            'timestamp': FieldValue.serverTimestamp(),
+            'isRead': false,
+            'relatedPostId': facultyEventDoc.id,
+            'collectionPath': 'faculty_events',
+          });
+          notiCount++;
+          if (notiCount >= 400) {
+            await batch.commit();
+            batch = _firestore.batch();
+            notiCount = 0;
+          }
+        }
+      }
+      if (notiCount > 0) {
+        await batch.commit();
+      }
+    } catch (e) {
+      // In case of error in batch notification, do not block activity creation
+    }
   }
 
   static Future<void> closeActivity(String activityId) async {
@@ -519,6 +580,7 @@ class ActivityService {
     required DateTime endTime,
     bool requiresRegistration = false,
     String? imageUrl,
+    String? contact,
     bool isOnline = false,
     String? onlineUrl,
     DateTime? registrationDeadline,
@@ -558,22 +620,32 @@ class ActivityService {
       'description': description,
       'location': location,
       'organizerName': organizerName,
+      'contact': contact,
       'trainingPoint': trainingPoint,
       'startTime': Timestamp.fromDate(startTime),
       'endTime': Timestamp.fromDate(endTime),
       'requiresRegistration': requiresRegistration,
       'imageUrl': cleanImageUrl,
+      'isOnline': isOnline,
+      'onlineUrl': isOnline ? (onlineUrl ?? location) : null,
+      'registrationDeadline': registrationDeadline?.toIso8601String(),
+      'registrationUrl': registrationUrl ?? '',
       'updatedAt': nowTs,
     });
 
     final String? facultyEventId = data?['facultyEventId']?.toString();
     if (facultyEventId != null && facultyEventId.isNotEmpty) {
       try {
-        await _facultyEvents.doc(facultyEventId).update({
+        final facultyEventRef = _facultyEvents.doc(facultyEventId);
+        final facultyEventSnap = await facultyEventRef.get();
+        final facultyEventData = facultyEventSnap.data();
+
+        await facultyEventRef.update({
           'eventName': title,
           'description': description,
           'locationAddress': '',
           'locationName': location,
+          'contact': contact,
           'evidence': <String>[
             '$organizerName tổ chức $title',
             'Thời gian: $eventDateTextStr',
@@ -596,6 +668,63 @@ class ActivityService {
           'thumbnailUrl': cleanImageUrl,
           'updatedAt': nowTs,
         });
+
+        // Gửi thông báo cập nhật tới sinh viên thuộc/theo dõi Khoa này
+        final String facultyId = (facultyEventData?['facultyId'] ?? '').toString();
+        final String facultyCode = (facultyEventData?['facultyCode'] ?? '').toString();
+        final String facultyName = (facultyEventData?['facultyName'] ?? '').toString();
+
+        final usersSnap = await _firestore.collection('users').get();
+        WriteBatch batch = _firestore.batch();
+        int notiCount = 0;
+
+        final String cleanFacId = facultyId.toLowerCase();
+        final String cleanFacCode = facultyCode.toLowerCase();
+
+        for (var uDoc in usersSnap.docs) {
+          final uData = uDoc.data();
+          final String uFac = (uData['faculty'] ?? '').toString().toLowerCase();
+          final List<dynamic> uFollowed = uData['followedFaculties'] as List<dynamic>? ?? [];
+          final List<String> uFollowedStrs = uFollowed.map((e) => e.toString().toLowerCase()).toList();
+
+          bool isUserMatch = false;
+          if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
+            if (uFac.isNotEmpty &&
+                ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
+                    (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
+              isUserMatch = true;
+            } else if ((cleanFacId.isNotEmpty && uFollowedStrs.contains(cleanFacId)) ||
+                (cleanFacCode.isNotEmpty && uFollowedStrs.contains(cleanFacCode))) {
+              isUserMatch = true;
+            }
+          }
+
+          if (isUserMatch) {
+            final notiRef = _firestore.collection('notifications').doc();
+            String bodyStr = 'Sự kiện "$title" từ Khoa $facultyName vừa được Ban tổ chức cập nhật thông tin.';
+            if (eventDateTextStr.isNotEmpty) bodyStr += ' Thời gian: $eventDateTextStr';
+
+            batch.set(notiRef, {
+              'userId': uDoc.id,
+              'title': '🔄 Cập nhật sự kiện: $title',
+              'content': bodyStr,
+              'type': 'faculty_event',
+              'timestamp': FieldValue.serverTimestamp(),
+              'isRead': false,
+              'relatedPostId': facultyEventId,
+              'collectionPath': 'faculty_events',
+            });
+            notiCount++;
+            if (notiCount >= 400) {
+              await batch.commit();
+              batch = _firestore.batch();
+              notiCount = 0;
+            }
+          }
+        }
+        if (notiCount > 0) {
+          await batch.commit();
+        }
       } catch (e) {
         // Silently ignore if faculty event fails to update
       }
