@@ -414,7 +414,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
           _input(
             _registrationUrlController,
-            'Đường dẫn đăng ký tham gia (Registration URL)',
+            'Đường dẫn đến bài viết gốc',
           ),
           const SizedBox(height: 24),
 

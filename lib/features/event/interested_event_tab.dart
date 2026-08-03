@@ -392,6 +392,39 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     );
   }
 
+  Future<String> _fetchContactFallback(Map<String, dynamic> data, String docId) async {
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
+    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
+    if (rawContact.isNotEmpty) {
+      return rawContact.toLowerCase().startsWith('liên hệ') ? rawContact : 'Liên hệ: $rawContact';
+    }
+    if (rawOrganizer.isNotEmpty) {
+      return 'Liên hệ: $rawOrganizer';
+    }
+
+    final String targetDocId = (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
+    if (targetDocId.isNotEmpty) {
+      try {
+        final facDoc = await FirebaseFirestore.instance
+            .collection('faculty_events')
+            .doc(targetDocId)
+            .get();
+        if (facDoc.exists && facDoc.data() != null) {
+          final fData = facDoc.data()!;
+          final String fContact = (fData['contact'] ?? fData['contactInfo'] ?? '').toString().trim();
+          final String fOrganizer = (fData['organizer'] ?? fData['organizerName'] ?? '').toString().trim();
+          if (fContact.isNotEmpty) {
+            return fContact.toLowerCase().startsWith('liên hệ') ? fContact : 'Liên hệ: $fContact';
+          }
+          if (fOrganizer.isNotEmpty) {
+            return 'Liên hệ: $fOrganizer';
+          }
+        }
+      } catch (_) {}
+    }
+    return '';
+  }
+
   Future<bool> _checkEventExists(Map<String, dynamic> data, String docId) async {
     final String targetDocId = (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
     final String collectionPath = (data['collectionPath'] ?? 'faculty_events').toString();
@@ -417,7 +450,18 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     final String title = (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
     final String date = (data['eventDateText'] ?? data['date'] ?? '').toString();
     final String department = (data['locationName'] ?? data['facultyName'] ?? data['department'] ?? 'Cơ sở HCMUS').toString();
-    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? '').toString();
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
+    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
+    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
+    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
+    if (displayContact.isNotEmpty && !displayContact.toLowerCase().startsWith('liên hệ')) {
+      displayContact = 'Liên hệ: $displayContact';
+    }
+
+    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
+
     final String? thumbnailUrl = data['thumbnailUrl'] ??
         (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
 
@@ -430,7 +474,7 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
         boxShadow: _cardShadow(isDarkMode),
       ),
       child: InkWell(
-        onTap: link.isNotEmpty ? () => _launchURL(link) : null,
+        onTap: effectiveLink.isNotEmpty ? () => _launchURL(effectiveLink) : null,
         borderRadius: BorderRadius.circular(22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,6 +522,33 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                     ),
                   ),
                 ),
+                if (isOnline)
+                  Positioned(
+                    top: 10,
+                    left: 10,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF8B5CF6),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Online',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 Positioned(
                   top: 10,
                   right: 10,
@@ -621,15 +692,15 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(
-                              Icons.location_on_outlined,
+                            Icon(
+                              isOnline ? Icons.videocam_rounded : Icons.location_on_outlined,
                               size: 16,
-                              color: primaryBlue,
+                              color: isOnline ? const Color(0xFF8B5CF6) : primaryBlue,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                department,
+                                department.isNotEmpty ? department : (isOnline ? 'Sự kiện diễn ra Online' : 'Chưa cập nhật địa điểm'),
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: _secondaryTextColor(isDarkMode),
@@ -640,37 +711,99 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                             ),
                           ],
                         ),
+                        FutureBuilder<String>(
+                          future: _fetchContactFallback(data, docId),
+                          builder: (context, snapshot) {
+                            final String contactInfo = snapshot.data ?? displayContact;
+                            if (contactInfo.trim().isEmpty) return const SizedBox.shrink();
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.contact_phone_rounded,
+                                    size: 16,
+                                    color: primaryBlue,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      contactInfo,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: _secondaryTextColor(isDarkMode),
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            if (link.isNotEmpty)
+            if (onlineUrl.isNotEmpty || link.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 40,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _launchURL(link),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text(
-                      'Xem bài gốc',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.bold,
+                child: Column(
+                  children: [
+                    if (onlineUrl.isNotEmpty) ...[
+                      SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _launchURL(onlineUrl),
+                          icon: const Icon(Icons.videocam_rounded, size: 16),
+                          label: const Text(
+                            'Tham gia Online',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF8B5CF6),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: detailBlue,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                      if (link.isNotEmpty && link != onlineUrl) const SizedBox(height: 8),
+                    ],
+                    if (link.isNotEmpty && link != onlineUrl)
+                      SizedBox(
+                        width: double.infinity,
+                        height: 40,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _launchURL(link),
+                          icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                          label: const Text(
+                            'Xem bài gốc',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: detailBlue,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
+                  ],
                 ),
               ),
           ],

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../services/activity_service.dart';
@@ -30,10 +31,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _showDeleteActivityConfirmation(
-    BuildContext context,
-    String activityId,
-    String title,
-  ) async {
+      BuildContext context,
+      String activityId,
+      String title,
+      ) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -58,7 +59,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
               ),
               const TextSpan(
                 text:
-                    '? \n\nHoạt động sẽ bị ẩn khỏi hệ thống và không thể khôi phục từ phía bạn.',
+                '? \n\nHoạt động sẽ bị xóa vĩnh viển khỏi hệ thống và không thể khôi phục.',
               ),
             ],
           ),
@@ -114,22 +115,138 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
     }
   }
 
+  Future<DateTime?> _pickDateTimeInDialog(BuildContext context, DateTime initial) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2024),
+      lastDate: DateTime(2035),
+      locale: const Locale('vi', 'VN'),
+    );
+
+    if (date == null) return null;
+    if (!context.mounted) return null;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+      initialEntryMode: TimePickerEntryMode.inputOnly,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            alwaysUse24HourFormat: true,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
+    );
+
+    if (time == null) return null;
+
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
+  }
+
+  Widget _dateBox({
+    required String title,
+    required DateTime value,
+    required VoidCallback onTap,
+  }) {
+    final text =
+        '${value.day.toString().padLeft(2, '0')}/'
+        '${value.month.toString().padLeft(2, '0')}/'
+        '${value.year} '
+        '${value.hour.toString().padLeft(2, '0')}:'
+        '${value.minute.toString().padLeft(2, '0')}';
+
+    return Material(
+      color: const Color(0xFFF8FAFC),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.schedule_rounded,
+                color: Color(0xFF3B82F6),
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                        color: Color(0xFF1E293B),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _showEditActivityDialog(
-    BuildContext context,
-    String activityId,
-    Map<String, dynamic> data,
-  ) async {
+      BuildContext context,
+      String activityId,
+      Map<String, dynamic> data,
+      ) async {
     final titleController = TextEditingController(text: data['title'] ?? '');
-    final descriptionController = TextEditingController(text: data['description'] ?? '');
-    final locationController = TextEditingController(text: data['location'] ?? '');
-    final organizerController = TextEditingController(text: data['organizerName'] ?? '');
-    final trainingPointController = TextEditingController(text: (data['trainingPoint'] ?? 0).toString());
-    final imageUrlController = TextEditingController(text: data['imageUrl'] ?? '');
+    final descriptionController =
+    TextEditingController(text: data['description'] ?? '');
+    final locationController =
+    TextEditingController(text: data['location'] ?? '');
+    final organizerController =
+    TextEditingController(text: data['organizerName'] ?? '');
+    final contactController =
+    TextEditingController(text: data['contact'] ?? '');
+    final trainingPointController = TextEditingController(
+      text: (data['trainingPoint'] ?? 0).toString(),
+    );
+    final imageUrlController =
+    TextEditingController(text: data['imageUrl'] ?? '');
 
     bool requiresRegistration = data['requiresRegistration'] == true;
     bool isOnline = data['isOnline'] == true;
-    final onlineUrlController = TextEditingController(text: data['onlineUrl'] ?? '');
-    final registrationUrlController = TextEditingController(text: data['registrationUrl'] ?? '');
+    final onlineUrlController =
+    TextEditingController(text: data['onlineUrl'] ?? '');
+    final registrationUrlController =
+    TextEditingController(text: data['registrationUrl'] ?? '');
 
     DateTime startTime = (data['startTime'] is Timestamp)
         ? (data['startTime'] as Timestamp).toDate()
@@ -146,196 +263,414 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
       builder: (dialogCtx) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              title: const Row(
-                children: [
-                  Icon(Icons.edit_calendar_rounded, color: Colors.blueAccent, size: 28),
-                  SizedBox(width: 10),
-                  Text(
-                    'Chỉnh sửa hoạt động',
-                    style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+            final screenSize = MediaQuery.sizeOf(context);
+            final dialogWidth = math.min(650.0, screenSize.width - 48.0);
+            final dialogHeight = math.min(720.0, screenSize.height - 48.0);
+
+            return Theme(
+              data: Theme.of(context).copyWith(
+                elevatedButtonTheme: ElevatedButtonThemeData(
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(0, 47),
                   ),
-                ],
+                ),
               ),
-              content: SizedBox(
-                width: 600,
-                child: SingleChildScrollView(
+              child: Dialog(
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SizedBox(
+                  width: dialogWidth,
+                  height: dialogHeight,
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      TextField(
-                        controller: titleController,
-                        decoration: InputDecoration(
-                          labelText: 'Tên hoạt động',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: organizerController,
-                        decoration: InputDecoration(
-                          labelText: 'Đơn vị tổ chức',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: locationController,
-                              decoration: InputDecoration(
-                                labelText: 'Địa điểm / Phòng học',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(24, 22, 16, 16),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.edit_calendar_rounded,
+                              color: Colors.blueAccent,
+                              size: 28,
+                            ),
+                            const SizedBox(width: 10),
+                            const Expanded(
+                              child: Text(
+                                'Chỉnh sửa hoạt động',
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 20,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          SizedBox(
-                            width: 140,
-                            child: TextField(
-                              controller: trainingPointController,
-                              keyboardType: TextInputType.number,
-                              decoration: InputDecoration(
-                                labelText: 'Điểm rèn luyện',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
+                            IconButton(
+                              onPressed: isSaving
+                                  ? null
+                                  : () => Navigator.pop(dialogCtx),
+                              icon: const Icon(Icons.close_rounded),
+                              tooltip: 'Đóng',
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      TextField(
-                        controller: descriptionController,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          labelText: 'Mô tả chi tiết',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: imageUrlController,
-                              decoration: InputDecoration(
-                                labelText: 'URL Hình ảnh',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      const Divider(height: 1),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(
+                                controller: titleController,
+                                decoration: InputDecoration(
+                                  labelText: 'Tên hoạt động',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            onPressed: isUploading
-                                ? null
-                                : () async {
-                                    setDialogState(() => isUploading = true);
-                                    try {
-                                      final url = await ImageUploadHelper.pickAndUploadImage(
-                                        folder: 'activity_images',
-                                      );
-                                      if (url != null) {
-                                        imageUrlController.text = url;
-                                      }
-                                    } catch (e) {
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Lỗi tải ảnh: $e')),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: organizerController,
+                                decoration: InputDecoration(
+                                  labelText: 'Đơn vị tổ chức',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _dateBox(
+                                      title: 'Thời gian bắt đầu *',
+                                      value: startTime,
+                                      onTap: () async {
+                                        final picked = await _pickDateTimeInDialog(context, startTime);
+                                        if (picked != null) {
+                                          setDialogState(() => startTime = picked);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _dateBox(
+                                      title: 'Thời gian kết thúc *',
+                                      value: endTime,
+                                      onTap: () async {
+                                        final picked = await _pickDateTimeInDialog(context, endTime);
+                                        if (picked != null) {
+                                          setDialogState(() => endTime = picked);
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: contactController,
+                                decoration: InputDecoration(
+                                  labelText: 'Thông tin liên hệ (SĐT, Email BTC)',
+                                  hintText: 'Ví dụ: SĐT 0901234567, email btc@gmail.com',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: locationController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Địa điểm / Phòng học',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  SizedBox(
+                                    width: 140,
+                                    child: TextField(
+                                      controller: trainingPointController,
+                                      keyboardType: TextInputType.number,
+                                      decoration: InputDecoration(
+                                        labelText: 'Điểm rèn luyện',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: descriptionController,
+                                maxLines: 4,
+                                decoration: InputDecoration(
+                                  labelText: 'Mô tả chi tiết',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              TextField(
+                                controller: registrationUrlController,
+                                decoration: InputDecoration(
+                                  labelText: 'Link bài viết gốc / Form đăng ký',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 14),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: imageUrlController,
+                                      decoration: InputDecoration(
+                                        labelText: 'URL Hình ảnh',
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  SizedBox(
+                                    width: 120,
+                                    height: 47,
+                                    child: ElevatedButton.icon(
+                                      onPressed: isUploading
+                                          ? null
+                                          : () async {
+                                        setDialogState(
+                                              () => isUploading = true,
                                         );
-                                      }
-                                    } finally {
-                                      setDialogState(() => isUploading = false);
-                                    }
-                                  },
-                            icon: isUploading
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Icon(Icons.upload_file_rounded, size: 18),
-                            label: const Text('Tải ảnh'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
+                                        try {
+                                          final url = await ImageUploadHelper
+                                              .pickAndUploadImage(
+                                            folder: 'activity_images',
+                                          );
+                                          if (url != null) {
+                                            imageUrlController.text = url;
+                                          }
+                                        } catch (e) {
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Lỗi tải ảnh: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } finally {
+                                          setDialogState(
+                                                () => isUploading = false,
+                                          );
+                                        }
+                                      },
+                                      icon: isUploading
+                                          ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                          : const Icon(
+                                        Icons.upload_file_rounded,
+                                        size: 18,
+                                      ),
+                                      label: const Text('Tải ảnh'),
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: Size.zero,
+                                        maximumSize: const Size(120, 47),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 14,
+                                          vertical: 14,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 14),
+                              CheckboxListTile(
+                                value: isOnline,
+                                onChanged: (val) {
+                                  setDialogState(
+                                        () => isOnline = val ?? false,
+                                  );
+                                },
+                                title: const Text(
+                                  'Sự kiện diễn ra Trực tuyến (Online)',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              if (isOnline) ...[
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: onlineUrlController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Đường dẫn tham gia Online (Google Meet, Zoom...)',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+                              CheckboxListTile(
+                                value: requiresRegistration,
+                                onChanged: (val) {
+                                  setDialogState(
+                                        () => requiresRegistration = val ?? false,
+                                  );
+                                },
+                                title: const Text(
+                                  'Yêu cầu sinh viên đăng ký trước khi điểm danh',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                controlAffinity: ListTileControlAffinity.leading,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 14),
-                      CheckboxListTile(
-                        value: requiresRegistration,
-                        onChanged: (val) {
-                          setDialogState(() => requiresRegistration = val ?? false);
-                        },
-                        title: const Text(
-                          'Yêu cầu sinh viên đăng ký trước khi điểm danh',
-                          style: TextStyle(fontFamily: 'Nunito', fontSize: 14),
                         ),
-                        controlAffinity: ListTileControlAffinity.leading,
-                        contentPadding: EdgeInsets.zero,
+                      ),
+                      const Divider(height: 1),
+                      Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: isSaving
+                                  ? null
+                                  : () => Navigator.pop(dialogCtx),
+                              child: const Text(
+                                'Hủy',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            SizedBox(
+                              width: 170,
+                              height: 47,
+                              child: ElevatedButton(
+                                onPressed: isSaving
+                                    ? null
+                                    : () async {
+                                  setDialogState(() => isSaving = true);
+                                  try {
+                                    await ActivityService.updateActivity(
+                                      activityId: activityId,
+                                      title: titleController.text.trim(),
+                                      description:
+                                      descriptionController.text.trim(),
+                                      location:
+                                      locationController.text.trim(),
+                                      organizerName:
+                                      organizerController.text.trim(),
+                                        trainingPoint: int.tryParse(
+                                        trainingPointController.text
+                                            .trim(),
+                                      ) ??
+                                          0,
+                                       startTime: startTime,
+                                       endTime: endTime,
+                                      requiresRegistration:
+                                      requiresRegistration,
+                                      imageUrl:
+                                      imageUrlController.text.trim(),
+                                      contact: contactController.text.trim(),
+                                      isOnline: isOnline,
+                                      onlineUrl:
+                                      onlineUrlController.text.trim(),
+                                      registrationUrl:
+                                      registrationUrlController.text
+                                          .trim(),
+                                    );
+                                    if (mounted) {
+                                      Navigator.pop(dialogCtx);
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Đã cập nhật hoạt động thành công!',
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setDialogState(() => isSaving = false);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        SnackBar(
+                                          content: Text('Lỗi cập nhật: $e'),
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: Size.zero,
+                                  maximumSize: const Size(170, 47),
+                                  backgroundColor: Colors.blueAccent,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                                child: isSaving
+                                    ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                                    : const Text('Lưu thay đổi'),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: isSaving ? null : () => Navigator.pop(dialogCtx),
-                  child: const Text('Hủy', style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: isSaving
-                      ? null
-                      : () async {
-                          setDialogState(() => isSaving = true);
-                          try {
-                            await ActivityService.updateActivity(
-                              activityId: activityId,
-                              title: titleController.text.trim(),
-                              description: descriptionController.text.trim(),
-                              location: locationController.text.trim(),
-                              organizerName: organizerController.text.trim(),
-                              trainingPoint: int.tryParse(trainingPointController.text.trim()) ?? 0,
-                              startTime: startTime,
-                              endTime: endTime,
-                              requiresRegistration: requiresRegistration,
-                              imageUrl: imageUrlController.text.trim(),
-                              isOnline: isOnline,
-                              onlineUrl: onlineUrlController.text.trim(),
-                              registrationUrl: registrationUrlController.text.trim(),
-                            );
-                            if (mounted) {
-                              Navigator.pop(dialogCtx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Đã cập nhật hoạt động thành công!')),
-                              );
-                            }
-                          } catch (e) {
-                            setDialogState(() => isSaving = false);
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Lỗi cập nhật: $e')),
-                              );
-                            }
-                          }
-                        },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ),
-                  child: isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : const Text('Lưu thay đổi'),
-                ),
-              ],
             );
           },
         );
@@ -353,10 +688,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _showRegisteredList(
-    BuildContext context,
-    String title,
-    List<String> ids,
-  ) async {
+      BuildContext context,
+      String title,
+      List<String> ids,
+      ) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -412,24 +747,24 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                 child: ids.isEmpty
                     ? const Center(child: Text('Danh sách trống'))
                     : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: ids.length,
-                        itemBuilder: (context, index) => Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Color(0xFFF1F4F9)),
-                            ),
-                          ),
-                          child: Text(
-                            '${index + 1}. ${ids[index]}',
-                            style: const TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 15,
-                            ),
-                          ),
-                        ),
+                  shrinkWrap: true,
+                  itemCount: ids.length,
+                  itemBuilder: (context, index) => Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Color(0xFFF1F4F9)),
                       ),
+                    ),
+                    child: Text(
+                      '${index + 1}. ${ids[index]}',
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ],
           ),
@@ -606,13 +941,13 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                       ),
                       onViewRegisteredList: data['requiresRegistration'] == true
                           ? () => _showRegisteredList(
-                                context,
-                                data['title'] ?? 'Hoạt động',
-                                (data['registeredStudentIds'] as List<dynamic>?)
-                                        ?.map((e) => e.toString())
-                                        .toList() ??
-                                    [],
-                              )
+                        context,
+                        data['title'] ?? 'Hoạt động',
+                        (data['registeredStudentIds'] as List<dynamic>?)
+                            ?.map((e) => e.toString())
+                            .toList() ??
+                            [],
+                      )
                           : null,
                     );
                   },

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../../models/notification_model.dart';
+import '../home/faculty_helper.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -86,6 +88,261 @@ class NotificationService {
         sound: true,
       );
     }
+
+    _auth.authStateChanges().listen((user) {
+      if (user != null) {
+        startFacultyEventListener();
+        startNotificationsListener();
+      } else {
+        stopFacultyEventListener();
+        stopNotificationsListener();
+      }
+    });
+
+    if (_auth.currentUser != null) {
+      startFacultyEventListener();
+      startNotificationsListener();
+    }
+  }
+
+  static StreamSubscription? _facultyEventsSubscription;
+  static StreamSubscription? _userDocSubscription;
+  static StreamSubscription? _userNotificationsSubscription;
+  static final Set<String> _notifiedEventIds = {};
+  static final Set<String> _notifiedDocIds = {};
+
+  static void stopFacultyEventListener() {
+    _facultyEventsSubscription?.cancel();
+    _userDocSubscription?.cancel();
+    _facultyEventsSubscription = null;
+    _userDocSubscription = null;
+  }
+
+  static void stopNotificationsListener() {
+    _userNotificationsSubscription?.cancel();
+    _userNotificationsSubscription = null;
+  }
+
+  static void startNotificationsListener() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      stopNotificationsListener();
+      return;
+    }
+
+    if (_userNotificationsSubscription != null) return;
+
+    _userNotificationsSubscription = _db
+        .collection('notifications')
+        .where('userId', isEqualTo: user.uid)
+        .snapshots()
+        .listen((snapshot) async {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> cachedNotified =
+          prefs.getStringList('notified_user_noti_ids') ?? [];
+      _notifiedDocIds.addAll(cachedNotified);
+
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final doc = change.doc;
+          final String notiDocId = doc.id;
+          final Map<String, dynamic>? data = doc.data();
+
+          if (data == null || data['isRead'] == true) continue;
+          if (_notifiedDocIds.contains(notiDocId)) continue;
+
+          _notifiedDocIds.add(notiDocId);
+          await prefs.setStringList(
+            'notified_user_noti_ids',
+            _notifiedDocIds.toList(),
+          );
+
+          final String title = (data['title'] ?? 'Thông báo mới').toString();
+          final String content = (data['content'] ?? '').toString();
+
+          int notiId = notiDocId.hashCode.abs() % 1000000;
+
+          await showInstantNotification(
+            id: notiId,
+            title: title,
+            body: content,
+          );
+        }
+      }
+    });
+  }
+
+  static void startFacultyEventListener() {
+    final user = _auth.currentUser;
+    if (user == null) {
+      stopFacultyEventListener();
+      return;
+    }
+
+    if (_facultyEventsSubscription != null) return;
+
+    String? userFacultyStr;
+    List<String> followedFaculties = [];
+
+    _userDocSubscription = _db
+        .collection('users')
+        .doc(user.uid)
+        .snapshots()
+        .listen((userDoc) {
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        userFacultyStr = data?['faculty']?.toString();
+        followedFaculties = (data?['followedFaculties'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
+      }
+    });
+
+    _facultyEventsSubscription = _db
+        .collection('faculty_events')
+        .snapshots()
+        .listen((snapshot) async {
+      final prefs = await SharedPreferences.getInstance();
+      final List<String> cachedNotified =
+          prefs.getStringList('notified_faculty_event_ids') ?? [];
+      _notifiedEventIds.addAll(cachedNotified);
+
+      for (var change in snapshot.docChanges) {
+        if (change.type == DocumentChangeType.added) {
+          final doc = change.doc;
+          final String docId = doc.id;
+          final Map<String, dynamic>? data = doc.data();
+
+          if (data == null ||
+              data['shouldPublish'] == false ||
+              data['source'] == 'collaborator') {
+            continue;
+          }
+          if (_notifiedEventIds.contains(docId)) continue;
+
+          final DateTime? createdTime = _extractEventCreatedTime(data);
+          if (createdTime != null &&
+              DateTime.now().difference(createdTime).inHours.abs() > 48) {
+            _notifiedEventIds.add(docId);
+            continue;
+          }
+
+          final bool isMatch = _matchesUserFaculties(
+            data,
+            userFacultyStr,
+            followedFaculties,
+          );
+
+          if (isMatch) {
+            _notifiedEventIds.add(docId);
+            await prefs.setStringList(
+              'notified_faculty_event_ids',
+              _notifiedEventIds.toList(),
+            );
+
+            final String eventTitle =
+                (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên mới')
+                    .toString();
+            final String facultyName =
+                (data['facultyName'] ?? data['department'] ?? 'Khoa')
+                    .toString();
+            final String eventDateText =
+                (data['eventDateText'] ?? data['date'] ?? '').toString();
+            final String locationName =
+                (data['locationName'] ?? '').toString();
+
+            String bodyStr = '$facultyName';
+            if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
+            if (locationName.isNotEmpty) bodyStr += ' • $locationName';
+
+            try {
+              final existing = await _db
+                  .collection('notifications')
+                  .where('userId', isEqualTo: user.uid)
+                  .where('relatedPostId', isEqualTo: docId)
+                  .limit(1)
+                  .get();
+
+              if (existing.docs.isEmpty) {
+                await _db.collection('notifications').add({
+                  'userId': user.uid,
+                  'title': '📌 Sự kiện mới: $eventTitle',
+                  'content': bodyStr,
+                  'type': 'faculty_event',
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'isRead': false,
+                  'relatedPostId': docId,
+                  'collectionPath': 'faculty_events',
+                });
+              }
+            } catch (e) {
+              debugPrint('Lỗi lưu in-app notification: $e');
+            }
+          }
+        }
+      }
+    });
+  }
+
+  static DateTime? _extractEventCreatedTime(Map<String, dynamic> data) {
+    if (data['createdAt'] is Timestamp) {
+      return (data['createdAt'] as Timestamp).toDate();
+    }
+    if (data['timestamp'] is Timestamp) {
+      return (data['timestamp'] as Timestamp).toDate();
+    }
+    if (data['lastExtractedAt'] is Timestamp) {
+      return (data['lastExtractedAt'] as Timestamp).toDate();
+    }
+    if (data['startAt'] is Timestamp) {
+      return (data['startAt'] as Timestamp).toDate();
+    }
+    return null;
+  }
+
+  static bool _matchesUserFaculties(
+    Map<String, dynamic> data,
+    String? userFacultyStr,
+    List<String> followedFaculties,
+  ) {
+    final FacultyInfo? primaryFac =
+        FacultyHelper.findFacultyByAccountString(userFacultyStr);
+    final List<FacultyInfo> followedFacs = followedFaculties
+        .map((id) => FacultyHelper.findById(id))
+        .whereType<FacultyInfo>()
+        .toList();
+
+    final String eventFacId =
+        (data['facultyId'] ?? '').toString().toLowerCase();
+    final String eventFacCode =
+        (data['facultyCode'] ?? '').toString().toLowerCase();
+    final String eventFacName =
+        (data['facultyName'] ?? data['department'] ?? '').toString().toLowerCase();
+
+    if (primaryFac != null) {
+      if (eventFacId == primaryFac.id.toLowerCase() ||
+          eventFacCode == primaryFac.code.toLowerCase() ||
+          primaryFac.matchKeywords.any((kw) =>
+              eventFacName.contains(kw) || eventFacId.contains(kw))) {
+        return true;
+      }
+    }
+
+    for (final fac in followedFacs) {
+      if (eventFacId == fac.id.toLowerCase() ||
+          eventFacCode == fac.code.toLowerCase() ||
+          fac.matchKeywords.any((kw) =>
+              eventFacName.contains(kw) || eventFacId.contains(kw))) {
+        return true;
+      }
+    }
+
+    if (primaryFac == null && followedFacs.isEmpty) {
+      return true;
+    }
+
+    return false;
   }
 
   static Stream<List<MyUniNotification>> getNotifications() {

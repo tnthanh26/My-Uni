@@ -375,9 +375,9 @@ class _MyEventTabState extends State<MyEventTab>
                 isDarkMode,
               ),
               _buildDetailRow(
-                Icons.location_on_rounded,
+                ev.isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
                 'Vị trí',
-                ev.location,
+                ev.location.trim().isNotEmpty ? ev.location : (ev.isOnline ? 'Online' : 'Chưa cập nhật'),
                 isDarkMode,
               ),
               if (ev.description.trim().isNotEmpty)
@@ -385,6 +385,13 @@ class _MyEventTabState extends State<MyEventTab>
                   Icons.description_rounded,
                   'Mô tả',
                   ev.description,
+                  isDarkMode,
+                ),
+              if (ev.contact != null && ev.contact!.trim().isNotEmpty)
+                _buildDetailRow(
+                  Icons.contact_phone_rounded,
+                  'Liên hệ',
+                  ev.contact!,
                   isDarkMode,
                 ),
               if (ev.reminder != 'Không' &&
@@ -396,7 +403,36 @@ class _MyEventTabState extends State<MyEventTab>
                   ev.reminder,
                   isDarkMode,
                 ),
-              if (ev.sourceArticleUrl != null && ev.sourceArticleUrl!.trim().isNotEmpty) ...[
+              if (ev.onlineUrl != null && ev.onlineUrl!.trim().isNotEmpty) ...[
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _launchURL(ev.onlineUrl!),
+                    icon: const Icon(Icons.videocam_rounded, size: 18),
+                    label: const Text(
+                      'Tham gia Online',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF8B5CF6),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (ev.sourceArticleUrl != null &&
+                  ev.sourceArticleUrl!.trim().isNotEmpty &&
+                  ev.sourceArticleUrl!.trim() != ev.onlineUrl?.trim()) ...[
                 const SizedBox(height: 14),
                 SizedBox(
                   width: double.infinity,
@@ -1395,14 +1431,14 @@ class _MyEventTabState extends State<MyEventTab>
                         ),
                         const SizedBox(width: 12),
                         Icon(
-                          Icons.location_on_outlined,
+                          ev.isOnline ? Icons.videocam_rounded : Icons.location_on_outlined,
                           size: 14,
-                          color: _secondaryTextColor(isDarkMode),
+                          color: ev.isOnline ? const Color(0xFF8B5CF6) : _secondaryTextColor(isDarkMode),
                         ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            ev.location,
+                            ev.location.trim().isNotEmpty ? ev.location : (ev.isOnline ? 'Online' : 'Chưa cập nhật'),
                             style: TextStyle(
                               color: _secondaryTextColor(isDarkMode),
                               fontSize: 13,

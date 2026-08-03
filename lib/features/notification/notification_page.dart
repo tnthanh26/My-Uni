@@ -2,9 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/notification_model.dart';
+import '../../models/event_model.dart';
 import '../chat/pages/chat_detail_page.dart';
 import '../chat/services/chat_service.dart';
+import '../event/create_personal_event_page.dart';
 import '../home/post_detail_page.dart';
 import '../services/notification_service.dart';
 
@@ -687,6 +690,12 @@ class NotificationScreen extends StatelessWidget {
       final Map<String, dynamic> postData =
       postDoc.data()!;
 
+      if (noti.collectionPath == 'faculty_events' ||
+          noti.type == 'faculty_event') {
+        _showFacultyEventDetailsModal(context, noti.relatedPostId!, postData);
+        return;
+      }
+
       if (postData['status'] == 'hidden') {
         _showUnavailableDialog(
           context,
@@ -955,7 +964,7 @@ class NotificationScreen extends StatelessWidget {
                         ),
                       ),
                       child: const Text(
-                        'Xóa thông báo',
+                        'Xóa',
                         style: TextStyle(
                           fontFamily:
                           'Encode Sans Expanded',
@@ -1442,6 +1451,349 @@ class NotificationScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    final cleanUrl = urlString.trim();
+    if (cleanUrl.isEmpty) return;
+    final Uri url = Uri.parse(cleanUrl);
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
+  }
+
+  void _showFacultyEventDetailsModal(
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color bgColor = isDark ? const Color(0xFF1E1E1E) : Colors.white;
+    final Color textColor = isDark ? Colors.white : Colors.black87;
+    final Color secondaryText = isDark ? Colors.white70 : Colors.black54;
+
+    final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
+    final String description = (data['description'] ?? '').toString();
+    final String eventDateText = (data['eventDateText'] ?? data['date'] ?? '').toString();
+    final String locationName = (data['locationName'] ?? '').toString();
+    final String locationAddress = (data['locationAddress'] ?? '').toString();
+    final String facultyName = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
+    final String sourceArticleUrl = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+    final String? thumbnailUrl = data['thumbnailUrl'] ??
+        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
+
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
+    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
+    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
+    if (displayContact.isNotEmpty && !displayContact.toLowerCase().startsWith('liên hệ')) {
+      displayContact = 'Liên hệ: $displayContact';
+    }
+
+    final List<String> locParts = [];
+    if (locationName.trim().isNotEmpty) locParts.add(locationName.trim());
+    if (locationAddress.trim().isNotEmpty && locationAddress.trim() != locationName.trim()) {
+      locParts.add(locationAddress.trim());
+    }
+    String locStr = locParts.join(' - ');
+    if (locStr.trim().isEmpty) {
+      locStr = isOnline ? 'Online' : 'Chưa cập nhật địa điểm';
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (bottomContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: bgColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade400,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (thumbnailUrl != null && thumbnailUrl.isNotEmpty) ...[
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            thumbnailUrl,
+                            height: 180,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF5893D8).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          'Khoa $facultyName',
+                          style: const TextStyle(
+                            color: Color(0xFF5893D8),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Text(
+                        eventName,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: textColor,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      if (eventDateText.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 18, color: Color(0xFF5893D8)),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                eventDateText,
+                                style: TextStyle(fontSize: 14, color: secondaryText),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+
+                      Row(
+                        children: [
+                          Icon(
+                            isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
+                            size: 18,
+                            color: isOnline ? const Color(0xFF8B5CF6) : const Color(0xFF5893D8),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              locStr,
+                              style: TextStyle(fontSize: 14, color: secondaryText),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (displayContact.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF5893D8).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFF5893D8).withOpacity(0.3)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.contact_phone_rounded, size: 18, color: Color(0xFF5893D8)),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  displayContact,
+                                  style: TextStyle(
+                                    fontSize: 13.5,
+                                    fontWeight: FontWeight.w600,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 16),
+
+                      const Divider(),
+                      const SizedBox(height: 12),
+
+                      if (description.isNotEmpty) ...[
+                        Text(
+                          'Chi tiết sự kiện',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: textColor,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: secondaryText,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      Row(
+                        children: [
+                          if (onlineUrl.isNotEmpty) ...[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _launchURL(onlineUrl),
+                                icon: const Icon(Icons.videocam_rounded, size: 16),
+                                label: const Text('Tham gia Online'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF8B5CF6),
+                                  side: const BorderSide(color: Color(0xFF8B5CF6)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (sourceArticleUrl.isNotEmpty && sourceArticleUrl != onlineUrl)
+                              const SizedBox(width: 10),
+                          ],
+                          if (sourceArticleUrl.isNotEmpty && sourceArticleUrl != onlineUrl) ...[
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _launchURL(sourceArticleUrl),
+                                icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                                label: const Text('Bài viết gốc'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: const Color(0xFF5893D8),
+                                  side: const BorderSide(color: Color(0xFF5893D8)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.pop(bottomContext);
+                            _openCreatePersonalEventFromNotification(context, docId, data);
+                          },
+                          icon: const Icon(Icons.star_rounded, color: Colors.white, size: 18),
+                          label: const Text(
+                            'Quan tâm & Thêm vào Lịch cá nhân',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF5893D8),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openCreatePersonalEventFromNotification(
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
+    final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
+    final String description = (data['description'] ?? '').toString();
+    final String locationName = (data['locationName'] ?? '').toString();
+    final String locationAddress = (data['locationAddress'] ?? '').toString();
+    final String facultyName = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
+    final String sourceArticleUrl = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+
+    DateTime parsedDateTime = DateTime.now();
+    if (data['startAt'] != null && data['startAt'] is Timestamp) {
+      parsedDateTime = (data['startAt'] as Timestamp).toDate();
+    } else if (data['startDateTime'] != null && data['startDateTime'] is String) {
+      final parsed = DateTime.tryParse(data['startDateTime']);
+      if (parsed != null) parsedDateTime = parsed;
+    } else if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+      parsedDateTime = (data['registrationDeadlineAt'] as Timestamp).toDate();
+    }
+
+    final List<String> locParts = [];
+    if (locationName.trim().isNotEmpty) locParts.add(locationName.trim());
+    if (locationAddress.trim().isNotEmpty && locationAddress.trim() != locationName.trim()) {
+      locParts.add(locationAddress.trim());
+    }
+    String locStr = locParts.join(' - ');
+    if (locStr.trim().isEmpty) {
+      locStr = isOnline ? 'Online' : (facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm');
+    }
+
+    final eventToEdit = EventModel(
+      id: docId,
+      title: eventName,
+      dateTime: parsedDateTime,
+      location: locStr,
+      reminder: '15 phút trước',
+      description: description,
+      sourceArticleUrl: sourceArticleUrl,
+      onlineUrl: onlineUrl,
+      isOnline: isOnline,
+      facultyEventId: docId,
+      isFromFacultyEvent: true,
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreatePersonalEventPage(event: eventToEdit),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:my_uni/models/event_model.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 
@@ -101,6 +102,15 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
 
   void _onFocusChange() {
     if (mounted) setState(() {});
+  }
+
+  Future<void> _launchURL(String urlString) async {
+    final cleanUrl = urlString.trim();
+    if (cleanUrl.isEmpty) return;
+    final Uri url = Uri.parse(cleanUrl);
+    try {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
   }
 
   @override
@@ -369,15 +379,50 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
 
         if (widget.event?.sourceArticleUrl != null)
           'sourceArticleUrl': widget.event!.sourceArticleUrl,
+        if (widget.event?.onlineUrl != null)
+          'onlineUrl': widget.event!.onlineUrl,
+        if (widget.event?.isOnline != null)
+          'isOnline': widget.event!.isOnline,
 
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
-      if (widget.event != null) {
-        await collection.doc(widget.event!.id).update(eventData);
+      final String? targetDocId = widget.event?.id;
+      final String? facultyEventId = widget.event?.facultyEventId ??
+          (widget.event?.isFromFacultyEvent == true ? targetDocId : null);
+
+      if (targetDocId != null && targetDocId.isNotEmpty) {
+        eventData['facultyEventId'] = facultyEventId;
+        eventData['isFromFacultyEvent'] = true;
+        await collection.doc(targetDocId).set(eventData, SetOptions(merge: true));
       } else {
         eventData['createdAt'] = FieldValue.serverTimestamp();
         await collection.add(eventData);
+      }
+
+      if (facultyEventId != null && facultyEventId.isNotEmpty) {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .collection('interested_events')
+            .doc(facultyEventId)
+            .set({
+          'docId': facultyEventId,
+          'facultyEventId': facultyEventId,
+          'eventName': _titleController.text.trim(),
+          'title': _titleController.text.trim(),
+          'description': _descController.text.trim(),
+          'eventDateText': DateFormat('HH:mm, dd/MM/yyyy').format(finalDateTime),
+          'date': DateFormat('HH:mm, dd/MM/yyyy').format(finalDateTime),
+          'locationName': _locationController.text.trim(),
+          'sourceArticleUrl': widget.event?.sourceArticleUrl,
+          'onlineUrl': widget.event?.onlineUrl,
+          'isOnline': widget.event?.isOnline ?? false,
+          if (widget.event?.contact != null) 'contact': widget.event!.contact,
+          'startAt': Timestamp.fromDate(finalDateTime),
+          'timestamp': FieldValue.serverTimestamp(),
+          'isFacultyEvent': true,
+        }, SetOptions(merge: true));
       }
 
       if (mounted) Navigator.pop(context, true);
@@ -799,6 +844,78 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                 ),
               ),
             ),
+
+            if ((widget.event?.sourceArticleUrl != null &&
+                    widget.event!.sourceArticleUrl!.trim().isNotEmpty) ||
+                (widget.event?.onlineUrl != null &&
+                    widget.event!.onlineUrl!.trim().isNotEmpty)) ...[
+              const SizedBox(height: 24),
+              Text(
+                'Nguồn & Liên kết',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                  color: textColor,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (widget.event?.onlineUrl != null &&
+                      widget.event!.onlineUrl!.trim().isNotEmpty) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _launchURL(widget.event!.onlineUrl!),
+                        icon: const Icon(Icons.videocam_rounded, size: 18),
+                        label: const Text(
+                          'Tham gia Online',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF8B5CF6),
+                          side: const BorderSide(color: Color(0xFF8B5CF6)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (widget.event?.sourceArticleUrl != null &&
+                        widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
+                        widget.event!.sourceArticleUrl!.trim() != widget.event?.onlineUrl?.trim())
+                      const SizedBox(width: 10),
+                  ],
+                  if (widget.event?.sourceArticleUrl != null &&
+                      widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
+                      widget.event!.sourceArticleUrl!.trim() != widget.event?.onlineUrl?.trim())
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: () => _launchURL(widget.event!.sourceArticleUrl!),
+                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                        label: const Text(
+                          'Xem bài viết gốc',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF5794F3),
+                          side: const BorderSide(color: Color(0xFF5794F3)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
