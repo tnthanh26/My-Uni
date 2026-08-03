@@ -383,14 +383,6 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                             ],
                           ],
                         ),
-                        subtitle: Text(
-                          'Mã khoa: ${fac.code}',
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 12,
-                            color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
-                          ),
-                        ),
                         onChanged: isPrimary
                             ? null
                             : (checked) {
