@@ -232,6 +232,7 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
 
               // Content Stream List
               Expanded(
@@ -442,373 +443,679 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
   }
 
   Widget _buildEventCard(
-    BuildContext context,
-    String docId,
-    Map<String, dynamic> data,
-    bool isDarkMode,
-  ) {
-    final String title = (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
-    final String date = (data['eventDateText'] ?? data['date'] ?? '').toString();
-    final String department = (data['locationName'] ?? data['facultyName'] ?? data['department'] ?? 'Cơ sở HCMUS').toString();
-    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
-    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
-    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
-    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
-    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
-    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
-    if (displayContact.isNotEmpty && !displayContact.toLowerCase().startsWith('liên hệ')) {
+      BuildContext context,
+      String docId,
+      Map<String, dynamic> data,
+      bool isDarkMode,
+      ) {
+    final String title =
+    (data['eventName'] ??
+        data['title'] ??
+        'Sự kiện sinh viên')
+        .toString();
+
+    final String date =
+    (data['eventDateText'] ??
+        data['date'] ??
+        '')
+        .toString();
+
+    final String department =
+    (data['locationName'] ??
+        data['facultyName'] ??
+        data['department'] ??
+        'Cơ sở HCMUS')
+        .toString();
+
+    final String onlineUrl =
+    (data['onlineUrl'] ??
+        data['onlineLink'] ??
+        '')
+        .toString()
+        .trim();
+
+    final bool isOnline =
+        data['isOnline'] == true ||
+            onlineUrl.isNotEmpty;
+
+    final String link =
+    (data['sourceArticleUrl'] ??
+        data['registrationUrl'] ??
+        data['link'] ??
+        onlineUrl)
+        .toString();
+
+    final String rawContact =
+    (data['contact'] ??
+        data['contactInfo'] ??
+        '')
+        .toString()
+        .trim();
+
+    final String rawOrganizer =
+    (data['organizer'] ??
+        data['organizerName'] ??
+        '')
+        .toString()
+        .trim();
+
+    String displayContact = rawContact.isNotEmpty
+        ? rawContact
+        : rawOrganizer;
+
+    if (displayContact.isNotEmpty &&
+        !displayContact
+            .toLowerCase()
+            .startsWith('liên hệ')) {
       displayContact = 'Liên hệ: $displayContact';
     }
 
-    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
+    final String effectiveLink =
+    onlineUrl.isNotEmpty
+        ? onlineUrl
+        : link;
 
-    final String? thumbnailUrl = data['thumbnailUrl'] ??
-        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
+    final String? thumbnailUrl =
+        data['thumbnailUrl'] ??
+            (
+                data['imageUrls'] != null &&
+                    (data['imageUrls'] as List).isNotEmpty
+                    ? data['imageUrls'][0]
+                    : null
+            );
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: _surfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _borderColor(isDarkMode)),
-        boxShadow: _cardShadow(isDarkMode),
+    final Color cardColor =
+    _surfaceColor(isDarkMode);
+
+    final Color borderColor =
+    _borderColor(isDarkMode);
+
+    final Color primaryTextColor =
+    _primaryTextColor(isDarkMode);
+
+    final Color secondaryTextColor =
+    _secondaryTextColor(isDarkMode);
+
+    return FutureBuilder<bool>(
+      future: _checkEventExists(
+        data,
+        docId,
       ),
-      child: InkWell(
-        onTap: effectiveLink.isNotEmpty ? () => _launchURL(effectiveLink) : null,
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(22),
-                  ),
-                  child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
-                      ? Image.network(
-                          thumbnailUrl,
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Image.asset(
+      builder: (context, eventSnapshot) {
+        final bool isDeleted =
+            eventSnapshot.hasData &&
+                eventSnapshot.data == false;
+
+        return Container(
+          margin: const EdgeInsets.only(
+            bottom: 14,
+          ),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius:
+            BorderRadius.circular(18),
+            border: Border.all(
+              color: isDeleted
+                  ? Colors.redAccent.withValues(
+                alpha: 0.32,
+              )
+                  : borderColor,
+            ),
+            boxShadow: isDarkMode
+                ? const []
+                : [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: 0.035,
+                ),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius:
+            BorderRadius.circular(18),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: !isDeleted &&
+                    effectiveLink.isNotEmpty
+                    ? () {
+                  _launchURL(effectiveLink);
+                }
+                    : null,
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Stack(
+                      children: [
+                        if (thumbnailUrl != null &&
+                            thumbnailUrl.isNotEmpty)
+                          Image.network(
+                            thumbnailUrl,
+                            height: 150,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                            errorBuilder:
+                                (_, __, ___) {
+                              return Image.asset(
+                                'assets/images/news.png',
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                              );
+                            },
+                          )
+                        else
+                          Image.asset(
                             'assets/images/news.png',
                             height: 150,
                             width: double.infinity,
                             fit: BoxFit.cover,
                           ),
-                        )
-                      : Image.asset(
-                          'assets/images/news.png',
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                ),
-                Positioned.fill(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(22),
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.12),
-                          Colors.black.withValues(alpha: 0.35),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                if (isOnline)
-                  Positioned(
-                    top: 10,
-                    left: 10,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF8B5CF6),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.videocam_rounded, color: Colors.white, size: 14),
-                          SizedBox(width: 4),
-                          Text(
-                            'Online',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: GestureDetector(
-                    onTap: () => _removeInterest(context, docId),
-                    child: Container(
-                      padding: const EdgeInsets.all(7),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                    ),
-                  ),
-                ),
-                FutureBuilder<bool>(
-                  future: _checkEventExists(data, docId),
-                  builder: (context, snapshot) {
-                    final bool isDeleted = snapshot.hasData && snapshot.data == false;
-                    return Positioned(
-                      left: 12,
-                      bottom: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isDeleted ? Colors.redAccent : Colors.white.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(999),
-                          border: Border.all(
-                            color: isDeleted ? Colors.redAccent : Colors.white.withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (isDeleted) ...[
-                              const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
-                              const SizedBox(width: 4),
-                            ],
-                            Text(
-                              isDeleted ? 'Đã bị hủy' : 'Đã quan tâm',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
+
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              gradient:
+                              LinearGradient(
+                                begin: Alignment.topCenter,
+                                end:
+                                Alignment.bottomCenter,
+                                colors: [
+                                  Colors.transparent,
+                                  Colors.black.withValues(
+                                    alpha: 0.34,
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  FutureBuilder<bool>(
-                    future: _checkEventExists(data, docId),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasData && snapshot.data == false) {
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.red.shade300),
                           ),
-                          child: const Row(
-                            children: [
-                              Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 16),
-                              SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  'Sự kiện đã bị BTC hủy hoặc xóa khỏi hệ thống',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.redAccent,
+                        ),
+
+                        if (isOnline)
+                          Positioned(
+                            top: 11,
+                            left: 11,
+                            child: Container(
+                              padding:
+                              const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 5,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(
+                                  alpha: 0.48,
+                                ),
+                                borderRadius:
+                                BorderRadius.circular(
+                                  10,
+                                ),
+                                border: Border.all(
+                                  color: Colors.white
+                                      .withValues(
+                                    alpha: 0.20,
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
-                        );
-                      }
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                      color: _primaryTextColor(isDarkMode),
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _secondarySurfaceColor(isDarkMode),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: _borderColor(isDarkMode)),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.access_time_rounded,
-                              size: 16,
-                              color: primaryBlue,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                date.isEmpty ? 'Chưa cập nhật ngày' : date,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: _secondaryTextColor(isDarkMode),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Icon(
-                              isOnline ? Icons.videocam_rounded : Icons.location_on_outlined,
-                              size: 16,
-                              color: isOnline ? const Color(0xFF8B5CF6) : primaryBlue,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                department.isNotEmpty ? department : (isOnline ? 'Sự kiện diễn ra Online' : 'Chưa cập nhật địa điểm'),
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: _secondaryTextColor(isDarkMode),
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        FutureBuilder<String>(
-                          future: _fetchContactFallback(data, docId),
-                          builder: (context, snapshot) {
-                            final String contactInfo = snapshot.data ?? displayContact;
-                            if (contactInfo.trim().isEmpty) return const SizedBox.shrink();
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 10),
-                              child: Row(
+                              child: const Row(
+                                mainAxisSize:
+                                MainAxisSize.min,
                                 children: [
-                                  const Icon(
-                                    Icons.contact_phone_rounded,
-                                    size: 16,
-                                    color: primaryBlue,
+                                  Icon(
+                                    Icons
+                                        .videocam_outlined,
+                                    size: 13,
+                                    color: Colors.white,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      contactInfo,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: _secondaryTextColor(isDarkMode),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'Online',
+                                    style: TextStyle(
+                                      fontFamily:
+                                      'Encode Sans Expanded',
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight:
+                                      FontWeight.w600,
                                     ),
                                   ),
                                 ],
                               ),
-                            );
-                          },
+                            ),
+                          ),
+
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: Tooltip(
+                            message: 'Bỏ khỏi danh sách quan tâm',
+                            child: Material(
+                              color: Colors.transparent,
+                              shape: const CircleBorder(),
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () => _removeInterest(context, docId),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withValues(alpha: 0.42),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withValues(alpha: 0.18),
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.close_rounded,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
-            if (onlineUrl.isNotEmpty || link.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                child: Column(
-                  children: [
-                    if (onlineUrl.isNotEmpty) ...[
-                      SizedBox(
-                        width: double.infinity,
-                        height: 40,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _launchURL(onlineUrl),
-                          icon: const Icon(Icons.videocam_rounded, size: 16),
-                          label: const Text(
-                            'Tham gia Online',
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF8B5CF6),
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
+
+                    Padding(
+                      padding:
+                      const EdgeInsets.fromLTRB(
+                        16,
+                        15,
+                        16,
+                        15,
                       ),
-                      if (link.isNotEmpty && link != onlineUrl) const SizedBox(height: 8),
-                    ],
-                    if (link.isNotEmpty && link != onlineUrl)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 40,
-                        child: ElevatedButton.icon(
-                          onPressed: () => _launchURL(link),
-                          icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                          label: const Text(
-                            'Xem bài gốc',
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow:
+                            TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Nunito',
+                              fontWeight:
+                              FontWeight.w700,
+                              fontSize: 16.5,
+                              height: 1.3,
+                              color: primaryTextColor,
                             ),
                           ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: detailBlue,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+
+                          if (isDeleted) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding:
+                              const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 9,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent
+                                    .withValues(
+                                  alpha: isDarkMode
+                                      ? 0.14
+                                      : 0.08,
+                                ),
+                                borderRadius:
+                                BorderRadius.circular(
+                                  10,
+                                ),
+                                border: Border.all(
+                                  color: Colors.redAccent
+                                      .withValues(
+                                    alpha: 0.30,
+                                  ),
+                                ),
+                              ),
+                              child: const Row(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding:
+                                    EdgeInsets.only(
+                                      top: 1,
+                                    ),
+                                    child: Icon(
+                                      Icons
+                                          .warning_amber_rounded,
+                                      size: 17,
+                                      color:
+                                      Colors.redAccent,
+                                    ),
+                                  ),
+                                  SizedBox(width: 7),
+                                  Expanded(
+                                    child: Text(
+                                      'Sự kiện này đã bị hủy hoặc không còn tồn tại trên hệ thống.',
+                                      style: TextStyle(
+                                        fontFamily:
+                                        'Encode Sans Expanded',
+                                        fontSize: 11.5,
+                                        height: 1.4,
+                                        fontWeight:
+                                        FontWeight.w600,
+                                        color:
+                                        Colors.redAccent,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
+                          ],
+
+                          const SizedBox(height: 13),
+
+                          _buildInterestedEventInfoRow(
+                            icon:
+                            Icons.access_time_rounded,
+                            text: date.isEmpty
+                                ? 'Chưa cập nhật thời gian'
+                                : date,
+                            iconColor: primaryBlue,
+                            textColor:
+                            primaryTextColor,
+                            fontWeight:
+                            FontWeight.w600,
                           ),
-                        ),
+
+                          const SizedBox(height: 9),
+
+                          _buildInterestedEventInfoRow(
+                            icon: isOnline
+                                ? Icons
+                                .videocam_outlined
+                                : Icons
+                                .location_on_outlined,
+                            text: department.isNotEmpty
+                                ? department
+                                : (
+                                isOnline
+                                    ? 'Trực tuyến'
+                                    : 'Chưa cập nhật địa điểm'
+                            ),
+                            iconColor: primaryBlue,
+                            textColor:
+                            secondaryTextColor,
+                          ),
+
+                          FutureBuilder<String>(
+                            future:
+                            _fetchContactFallback(
+                              data,
+                              docId,
+                            ),
+                            builder:
+                                (context, snapshot) {
+                              final String contactInfo =
+                                  snapshot.data ??
+                                      displayContact;
+
+                              if (contactInfo
+                                  .trim()
+                                  .isEmpty) {
+                                return const SizedBox
+                                    .shrink();
+                              }
+
+                              return Padding(
+                                padding:
+                                const EdgeInsets.only(
+                                  top: 9,
+                                ),
+                                child:
+                                _buildInterestedEventInfoRow(
+                                  icon: Icons
+                                      .contact_phone_outlined,
+                                  text: contactInfo,
+                                  iconColor:
+                                  primaryBlue,
+                                  textColor:
+                                  secondaryTextColor,
+                                ),
+                              );
+                            },
+                          ),
+
+                          if (!isDeleted &&
+                              (
+                                  onlineUrl.isNotEmpty ||
+                                      link.isNotEmpty
+                              )) ...[
+                            const SizedBox(height: 15),
+
+                            _buildInterestedEventActions(
+                              isDarkMode:
+                              isDarkMode,
+                              onlineUrl: onlineUrl,
+                              link: link,
+                            ),
+                          ],
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
-          ],
-        ),
-      ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Widget _buildInterestedEventInfoRow({
+    required IconData icon,
+    required String text,
+    required Color iconColor,
+    required Color textColor,
+    FontWeight fontWeight = FontWeight.w400,
+  }) {
+    return Row(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            top: 1,
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: iconColor,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: fontWeight,
+              color: textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  Widget _buildInterestedEventActions({
+    required bool isDarkMode,
+    required String onlineUrl,
+    required String link,
+  }) {
+    final bool hasOnlineLink =
+        onlineUrl.isNotEmpty;
+
+    final bool hasSourceLink =
+        link.isNotEmpty &&
+            link != onlineUrl;
+
+    final Color secondaryTextColor =
+    _secondaryTextColor(isDarkMode);
+
+    final Color borderColor =
+    _borderColor(isDarkMode);
+
+    if (hasOnlineLink) {
+      return Row(
+        children: [
+          Expanded(
+            child: FilledButton.icon(
+              onPressed: () {
+                _launchURL(onlineUrl);
+              },
+              icon: const Icon(
+                Icons.videocam_outlined,
+                size: 17,
+              ),
+              label: const Text(
+                'Tham gia trực tuyến',
+                style: TextStyle(
+                  fontFamily:
+                  'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                minimumSize: const Size(
+                  double.infinity,
+                  42,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                  BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+
+          if (hasSourceLink) ...[
+            const SizedBox(width: 9),
+
+            PopupMenuButton<String>(
+              tooltip: 'Thêm tùy chọn',
+              color: _surfaceColor(isDarkMode),
+              surfaceTintColor:
+              Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius:
+                BorderRadius.circular(14),
+              ),
+              onSelected: (value) {
+                if (value == 'open_source') {
+                  _launchURL(link);
+                }
+              },
+              itemBuilder: (_) => [
+                PopupMenuItem<String>(
+                  value: 'open_source',
+                  height: 42,
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.open_in_new_rounded,
+                        size: 18,
+                        color: secondaryTextColor,
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Xem bài gốc',
+                        style: TextStyle(
+                          fontFamily:
+                          'Encode Sans Expanded',
+                          fontSize: 12,
+                          color: _primaryTextColor(
+                            isDarkMode,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              child: Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isDarkMode
+                      ? Colors.white.withValues(
+                    alpha: 0.06,
+                  )
+                      : const Color(0xFFF5F7FA),
+                  borderRadius:
+                  BorderRadius.circular(12),
+                  border: Border.all(
+                    color: borderColor,
+                  ),
+                ),
+                child: Icon(
+                  Icons.more_horiz_rounded,
+                  size: 21,
+                  color: secondaryTextColor,
+                ),
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    if (hasSourceLink) {
+      return SizedBox(
+        width: double.infinity,
+        height: 42,
+        child: OutlinedButton.icon(
+          onPressed: () {
+            _launchURL(link);
+          },
+          icon: const Icon(
+            Icons.open_in_new_rounded,
+            size: 17,
+          ),
+          label: const Text(
+            'Xem chi tiết sự kiện',
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          style: OutlinedButton.styleFrom(
+            foregroundColor: primaryBlue,
+            side: const BorderSide(
+              color: primaryBlue,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius:
+              BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

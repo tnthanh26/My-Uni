@@ -614,29 +614,55 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildCommunityTab(bool isDarkMode) {
+    final Color surfaceColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-          child: SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: ElevatedButton.icon(
-              onPressed: () {
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          child: Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (_) => Scaffold(
+                      backgroundColor: isDarkMode
+                          ? const Color(0xFF101214)
+                          : const Color(0xFFF8FAFC),
                       appBar: AppBar(
                         title: const Text(
-                          "Sự kiện cộng đồng mới",
+                          'Khám phá sự kiện',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Nunito',
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                        backgroundColor: const Color(0xFF6797E1),
-                        foregroundColor: Colors.white,
+                        backgroundColor: isDarkMode
+                            ? const Color(0xFF1C1E21)
+                            : Colors.white,
+                        foregroundColor: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1D2939),
+                        surfaceTintColor: Colors.transparent,
                         elevation: 0,
                       ),
                       body: const DiscoverEventTab(
@@ -646,27 +672,76 @@ class _MyEventTabState extends State<MyEventTab>
                   ),
                 );
               },
-
-              icon: const Icon(Icons.explore_rounded, size: 20),
-              label: const Text(
-                'Khám phá sự kiện cộng đồng',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
                 ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: figmaSelectionBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                decoration: BoxDecoration(
+                  color: surfaceColor,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: borderColor,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: figmaSelectionBlue.withValues(
+                          alpha: isDarkMode ? 0.16 : 0.10,
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.explore_outlined,
+                        size: 21,
+                        color: figmaSelectionBlue,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Khám phá sự kiện cộng đồng',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: primaryTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            'Tìm các hoạt động mới từ trường và các khoa.',
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 11.5,
+                              height: 1.35,
+                              color: secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 21,
+                      color: secondaryTextColor,
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
         ),
-        const Expanded(
+        Expanded(
           child: InterestedEventTab(),
         ),
       ],
@@ -708,7 +783,7 @@ class _MyEventTabState extends State<MyEventTab>
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Sự kiện cá nhân',
+                                      'Sự kiện của tôi',
                                       style: TextStyle(
                                         fontFamily: 'Nunito',
                                         fontSize: 16,
@@ -863,7 +938,7 @@ class _MyEventTabState extends State<MyEventTab>
               ),
               const SizedBox(height: 16),
               Text(
-                'Chưa có sự kiện cá nhân',
+                'Chưa có sự kiện.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _primaryTextColor(isDarkMode),

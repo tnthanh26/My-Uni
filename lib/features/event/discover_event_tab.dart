@@ -205,13 +205,13 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     }
   }
 
-  /// BottomSheet Quản lý theo dõi tối đa 2 Khoa khác
-  void _showManageFollowedFacultiesModal(
-    BuildContext context,
-    FacultyInfo? primaryFacultyInfo,
-    List<String> currentFollowed,
-  ) {
-    List<String> tempFollowed = List.from(currentFollowed);
+  /// Dialog / BottomSheet cập nhật Khoa nhanh nếu người dùng chưa chọn Khoa
+  void _showQuickFacultyPicker(BuildContext context, String? currentFaculty) {
+    String? selected = (currentFaculty != null &&
+            currentFaculty.isNotEmpty &&
+            currentFaculty != 'Chưa cập nhật khoa')
+        ? currentFaculty
+        : FacultyHelper.allHcmusFaculties.first;
 
     showModalBottomSheet(
       context: context,
@@ -226,10 +226,11 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     offset: const Offset(0, -6),
                   )
@@ -255,12 +256,12 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF8B5CF6).withOpacity(0.15),
+                          color: const Color(0xFF5893D8).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.tune_rounded,
-                          color: Color(0xFF8B5CF6),
+                          Icons.school_rounded,
+                          color: Color(0xFF5893D8),
                           size: 24,
                         ),
                       ),
@@ -270,21 +271,25 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Theo dõi Sự kiện các Khoa',
+                              'Cập nhật Khoa của bạn',
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
-                                color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF1E293B),
                               ),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Theo dõi tối đa 2 Khoa khác ngoài Khoa của bạn',
+                              'Chọn Khoa đang học để xem sự kiện dành riêng',
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 12,
-                                color: isDarkMode ? Colors.white60 : const Color(0xFF64748B),
+                                color: isDarkMode
+                                    ? Colors.white60
+                                    : const Color(0xFF64748B),
                               ),
                             ),
                           ],
@@ -293,114 +298,58 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     ],
                   ),
                   const SizedBox(height: 20),
-
-                  ...FacultyHelper.activeFaculties.map((fac) {
-                    final bool isPrimary = primaryFacultyInfo?.id == fac.id;
-                    final bool isFollowed = tempFollowed.contains(fac.id);
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: isPrimary
-                            ? (isDarkMode
-                                ? const Color(0xFF1E3A8A).withOpacity(0.2)
-                                : const Color(0xFFEFF6FF))
-                            : (isFollowed
-                                ? (isDarkMode
-                                    ? const Color(0xFF8B5CF6).withOpacity(0.15)
-                                    : const Color(0xFFF3E8FF))
-                                : (isDarkMode
-                                    ? Colors.white.withOpacity(0.04)
-                                    : const Color(0xFFF8FAFC))),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isPrimary
-                              ? const Color(0xFF3B82F6).withOpacity(0.4)
-                              : (isFollowed
-                                  ? const Color(0xFF8B5CF6)
-                                  : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0))),
-                        ),
-                      ),
-                      child: CheckboxListTile(
-                        value: isPrimary || isFollowed,
-                        enabled: !isPrimary,
-                        activeColor: isPrimary ? const Color(0xFF3B82F6) : const Color(0xFF8B5CF6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        secondary: Container(
-                          padding: const EdgeInsets.all(8),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 280),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: FacultyHelper.allHcmusFaculties.length,
+                      itemBuilder: (context, index) {
+                        final fac = FacultyHelper.allHcmusFaculties[index];
+                        final isSelected = fac == selected;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            color: isPrimary
-                                ? const Color(0xFF3B82F6).withOpacity(0.15)
-                                : const Color(0xFF8B5CF6).withOpacity(0.15),
-                            shape: BoxShape.circle,
+                            color: isSelected
+                                ? const Color(0xFF5893D8).withValues(alpha: 0.12)
+                                : (isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.04)
+                                    : const Color(0xFFF8FAFC)),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF5893D8)
+                                  : (isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xFFE2E8F0)),
+                            ),
                           ),
-                          child: Icon(
-                            fac.icon,
-                            size: 20,
-                            color: isPrimary ? const Color(0xFF3B82F6) : const Color(0xFF8B5CF6),
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                fac.name,
-                                style: TextStyle(
-                                  fontFamily: 'Encode Sans Expanded',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
-                                ),
+                          child: RadioListTile<String>(
+                            value: fac,
+                            groupValue: selected,
+                            activeColor: const Color(0xFF5893D8),
+                            title: Text(
+                              fac,
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 14,
+                                fontWeight: isSelected
+                                    ? FontWeight.bold
+                                    : FontWeight.w500,
+                                color: isSelected
+                                    ? const Color(0xFF5893D8)
+                                    : (isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF334155)),
                               ),
                             ),
-                            if (isPrimary) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF3B82F6),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: const Text(
-                                  'Khoa của bạn',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                        onChanged: isPrimary
-                            ? null
-                            : (checked) {
-                                if (checked == true) {
-                                  if (tempFollowed.length >= 2) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Bạn chỉ có thể theo dõi tối đa 2 Khoa khác.'),
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  setModalState(() {
-                                    tempFollowed.add(fac.id);
-                                  });
-                                } else {
-                                  setModalState(() {
-                                    tempFollowed.remove(fac.id);
-                                  });
-                                }
-                              },
-                      ),
-                    );
-                  }),
-
+                            onChanged: (val) {
+                              setModalState(() => selected = val);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   SizedBox(
                     width: double.infinity,
@@ -408,34 +357,48 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     child: ElevatedButton(
                       onPressed: () async {
                         final user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          if (primaryFacultyInfo != null) {
-                            tempFollowed.remove(primaryFacultyInfo.id);
+                        if (user != null && selected != null) {
+                          final newPrimary =
+                              FacultyHelper.findFacultyByAccountString(selected);
+                          final userDoc = await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .get();
+                          List<String> followed =
+                              (userDoc.data()?['followedFaculties'] as List?)
+                                      ?.map((e) => e.toString())
+                                      .toList() ??
+                                  [];
+                          if (newPrimary != null) {
+                            followed.remove(newPrimary.id);
                           }
                           await FirebaseFirestore.instance
                               .collection('users')
                               .doc(user.uid)
-                              .update({'followedFaculties': tempFollowed});
+                              .update({
+                            'faculty': selected,
+                            'followedFaculties': followed,
+                          });
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Đã lưu danh sách Khoa theo dõi!'),
-                                backgroundColor: Color(0xFF8B5CF6),
+                              SnackBar(
+                                content: Text('Đã cập nhật Khoa: $selected'),
+                                backgroundColor: const Color(0xFF5893D8),
                               ),
                             );
                           }
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B5CF6),
+                        backgroundColor: const Color(0xFF5893D8),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),
                         elevation: 0,
                       ),
                       child: const Text(
-                        'Lưu danh sách Khoa theo dõi',
+                        'Xác nhận & Lưu Khoa',
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontWeight: FontWeight.bold,
@@ -446,6 +409,382 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     ),
                   ),
                 ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// BottomSheet Quản lý theo dõi tối đa 2 Khoa khác
+  void _showManageFollowedFacultiesModal(
+    BuildContext context,
+    FacultyInfo? primaryFacultyInfo,
+    List<String> currentFollowed,
+  ) {
+    List<String> tempFollowed = List.from(currentFollowed);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.42),
+      builder: (ctx) {
+        final bool isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
+        const Color primaryColor = Color(0xFF5893D8);
+
+        final Color sheetColor =
+            isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+
+        final Color surfaceColor = isDarkMode
+            ? Colors.white.withValues(alpha: 0.04)
+            : const Color(0xFFF8FAFC);
+
+        final Color selectedSurfaceColor = isDarkMode
+            ? primaryColor.withValues(alpha: 0.12)
+            : primaryColor.withValues(alpha: 0.07);
+
+        final Color borderColor = isDarkMode
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFE4E7EC);
+
+        final Color selectedBorderColor = primaryColor.withValues(alpha: 0.38);
+
+        final Color primaryTextColor =
+            isDarkMode ? Colors.white : const Color(0xFF1D2939);
+
+        final Color secondaryTextColor =
+            isDarkMode ? Colors.white60 : const Color(0xFF667085);
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.82,
+                ),
+                decoration: BoxDecoration(
+                  color: sheetColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(
+                        top: 10,
+                        bottom: 18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white24
+                            : const Color(0xFFD0D5DD),
+                        borderRadius: BorderRadius.circular(99),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(
+                                alpha: isDarkMode ? 0.16 : 0.10,
+                              ),
+                              borderRadius: BorderRadius.circular(13),
+                            ),
+                            child: const Icon(
+                              Icons.tune_rounded,
+                              color: primaryColor,
+                              size: 21,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Theo dõi sự kiện các khoa',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Chọn tối đa 2 khoa để theo dõi thêm sự kiện.',
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    color: secondaryTextColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Column(
+                          children: FacultyHelper.activeFaculties.map((fac) {
+                            final bool isPrimary =
+                                primaryFacultyInfo?.id == fac.id;
+                            final bool isFollowed =
+                                tempFollowed.contains(fac.id);
+                            final bool isSelected = isPrimary || isFollowed;
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(14),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: isPrimary
+                                      ? null
+                                      : () {
+                                          if (isFollowed) {
+                                            setModalState(() {
+                                              tempFollowed.remove(fac.id);
+                                            });
+                                            return;
+                                          }
+
+                                          if (tempFollowed.length >= 2) {
+                                            ScaffoldMessenger.of(context)
+                                              ..hideCurrentSnackBar()
+                                              ..showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Bạn chỉ có thể theo dõi tối đa 2 khoa khác.',
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            return;
+                                          }
+
+                                          setModalState(() {
+                                            tempFollowed.add(fac.id);
+                                          });
+                                        },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    curve: Curves.easeOut,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? selectedSurfaceColor
+                                          : surfaceColor,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? selectedBorderColor
+                                            : borderColor,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? primaryColor.withValues(
+                                                    alpha: isDarkMode ? 0.18 : 0.10,
+                                                  )
+                                                : (isDarkMode
+                                                    ? Colors.white.withValues(
+                                                        alpha: 0.05,
+                                                      )
+                                                    : Colors.white),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          child: Icon(
+                                            fac.icon,
+                                            size: 20,
+                                            color: isSelected
+                                                ? primaryColor
+                                                : secondaryTextColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                fac.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontFamily: 'Nunito',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: primaryTextColor,
+                                                ),
+                                              ),
+                                              if (isPrimary) ...[
+                                                const SizedBox(height: 3),
+                                                Text(
+                                                  'Khoa chính của bạn',
+                                                  style: TextStyle(
+                                                    fontFamily:
+                                                        'Encode Sans Expanded',
+                                                    fontSize: 10.5,
+                                                    color: secondaryTextColor,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        AnimatedContainer(
+                                          duration:
+                                              const Duration(milliseconds: 160),
+                                          width: 22,
+                                          height: 22,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? primaryColor
+                                                : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? primaryColor
+                                                  : borderColor,
+                                              width: 1.5,
+                                            ),
+                                          ),
+                                          child: isSelected
+                                              ? const Icon(
+                                                  Icons.check_rounded,
+                                                  size: 15,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+                      decoration: BoxDecoration(
+                        color: sheetColor,
+                        border: Border(top: BorderSide(color: borderColor)),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: OutlinedButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: secondaryTextColor,
+                                  side: BorderSide(color: borderColor),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Hủy',
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: FilledButton(
+                                onPressed: () async {
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
+                                  if (user == null) return;
+                                  if (primaryFacultyInfo != null) {
+                                    tempFollowed.remove(primaryFacultyInfo.id);
+                                  }
+                                  await FirebaseFirestore.instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .update({'followedFaculties': tempFollowed});
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context)
+                                      ..hideCurrentSnackBar()
+                                      ..showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Đã lưu danh sách khoa theo dõi',
+                                          ),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                  }
+                                },
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Lưu thay đổi',
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
@@ -666,6 +1005,10 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           return tsB.compareTo(tsA);
                         });
 
+                        if (activeSubTab == 'my_faculty' && primaryFacultyInfo == null) {
+                          return _buildEmptyFacultySetupCard(context, isDark, userFacultyStr);
+                        }
+
                         if (filteredDocs.isEmpty) {
                           return CustomScrollView(
                             slivers: [
@@ -771,6 +1114,117 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     return 0;
   }
 
+  /// Empty State khi User chưa chọn Khoa trong account
+  Widget _buildEmptyFacultySetupCard(
+    BuildContext context,
+    bool isDarkMode,
+    String? currentFaculty,
+  ) {
+    final Color cardColor =
+        isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color primaryTextColor =
+        isDarkMode ? Colors.white : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor =
+        isDarkMode ? Colors.white60 : const Color(0xFF667085);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+        child: Container(
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 420),
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor),
+            boxShadow: isDarkMode
+                ? const []
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.035),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5893D8).withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.school_outlined,
+                  size: 30,
+                  color: Color(0xFF5893D8),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Chưa thiết lập khoa',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                'Chọn khoa của bạn để nhận sự kiện và thông báo chính thức phù hợp.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  height: 1.5,
+                  color: secondaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: FilledButton.icon(
+                  onPressed: () => _showQuickFacultyPicker(context, currentFaculty),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF5893D8),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  label: const Text(
+                    'Thiết lập khoa',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Thanh chuyển đổi Sub-Tab lọc Khoa cho trang Events
   Widget _buildSubTabBar({
     required BuildContext context,
@@ -779,30 +1233,35 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     required List<String> followedFaculties,
     required String activeSubTab,
   }) {
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF101214)
+        : const Color(0xFFF8FAFC);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEAECF0);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF14171D) : const Color(0xFFF8FAFC),
-        border: Border(
-          bottom: BorderSide(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
-          ),
-        ),
+        color: backgroundColor,
+        border: Border(bottom: BorderSide(color: borderColor)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
             // 1. Tab Khoa của bạn
             _buildSubTabChip(
               id: 'my_faculty',
               label: primaryFacultyInfo != null
-                  ? 'Khoa của bạn (${primaryFacultyInfo.shortName})'
+                  ? 'Khoa của bạn · ${primaryFacultyInfo.shortName}'
                   : 'Khoa của bạn',
               icon: primaryFacultyInfo?.icon ?? Icons.school_rounded,
               isSelected: activeSubTab == 'my_faculty',
               isDarkMode: isDarkMode,
-              activeGradient: const [Color(0xFF059669), Color(0xFF047857)],
+              badgeText: primaryFacultyInfo == null ? 'Chưa chọn' : null,
               onTap: () => setState(() => _selectedSubTabId = 'my_faculty'),
             ),
 
@@ -818,7 +1277,6 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                   icon: facInfo.icon,
                   isSelected: activeSubTab == facInfo.id,
                   isDarkMode: isDarkMode,
-                  activeGradient: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
                   onTap: () => setState(() => _selectedSubTabId = facInfo.id),
                 ),
               );
@@ -827,39 +1285,50 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
             const SizedBox(width: 8),
 
             // 3. Nút Quản lý theo dõi Khoa
-            GestureDetector(
-              onTap: () => _showManageFollowedFacultiesModal(
-                context,
-                primaryFacultyInfo,
-                followedFaculties,
-              ),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white.withOpacity(0.06) : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.5),
-                  ),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () => _showManageFollowedFacultiesModal(
+                  context,
+                  primaryFacultyInfo,
+                  followedFaculties,
                 ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.add_circle_outline_rounded,
-                      size: 16,
-                      color: Color(0xFF8B5CF6),
-                    ),
-                    SizedBox(width: 6),
-                    Text(
-                      'Theo dõi Khoa',
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF8B5CF6),
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: borderColor),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 16,
+                        color: isDarkMode
+                            ? Colors.white60
+                            : const Color(0xFF667085),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 6),
+                      Text(
+                        'Theo dõi khoa',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF475467),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -875,406 +1344,678 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     required IconData icon,
     required bool isSelected,
     required bool isDarkMode,
-    required List<Color> activeGradient,
     required VoidCallback onTap,
+    String? badgeText,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: isSelected ? LinearGradient(colors: activeGradient) : null,
-          color: isSelected
-              ? null
-              : (isDarkMode ? Colors.white.withOpacity(0.06) : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : (isDarkMode ? Colors.white10 : const Color(0xFFCBD5E1)),
+    const Color activeColor = Color(0xFF5893D8);
+
+    final Color inactiveBackground = isDarkMode
+        ? Colors.white.withValues(alpha: 0.04)
+        : Colors.white;
+
+    final Color inactiveBorder = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color inactiveTextColor = isDarkMode
+        ? Colors.white70
+        : const Color(0xFF475467);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? activeColor : inactiveBackground,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isSelected ? activeColor : inactiveBorder,
+            ),
+            boxShadow: isSelected && !isDarkMode
+                ? [
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.16),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
+                : const [],
           ),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: activeGradient.first.withOpacity(0.35),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  )
-                ]
-              : null,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected
-                  ? Colors.white
-                  : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 12.5,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                color: isSelected
-                    ? Colors.white
-                    : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : inactiveTextColor,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 11.5,
+                  fontWeight:
+                      isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? Colors.white : inactiveTextColor,
+                ),
+              ),
+              if (badgeText != null) ...[
+                const SizedBox(width: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : const Color(0xFFF2F4F7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF667085),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildEventCard(
-    BuildContext context,
-    String docId,
-    Map<String, dynamic> data,
-    User? user,
-    bool isDark,
-  ) {
-    final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
-    final String eventDateText = (data['eventDateText'] ?? data['date'] ?? 'Xem chi tiết bài viết').toString();
-    final String locationName = (data['locationName'] ?? '').toString();
-    final String locationAddress = (data['locationAddress'] ?? '').toString();
+      BuildContext context,
+      String docId,
+      Map<String, dynamic> data,
+      User? user,
+      bool isDark,
+      ) {
+    final String eventName =
+    (data['eventName'] ??
+        data['title'] ??
+        'Sự kiện sinh viên')
+        .toString();
+
+    final String eventDateText =
+    (data['eventDateText'] ??
+        data['date'] ??
+        'Xem chi tiết bài viết')
+        .toString();
+
+    final String locationName =
+    (data['locationName'] ?? '').toString();
+
+    final String locationAddress =
+    (data['locationAddress'] ?? '').toString();
+
     final List<String> locDisplayParts = [];
-    final String trimmedLocName = locationName.trim();
-    final String trimmedLocAddr = locationAddress.trim();
-    if (trimmedLocName.isNotEmpty) locDisplayParts.add(trimmedLocName);
-    if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) locDisplayParts.add(trimmedLocAddr);
-    final String locationDisplay = locDisplayParts.join(' - ');
-    final String facultyDisplay = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
 
-    final String? thumbnailUrl = data['thumbnailUrl'] ??
-        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty ? data['imageUrls'][0] : null);
+    final String trimmedLocName =
+    locationName.trim();
 
-    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
-    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
-    final String link = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+    final String trimmedLocAddr =
+    locationAddress.trim();
 
-    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
-    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
-    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
-    if (displayContact.isNotEmpty && !displayContact.toLowerCase().startsWith('liên hệ')) {
-      displayContact = 'Liên hệ: $displayContact';
+    if (trimmedLocName.isNotEmpty) {
+      locDisplayParts.add(trimmedLocName);
     }
 
-    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
+    if (trimmedLocAddr.isNotEmpty &&
+        trimmedLocAddr != trimmedLocName) {
+      locDisplayParts.add(trimmedLocAddr);
+    }
+
+    final String locationDisplay =
+    locDisplayParts.join(' - ');
+
+    final String facultyDisplay =
+    (data['facultyName'] ??
+        data['department'] ??
+        'Khoa HCMUS')
+        .toString();
+
+    final String? thumbnailUrl =
+        data['thumbnailUrl'] ??
+            (
+                data['imageUrls'] != null &&
+                    (data['imageUrls'] as List).isNotEmpty
+                    ? data['imageUrls'][0]
+                    : null
+            );
+
+    final String onlineUrl =
+    (data['onlineUrl'] ??
+        data['onlineLink'] ??
+        '')
+        .toString()
+        .trim();
+
+    final bool isOnline =
+        data['isOnline'] == true ||
+            onlineUrl.isNotEmpty;
+
+    final String link =
+    (data['sourceArticleUrl'] ??
+        data['registrationUrl'] ??
+        data['link'] ??
+        onlineUrl)
+        .toString();
+
+    final String rawContact =
+    (data['contact'] ??
+        data['contactInfo'] ??
+        '')
+        .toString()
+        .trim();
+
+    final String rawOrganizer =
+    (data['organizer'] ??
+        data['organizerName'] ??
+        '')
+        .toString()
+        .trim();
+
+    String displayContact =
+    rawContact.isNotEmpty
+        ? rawContact
+        : rawOrganizer;
+
+    if (displayContact.isNotEmpty &&
+        !displayContact
+            .toLowerCase()
+            .startsWith('liên hệ')) {
+      displayContact =
+      'Liên hệ: $displayContact';
+    }
+
+    final String effectiveLink =
+    onlineUrl.isNotEmpty
+        ? onlineUrl
+        : link;
+
+    final Color cardColor =
+    _surfaceColor(isDark);
+
+    final Color borderColor =
+    _borderColor(isDark);
+
+    final Color primaryTextColor =
+    _primaryText(isDark);
+
+    final Color secondaryTextColor =
+    _secondaryText(isDark);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(
+        bottom: 14,
+      ),
       decoration: BoxDecoration(
-        color: _surfaceColor(isDark),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: _borderColor(isDark)),
-        boxShadow: _shadow(isDark),
+        color: cardColor,
+        borderRadius:
+        BorderRadius.circular(18),
+        border: Border.all(
+          color: borderColor,
+        ),
+        boxShadow: isDark
+            ? const []
+            : [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.035,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius:
+        BorderRadius.circular(18),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: effectiveLink.isNotEmpty ? () => _launchURL(effectiveLink) : null,
+            onTap: effectiveLink.isNotEmpty
+                ? () {
+              _launchURL(effectiveLink);
+            }
+                : null,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment:
+              CrossAxisAlignment.start,
               children: [
-                // Top Image Header
                 Stack(
                   children: [
-                    thumbnailUrl != null && thumbnailUrl.isNotEmpty
-                        ? Image.network(
-                            thumbnailUrl,
-                            height: 160,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) => Image.asset(
-                              'assets/images/news.png',
-                              height: 160,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
-                          )
-                        : Image.asset(
+                    if (thumbnailUrl != null &&
+                        thumbnailUrl.isNotEmpty)
+                      Image.network(
+                        thumbnailUrl,
+                        height: 154,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder:
+                            (_, __, ___) {
+                          return Image.asset(
                             'assets/images/news.png',
-                            height: 160,
+                            height: 154,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                          ),
+                          );
+                        },
+                      )
+                    else
+                      Image.asset(
+                        'assets/images/news.png',
+                        height: 154,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+
                     Positioned.fill(
-                      child: Container(
+                      child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
+                            begin:
+                            Alignment.topCenter,
+                            end:
+                            Alignment.bottomCenter,
                             colors: [
-                              Colors.black.withOpacity(0.15),
-                              Colors.black.withOpacity(0.5),
+                              Colors.transparent,
+                              Colors.black.withValues(
+                                alpha: 0.34,
+                              ),
                             ],
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
                           ),
                         ),
                       ),
                     ),
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: primaryBlue,
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
-                                  blurRadius: 6,
-                                )
-                              ],
+
+                    if (isOnline)
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Container(
+                          padding:
+                          const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black
+                                .withValues(
+                              alpha: 0.48,
                             ),
-                            child: Row(
-                              children: [
-                                const Icon(Icons.school_rounded, size: 14, color: Colors.white),
-                                const SizedBox(width: 6),
-                                Text(
-                                  facultyDisplay,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 11.5,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
+                            borderRadius:
+                            BorderRadius.circular(
+                              10,
+                            ),
+                            border: Border.all(
+                              color: Colors.white
+                                  .withValues(
+                                alpha: 0.22,
+                              ),
                             ),
                           ),
-                          if (isOnline) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF8B5CF6),
-                                borderRadius: BorderRadius.circular(20),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 6,
-                                  )
-                                ],
+                          child: const Row(
+                            mainAxisSize:
+                            MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons
+                                    .videocam_outlined,
+                                size: 13,
+                                color: Colors.white,
                               ),
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.videocam_rounded, size: 14, color: Colors.white),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'Online',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
+                              SizedBox(width: 4),
+                              Text(
+                                'Online',
+                                style: TextStyle(
+                                  fontFamily:
+                                  'Encode Sans Expanded',
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight:
+                                  FontWeight.w600,
+                                ),
                               ),
-                            ),
-                          ],
-                        ],
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
                   ],
                 ),
 
-                // Content details
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding:
+                  const EdgeInsets.fromLTRB(
+                    16,
+                    15,
+                    16,
+                    15,
+                  ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment:
+                    CrossAxisAlignment.start,
                     children: [
                       Text(
                         eventName,
                         maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                        overflow:
+                        TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Nunito',
+                          fontWeight:
+                          FontWeight.w700,
                           fontSize: 17,
                           height: 1.3,
-                          color: _primaryText(isDark),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _secondarySurface(isDark),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: _borderColor(isDark)),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.access_time_filled_rounded,
-                                  size: 16,
-                                  color: primaryBlue,
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: Text(
-                                    eventDateText,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                      color: _primaryText(isDark),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (locationDisplay.isNotEmpty || isOnline) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
-                                    size: 16,
-                                    color: isOnline ? const Color(0xFF8B5CF6) : primaryBlue,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      locationDisplay.isNotEmpty
-                                          ? locationDisplay
-                                          : (isOnline ? 'Sự kiện diễn ra Online' : 'Chưa cập nhật địa điểm'),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: _secondaryText(isDark),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                            if (displayContact.isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  const Icon(
-                                    Icons.contact_phone_rounded,
-                                    size: 16,
-                                    color: primaryBlue,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      displayContact,
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: _secondaryText(isDark),
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ],
+                          color: primaryTextColor,
                         ),
                       ),
 
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 13),
 
-                      // Action Row: "Tham gia Online", "Xem bài gốc", "Quan tâm"
+                      _buildEventInfoRow(
+                        icon:
+                        Icons.school_outlined,
+                        text: facultyDisplay,
+                        iconColor: primaryBlue,
+                        textColor:
+                        secondaryTextColor,
+                      ),
+
+                      const SizedBox(height: 9),
+
+                      _buildEventInfoRow(
+                        icon:
+                        Icons.access_time_rounded,
+                        text: eventDateText,
+                        iconColor: primaryBlue,
+                        textColor:
+                        primaryTextColor,
+                        fontWeight:
+                        FontWeight.w600,
+                      ),
+
+                      if (locationDisplay.isNotEmpty ||
+                          isOnline) ...[
+                        const SizedBox(height: 9),
+                        _buildEventInfoRow(
+                          icon: isOnline
+                              ? Icons
+                              .videocam_outlined
+                              : Icons
+                              .location_on_outlined,
+                          text: locationDisplay
+                              .isNotEmpty
+                              ? locationDisplay
+                              : 'Trực tuyến',
+                          iconColor:
+                          primaryBlue,
+                          textColor:
+                          secondaryTextColor,
+                        ),
+                      ],
+
+                      if (displayContact
+                          .isNotEmpty) ...[
+                        const SizedBox(height: 9),
+                        _buildEventInfoRow(
+                          icon: Icons
+                              .contact_phone_outlined,
+                          text: displayContact,
+                          iconColor:
+                          primaryBlue,
+                          textColor:
+                          secondaryTextColor,
+                        ),
+                      ],
+
+                      const SizedBox(height: 15),
+
                       Row(
                         children: [
-                          if (onlineUrl.isNotEmpty)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _launchURL(onlineUrl),
-                                icon: const Icon(Icons.videocam_rounded, size: 16),
-                                label: const Text(
-                                  'Tham gia Online',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: const Color(0xFF8B5CF6),
-                                  side: const BorderSide(color: Color(0xFF8B5CF6)),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (onlineUrl.isNotEmpty) const SizedBox(width: 10),
-
-                          if (link.isNotEmpty && link != onlineUrl)
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => _launchURL(link),
-                                icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                                label: const Text(
-                                  'Xem bài gốc',
-                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: primaryBlue,
-                                  side: const BorderSide(color: primaryBlue),
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (link.isNotEmpty && link != onlineUrl) const SizedBox(width: 10),
-
-                          // Nút Quan tâm
                           Expanded(
-                            child: StreamBuilder<DocumentSnapshot>(
+                            child: StreamBuilder<
+                                DocumentSnapshot>(
                               stream: user != null
-                                  ? FirebaseFirestore.instance
-                                      .collection('users')
-                                      .doc(user.uid)
-                                      .collection('interested_events')
-                                      .doc(docId)
-                                      .snapshots()
+                                  ? FirebaseFirestore
+                                  .instance
+                                  .collection(
+                                'users',
+                              )
+                                  .doc(user.uid)
+                                  .collection(
+                                'interested_events',
+                              )
+                                  .doc(docId)
+                                  .snapshots()
                                   : null,
-                              builder: (context, favSnapshot) {
-                                bool isInterested =
-                                    favSnapshot.hasData && favSnapshot.data!.exists;
+                              builder:
+                                  (context, favSnapshot) {
+                                final bool
+                                isInterested =
+                                    favSnapshot.hasData &&
+                                        favSnapshot
+                                            .data!
+                                            .exists;
 
-                                return ElevatedButton.icon(
-                                  onPressed: () => _toggleInterest(context, docId, data),
+                                return FilledButton.icon(
+                                  onPressed: () {
+                                    _toggleInterest(
+                                      context,
+                                      docId,
+                                      data,
+                                    );
+                                  },
                                   icon: Icon(
-                                    isInterested ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                                    size: 18,
-                                    color: Colors.white,
+                                    isInterested
+                                        ? Icons
+                                        .favorite_rounded
+                                        : Icons
+                                        .favorite_border_rounded,
+                                    size: 17,
                                   ),
                                   label: Text(
-                                    isInterested ? 'Đã quan tâm' : 'Quan tâm',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                      color: Colors.white,
+                                    isInterested
+                                        ? 'Đã quan tâm'
+                                        : 'Quan tâm',
+                                    style:
+                                    const TextStyle(
+                                      fontFamily:
+                                      'Encode Sans Expanded',
+                                      fontSize: 12.5,
+                                      fontWeight:
+                                      FontWeight.w600,
                                     ),
                                   ),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: isInterested ? const Color(0xFFEF4444) : primaryBlue,
+                                  style:
+                                  FilledButton.styleFrom(
+                                    backgroundColor:
+                                    isInterested
+                                        ? primaryBlue
+                                        .withValues(
+                                      alpha:
+                                      isDark
+                                          ? 0.20
+                                          : 0.12,
+                                    )
+                                        : primaryBlue,
+                                    foregroundColor:
+                                    isInterested
+                                        ? primaryBlue
+                                        : Colors.white,
                                     elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 10),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                    minimumSize:
+                                    const Size(
+                                      double.infinity,
+                                      42,
+                                    ),
+                                    shape:
+                                    RoundedRectangleBorder(
+                                      borderRadius:
+                                      BorderRadius
+                                          .circular(
+                                        12,
+                                      ),
                                     ),
                                   ),
                                 );
                               },
                             ),
                           ),
+
+                          if (onlineUrl.isNotEmpty ||
+                              (
+                                  link.isNotEmpty &&
+                                      link != onlineUrl
+                              )) ...[
+                            const SizedBox(width: 9),
+
+                            PopupMenuButton<String>(
+                              tooltip:
+                              'Thêm tùy chọn',
+                              color:
+                              _surfaceColor(isDark),
+                              surfaceTintColor:
+                              Colors.transparent,
+                              shape:
+                              RoundedRectangleBorder(
+                                borderRadius:
+                                BorderRadius.circular(
+                                  14,
+                                ),
+                              ),
+                              onSelected: (value) {
+                                if (value ==
+                                    'join_online') {
+                                  _launchURL(
+                                    onlineUrl,
+                                  );
+                                } else if (value ==
+                                    'open_source') {
+                                  _launchURL(link);
+                                }
+                              },
+                              itemBuilder:
+                                  (context) => [
+                                if (onlineUrl
+                                    .isNotEmpty)
+                                  PopupMenuItem<
+                                      String>(
+                                    value:
+                                    'join_online',
+                                    height: 42,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons
+                                              .videocam_outlined,
+                                          size: 18,
+                                          color:
+                                          secondaryTextColor,
+                                        ),
+                                        const SizedBox(
+                                          width: 10,
+                                        ),
+                                        Text(
+                                          'Tham gia trực tuyến',
+                                          style:
+                                          TextStyle(
+                                            fontFamily:
+                                            'Encode Sans Expanded',
+                                            fontSize: 12,
+                                            color:
+                                            primaryTextColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                if (link.isNotEmpty &&
+                                    link != onlineUrl)
+                                  PopupMenuItem<
+                                      String>(
+                                    value:
+                                    'open_source',
+                                    height: 42,
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          Icons
+                                              .open_in_new_rounded,
+                                          size: 18,
+                                          color:
+                                          secondaryTextColor,
+                                        ),
+                                        const SizedBox(
+                                          width: 10,
+                                        ),
+                                        Text(
+                                          'Xem bài gốc',
+                                          style:
+                                          TextStyle(
+                                            fontFamily:
+                                            'Encode Sans Expanded',
+                                            fontSize: 12,
+                                            color:
+                                            primaryTextColor,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                              child: Container(
+                                width: 42,
+                                height: 42,
+                                alignment:
+                                Alignment.center,
+                                decoration:
+                                BoxDecoration(
+                                  color: isDark
+                                      ? Colors.white
+                                      .withValues(
+                                    alpha: 0.06,
+                                  )
+                                      : const Color(
+                                    0xFFF5F7FA,
+                                  ),
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                    12,
+                                  ),
+                                  border: Border.all(
+                                    color: borderColor,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons
+                                      .more_horiz_rounded,
+                                  size: 21,
+                                  color:
+                                  secondaryTextColor,
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ],
@@ -1285,6 +2026,47 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEventInfoRow({
+    required IconData icon,
+    required String text,
+    required Color iconColor,
+    required Color textColor,
+    FontWeight fontWeight = FontWeight.w400,
+  }) {
+    return Row(
+      crossAxisAlignment:
+      CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(
+            top: 1,
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: iconColor,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily:
+              'Encode Sans Expanded',
+              fontSize: 12.5,
+              height: 1.4,
+              fontWeight: fontWeight,
+              color: textColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -711,7 +711,8 @@ class ActivityService {
 
           if (isUserMatch) {
             final notiRef = _firestore.collection('notifications').doc();
-            String bodyStr = 'Sự kiện "$title" từ Khoa $facultyName vừa được Ban tổ chức cập nhật thông tin.';
+            final String cleanFaculty = facultyName.toLowerCase().startsWith('khoa ') ? facultyName : 'Khoa $facultyName';
+            String bodyStr = 'Sự kiện "$title" từ $cleanFaculty vừa được Ban tổ chức cập nhật thông tin.';
             if (eventDateTextStr.isNotEmpty) bodyStr += ' Thời gian: $eventDateTextStr';
 
             batch.set(notiRef, {

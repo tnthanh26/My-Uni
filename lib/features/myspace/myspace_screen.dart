@@ -921,7 +921,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     }
     return SingleChildScrollView(
       controller: _dashboardScrollController,
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: [
@@ -1275,7 +1275,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     return SingleChildScrollView(
       controller: _timetableScrollController,
-      physics: const BouncingScrollPhysics(),
+      physics: const ClampingScrollPhysics(),
       child: Container(
         padding: const EdgeInsets.only(top: 12, bottom: 24, left: 12, right: 16),
         child: Stack(
