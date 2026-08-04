@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -285,10 +287,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       if (result == null || result.files.isEmpty) return;
 
       final platformFile = result.files.first;
-      if (platformFile.size > 10 * 1024 * 1024) {
+      // Firestore document max limit is 1MB (~750KB binary -> ~1MB Base64)
+      if (platformFile.size > 750 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vui lòng chọn tệp nhỏ hơn 10MB')),
+            const SnackBar(content: Text('Vui lòng chọn tệp nhỏ hơn 750KB để gửi đính kèm')),
+          );
+        }
+        return;
+      }
+
+      Uint8List? bytes = platformFile.bytes;
+      if (bytes == null && platformFile.path != null) {
+        final file = File(platformFile.path!);
+        bytes = await file.readAsBytes();
+      }
+
+      if (bytes == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Không thể đọc dữ liệu tệp đính kèm')),
           );
         }
         return;
@@ -301,6 +319,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           ? '${(platformFile.size / (1024 * 1024)).toStringAsFixed(1)} MB'
           : '$sizeKb KB';
 
+      final base64Data = base64Encode(bytes);
+
       await _chatService.sendMessage(
         widget.roomId,
         '',
@@ -308,6 +328,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
           'fileName': fileName,
           'fileSize': fileSize,
           'extension': extension,
+          'fileData': base64Data,
         },
       );
       _scrollToBottom();
