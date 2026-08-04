@@ -702,99 +702,153 @@ class _OfficialTabState extends State<OfficialTab> {
     required FacultyInfo? primaryFacultyInfo,
     required List<String> followedFaculties,
   }) {
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF101214)
+        : const Color(0xFFF8FAFC);
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFEAECF0);
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        10,
+        16,
+        10,
+      ),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF14171D) : const Color(0xFFF8FAFC),
+        color: backgroundColor,
         border: Border(
           bottom: BorderSide(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+            color: borderColor,
           ),
         ),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         child: Row(
           children: [
-            // 1. Tab Toàn trường
             _buildSubTabChip(
               id: 'all',
               label: 'Toàn trường',
               icon: Icons.apartment_rounded,
               isSelected: _selectedSubTabId == 'all',
               isDarkMode: isDarkMode,
-              activeGradient: const [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-              onTap: () => setState(() => _selectedSubTabId = 'all'),
+              activeGradient: const [
+                Color(0xFF5893D8),
+                Color(0xFF5893D8),
+              ],
+              onTap: () {
+                setState(() {
+                  _selectedSubTabId = 'all';
+                });
+              },
             ),
             const SizedBox(width: 8),
-
-            // 2. Tab Khoa của bạn
             _buildSubTabChip(
               id: 'my_faculty',
               label: primaryFacultyInfo != null
-                  ? 'Khoa của bạn (${primaryFacultyInfo.shortName})'
+                  ? 'Khoa của bạn · ${primaryFacultyInfo.shortName}'
                   : 'Khoa của bạn',
-              icon: primaryFacultyInfo?.icon ?? Icons.school_rounded,
-              isSelected: _selectedSubTabId == 'my_faculty',
+              icon: primaryFacultyInfo?.icon ??
+                  Icons.school_rounded,
+              isSelected:
+              _selectedSubTabId == 'my_faculty',
               isDarkMode: isDarkMode,
-              activeGradient: const [Color(0xFF059669), Color(0xFF047857)],
-              badgeText: primaryFacultyInfo == null ? 'Chưa set' : null,
-              onTap: () => setState(() => _selectedSubTabId = 'my_faculty'),
+              activeGradient: const [
+                Color(0xFF5893D8),
+                Color(0xFF5893D8),
+              ],
+              badgeText:
+              primaryFacultyInfo == null ? 'Chưa chọn' : null,
+              onTap: () {
+                setState(() {
+                  _selectedSubTabId = 'my_faculty';
+                });
+              },
             ),
-
-            // 3. Các Khoa đang theo dõi thêm
             ...followedFaculties.map((facId) {
-              final facInfo = FacultyHelper.findById(facId);
-              if (facInfo == null) return const SizedBox.shrink();
+              final facInfo =
+              FacultyHelper.findById(facId);
+
+              if (facInfo == null) {
+                return const SizedBox.shrink();
+              }
+
               return Padding(
                 padding: const EdgeInsets.only(left: 8),
                 child: _buildSubTabChip(
                   id: facInfo.id,
                   label: facInfo.shortName,
                   icon: facInfo.icon,
-                  isSelected: _selectedSubTabId == facInfo.id,
+                  isSelected:
+                  _selectedSubTabId == facInfo.id,
                   isDarkMode: isDarkMode,
-                  activeGradient: const [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                  onTap: () => setState(() => _selectedSubTabId = facInfo.id),
+                  activeGradient: const [
+                    Color(0xFF5893D8),
+                    Color(0xFF5893D8),
+                  ],
+                  onTap: () {
+                    setState(() {
+                      _selectedSubTabId = facInfo.id;
+                    });
+                  },
                 ),
               );
             }),
-
             const SizedBox(width: 8),
-
-            // 4. Nút quản lý theo dõi Khoa
-            GestureDetector(
-              onTap: () => _showManageFollowedFacultiesModal(
-                context,
-                primaryFacultyInfo,
-                followedFaculties,
-              ),
-              child: Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.white.withOpacity(0.06)
-                      : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF8B5CF6).withOpacity(0.5),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(14),
+                onTap: () {
+                  _showManageFollowedFacultiesModal(
+                    context,
+                    primaryFacultyInfo,
+                    followedFaculties,
+                  );
+                },
+                child: Container(
+                  height: 38,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
                   ),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.tune_rounded, size: 14, color: Color(0xFF8B5CF6)),
-                    SizedBox(width: 4),
-                    Text(
-                      'Theo dõi khoa',
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF8B5CF6),
-                      ),
+                  decoration: BoxDecoration(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: borderColor,
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.tune_rounded,
+                        size: 16,
+                        color: isDarkMode
+                            ? Colors.white60
+                            : const Color(0xFF667085),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Theo dõi khoa',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF475467),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -814,76 +868,107 @@ class _OfficialTabState extends State<OfficialTab> {
     required VoidCallback onTap,
     String? badgeText,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          gradient: isSelected ? LinearGradient(colors: activeGradient) : null,
-          color: isSelected
-              ? null
-              : (isDarkMode
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected
-                ? Colors.transparent
-                : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+    const Color activeColor = Color(0xFF5893D8);
+
+    final Color inactiveBackground = isDarkMode
+        ? Colors.white.withValues(alpha: 0.04)
+        : Colors.white;
+
+    final Color inactiveBorder = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color inactiveTextColor = isDarkMode
+        ? Colors.white70
+        : const Color(0xFF475467);
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOut,
+          height: 38,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
           ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: activeGradient.first.withOpacity(0.35),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            )
-          ]
-              : [],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
+          decoration: BoxDecoration(
+            color: isSelected
+                ? activeColor
+                : inactiveBackground,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
               color: isSelected
-                  ? Colors.white
-                  : (isDarkMode ? Colors.white70 : const Color(0xFF475569)),
+                  ? activeColor
+                  : inactiveBorder,
             ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                color: isSelected
-                    ? Colors.white
-                    : (isDarkMode ? Colors.white70 : const Color(0xFF334155)),
-              ),
-            ),
-            if (badgeText != null) ...[
-              const SizedBox(width: 6),
-              Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.amber[700],
-                  borderRadius: BorderRadius.circular(10),
+            boxShadow: isSelected && !isDarkMode
+                ? [
+              BoxShadow(
+                color: activeColor.withValues(
+                  alpha: 0.16,
                 ),
-                child: Text(
-                  badgeText,
-                  style: const TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ]
-          ],
+                : const [],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected
+                    ? Colors.white
+                    : inactiveTextColor,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 11.5,
+                  fontWeight: isSelected
+                      ? FontWeight.w700
+                      : FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : inactiveTextColor,
+                ),
+              ),
+              if (badgeText != null) ...[
+                const SizedBox(width: 7),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.white.withValues(alpha: 0.20)
+                        : const Color(0xFFF2F4F7),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? Colors.white
+                          : const Color(0xFF667085),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -891,86 +976,127 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// Empty State khi User chưa chọn Khoa trong account
   Widget _buildEmptyFacultySetupCard(
-      BuildContext context, bool isDarkMode, String? currentFaculty) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
+      BuildContext context,
+      bool isDarkMode,
+      String? currentFaculty,
+      ) {
+    final Color cardColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 32,
+        ),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            maxWidth: 420,
+          ),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: cardColor,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+              color: borderColor,
             ),
             boxShadow: isDarkMode
-                ? []
+                ? const []
                 : [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              )
+                color: Colors.black.withValues(
+                  alpha: 0.035,
+                ),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
             ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.all(18),
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5893D8).withOpacity(0.12),
+                  color: const Color(0xFF5893D8)
+                      .withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.school_rounded,
-                  size: 48,
+                  Icons.school_outlined,
+                  size: 30,
                   color: Color(0xFF5893D8),
                 ),
               ),
               const SizedBox(height: 16),
               Text(
-                'Chưa thiết lập Khoa',
+                'Chưa thiết lập khoa',
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
+                  fontFamily: 'Nunito',
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+                  fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 7),
               Text(
-                'Vui lòng cập nhật Khoa trong tài khoản của bạn để xem tin tức & thông báo chính thức từ Khoa.',
+                'Chọn khoa của bạn để nhận tin tức và thông báo chính thức phù hợp.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
-                  fontSize: 13,
+                  fontSize: 12.5,
                   height: 1.5,
-                  color: isDarkMode ? Colors.white60 : const Color(0xFF64748B),
+                  color: secondaryTextColor,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () =>
-                      _showQuickFacultyPicker(context, currentFaculty),
-                  icon: const Icon(Icons.edit_rounded, size: 18),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF5893D8),
+                height: 44,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    _showQuickFacultyPicker(
+                      context,
+                      currentFaculty,
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.edit_outlined,
+                    size: 18,
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                    const Color(0xFF5893D8),
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
                     elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+                    ),
                   ),
                   label: const Text(
-                    'Thiết lập Khoa ngay',
+                    'Thiết lập khoa',
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -984,73 +1110,133 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// Thông báo khi Khoa của user chưa có kênh tin tự động (vd: Khoa Môi trường)
   Widget _buildFacultyNotActiveCard(
-      BuildContext context, bool isDarkMode, String facultyName) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Center(
+      BuildContext context,
+      bool isDarkMode,
+      String facultyName,
+      ) {
+    final Color cardColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 32,
+        ),
         child: Container(
-          padding: const EdgeInsets.all(24),
+          width: double.infinity,
+          constraints: const BoxConstraints(
+            maxWidth: 420,
+          ),
+          padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-            borderRadius: BorderRadius.circular(24),
+            color: cardColor,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+              color: borderColor,
             ),
+            boxShadow: isDarkMode
+                ? const []
+                : [
+              BoxShadow(
+                color: Colors.black.withValues(
+                  alpha: 0.035,
+                ),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 44,
-                color: Color(0xFF8B5CF6),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                '$facultyName',
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  fontSize: 17,
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : const Color(0xFF1E293B),
+              Container(
+                width: 64,
+                height: 64,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF5893D8)
+                      .withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.info_outline_rounded,
+                  size: 30,
+                  color: Color(0xFF5893D8),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 16),
               Text(
-                'Khoa của bạn hiện chưa được tích hợp kênh tin tức riêng. Bạn có thể chọn theo dõi tin tức các Khoa khác (CNTT, Hóa học, Vật lý) bên dưới.',
+                facultyName,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
+                ),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                'Khoa này chưa có kênh tin tức riêng trên MyUni. Bạn vẫn có thể theo dõi tin từ các khoa khác.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
-                  fontSize: 13,
+                  fontSize: 12.5,
                   height: 1.5,
-                  color: isDarkMode ? Colors.white60 : const Color(0xFF64748B),
+                  color: secondaryTextColor,
                 ),
               ),
               const SizedBox(height: 18),
               SizedBox(
                 width: double.infinity,
-                height: 46,
-                child: ElevatedButton.icon(
-                  onPressed: () => _showManageFollowedFacultiesModal(
-                    context,
-                    FacultyHelper.findFacultyByAccountString(facultyName),
-                    [],
+                height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    _showManageFollowedFacultiesModal(
+                      context,
+                      FacultyHelper
+                          .findFacultyByAccountString(
+                        facultyName,
+                      ),
+                      [],
+                    );
+                  },
+                  icon: const Icon(
+                    Icons.tune_rounded,
+                    size: 18,
                   ),
-                  icon: const Icon(Icons.tune_rounded, size: 18),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF8B5CF6),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor:
+                    const Color(0xFF5893D8),
+                    side: const BorderSide(
+                      color: Color(0xFF5893D8),
                     ),
                     elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius:
+                      BorderRadius.circular(12),
+                    ),
                   ),
                   label: const Text(
-                    'Chọn Khoa khác để theo dõi',
+                    'Chọn khoa khác để theo dõi',
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
