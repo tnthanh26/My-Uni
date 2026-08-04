@@ -55,14 +55,14 @@ class ChatService {
 
       if (myDoc != null && myDoc.exists) {
         final myData = myDoc.data() as Map<String, dynamic>? ?? {};
-        myName = myData['displayName'] ?? myData['name'] ?? myName;
-        myPhoto = myData['photoURL'] ?? myData['avatar'] ?? myPhoto;
+        myName = myData['displayName'] ?? myData['name'] ?? myData['username'] ?? myName;
+        myPhoto = myData['photoURL'] ?? myData['avatar'] ?? myData['authorAvatar'] ?? myData['avatarUrl'] ?? myData['userAvatar'] ?? myPhoto;
       }
 
       if (targetDoc != null && targetDoc.exists) {
         final targetData = targetDoc.data() as Map<String, dynamic>? ?? {};
-        resolvedTargetName = targetData['displayName'] ?? targetData['name'] ?? resolvedTargetName;
-        resolvedTargetPhoto = targetData['photoURL'] ?? targetData['avatar'] ?? resolvedTargetPhoto;
+        resolvedTargetName = targetData['displayName'] ?? targetData['name'] ?? targetData['username'] ?? resolvedTargetName;
+        resolvedTargetPhoto = targetData['photoURL'] ?? targetData['avatar'] ?? targetData['authorAvatar'] ?? targetData['avatarUrl'] ?? targetData['userAvatar'] ?? resolvedTargetPhoto;
       }
 
       final participantNames = {
@@ -81,11 +81,11 @@ class ChatService {
           participants: [myUid, cleanTargetId],
           participantNames: participantNames,
           participantPhotos: participantPhotos,
-          lastMessage: 'Đã bắt đầu cuộc trò chuyện',
-          lastMessageSenderId: myUid,
-          lastMessageTime: DateTime.now(),
+          lastMessage: '',
+          lastMessageSenderId: '',
+          lastMessageTime: null,
           unreadCounts: {myUid: 0, cleanTargetId: 0},
-          updatedAt: DateTime.now(),
+          updatedAt: null,
         );
 
         await roomRef.set(newRoom.toMap(), SetOptions(merge: true));
@@ -93,7 +93,6 @@ class ChatService {
         await roomRef.set({
           'participantNames': participantNames,
           'participantPhotos': participantPhotos,
-          'updatedAt': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
       }
     } catch (e) {
@@ -115,8 +114,20 @@ class ChatService {
         .map((snapshot) {
       final list = snapshot.docs.map((doc) => ChatRoom.fromFirestore(doc)).toList();
       list.sort((a, b) {
-        final timeA = a.updatedAt ?? a.lastMessageTime ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final timeB = b.updatedAt ?? b.lastMessageTime ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bool aHasMsg = a.lastMessage.isNotEmpty &&
+            a.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
+            a.lastMessageTime != null;
+        final bool bHasMsg = b.lastMessage.isNotEmpty &&
+            b.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
+            b.lastMessageTime != null;
+
+        // Các phòng đã có tin nhắn thực sự luôn xếp TRÊN các phòng chưa chat chữ nào
+        if (aHasMsg && !bHasMsg) return -1;
+        if (!aHasMsg && bHasMsg) return 1;
+
+        // Sắp xếp theo thời gian tin nhắn mới nhất
+        final timeA = a.lastMessageTime ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final timeB = b.lastMessageTime ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         return timeB.compareTo(timeA);
       });
       return list;

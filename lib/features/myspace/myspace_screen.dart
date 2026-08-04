@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import './models/myspace_models.dart';
 import 'campus_data.dart';
 import 'create_deadlines_page.dart';
@@ -2607,6 +2606,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     await _firebaseService.deleteSchedule(id);
   }
 
+  Color getMySpaceColor(Color color) {
+    const mapping = {
+      0xFF039BE5: Color(0xFF5FAFD8),
+      0xFFE67C73: Color(0xFFD99A93),
+      0xFF33B679: Color(0xFF73C29A),
+      0xFF8E24AA: Color(0xFF9C78BC),
+      0xFFF4511E: Color(0xFFD98A68),
+      0xFFF6BF26: Color(0xFFD9C36B),
+      0xFF7986CB: Color(0xFF97A3D6),
+    };
+
+    return mapping[color.toARGB32()] ?? color;
+  }
+
   Widget _buildScheduleCardFigma(StudyClass c) { // Thay đổi tham số truyền vào là StudyClass
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
@@ -2628,7 +2641,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               Container(
                 width: 10,
                 decoration: BoxDecoration(
-                  color: c.color,
+                  color: getMySpaceColor(c.color),
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(8),
                     bottomLeft: Radius.circular(8),

@@ -2081,6 +2081,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       Expanded(
                         child: Text(
                           data['fileName'] ?? 'document.pdf',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.w600,

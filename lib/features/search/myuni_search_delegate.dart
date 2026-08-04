@@ -1555,6 +1555,8 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                     const SizedBox(height: 4),
                     Text(
                       'Tệp: ${data['fileName']}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
                         color: _secondaryText(isDarkMode),

@@ -26,8 +26,9 @@ class ChatBubble extends StatelessWidget {
   Future<void> _handleOpenFile(
     BuildContext context,
     String base64Data,
-    String fileName,
-  ) async {
+    String fileName, {
+    String extension = '',
+  }) async {
     if (base64Data.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -45,18 +46,32 @@ class ChatBubble extends StatelessWidget {
         ),
       );
 
+      // Làm sạch dữ liệu Base64 nếu có tiền tố data URI
+      String cleanBase64 = base64Data.trim();
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last.trim();
+      }
+
+      // Ghép extension vào fileName nếu tên file chưa có đuôi mở rộng
+      String safeFileName = fileName.trim();
+      final cleanExt = extension.toLowerCase().replaceAll('.', '').trim();
+      if (cleanExt.isNotEmpty && !safeFileName.toLowerCase().endsWith('.$cleanExt')) {
+        safeFileName = '$safeFileName.$cleanExt';
+      }
+      safeFileName = safeFileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+
       final tempDir = await getTemporaryDirectory();
-      final filePath = '${tempDir.path}/$fileName';
+      final filePath = '${tempDir.path}/$safeFileName';
       final file = File(filePath);
 
-      await file.writeAsBytes(base64Decode(base64Data));
+      await file.writeAsBytes(base64Decode(cleanBase64));
       final result = await OpenFilex.open(filePath);
 
       if (result.type != ResultType.done && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              "Không có ứng dụng để mở loại tệp này: ${result.message}",
+              "Không thể mở tệp (${result.message}). Vui lòng kiểm tra ứng dụng đọc tệp trên thiết bị.",
             ),
           ),
         );
@@ -325,7 +340,16 @@ class ChatBubble extends StatelessWidget {
       ) {
     final fileName = fileData['fileName'] ?? 'Tài liệu đính kèm';
     final fileSize = fileData['fileSize'] ?? '';
-    final ext = (fileData['extension'] ?? '').toLowerCase();
+    
+    String rawExt = fileData['extension'] ?? '';
+    if (rawExt.contains('.')) {
+      rawExt = rawExt.split('.').last;
+    }
+    if (rawExt.isEmpty && fileName.contains('.')) {
+      rawExt = fileName.split('.').last;
+    }
+    final ext = rawExt.trim().toLowerCase();
+
     final base64Content =
         fileData['fileData'] ?? fileData['base64'] ?? '';
 
@@ -382,6 +406,7 @@ class ChatBubble extends StatelessWidget {
             context,
             base64Content,
             fileName,
+            extension: ext,
           );
         },
         borderRadius: BorderRadius.circular(14),
@@ -420,7 +445,7 @@ class ChatBubble extends StatelessWidget {
                   children: [
                     Text(
                       fileName,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Nunito',
@@ -433,33 +458,36 @@ class ChatBubble extends StatelessWidget {
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        Container(
-                          padding:
-                          const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isMe
-                                ? Colors.white.withValues(
-                              alpha: 0.10,
-                            )
-                                : iconColor.withValues(
-                              alpha: 0.08,
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
                             ),
-                            borderRadius:
-                            BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            fileTypeLabel,
-                            style: TextStyle(
-                              fontFamily:
-                              'Encode Sans Expanded',
-                              fontSize: 9,
-                              fontWeight: FontWeight.w700,
+                            decoration: BoxDecoration(
                               color: isMe
-                                  ? Colors.white70
-                                  : iconColor,
+                                  ? Colors.white.withValues(
+                                alpha: 0.10,
+                              )
+                                  : iconColor.withValues(
+                                alpha: 0.08,
+                              ),
+                              borderRadius:
+                              BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              fileTypeLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily:
+                                'Encode Sans Expanded',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: isMe
+                                    ? Colors.white70
+                                    : iconColor,
+                              ),
                             ),
                           ),
                         ),

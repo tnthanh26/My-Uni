@@ -313,7 +313,14 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       }
 
       final fileName = platformFile.name;
-      final extension = platformFile.extension ?? '';
+      String extension = platformFile.extension ?? '';
+      if (extension.contains('.')) {
+        extension = extension.split('.').last;
+      }
+      if (extension.isEmpty && fileName.contains('.')) {
+        extension = fileName.split('.').last;
+      }
+      extension = extension.trim().toLowerCase();
       final sizeKb = (platformFile.size / 1024).toStringAsFixed(1);
       final fileSize = platformFile.size > 1024 * 1024
           ? '${(platformFile.size / (1024 * 1024)).toStringAsFixed(1)} MB'

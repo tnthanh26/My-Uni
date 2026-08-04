@@ -42,7 +42,7 @@ class Base64ImageCache {
     if (base64Str.isEmpty) return null;
     final clean = base64Str.contains(',') ? base64Str.split(',')[1] : base64Str;
     final trimmed = clean.trim();
-    if (trimmed.isEmpty) return null;
+    if (trimmed.isEmpty || trimmed.length < 10) return null;
 
     if (_providerCache.containsKey(trimmed)) {
       final provider = _providerCache.remove(trimmed)!;
@@ -66,21 +66,20 @@ class Base64ImageCache {
   static ImageProvider? getAvatarProvider(String? photoUrl) {
     if (photoUrl == null) return null;
     final trimmed = photoUrl.trim();
-    if (trimmed.isEmpty) return null;
+    if (trimmed.isEmpty || trimmed == 'null' || trimmed == 'none') return null;
 
-    if (trimmed.startsWith('data:image') || !trimmed.startsWith('http')) {
-      return getMemoryImage(trimmed);
-    }
-
-    try {
-      final uri = Uri.parse(trimmed);
-      if (uri.hasScheme && uri.hasAuthority && uri.host.isNotEmpty) {
-        return NetworkImage(trimmed);
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
+        final uri = Uri.parse(trimmed);
+        if (uri.hasScheme && uri.hasAuthority && uri.host.isNotEmpty) {
+          return NetworkImage(trimmed);
+        }
+      } catch (_) {
+        return null;
       }
-    } catch (_) {
-      return null;
     }
-    return null;
+
+    return getMemoryImage(trimmed);
   }
 
   /// Clears the cache

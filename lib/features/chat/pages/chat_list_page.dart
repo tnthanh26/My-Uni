@@ -196,7 +196,7 @@ class _ChatListPageState extends State<ChatListPage> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                   itemCount: filteredRooms.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 4),
+                  separatorBuilder: (context, index) => const SizedBox(height: 4),
                   itemBuilder: (context, index) {
                     final room = filteredRooms[index];
 
@@ -274,28 +274,28 @@ class _ChatListPageState extends State<ChatListPage> {
                               Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: AppColors.hcmusTeal.withValues(
-                                      alpha: 0.15,
-                                    ),
-                                    backgroundImage:
-                                    Base64ImageCache.getAvatarProvider(
-                                      otherPhoto,
-                                    ),
-                                    child: otherPhoto.isEmpty
-                                        ? Text(
-                                      otherName.isNotEmpty
-                                          ? otherName[0].toUpperCase()
-                                          : 'S',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        color: AppColors.hcmusTeal,
+                                  (() {
+                                    final avatarProvider = Base64ImageCache.getAvatarProvider(otherPhoto);
+                                    return CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor: AppColors.hcmusTeal.withValues(
+                                        alpha: 0.15,
                                       ),
-                                    )
-                                        : null,
-                                  ),
+                                      backgroundImage: avatarProvider,
+                                      child: avatarProvider == null
+                                          ? Text(
+                                              otherName.trim().isNotEmpty
+                                                  ? otherName.trim()[0].toUpperCase()
+                                                  : 'S',
+                                              style: const TextStyle(
+                                                fontSize: 18,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.hcmusTeal,
+                                              ),
+                                            )
+                                          : null,
+                                    );
+                                  })(),
                                   Positioned(
                                     right: -1,
                                     bottom: -1,

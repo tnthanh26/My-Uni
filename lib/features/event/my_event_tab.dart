@@ -695,7 +695,7 @@ class _MyEventTabState extends State<MyEventTab>
                     final int countList =
                         allEvents.where((e) => !e.dateTime.isBefore(now)).length;
                     final String listText =
-                        'Bạn đang có $countList sự kiện sắp diễn ra';
+                        '$countList sự kiện sắp diễn ra';
 
                     return Column(
                       children: [
