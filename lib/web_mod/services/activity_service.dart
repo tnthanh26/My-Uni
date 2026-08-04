@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../features/home/faculty_helper.dart';
 
 class ActivityService {
   static final _firestore = FirebaseFirestore.instance;
@@ -281,7 +282,12 @@ class ActivityService {
 
         bool isUserMatch = false;
         if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
-          if (uFac.isNotEmpty &&
+          final userFacInfo = FacultyHelper.findFacultyByAccountString(uFac);
+          if (userFacInfo != null &&
+              (userFacInfo.id.toLowerCase() == cleanFacId ||
+                  userFacInfo.code.toLowerCase() == cleanFacCode)) {
+            isUserMatch = true;
+          } else if (uFac.isNotEmpty &&
               ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
                   (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
             isUserMatch = true;
@@ -293,7 +299,7 @@ class ActivityService {
 
         if (isUserMatch) {
           final notiRef = _firestore.collection('notifications').doc();
-          String bodyStr = '$facultyName';
+          String bodyStr = facultyName;
           if (eventDateTextStr.isNotEmpty) bodyStr += ' • $eventDateTextStr';
           if (location.isNotEmpty) bodyStr += ' • $location';
 
@@ -688,7 +694,12 @@ class ActivityService {
 
           bool isUserMatch = false;
           if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
-            if (uFac.isNotEmpty &&
+            final userFacInfo = FacultyHelper.findFacultyByAccountString(uFac);
+            if (userFacInfo != null &&
+                (userFacInfo.id.toLowerCase() == cleanFacId ||
+                    userFacInfo.code.toLowerCase() == cleanFacCode)) {
+              isUserMatch = true;
+            } else if (uFac.isNotEmpty &&
                 ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
                     (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
               isUserMatch = true;
