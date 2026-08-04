@@ -700,22 +700,40 @@ class _MyEventTabState extends State<MyEventTab>
                     return Column(
                       children: [
                         Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
                           child: Row(
                             children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Sự kiện cá nhân',
+                                      style: TextStyle(
+                                        fontFamily: 'Nunito',
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: _primaryTextColor(isDarkMode),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      listText,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                        color: _secondaryTextColor(isDarkMode),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
                               _buildListFilter(isDarkMode),
                             ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 14),
-                          child: Text(
-                            listText,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: _primaryTextColor(isDarkMode),
-                            ),
                           ),
                         ),
                         Expanded(
@@ -1697,21 +1715,38 @@ class _MyEventTabState extends State<MyEventTab>
 
   Widget _buildListFilter(bool isDarkMode) {
     return PopupMenuButton<String>(
+      tooltip: 'Sắp xếp',
       color: _surfaceColor(isDarkMode),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
       onSelected: (v) => setState(() => _listFilter = v),
       itemBuilder: (ctx) => [
-        PopupMenuItem(
+        PopupMenuItem<String>(
           value: 'Gần nhất',
+          height: 42,
           child: Text(
             'Gần nhất',
-            style: TextStyle(color: _primaryTextColor(isDarkMode)),
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: _primaryTextColor(isDarkMode),
+            ),
           ),
         ),
-        PopupMenuItem(
+        PopupMenuItem<String>(
           value: 'Xa nhất',
+          height: 42,
           child: Text(
             'Xa nhất',
-            style: TextStyle(color: _primaryTextColor(isDarkMode)),
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: _primaryTextColor(isDarkMode),
+            ),
           ),
         ),
       ],
@@ -1719,29 +1754,44 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _filterChip(bool isDarkMode, String label) {
+  Widget _filterChip(
+      bool isDarkMode,
+      String label,
+      ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      height: 38,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 12,
+      ),
       decoration: BoxDecoration(
-        color: _secondarySurfaceColor(isDarkMode),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _borderColor(isDarkMode)),
+        color: _surfaceColor(isDarkMode),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: _borderColor(isDarkMode),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          Icon(
+            Icons.sort_rounded,
+            size: 16,
+            color: _secondaryTextColor(isDarkMode),
+          ),
+          const SizedBox(width: 6),
           Text(
             label,
             style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.bold,
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
               color: _primaryTextColor(isDarkMode),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 3),
           Icon(
-            Icons.keyboard_arrow_down,
-            size: 18,
+            Icons.keyboard_arrow_down_rounded,
+            size: 17,
             color: _secondaryTextColor(isDarkMode),
           ),
         ],

@@ -341,251 +341,498 @@ class _OfficialTabState extends State<OfficialTab> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.42),
       builder: (ctx) {
-        final isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
+        final bool isDarkMode =
+            Theme.of(ctx).brightness == Brightness.dark;
+
+        const Color primaryColor = Color(0xFF5893D8);
+
+        final Color sheetColor = isDarkMode
+            ? const Color(0xFF1C1E21)
+            : Colors.white;
+
+        final Color surfaceColor = isDarkMode
+            ? Colors.white.withValues(alpha: 0.04)
+            : const Color(0xFFF8FAFC);
+
+        final Color selectedSurfaceColor = isDarkMode
+            ? primaryColor.withValues(alpha: 0.12)
+            : primaryColor.withValues(alpha: 0.07);
+
+        final Color borderColor = isDarkMode
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFE4E7EC);
+
+        final Color selectedBorderColor =
+        primaryColor.withValues(alpha: 0.38);
+
+        final Color primaryTextColor = isDarkMode
+            ? Colors.white
+            : const Color(0xFF1D2939);
+
+        final Color secondaryTextColor = isDarkMode
+            ? Colors.white60
+            : const Color(0xFF667085);
 
         return StatefulBuilder(
           builder: (context, setModalState) {
-            return Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 20,
-                    offset: const Offset(0, -6),
-                  )
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
+            return SafeArea(
+              top: false,
+              child: Container(
+                constraints: BoxConstraints(
+                  maxHeight:
+                  MediaQuery.of(context).size.height * 0.82,
+                ),
+                decoration: BoxDecoration(
+                  color: sheetColor,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
                       width: 40,
                       height: 4,
-                      margin: const EdgeInsets.only(bottom: 20),
+                      margin: const EdgeInsets.only(
+                        top: 10,
+                        bottom: 18,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.white24 : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
+                        color: isDarkMode
+                            ? Colors.white24
+                            : const Color(0xFFD0D5DD),
+                        borderRadius: BorderRadius.circular(99),
                       ),
                     ),
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF8B5CF6).withOpacity(0.15),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.tune_rounded,
-                          color: Color(0xFF8B5CF6),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Theo dõi tin tức các Khoa',
-                              style: TextStyle(
-                                fontFamily: 'Encode Sans Expanded',
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: isDarkMode
-                                    ? Colors.white
-                                    : const Color(0xFF1E293B),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Theo dõi tối đa 2 Khoa khác ngoài Khoa của bạn',
-                              style: TextStyle(
-                                fontFamily: 'Encode Sans Expanded',
-                                fontSize: 12,
-                                color: isDarkMode
-                                    ? Colors.white60
-                                    : const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
 
-                  // Danh sách 3 khoa có sẵn tin tức
-                  ...FacultyHelper.activeFaculties.map((fac) {
-                    final bool isPrimary = primaryFacultyInfo?.id == fac.id;
-                    final bool isFollowed = tempFollowed.contains(fac.id);
-
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: isPrimary
-                            ? (isDarkMode
-                            ? const Color(0xFF1E3A8A).withOpacity(0.2)
-                            : const Color(0xFFEFF6FF))
-                            : (isFollowed
-                            ? (isDarkMode
-                            ? const Color(0xFF8B5CF6).withOpacity(0.15)
-                            : const Color(0xFFF3E8FF))
-                            : (isDarkMode
-                            ? Colors.white.withOpacity(0.04)
-                            : const Color(0xFFF8FAFC))),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isPrimary
-                              ? const Color(0xFF3B82F6).withOpacity(0.4)
-                              : (isFollowed
-                              ? const Color(0xFF8B5CF6)
-                              : (isDarkMode
-                              ? Colors.white10
-                              : const Color(0xFFE2E8F0))),
-                        ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        12,
+                        0,
                       ),
-                      child: CheckboxListTile(
-                        value: isPrimary || isFollowed,
-                        enabled: !isPrimary,
-                        activeColor: isPrimary
-                            ? const Color(0xFF3B82F6)
-                            : const Color(0xFF8B5CF6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        secondary: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isPrimary
-                                ? const Color(0xFF3B82F6).withOpacity(0.15)
-                                : const Color(0xFF8B5CF6).withOpacity(0.15),
-                            shape: BoxShape.circle,
+                      child: Row(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: primaryColor.withValues(
+                                alpha: isDarkMode ? 0.16 : 0.10,
+                              ),
+                              borderRadius:
+                              BorderRadius.circular(13),
+                            ),
+                            child: const Icon(
+                              Icons.tune_rounded,
+                              color: primaryColor,
+                              size: 21,
+                            ),
                           ),
-                          child: Icon(
-                            fac.icon,
-                            size: 20,
-                            color: isPrimary
-                                ? const Color(0xFF3B82F6)
-                                : const Color(0xFF8B5CF6),
-                          ),
-                        ),
-                        title: Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                fac.name,
-                                style: TextStyle(
-                                  fontFamily: 'Encode Sans Expanded',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDarkMode
-                                      ? Colors.white
-                                      : const Color(0xFF1F2937),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Theo dõi tin tức các khoa',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: primaryTextColor,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Bạn có thể theo dõi tối đa 2 khoa ngoài khoa chính.',
+                                  style: TextStyle(
+                                    fontFamily:
+                                    'Encode Sans Expanded',
+                                    fontSize: 11.5,
+                                    height: 1.4,
+                                    color: secondaryTextColor,
+                                  ),
+                                ),
+                              ],
                             ),
-                            if (isPrimary) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF3B82F6),
-                                  borderRadius: BorderRadius.circular(10),
+                          ),
+                          IconButton(
+                            tooltip: 'Đóng',
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                            },
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 20,
+                              color: secondaryTextColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                        ),
+                        child: Column(
+                          children:
+                          FacultyHelper.activeFaculties.map(
+                                (fac) {
+                              final bool isPrimary =
+                                  primaryFacultyInfo?.id ==
+                                      fac.id;
+
+                              final bool isFollowed =
+                              tempFollowed.contains(fac.id);
+
+                              final bool isSelected =
+                                  isPrimary || isFollowed;
+
+                              return Padding(
+                                padding:
+                                const EdgeInsets.only(
+                                  bottom: 10,
+                                ),
+                                child: Material(
+                                  color: Colors.transparent,
+                                  borderRadius:
+                                  BorderRadius.circular(14),
+                                  child: InkWell(
+                                    borderRadius:
+                                    BorderRadius.circular(14),
+                                    onTap: isPrimary
+                                        ? null
+                                        : () {
+                                      if (isFollowed) {
+                                        setModalState(() {
+                                          tempFollowed
+                                              .remove(fac.id);
+                                        });
+                                        return;
+                                      }
+
+                                      if (tempFollowed.length >=
+                                          2) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        )
+                                          ..hideCurrentSnackBar()
+                                          ..showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Bạn chỉ có thể theo dõi tối đa 2 khoa khác.',
+                                              ),
+                                              behavior:
+                                              SnackBarBehavior
+                                                  .floating,
+                                            ),
+                                          );
+                                        return;
+                                      }
+
+                                      setModalState(() {
+                                        tempFollowed.add(
+                                          fac.id,
+                                        );
+                                      });
+                                    },
+                                    child: AnimatedContainer(
+                                      duration: const Duration(
+                                        milliseconds: 160,
+                                      ),
+                                      curve: Curves.easeOut,
+                                      padding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 12,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? selectedSurfaceColor
+                                            : surfaceColor,
+                                        borderRadius:
+                                        BorderRadius.circular(
+                                          14,
+                                        ),
+                                        border: Border.all(
+                                          color: isSelected
+                                              ? selectedBorderColor
+                                              : borderColor,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            width: 40,
+                                            height: 40,
+                                            alignment:
+                                            Alignment.center,
+                                            decoration:
+                                            BoxDecoration(
+                                              color: isSelected
+                                                  ? primaryColor
+                                                  .withValues(
+                                                alpha:
+                                                isDarkMode
+                                                    ? 0.18
+                                                    : 0.10,
+                                              )
+                                                  : (isDarkMode
+                                                  ? Colors.white
+                                                  .withValues(
+                                                alpha: 0.05,
+                                              )
+                                                  : Colors.white),
+                                              borderRadius:
+                                              BorderRadius
+                                                  .circular(
+                                                12,
+                                              ),
+                                            ),
+                                            child: Icon(
+                                              fac.icon,
+                                              size: 20,
+                                              color: isSelected
+                                                  ? primaryColor
+                                                  : secondaryTextColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                              CrossAxisAlignment
+                                                  .start,
+                                              children: [
+                                                Text(
+                                                  fac.name,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                  TextOverflow
+                                                      .ellipsis,
+                                                  style: TextStyle(
+                                                    fontFamily:
+                                                    'Nunito',
+                                                    fontSize: 14,
+                                                    fontWeight:
+                                                    FontWeight
+                                                        .w700,
+                                                    color:
+                                                    primaryTextColor,
+                                                  ),
+                                                ),
+                                                if (isPrimary) ...[
+                                                  const SizedBox(
+                                                    height: 3,
+                                                  ),
+                                                  Text(
+                                                    'Khoa chính của bạn',
+                                                    style:
+                                                    TextStyle(
+                                                      fontFamily:
+                                                      'Encode Sans Expanded',
+                                                      fontSize: 10.5,
+                                                      color:
+                                                      secondaryTextColor,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 10),
+                                          AnimatedContainer(
+                                            duration: const Duration(
+                                              milliseconds: 160,
+                                            ),
+                                            width: 22,
+                                            height: 22,
+                                            alignment:
+                                            Alignment.center,
+                                            decoration:
+                                            BoxDecoration(
+                                              color: isSelected
+                                                  ? primaryColor
+                                                  : Colors.transparent,
+                                              shape:
+                                              BoxShape.circle,
+                                              border: Border.all(
+                                                color: isSelected
+                                                    ? primaryColor
+                                                    : borderColor,
+                                                width: 1.5,
+                                              ),
+                                            ),
+                                            child: isSelected
+                                                ? const Icon(
+                                              Icons
+                                                  .check_rounded,
+                                              size: 15,
+                                              color:
+                                              Colors.white,
+                                            )
+                                                : null,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ).toList(),
+                        ),
+                      ),
+                    ),
+
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        14,
+                        20,
+                        18,
+                      ),
+                      decoration: BoxDecoration(
+                        color: sheetColor,
+                        border: Border(
+                          top: BorderSide(
+                            color: borderColor,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: OutlinedButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                },
+                                style:
+                                OutlinedButton.styleFrom(
+                                  foregroundColor:
+                                  secondaryTextColor,
+                                  side: BorderSide(
+                                    color: borderColor,
+                                  ),
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(
+                                      12,
+                                    ),
+                                  ),
                                 ),
                                 child: const Text(
-                                  'Khoa của bạn',
+                                  'Hủy',
                                   style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
+                                    fontFamily:
+                                    'Encode Sans Expanded',
+                                    fontSize: 13,
+                                    fontWeight:
+                                    FontWeight.w600,
                                   ),
                                 ),
                               ),
-                            ],
-                          ],
-                        ),
-                        onChanged: isPrimary
-                            ? null
-                            : (checked) {
-                          if (checked == true) {
-                            if (tempFollowed.length >= 2) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Bạn chỉ có thể theo dõi tối đa 2 Khoa khác.'),
-                                  duration: Duration(seconds: 2),
-                                ),
-                              );
-                              return;
-                            }
-                            setModalState(() {
-                              tempFollowed.add(fac.id);
-                            });
-                          } else {
-                            setModalState(() {
-                              tempFollowed.remove(fac.id);
-                            });
-                          }
-                        },
-                      ),
-                    );
-                  }),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: SizedBox(
+                              height: 44,
+                              child: FilledButton(
+                                onPressed: () async {
+                                  final user = FirebaseAuth
+                                      .instance.currentUser;
 
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () async {
-                        final user = FirebaseAuth.instance.currentUser;
-                        if (user != null) {
-                          if (primaryFacultyInfo != null) {
-                            tempFollowed.remove(primaryFacultyInfo.id);
-                          }
-                          await FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .update({'followedFaculties': tempFollowed});
-                          if (ctx.mounted) Navigator.pop(ctx);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Đã lưu danh sách Khoa theo dõi!'),
-                                backgroundColor: Color(0xFF8B5CF6),
+                                  if (user == null) {
+                                    return;
+                                  }
+
+                                  if (primaryFacultyInfo !=
+                                      null) {
+                                    tempFollowed.remove(
+                                      primaryFacultyInfo.id,
+                                    );
+                                  }
+
+                                  await FirebaseFirestore
+                                      .instance
+                                      .collection('users')
+                                      .doc(user.uid)
+                                      .update({
+                                    'followedFaculties':
+                                    tempFollowed,
+                                  });
+
+                                  if (ctx.mounted) {
+                                    Navigator.pop(ctx);
+                                  }
+
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(
+                                      this.context,
+                                    )
+                                      ..hideCurrentSnackBar()
+                                      ..showSnackBar(
+                                        const SnackBar(
+                                          content: Text(
+                                            'Đã lưu danh sách khoa theo dõi',
+                                          ),
+                                          behavior:
+                                          SnackBarBehavior
+                                              .floating,
+                                        ),
+                                      );
+                                  }
+                                },
+                                style:
+                                FilledButton.styleFrom(
+                                  backgroundColor:
+                                  primaryColor,
+                                  foregroundColor:
+                                  Colors.white,
+                                  elevation: 0,
+                                  shape:
+                                  RoundedRectangleBorder(
+                                    borderRadius:
+                                    BorderRadius.circular(
+                                      12,
+                                    ),
+                                  ),
+                                ),
+                                child: const Text(
+                                  'Lưu thay đổi',
+                                  style: TextStyle(
+                                    fontFamily:
+                                    'Encode Sans Expanded',
+                                    fontSize: 13,
+                                    fontWeight:
+                                    FontWeight.w600,
+                                  ),
+                                ),
                               ),
-                            );
-                          }
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF8B5CF6),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: const Text(
-                        'Lưu thay đổi',
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: Colors.white,
-                        ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -989,7 +1236,6 @@ class _OfficialTabState extends State<OfficialTab> {
       ),
     );
   }
-
   /// Empty State khi User chưa chọn Khoa trong account
   Widget _buildEmptyFacultySetupCard(
       BuildContext context,

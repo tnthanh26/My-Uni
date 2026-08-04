@@ -4,6 +4,7 @@ class EventModel {
   final String id;
   final String title;
   final DateTime dateTime;
+  final DateTime? endDateTime;
   final String location;
   final String reminder;
   final String description;
@@ -19,6 +20,7 @@ class EventModel {
     required this.id,
     required this.title,
     required this.dateTime,
+    this.endDateTime,
     required this.location,
     required this.reminder,
     required this.description,
@@ -37,11 +39,16 @@ class EventModel {
     final fId = data['facultyEventId']?.toString();
     final String? oUrl = (data['onlineUrl'] ?? data['onlineLink'])?.toString();
     final bool online = data['isOnline'] == true || (oUrl != null && oUrl.trim().isNotEmpty);
+    DateTime? endDt;
+    if (data['endDateTime'] != null && data['endDateTime'] is Timestamp) {
+      endDt = (data['endDateTime'] as Timestamp).toDate();
+    }
     return EventModel(
       id: doc.id,
       title: data['title'] ?? '',
       // Firestore Timestamp -> Dart DateTime
       dateTime: (data['dateTime'] as Timestamp).toDate(),
+      endDateTime: endDt,
       location: data['location'] ?? '',
       reminder: data['reminder'] ?? 'Không',
       description: data['description'] ?? '',
@@ -60,6 +67,7 @@ class EventModel {
     return {
       'title': title,
       'dateTime': Timestamp.fromDate(dateTime),
+      if (endDateTime != null) 'endDateTime': Timestamp.fromDate(endDateTime!),
       'location': location,
       'reminder': reminder,
       'description': description,

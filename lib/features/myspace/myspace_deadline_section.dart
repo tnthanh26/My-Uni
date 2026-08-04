@@ -938,7 +938,7 @@ class _DeadlineSectionHeader extends StatelessWidget {
           child: Container(
             width: 36, height: 36,
             decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
-            child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
+            child: Icon(Icons.calendar_month_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
           ),
         ),
       ],

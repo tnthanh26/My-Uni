@@ -3,10 +3,12 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import './models/myspace_models.dart';
 import 'campus_data.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
+import 'package:my_uni/features/event/create_personal_event_page.dart';
 import 'local_storage_helper.dart';
 import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
@@ -20,6 +22,7 @@ import './services/weather_service.dart';
 import './services/moodle_service.dart';
 import './services/moodle_token_storage.dart';
 import './models/weather_models.dart';
+import './services/welcome_banner_service.dart';
 import 'weather_alert_card.dart';
 import 'myspace_deadline_section.dart';
 import 'widgets/myspace_skeleton.dart';
@@ -75,6 +78,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
+        if (_tabController.index == 1) {
+          _scrollToCurrentFocusHour();
+        }
         setState(() {});
       }
     });
@@ -361,6 +367,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         _deadlineShowAll = forceShowAll;
       }
     });
+    if (tabIndex == 1) {
+      _scrollToCurrentFocusHour();
+    }
   }
 
   void _backToDashboard() {
@@ -635,6 +644,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         selectedWeekday = picked.weekday + 1;
       });
       _prepareWeatherFuture();
+      _scrollToCurrentFocusHour();
     }
   }
 
@@ -784,78 +794,89 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
 
 
-  Widget _buildCompactSummaryBanner() {
+  Widget _buildCompactSummaryBanner({
+    required int classesCount,
+    required int deadlinesCount,
+    required int eventsCount,
+  }) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final todayClassesCount =
-        mockSchedule.where((c) => c.weekday == selectedWeekday).length;
-
-    final activeDeadlinesCount =
-        mockDeadlines.where((d) => !d.isCompleted).length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      constraints: const BoxConstraints(minHeight: 92),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDarkMode
-              ? [const Color(0xFF40539B).withValues(alpha: 0.9), const Color(0xFF74C98C)]
-              : [const Color(0xFF042788).withValues(alpha: 0.9), const Color(0xFF439472).withValues(alpha: 0.7)],
-        ),
-        borderRadius: BorderRadius.circular(6),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.25),
-            blurRadius: 4,
-            offset: const Offset(0, 4),
-          ),
-        ],
+    return FutureBuilder<WelcomeBannerData>(
+      future: WelcomeBannerService.generateBannerData(
+        todayClasses: classesCount,
+        todayDeadlines: deadlinesCount,
+        todayEvents: eventsCount,
+        now: DateTime.now(),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            /*
-            child: SizedBox(
-              width: 18,
-              height: 18,
-              child: Image.asset(
-                'assets/images/welcome.png',
-                fit: BoxFit.contain,
-              ),
+      builder: (context, snapshot) {
+        final data = snapshot.data ??
+            WelcomeBannerData(
+              greeting: WelcomeBannerService.getGreeting(DateTime.now()),
+              text: "Hôm nay bạn có $classesCount lớp học.",
+              spans: [
+                const TextSpan(text: "Hôm nay bạn có "),
+                TextSpan(
+                  text: "$classesCount lớp học",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const TextSpan(text: "."),
+              ],
+            );
+
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          constraints: const BoxConstraints(minHeight: 92),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDarkMode
+                  ? [
+                      const Color(0xFF40539B).withValues(alpha: 0.9),
+                      const Color(0xFF74C98C)
+                    ]
+                  : [
+                      const Color(0xFF042788).withValues(alpha: 0.9),
+                      const Color(0xFF439472).withValues(alpha: 0.7)
+                    ],
             ),
-             */
+            borderRadius: BorderRadius.circular(6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                data.greeting,
                 style: const TextStyle(
                   fontFamily: 'Poppins',
                   color: Colors.white,
-                  fontSize: 13, // Giảm nhẹ font size để an toàn hơn
-                  height: 1.4,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
-                children: [
-                  const TextSpan(text: 'Hôm nay bạn có '),
-                  TextSpan(
-                    text: '$todayClassesCount lớp học',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const TextSpan(text: ' và '),
-                  TextSpan(
-                    text: '$activeDeadlinesCount deadline',
-                    style: const TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                  const TextSpan(text: ' cần giải quyết.'),
-                ],
               ),
-            ),
+              const SizedBox(height: 4),
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    color: Colors.white,
+                    fontSize: 12,
+                    height: 1.3,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  children: data.spans,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -914,7 +935,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
               if (snapshot.connectionState == ConnectionState.waiting ||
                   !result.shouldShow) {
-                return _buildWelcomeBannerFigma();
+                return _buildWelcomeBannerFigma(
+                  classesCount: todayClasses.length,
+                  deadlinesCount: mockDeadlines.where((d) => !d.isCompleted).length,
+                  eventsCount: todayEvents.length,
+                );
               }
 
               return IntrinsicHeight( // Giúp 2 thẻ cao bằng nhau mượt mà
@@ -923,7 +948,11 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   children: [
                     Expanded(
                       flex: 5,
-                      child: _buildCompactSummaryBanner(),
+                      child: _buildCompactSummaryBanner(
+                        classesCount: todayClasses.length,
+                        deadlinesCount: mockDeadlines.where((d) => !d.isCompleted).length,
+                        eventsCount: todayEvents.length,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -943,7 +972,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             deadlines: top3Deadlines,
             totalDeadlinesCount: mockDeadlines.length,
             onOpenAutoConfig: _showAutoDeadlineConfigSheet,
-            onOpenDetail: () => _navigateToDetail(0, forceShowAll: true),
+            onOpenDetail: () => _navigateToDetail(0, forceShowAll: false),
             onToggleDeadline: _toggleDeadline,
             onDeleteDeadline: _deleteDeadline,
           ),
@@ -953,13 +982,53 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           const SizedBox(height: 20),
           _buildSectionHeaderFigma("Lịch học & Sự kiện", () => _navigateToDetail(1), isSchedule: true),
           _buildCalendarStripFigma(),
-          ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
-          ...todayEvents.map((ev) => _buildPersonalEventCardFigma(ev)),
+
+          if (todayClasses.isNotEmpty) ...[
+            _buildMiniSectionLabel('Lịch học', count: todayClasses.length, icon: Icons.school_outlined),
+            ...todayClasses.map((c) => _buildScheduleCardFigma(c)),
+          ],
+
+          if (todayClasses.isNotEmpty && todayEvents.isNotEmpty)
+            const SizedBox(height: 12),
+
+          if (todayEvents.isNotEmpty) ...[
+            _buildMiniSectionLabel('Sự kiện', count: todayEvents.length, icon: Icons.event_note_outlined),
+            ...todayEvents.map((ev) => _buildPersonalEventCardFigma(ev)),
+          ],
 
           if (todayClasses.isEmpty && todayEvents.isEmpty)
             _buildEmptyStateMeme(type: 'class'),
 
           const SizedBox(height: 80),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMiniSectionLabel(String title, {int? count, IconData? icon}) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(2, 6, 2, 10),
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(
+              icon,
+              size: 14,
+              color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+            ),
+            const SizedBox(width: 5),
+          ],
+          Text(
+            count != null ? '$title ($count)' : title,
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+            ),
+          ),
         ],
       ),
     );
@@ -1131,10 +1200,34 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
         ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
+      final weekDays = _getCurrentWeekDays();
+      final selectedDayMap = weekDays.firstWhere(
+        (w) => w['value'] == selectedWeekday,
+        orElse: () => weekDays.first,
+      );
+      final DateTime selectedFullDate = selectedDayMap['fullDate'] as DateTime;
+
+      final dayEvents = mockPersonalEvents
+          .where((e) => DateUtils.isSameDay(e.dateTime, selectedFullDate))
+          .toList()
+        ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+
       double targetHour = 7.0; // Mặc định cuộn đến 7:00 sáng
+      final List<double> startHours = [];
+
       if (dayClasses.isNotEmpty) {
-        // Tự động focus vào tiết học đầu tiên trong ngày (trừ bớt 0.5 giờ để lề đẹp)
-        targetHour = math.max(0.0, dayClasses.first.startHourFraction - 0.5);
+        startHours.add(dayClasses.first.startHourFraction);
+      }
+      if (dayEvents.isNotEmpty) {
+        final ev = dayEvents.first;
+        final evStartFraction = ev.dateTime.hour + (ev.dateTime.minute / 60.0);
+        startHours.add(evStartFraction);
+      }
+
+      if (startHours.isNotEmpty) {
+        startHours.sort();
+        // Tự động focus vào mục sớm nhất trong ngày (trừ bớt 0.5 giờ để lề đẹp)
+        targetHour = math.max(0.0, startHours.first - 0.5);
       }
 
       const double hourHeight = 64.0;
@@ -1180,8 +1273,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     final currentHourFraction = now.hour + (now.minute / 60.0);
     final showNowLine = isTodaySelected && currentHourFraction >= 0.0 && currentHourFraction <= 24.0;
     final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
-
-    _scrollToCurrentFocusHour();
 
     return SingleChildScrollView(
       controller: _timetableScrollController,
@@ -1277,7 +1368,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 right: 0.0,
                 height: blockHeight,
                 child: GestureDetector(
-                  onTap: () => _editSchedule(c),
+                  onTap: () => _showScheduleActionMenu(c),
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                     decoration: BoxDecoration(
@@ -1350,16 +1441,37 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             ...dayEvents.map((ev) {
               final startH = ev.dateTime.hour + (ev.dateTime.minute / 60.0);
               final topPos = (startH - startHourGrid) * hourHeight + 8;
-              final blockHeight = 56.0;
 
-              final Color eventBgColor = isDarkMode ? const Color(0xFF4C1D95) : const Color(0xFF6D28D9);
+              double blockHeight = 60.0; // Mặc định 1 giờ (64.0 - 4)
+              if (ev.endDateTime != null) {
+                var endH = ev.endDateTime!.hour + (ev.endDateTime!.minute / 60.0);
+                if (endH <= startH) endH = startH + 1.0;
+                blockHeight = math.max(48.0, (endH - startH) * hourHeight - 4);
+              }
+
+              final bool isInterested = ev.isFromFacultyEvent;
+              final Color eventBgColor = isInterested
+                  ? (isDarkMode
+                      ? const Color(0xFF426C93)
+                      : const Color(0xFF5F8FB8))
+                  : (isDarkMode
+                      ? const Color(0xFF55508A)
+                      : const Color(0xFF7D74B2));
+
+              final String eventTagText = isInterested ? 'QUAN TÂM' : 'SỰ KIỆN';
+
+              final String timeStr = ev.endDateTime != null
+                  ? "${DateFormat('HH:mm').format(ev.dateTime)} - ${DateFormat('HH:mm').format(ev.endDateTime!)}"
+                  : DateFormat('HH:mm').format(ev.dateTime);
 
               return Positioned(
                 top: topPos,
                 left: 56.0,
                 right: 0.0,
                 height: blockHeight,
-                child: Container(
+                child: GestureDetector(
+                  onTap: () => _showPersonalEventActionMenu(ev),
+                  child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
                   decoration: BoxDecoration(
                     color: eventBgColor,
@@ -1374,14 +1486,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        width: 4,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFA78BFA),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1408,9 +1512,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                                     color: Colors.white24,
                                     borderRadius: BorderRadius.circular(4),
                                   ),
-                                  child: const Text(
-                                    'SỰ KIỆN',
-                                    style: TextStyle(
+                                  child: Text(
+                                    eventTagText,
+                                    style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 8,
                                       fontWeight: FontWeight.bold,
@@ -1430,7 +1534,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  DateFormat('HH:mm').format(ev.dateTime),
+                                  timeStr,
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w500,
@@ -1460,7 +1564,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                     ],
                   ),
                 ),
-              );
+              ),
+            );
             }),
 
             // Red Current Time Line Indicator
@@ -1505,6 +1610,12 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     return mockSchedule.where((c) => c.weekday == weekday).length;
   }
 
+  int _countEventsForDate(DateTime date) {
+    return mockPersonalEvents
+        .where((e) => DateUtils.isSameDay(e.dateTime, date))
+        .length;
+  }
+
   Widget _buildDetailCalendarStrip() {
     final currentWeek = _getCurrentWeekDays();
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -1522,7 +1633,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           final isScheduleTab = _tabController.index == 1;
 
           int count = isScheduleTab
-              ? _countClassesForDate(weekdayValue)
+              ? (_countClassesForDate(weekdayValue) + _countEventsForDate(dayDate))
               : _countDeadlinesForDate(dayDate);
 
           Color badgeColor = isScheduleTab ? hcmusTeal : hcmusRed;
@@ -1535,6 +1646,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   _focusedDate = dayDate;
                 });
                 _prepareWeatherFuture();
+                _scrollToCurrentFocusHour();
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 3),
@@ -1657,7 +1769,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 height: 40,
                 child: FittedBox(
                   fit: BoxFit.scaleDown,
-                  child: Text("Lịch học & Sự kiện"),
+                  child: Text("Lịch của tôi"),
                 ),
               ),
             ],
@@ -1692,61 +1804,119 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
 
 
-  Widget _buildScheduleDetailList() {
-    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
-      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
-    final weekDays = _getCurrentWeekDays();
-    final selectedDayMap = weekDays.firstWhere(
-      (w) => w['value'] == selectedWeekday,
-      orElse: () => weekDays.first,
-    );
-    final DateTime selectedFullDate = selectedDayMap['fullDate'] as DateTime;
-
-    final dayEvents = mockPersonalEvents
-        .where((e) => DateUtils.isSameDay(e.dateTime, selectedFullDate))
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
-    if (dayClasses.isEmpty && dayEvents.isEmpty) {
-      return Center(
-        child: Text(
-          "Hôm nay không có lịch học & sự kiện",
-          style: TextStyle(
-            color: Theme.of(context).brightness == Brightness.dark
-                ? Colors.white70
-                : Colors.grey,
+  void _showPersonalEventActionMenu(EventModel ev) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           ),
-        ),
-      );
-    }
-
-    final totalCount = dayClasses.length + dayEvents.length;
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        if (index < dayClasses.length) {
-          final c = dayClasses[index];
-          return _buildScheduleCardFigma(c);
-        } else {
-          final ev = dayEvents[index - dayClasses.length];
-          return _buildPersonalEventCardFigma(ev);
-        }
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                ev.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: isDarkMode ? Colors.white70 : Colors.grey,
+                  fontFamily: 'Poppins',
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              Divider(color: isDarkMode ? Colors.white12 : null),
+              ListTile(
+                leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
+                title: Text(
+                  "Chỉnh sửa sự kiện",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _editPersonalEvent(ev);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete_outline, color: hcmusRed),
+                title: Text(
+                  "Xóa sự kiện",
+                  style: TextStyle(
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _deletePersonalEvent(ev.id);
+                },
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
+  void _editPersonalEvent(EventModel ev) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreatePersonalEventPage(event: ev),
+      ),
+    );
+  }
+
+  void _deletePersonalEvent(String id) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    try {
+      HapticFeedback.mediumImpact();
+      setState(() {
+        mockPersonalEvents.removeWhere((e) => e.id == id);
+      });
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('personal_events')
+          .doc(id)
+          .delete();
+    } catch (e) {
+      debugPrint("Error deleting personal event: $e");
+    }
+  }
+
   Widget _buildPersonalEventCardFigma(EventModel ev) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final timeStr = DateFormat('HH:mm').format(ev.dateTime);
+    final bool isInterested = ev.isFromFacultyEvent;
+
+    final Color eventBgColor = isInterested
+        ? (isDarkMode
+        ? const Color(0xFF426C93)
+        : const Color(0xFF5F8FB8))
+        : (isDarkMode
+        ? const Color(0xFF55508A)
+        : const Color(0xFF7D74B2));
+
+    final String eventTagText = isInterested ? 'QUAN TÂM' : 'SỰ KIỆN';
+
+    final timeStr = ev.endDateTime != null
+        ? "${DateFormat('HH:mm').format(ev.dateTime)} - ${DateFormat('HH:mm').format(ev.endDateTime!)}"
+        : DateFormat('HH:mm').format(ev.dateTime);
 
     return Container(
       height: 80,
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: isDarkMode ? const Color(0xFF4C1D95) : const Color(0xFF6D28D9),
+        color: eventBgColor,
         borderRadius: BorderRadius.circular(8),
         boxShadow: const [
           BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 4))
@@ -1756,17 +1926,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         children: [
           Row(
             children: [
-              Container(
-                width: 10,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFA78BFA),
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(8),
-                    bottomLeft: Radius.circular(8),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -1786,9 +1946,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    child: const Text(
-                      'SỰ KIỆN',
-                      style: TextStyle(
+                    child: Text(
+                      eventTagText,
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
                         fontFamily: 'Poppins',
@@ -1825,7 +1985,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                     const SizedBox(height: 12),
                     Row(
                       children: [
-                        const Icon(Icons.stars_rounded, color: Color(0xFFFDE047), size: 16),
+                        const Icon(Icons.location_on, color: Colors.white, size: 16),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -1844,7 +2004,23 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ],
                 ),
               ),
+              const SizedBox(width: 40),
             ],
+          ),
+          Positioned(
+            right: 8,
+            top: 8,
+            child: GestureDetector(
+              onTap: () => _showPersonalEventActionMenu(ev),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: const Icon(
+                  Icons.more_horiz,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -2045,89 +2221,86 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
-  Widget _buildWelcomeBannerFigma() {
-    final int today = DateTime.now().weekday + 1;
-    final int todayClassesCount = mockSchedule.where((c) => c.weekday == today).length;
-    final int pendingDeadlinesCount = mockDeadlines.where((d) => !d.isCompleted).length;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            const Color(0xFF042788).withValues(alpha: 0.9),
-            const Color(0xFF60CA6F).withValues(alpha: 1),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF000000).withValues(alpha: 0.25),
-            blurRadius: 4,
-            offset: Offset(0, 4),
-          ),
-        ],
+  Widget _buildWelcomeBannerFigma({
+    required int classesCount,
+    required int deadlinesCount,
+    required int eventsCount,
+  }) {
+    return FutureBuilder<WelcomeBannerData>(
+      future: WelcomeBannerService.generateBannerData(
+        todayClasses: classesCount,
+        todayDeadlines: deadlinesCount,
+        todayEvents: eventsCount,
+        now: DateTime.now(),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              /*
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: Image.asset(
-                  'assets/images/welcome.png',
-                  fit: BoxFit.contain,
+      builder: (context, snapshot) {
+        final data = snapshot.data ??
+            WelcomeBannerData(
+              greeting: WelcomeBannerService.getGreeting(DateTime.now()),
+              text: "Hôm nay bạn có $classesCount lớp học.",
+              spans: [
+                const TextSpan(text: "Hôm nay bạn có "),
+                TextSpan(
+                  text: "$classesCount lớp học",
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
-              ),
-              SizedBox(width: 8),
-              */
-              Text("Chào bạn!",
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      fontFamily: 'Poppins')
+                const TextSpan(text: "."),
+              ],
+            );
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF042788).withValues(alpha: 0.9),
+                const Color(0xFF60CA6F).withValues(alpha: 1),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF000000).withValues(alpha: 0.25),
+                blurRadius: 4,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          SizedBox(height: 8),
-          RichText(
-            text: TextSpan(
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w500, // Độ đậm cơ bản cho cả câu
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    data.greeting,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Poppins',
+                    ),
+                  ),
+                ],
               ),
-              children: [
-                const TextSpan(text: "Hôm nay bạn có "),
-                TextSpan(
-                  text: "$todayClassesCount lớp học",
+              const SizedBox(height: 8),
+              RichText(
+                text: TextSpan(
                   style: const TextStyle(
-                    fontWeight: FontWeight.w800, // In đậm con số lớp học
-                    fontSize: 14, // Có thể tăng size nhẹ để nổi bật hơn
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w500,
                   ),
+                  children: data.spans,
                 ),
-                const TextSpan(text: " và "),
-                TextSpan(
-                  text: "$pendingDeadlinesCount deadline",
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800, // In đậm con số deadline
-                    fontSize: 14,
-                  ),
-                ),
-                const TextSpan(text: " cần giải quyết."),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -2291,7 +2464,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
-                child: Icon(Icons.list_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
+                child: Icon(Icons.calendar_month_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
               ),
             ),
           ],
@@ -2382,9 +2555,9 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                s.name, 
+                s.name,
                 style: TextStyle(
-                  fontWeight: FontWeight.bold, 
+                  fontWeight: FontWeight.bold,
                   color: isDarkMode ? Colors.white70 : Colors.grey,
                   fontFamily: 'Poppins',
                 )
@@ -2407,7 +2580,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
               ListTile(
                 leading: const Icon(Icons.delete_outline, color: hcmusRed),
                 title: Text(
-                  "Xóa lịch học", 
+                  "Xóa lịch học",
                   style: TextStyle(
                     color: isDarkMode ? Colors.white : Colors.black87,
                     fontFamily: 'Poppins',
