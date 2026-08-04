@@ -170,13 +170,13 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         fullDesc += '📞 Liên hệ: $contactStr';
       }
 
-      final prefilledEvent = EventModel(
+      final noteEvent = EventModel(
         id: docId,
         title: eventName,
         dateTime: parsedDateTime,
         location: locStr,
         reminder: '15 phút trước',
-        description: fullDesc,
+        description: '',
         sourceArticleUrl: sourceArticleUrl,
         onlineUrl: onlineUrl,
         isOnline: isOnline,
@@ -190,7 +190,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       final saved = await Navigator.push<bool>(
         context,
         MaterialPageRoute(
-          builder: (context) => CreatePersonalEventPage(event: prefilledEvent),
+          builder: (context) => CreatePersonalEventPage(event: noteEvent),
         ),
       );
 
