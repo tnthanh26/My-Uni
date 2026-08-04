@@ -39,7 +39,6 @@ class _OfficialTabState extends State<OfficialTab> {
 
     return '';
   }
-
   Future<void> _launchURL(String urlString) async {
     if (urlString.trim().isEmpty) return;
     final Uri url = Uri.parse(urlString);
@@ -695,7 +694,6 @@ class _OfficialTabState extends State<OfficialTab> {
       ),
     );
   }
-
   /// Thanh chuyển đổi Sub-Tab (Toàn trường, Khoa của bạn, Các Khoa theo dõi + Nút Thêm)
   Widget _buildSubTabBar({
     required BuildContext context,
