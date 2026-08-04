@@ -1502,61 +1502,8 @@ class _MyEventTabState extends State<MyEventTab>
                             borderRadius:
                             BorderRadius.circular(14),
                           ),
-<<<<<<< Updated upstream
-                        ),
-                        _buildMoreMenu(ev, isDarkMode),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 14,
-                          color: _secondaryTextColor(isDarkMode),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat('HH:mm').format(ev.dateTime),
-                          style: TextStyle(
-                            color: _secondaryTextColor(isDarkMode),
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(
-                          ev.isOnline ? Icons.videocam_rounded : Icons.location_on_outlined,
-                          size: 14,
-                          color: ev.isOnline ? const Color(0xFF8B5CF6) : _secondaryTextColor(isDarkMode),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            ev.location.trim().isNotEmpty ? ev.location : (ev.isOnline ? 'Online' : 'Chưa cập nhật'),
-                            style: TextStyle(
-                              color: _secondaryTextColor(isDarkMode),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Wrap(
-                            spacing: 8,
-                            runSpacing: 4,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-=======
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
->>>>>>> Stashed changes
                             children: [
                               Text(
                                 DateFormat('MMM')
