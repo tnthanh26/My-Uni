@@ -4,6 +4,7 @@ import 'package:my_uni/features/notification/message_notification_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 import 'package:my_uni/models/notification_model.dart';
 import 'my_event_tab.dart';
+import 'discover_event_tab.dart';
 import 'create_personal_event_page.dart';
 import 'event_qr_scanner_dialog.dart';
 import 'student_attendance_history_tab.dart';
@@ -414,7 +415,7 @@ class _EventPageState extends State<EventPage> with TickerProviderStateMixin {
                           controller: _tabController,
                           children: const [
                             MyEventTab(mode: EventTabMode.personal),
-                            MyEventTab(mode: EventTabMode.community),
+                            DiscoverEventTab(useNestedScrollOverlap: false),
                             StudentAttendanceHistoryTab(),
                           ],
                         ),
