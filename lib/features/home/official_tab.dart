@@ -23,6 +23,33 @@ class OfficialTab extends StatefulWidget {
 class _OfficialTabState extends State<OfficialTab> {
   // Sub-tab id: 'all' (Toàn trường), 'my_faculty' (Khoa của bạn), hoặc 'fit'/'chemistry'/'physics'
   String _selectedSubTabId = 'all';
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onSubTabSelected(String id, List<String> subTabIds) {
+    setState(() {
+      _selectedSubTabId = id;
+    });
+    final index = subTabIds.indexOf(id);
+    if (index != -1 && _pageController.hasClients) {
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   String _getNewsImageUrl(Map<String, dynamic> data) {
     final imageUrl = data['imageUrl']?.toString().trim() ?? '';
@@ -701,6 +728,7 @@ class _OfficialTabState extends State<OfficialTab> {
     required String? userFacultyStr,
     required FacultyInfo? primaryFacultyInfo,
     required List<String> followedFaculties,
+    required List<String> subTabIds,
   }) {
     final Color backgroundColor = isDarkMode
         ? const Color(0xFF101214)
@@ -740,11 +768,7 @@ class _OfficialTabState extends State<OfficialTab> {
                 Color(0xFF5893D8),
                 Color(0xFF5893D8),
               ],
-              onTap: () {
-                setState(() {
-                  _selectedSubTabId = 'all';
-                });
-              },
+              onTap: () => _onSubTabSelected('all', subTabIds),
             ),
             const SizedBox(width: 8),
             _buildSubTabChip(
@@ -763,11 +787,7 @@ class _OfficialTabState extends State<OfficialTab> {
               ],
               badgeText:
               primaryFacultyInfo == null ? 'Chưa chọn' : null,
-              onTap: () {
-                setState(() {
-                  _selectedSubTabId = 'my_faculty';
-                });
-              },
+              onTap: () => _onSubTabSelected('my_faculty', subTabIds),
             ),
             ...followedFaculties.map((facId) {
               final facInfo =
@@ -790,11 +810,7 @@ class _OfficialTabState extends State<OfficialTab> {
                     Color(0xFF5893D8),
                     Color(0xFF5893D8),
                   ],
-                  onTap: () {
-                    setState(() {
-                      _selectedSubTabId = facInfo.id;
-                    });
-                  },
+                  onTap: () => _onSubTabSelected(facInfo.id, subTabIds),
                 ),
               );
             }),
@@ -1692,6 +1708,8 @@ class _OfficialTabState extends State<OfficialTab> {
           });
         }
 
+        final List<String> subTabIds = ['all', 'my_faculty', ...followedFaculties];
+
         return Column(
           children: [
             // Thanh chuyển đổi sub-tab tin tức
@@ -1701,16 +1719,48 @@ class _OfficialTabState extends State<OfficialTab> {
               userFacultyStr: userFacultyStr,
               primaryFacultyInfo: primaryFacultyInfo,
               followedFaculties: followedFaculties,
+              subTabIds: subTabIds,
             ),
 
-            // Phần nội dung tin tức theo tab được chọn
+            // Phần nội dung tin tức theo tab được chọn (Cho phép quẹt trái/phải mượt mà giữa các khoa)
             Expanded(
-              child: _buildNewsBody(
-                context: context,
-                isDarkMode: isDarkMode,
-                user: user,
-                userFacultyStr: userFacultyStr,
-                primaryFacultyInfo: primaryFacultyInfo,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (notification) {
+                  if (notification is OverscrollNotification) {
+                    if (notification.overscroll > 0) { // Quẹt sang trái ở subtab cuối cùng
+                      final currentIndex = subTabIds.indexOf(_selectedSubTabId);
+                      if (currentIndex == subTabIds.length - 1) {
+                        final tabController = DefaultTabController.of(context);
+                        if (tabController.index == 0) {
+                          tabController.animateTo(1); // Chuyển sang Tab Diễn Đàn!
+                        }
+                      }
+                    }
+                  }
+                  return false;
+                },
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: subTabIds.length,
+                  onPageChanged: (index) {
+                    if (index >= 0 && index < subTabIds.length) {
+                      setState(() {
+                        _selectedSubTabId = subTabIds[index];
+                      });
+                    }
+                  },
+                  itemBuilder: (context, index) {
+                    final subId = subTabIds[index];
+                    return _buildNewsBodyForSubTab(
+                      subTabId: subId,
+                      context: context,
+                      isDarkMode: isDarkMode,
+                      user: user,
+                      userFacultyStr: userFacultyStr,
+                      primaryFacultyInfo: primaryFacultyInfo,
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -1719,7 +1769,8 @@ class _OfficialTabState extends State<OfficialTab> {
     );
   }
 
-  Widget _buildNewsBody({
+  Widget _buildNewsBodyForSubTab({
+    required String subTabId,
     required BuildContext context,
     required bool isDarkMode,
     required User? user,
@@ -1727,7 +1778,7 @@ class _OfficialTabState extends State<OfficialTab> {
     required FacultyInfo? primaryFacultyInfo,
   }) {
     // CASE 1: Tab Toàn trường
-    if (_selectedSubTabId == 'all') {
+    if (subTabId == 'all') {
       return StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('official_news')
@@ -1784,7 +1835,7 @@ class _OfficialTabState extends State<OfficialTab> {
     }
 
     // CASE 2: Tab Khoa của bạn
-    if (_selectedSubTabId == 'my_faculty') {
+    if (subTabId == 'my_faculty') {
       if (userFacultyStr == null ||
           userFacultyStr.trim().isEmpty ||
           userFacultyStr == 'Chưa cập nhật khoa') {
@@ -1806,7 +1857,7 @@ class _OfficialTabState extends State<OfficialTab> {
 
     // CASE 3: Tab Khoa được chọn từ danh sách theo dõi
     final FacultyInfo? targetFacultyInfo =
-    FacultyHelper.findById(_selectedSubTabId);
+    FacultyHelper.findById(subTabId);
 
     if (targetFacultyInfo != null) {
       return _buildFacultyNewsStream(
