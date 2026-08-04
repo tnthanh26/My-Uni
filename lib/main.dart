@@ -163,6 +163,19 @@ class MyUniApp extends StatelessWidget {
           Locale('vi', 'VN'),
           Locale('en', 'US'),
         ],
+        builder: (context, child) {
+          final mediaQueryData = MediaQuery.of(context);
+          final constrainedTextScaler = mediaQueryData.textScaler.clamp(
+            minScaleFactor: 0.8,
+            maxScaleFactor: 1.15,
+          );
+          return MediaQuery(
+            data: mediaQueryData.copyWith(
+              textScaler: constrainedTextScaler,
+            ),
+            child: child ?? const SizedBox.shrink(),
+          );
+        },
         locale: const Locale('vi', 'VN'),
       );
     }
@@ -186,6 +199,19 @@ class MyUniApp extends StatelessWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: appProvider.themeMode,
+      builder: (context, child) {
+        final mediaQueryData = MediaQuery.of(context);
+        final constrainedTextScaler = mediaQueryData.textScaler.clamp(
+          minScaleFactor: 0.8,
+          maxScaleFactor: 1.15,
+        );
+        return MediaQuery(
+          data: mediaQueryData.copyWith(
+            textScaler: constrainedTextScaler,
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

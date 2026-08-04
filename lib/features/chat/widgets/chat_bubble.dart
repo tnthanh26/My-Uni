@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../theme/app_colors.dart';
 import '../../../utils/base64_image_cache.dart';
@@ -18,6 +22,68 @@ class ChatBubble extends StatelessWidget {
     this.onRecall,
     this.showStatus = false,
   });
+
+  Future<void> _handleOpenFile(
+    BuildContext context,
+    String base64Data,
+    String fileName, {
+    String extension = '',
+  }) async {
+    if (base64Data.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Tệp này không chứa dữ liệu hoặc được gửi từ phiên bản cũ."),
+        ),
+      );
+      return;
+    }
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Đang chuẩn bị tài liệu..."),
+          duration: Duration(seconds: 1),
+        ),
+      );
+
+      // Làm sạch dữ liệu Base64 nếu có tiền tố data URI
+      String cleanBase64 = base64Data.trim();
+      if (cleanBase64.contains(',')) {
+        cleanBase64 = cleanBase64.split(',').last.trim();
+      }
+
+      // Ghép extension vào fileName nếu tên file chưa có đuôi mở rộng
+      String safeFileName = fileName.trim();
+      final cleanExt = extension.toLowerCase().replaceAll('.', '').trim();
+      if (cleanExt.isNotEmpty && !safeFileName.toLowerCase().endsWith('.$cleanExt')) {
+        safeFileName = '$safeFileName.$cleanExt';
+      }
+      safeFileName = safeFileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/$safeFileName';
+      final file = File(filePath);
+
+      await file.writeAsBytes(base64Decode(cleanBase64));
+      final result = await OpenFilex.open(filePath);
+
+      if (result.type != ResultType.done && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Không thể mở tệp (${result.message}). Vui lòng kiểm tra ứng dụng đọc tệp trên thiết bị.",
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Lỗi khi mở tệp: $e")),
+        );
+      }
+    }
+  }
 
   void _showOptionsDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -267,83 +333,222 @@ class ChatBubble extends StatelessWidget {
   }
 
   Widget _buildFileShareCard(
-    BuildContext context,
-    Map<String, String> fileData,
-    bool isMe,
-    bool isDark,
-  ) {
+      BuildContext context,
+      Map<String, String> fileData,
+      bool isMe,
+      bool isDark,
+      ) {
     final fileName = fileData['fileName'] ?? 'Tài liệu đính kèm';
     final fileSize = fileData['fileSize'] ?? '';
-    final ext = (fileData['extension'] ?? '').toLowerCase();
+    
+    String rawExt = fileData['extension'] ?? '';
+    if (rawExt.contains('.')) {
+      rawExt = rawExt.split('.').last;
+    }
+    if (rawExt.isEmpty && fileName.contains('.')) {
+      rawExt = fileName.split('.').last;
+    }
+    final ext = rawExt.trim().toLowerCase();
 
-    IconData fileIcon = Icons.insert_drive_file_rounded;
+    final base64Content =
+        fileData['fileData'] ?? fileData['base64'] ?? '';
+
+    IconData fileIcon = Icons.insert_drive_file_outlined;
     Color iconColor = AppColors.hcmusTeal;
+    String fileTypeLabel = ext.isNotEmpty
+        ? ext.toUpperCase()
+        : 'TỆP';
 
     if (ext == 'pdf') {
-      fileIcon = Icons.picture_as_pdf_rounded;
-      iconColor = Colors.redAccent;
+      fileIcon = Icons.picture_as_pdf_outlined;
+      iconColor = const Color(0xFFE5484D);
     } else if (['doc', 'docx'].contains(ext)) {
-      fileIcon = Icons.description_rounded;
-      iconColor = Colors.blueAccent;
+      fileIcon = Icons.description_outlined;
+      iconColor = const Color(0xFF5893D8);
     } else if (['xls', 'xlsx'].contains(ext)) {
-      fileIcon = Icons.table_chart_rounded;
-      iconColor = Colors.green;
+      fileIcon = Icons.table_chart_outlined;
+      iconColor = const Color(0xFF2E9D65);
     } else if (['zip', 'rar', '7z'].contains(ext)) {
-      fileIcon = Icons.folder_zip_rounded;
-      iconColor = Colors.amber;
+      fileIcon = Icons.folder_zip_outlined;
+      iconColor = const Color(0xFFD99518);
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isMe
-            ? Colors.white.withValues(alpha: 0.15)
-            : (isDark ? const Color(0xFF3A3A3C) : Colors.white),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isMe ? Colors.white24 : (isDark ? Colors.white12 : Colors.black12),
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(8),
+    final Color cardColor = isMe
+        ? Colors.white.withValues(alpha: 0.12)
+        : (isDark
+        ? const Color(0xFF1C1E21)
+        : Colors.white);
+
+    final Color borderColor = isMe
+        ? Colors.white.withValues(alpha: 0.18)
+        : (isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC));
+
+    final Color primaryTextColor = isMe
+        ? Colors.white
+        : (isDark
+        ? Colors.white
+        : const Color(0xFF1D2939));
+
+    final Color secondaryTextColor = isMe
+        ? Colors.white70
+        : (isDark
+        ? Colors.white54
+        : const Color(0xFF667085));
+
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: () {
+          _handleOpenFile(
+            context,
+            base64Content,
+            fileName,
+            extension: ext,
+          );
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(11),
+          decoration: BoxDecoration(
+            color: cardColor,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: borderColor,
             ),
-            child: Icon(fileIcon, color: iconColor, size: 22),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  fileName,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: isMe ? Colors.white : (isDark ? Colors.white : Colors.black87),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isMe
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : iconColor.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                if (fileSize.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    fileSize,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: isMe ? Colors.white70 : (isDark ? Colors.white54 : Colors.black45),
+                child: Icon(
+                  fileIcon,
+                  size: 22,
+                  color: isMe ? Colors.white : iconColor,
+                ),
+              ),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 13.5,
+                        height: 1.2,
+                        fontWeight: FontWeight.w700,
+                        color: primaryTextColor,
+                      ),
                     ),
-                  ),
-                ],
-              ],
-            ),
+                    const SizedBox(height: 5),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isMe
+                                  ? Colors.white.withValues(
+                                alpha: 0.10,
+                              )
+                                  : iconColor.withValues(
+                                alpha: 0.08,
+                              ),
+                              borderRadius:
+                              BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              fileTypeLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily:
+                                'Encode Sans Expanded',
+                                fontSize: 9,
+                                fontWeight: FontWeight.w700,
+                                color: isMe
+                                    ? Colors.white70
+                                    : iconColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        if (fileSize.isNotEmpty) ...[
+                          const SizedBox(width: 7),
+                          Container(
+                            width: 3,
+                            height: 3,
+                            decoration: BoxDecoration(
+                              color: secondaryTextColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 7),
+                          Flexible(
+                            child: Text(
+                              fileSize,
+                              maxLines: 1,
+                              overflow:
+                              TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily:
+                                'Encode Sans Expanded',
+                                fontSize: 10.5,
+                                color:
+                                secondaryTextColor,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: isMe
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : (isDark
+                      ? Colors.white.withValues(
+                    alpha: 0.06,
+                  )
+                      : const Color(0xFFF5F7FA)),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.download_rounded,
+                  size: 18,
+                  color: isMe
+                      ? Colors.white70
+                      : secondaryTextColor,
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
