@@ -1173,6 +1173,14 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     const int startHourGrid = 0; // Từ 00:00 sáng
     const int totalHours = 24;   // 00:00 đến 23:00 (đủ 24 tiếng)
 
+    final now = DateTime.now();
+    final isTodaySelected = _focusedDate.year == now.year &&
+        _focusedDate.month == now.month &&
+        _focusedDate.day == now.day;
+    final currentHourFraction = now.hour + (now.minute / 60.0);
+    final showNowLine = isTodaySelected && currentHourFraction >= 0.0 && currentHourFraction <= 24.0;
+    final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
+
     _scrollToCurrentFocusHour();
 
     return SingleChildScrollView(
@@ -1248,7 +1256,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ),
                 ),
               ),
->>>>>>> Stashed changes
 
             // Class Blocks Positioned by Start & End Time (Google Calendar Solid Fill Style)
             ...dayClasses.map((c) {
@@ -1481,7 +1488,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                   ],
                 ),
               ),
->>>>>>> Stashed changes
           ],
         ),
       ),
@@ -1845,7 +1851,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
     );
   }
 
->>>>>>> Stashed changes
   Widget _buildHeaderNotificationButton({
     required String tooltip,
     required IconData icon,
