@@ -209,6 +209,35 @@ class _MyEventTabState extends State<MyEventTab>
     await ref.delete();
   }
 
+  List<EventModel> _sortEvents(List<EventModel> rawEvents, String filter) {
+    final now = DateTime.now();
+
+    final List<EventModel> futureEvents = [];
+    final List<EventModel> pastEvents = [];
+
+    for (final event in rawEvents) {
+      if (event.dateTime.isBefore(now)) {
+        pastEvents.add(event);
+      } else {
+        futureEvents.add(event);
+      }
+    }
+
+    if (filter == 'Gần nhất') {
+      // Event sắp tới: tăng dần theo thời gian (sớm nhất xếp trước)
+      futureEvents.sort((a, b) => a.dateTime.compareTo(b.dateTime));
+      // Event đã qua: đẩy xuống cuối, mới nhất xếp trước
+      pastEvents.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    } else if (filter == 'Xa nhất') {
+      // Event sắp tới: giảm dần theo thời gian (xa nhất xếp trước)
+      futureEvents.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+      // Event đã qua: đẩy xuống cuối, mới nhất xếp trước
+      pastEvents.sort((a, b) => b.dateTime.compareTo(a.dateTime));
+    }
+
+    return [...futureEvents, ...pastEvents];
+  }
+
   Stream<List<EventModel>> _getEventsStream() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
@@ -222,16 +251,15 @@ class _MyEventTabState extends State<MyEventTab>
         .doc(user.uid)
         .collection('personal_events')
         .where(
-      'dateTime',
-      isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo),
-    )
-        .orderBy('dateTime', descending: _listFilter == 'Xa nhất')
+          'dateTime',
+          isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo),
+        )
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-          .map((doc) => EventModel.fromFirestore(doc))
-          .toList(),
-    );
+              .map((doc) => EventModel.fromFirestore(doc))
+              .toList(),
+        );
   }
 
   List<DateTime> _getDaysInWeek() {
@@ -664,6 +692,7 @@ class _MyEventTabState extends State<MyEventTab>
         stream: _getEventsStream(),
         builder: (context, snapshot) {
           final List<EventModel> allEvents = snapshot.data ?? [];
+          final List<EventModel> sortedListEvents = _sortEvents(allEvents, _listFilter);
 
           final now = DateTime.now();
           final bool isToday = DateUtils.isSameDay(
@@ -694,7 +723,7 @@ class _MyEventTabState extends State<MyEventTab>
             child: TabBarView(
               controller: _viewTabController,
               children: [
-                _buildListView(allEvents, isDarkMode),
+                _buildListView(sortedListEvents, isDarkMode),
                 _buildCalendarView(allEvents, isDarkMode),
               ],
             ),
@@ -859,31 +888,59 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildListView(List<EventModel> events, bool isDarkMode) {
+  Widget _buildListView(
+      List<EventModel> events,
+      bool isDarkMode,
+      ) {
     if (events.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 32,
+            vertical: 40,
+          ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.format_quote_rounded,
-                size: 40,
-                color: figmaSelectionBlue.withOpacity(0.3),
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: figmaSelectionBlue.withValues(
+                    alpha: isDarkMode ? 0.14 : 0.09,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.event_available_outlined,
+                  size: 34,
+                  color: figmaSelectionBlue.withValues(
+                    alpha: 0.85,
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              Text(
+                'Chưa có sự kiện cá nhân',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: _primaryTextColor(isDarkMode),
+                  fontFamily: 'Nunito',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 7),
               Text(
                 _emptyQuotes[_quoteIndex],
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: _primaryTextColor(isDarkMode).withOpacity(0.85),
-                  fontWeight: FontWeight.w600,
-                  fontSize: 17,
-                  fontStyle: FontStyle.italic,
-                  height: 1.5,
-                  fontFamily: 'Urbanist',
+                  color: _secondaryTextColor(isDarkMode),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 13,
+                  height: 1.45,
+                  fontFamily: 'Encode Sans Expanded',
                 ),
               ),
             ],
@@ -893,10 +950,20 @@ class _MyEventTabState extends State<MyEventTab>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        8,
+        16,
+        24,
+      ),
       itemCount: events.length,
-      itemBuilder: (context, i) =>
-          _buildLargeEventCard(events[i], isDarkMode, i),
+      itemBuilder: (context, i) {
+        return _buildLargeEventCard(
+          events[i],
+          isDarkMode,
+          i,
+        );
+      },
     );
   }
 
@@ -1298,13 +1365,13 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildLargeEventCard(EventModel ev, bool isDarkMode, int index) {
+  Widget _buildLargeEventCard(
+      EventModel ev,
+      bool isDarkMode,
+      int index,
+      ) {
     final now = DateTime.now();
     final bool isPastEvent = ev.dateTime.isBefore(now);
-
-    final Color vintageBg = isPastEvent
-        ? (isDarkMode ? const Color(0xFF242424) : const Color(0xFFF1F1F1))
-        : _getVintageColor(index, isDarkMode);
 
     final diff = ev.dateTime.difference(now);
 
@@ -1328,86 +1395,114 @@ class _MyEventTabState extends State<MyEventTab>
       }
     }
 
-    final Color statusColor = diff.isNegative
-        ? Colors.grey
-        : (diff.inDays == 0
-        ? Colors.orangeAccent
-        : figmaSelectionBlue);
+    const List<Color> googleCalendarColors = [
+      Color(0xFF4285F4),
+      Color(0xFF34A853),
+      Color(0xFFFBBC04),
+      Color(0xFFEA4335),
+      Color(0xFF8E67D4),
+      Color(0xFF00ACC1),
+    ];
+
+    final Color eventColor = isPastEvent
+        ? const Color(0xFF9AA0A6)
+        : googleCalendarColors[
+    index % googleCalendarColors.length
+    ];
+
+    final Color cardColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
+
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.08)
+        : const Color(0xFFE4E7EC);
+
+    final Color primaryTextColor =
+    _primaryTextColor(isDarkMode);
+
+    final Color secondaryTextColor =
+    _secondaryTextColor(isDarkMode);
+
+    final Color statusColor = isPastEvent
+        ? const Color(0xFF9AA0A6)
+        : diff.inDays == 0
+        ? const Color(0xFFEA8600)
+        : eventColor;
+
+    final String locationText =
+    ev.location.trim().isNotEmpty
+        ? ev.location.trim()
+        : ev.isOnline
+        ? 'Online'
+        : 'Chưa cập nhật';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: vintageBg,
-        borderRadius: BorderRadius.circular(24),
+        color: cardColor,
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.05)
-              : Colors.black.withOpacity(0.05),
+          color: borderColor,
         ),
-        boxShadow: _cardShadow(isDarkMode),
+        boxShadow: isDarkMode
+            ? const []
+            : [
+          BoxShadow(
+            color: Colors.black.withValues(
+              alpha: 0.035,
+            ),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
-        borderRadius: BorderRadius.circular(24),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 60,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: isDarkMode
-                      ? Colors.white.withOpacity(0.05)
-                      : Colors.white.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.1)
-                        : Colors.black.withOpacity(0.05),
-                  ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () {
+            _showEventDetailsBottomSheet(
+              context,
+              ev,
+              isDarkMode,
+            );
+          },
+          borderRadius: BorderRadius.circular(18),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 5,
+                  color: eventColor,
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      DateFormat('MMM').format(ev.dateTime).toUpperCase(),
-                      style: TextStyle(
-                        color: isDarkMode ? Colors.white70 : Colors.brown,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      14,
+                      14,
+                      10,
+                      14,
                     ),
-                    Text(
-                      DateFormat('dd').format(ev.dateTime),
-                      style: TextStyle(
-                        color: _primaryTextColor(isDarkMode),
-                        fontWeight: FontWeight.w900,
-                        fontSize: 22,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+                    child: Row(
+                      crossAxisAlignment:
+                      CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Text(
-                            ev.title,
-                            style: TextStyle(
-                              color: _primaryTextColor(isDarkMode),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
+                        Container(
+                          width: 56,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 9,
                           ),
+                          decoration: BoxDecoration(
+                            color: eventColor.withValues(
+                              alpha: isDarkMode ? 0.14 : 0.09,
+                            ),
+                            borderRadius:
+                            BorderRadius.circular(14),
+                          ),
+<<<<<<< Updated upstream
                         ),
                         _buildMoreMenu(ev, isDarkMode),
                       ],
@@ -1458,62 +1553,205 @@ class _MyEventTabState extends State<MyEventTab>
                             spacing: 8,
                             runSpacing: 4,
                             crossAxisAlignment: WrapCrossAlignment.center,
+=======
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+>>>>>>> Stashed changes
                             children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: statusColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  timeStatus,
-                                  style: TextStyle(
-                                    color: statusColor,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              Text(
+                                DateFormat('MMM')
+                                    .format(ev.dateTime)
+                                    .toUpperCase(),
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  color: eventColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                  letterSpacing: 0.3,
                                 ),
                               ),
-                              if (isPastEvent)
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 5,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withOpacity(0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: const Text(
-                                    'Đã diễn ra',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                              const SizedBox(height: 1),
+                              Text(
+                                DateFormat('dd')
+                                    .format(ev.dateTime),
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 23,
+                                  height: 1.05,
                                 ),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Chi tiết',
-                          style: TextStyle(
-                            color: isPastEvent ? Colors.grey : figmaDetailBtn,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
+                        const SizedBox(width: 13),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      ev.title,
+                                      maxLines: 2,
+                                      overflow:
+                                      TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontFamily: 'Nunito',
+                                        fontWeight:
+                                        FontWeight.w700,
+                                        fontSize: 16,
+                                        height: 1.25,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  _buildMoreMenu(
+                                    ev,
+                                    isDarkMode,
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_rounded,
+                                    size: 15,
+                                    color: secondaryTextColor,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    DateFormat('HH:mm')
+                                        .format(ev.dateTime),
+                                    style: TextStyle(
+                                      color: secondaryTextColor,
+                                      fontFamily:
+                                      'Encode Sans Expanded',
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 7),
+                              Row(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    ev.isOnline
+                                        ? Icons.videocam_outlined
+                                        : Icons.location_on_outlined,
+                                    size: 15,
+                                    color: secondaryTextColor,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      locationText,
+                                      maxLines: 1,
+                                      overflow:
+                                      TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: secondaryTextColor,
+                                        fontFamily:
+                                        'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: statusColor.withValues(
+                                          alpha: isDarkMode
+                                              ? 0.16
+                                              : 0.10,
+                                        ),
+                                        borderRadius:
+                                        BorderRadius.circular(9),
+                                      ),
+                                      child: Text(
+                                        timeStatus,
+                                        maxLines: 1,
+                                        overflow:
+                                        TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: statusColor,
+                                          fontFamily:
+                                          'Encode Sans Expanded',
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (isPastEvent) ...[
+                                    const SizedBox(width: 7),
+                                    Container(
+                                      padding:
+                                      const EdgeInsets.symmetric(
+                                        horizontal: 9,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF9AA0A6)
+                                            .withValues(
+                                          alpha: isDarkMode
+                                              ? 0.16
+                                              : 0.10,
+                                        ),
+                                        borderRadius:
+                                        BorderRadius.circular(9),
+                                      ),
+                                      child: const Text(
+                                        'Đã diễn ra',
+                                        style: TextStyle(
+                                          color: Color(0xFF80868B),
+                                          fontFamily:
+                                          'Encode Sans Expanded',
+                                          fontSize: 10.5,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  const Spacer(),
+                                  Icon(
+                                    Icons.chevron_right_rounded,
+                                    size: 20,
+                                    color: isPastEvent
+                                        ? const Color(0xFF9AA0A6)
+                                        : eventColor,
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
