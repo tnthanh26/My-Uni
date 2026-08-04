@@ -677,10 +677,6 @@ class _MyEventTabState extends State<MyEventTab>
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    if (_viewTabController == null) {
-      return const SizedBox.shrink();
-    }
-
     return Scaffold(
       backgroundColor: _backgroundColor(isDarkMode),
       body: Center(
@@ -689,90 +685,30 @@ class _MyEventTabState extends State<MyEventTab>
           child: widget.mode == EventTabMode.community
               ? _buildCommunityTab(isDarkMode)
               : StreamBuilder<List<EventModel>>(
-        stream: _getEventsStream(),
-        builder: (context, snapshot) {
-          final List<EventModel> allEvents = snapshot.data ?? [];
-          final List<EventModel> sortedListEvents = _sortEvents(allEvents, _listFilter);
+                  stream: _getEventsStream(),
+                  builder: (context, snapshot) {
+                    final List<EventModel> allEvents = snapshot.data ?? [];
+                    final List<EventModel> sortedListEvents =
+                        _sortEvents(allEvents, _listFilter);
 
-          final now = DateTime.now();
-          final bool isToday = DateUtils.isSameDay(
-            _selectedDay,
-            DateTime.now(),
-          );
+                    final now = DateTime.now();
+                    final int countList =
+                        allEvents.where((e) => !e.dateTime.isBefore(now)).length;
+                    final String listText =
+                        'Bạn đang có $countList sự kiện sắp diễn ra';
 
-          final bool isPastSelectedDay =
-          _selectedDay!.isBefore(DateUtils.dateOnly(DateTime.now()));
-
-          final int countList = allEvents.where((e) => !e.dateTime.isBefore(now)).length;
-          final int countCalendar = allEvents
-              .where(
-                (e) =>
-            DateUtils.isSameDay(e.dateTime, _selectedDay) &&
-                !e.dateTime.isBefore(now),
-          )
-              .length;
-
-          final String listText = 'Bạn đang có $countList sự kiện sắp diễn ra';
-          final String calendarText = isToday
-              ? 'Hôm nay có $countCalendar sự kiện đang chờ bạn'
-              : isPastSelectedDay
-              ? 'Các sự kiện của ngày đã chọn'
-              : 'Ngày này có $countCalendar sự kiện đang chờ bạn';
-
-          final Widget tabBarView = Expanded(
-            child: TabBarView(
-              controller: _viewTabController,
-              children: [
-                _buildListView(sortedListEvents, isDarkMode),
-                _buildCalendarView(allEvents, isDarkMode),
-              ],
-            ),
-          );
-
-          return AnimatedBuilder(
-            animation: _viewTabController!.animation!,
-            child: tabBarView,
-            builder: (context, child) {
-              final double value = _viewTabController!.animation!.value;
-              final double listOpacity = (1.0 - value).clamp(0.0, 1.0);
-              final double calendarOpacity = value.clamp(0.0, 1.0);
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
-                    child: Row(
+                    return Column(
                       children: [
-                        Stack(
-                          children: [
-                            Opacity(
-                              opacity: listOpacity,
-                              child: IgnorePointer(
-                                ignoring: value >= 0.5,
-                                child: _buildListFilter(isDarkMode),
-                              ),
-                            ),
-                            Opacity(
-                              opacity: calendarOpacity,
-                              child: IgnorePointer(
-                                ignoring: value < 0.5,
-                                child: _buildMonthPicker(isDarkMode),
-                              ),
-                            ),
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 6, 16, 12),
+                          child: Row(
+                            children: [
+                              _buildListFilter(isDarkMode),
+                            ],
+                          ),
                         ),
-                        const Spacer(),
-                        _buildViewSwitcher(isDarkMode),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 14),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Opacity(
-                          opacity: listOpacity,
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
                           child: Text(
                             listText,
                             style: TextStyle(
@@ -782,29 +718,16 @@ class _MyEventTabState extends State<MyEventTab>
                             ),
                           ),
                         ),
-                        Opacity(
-                          opacity: calendarOpacity,
-                          child: Text(
-                            calendarText,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: _primaryTextColor(isDarkMode),
-                            ),
-                          ),
+                        Expanded(
+                          child: _buildListView(sortedListEvents, isDarkMode),
                         ),
                       ],
-                    ),
-                  ),
-                  child!,
-                ],
-              );
-            },
-          );
-        },
+                    );
+                  },
+                ),
+        ),
       ),
-
-    )));
+    );
   }
 
   Widget _buildViewSwitcher(bool isDarkMode) {

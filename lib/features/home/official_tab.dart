@@ -760,8 +760,8 @@ class _OfficialTabState extends State<OfficialTab> {
           children: [
             _buildSubTabChip(
               id: 'all',
-              label: 'Toàn trường',
-              icon: Icons.apartment_rounded,
+              label: 'HCMUS',
+              icon: Icons.school_rounded,
               isSelected: _selectedSubTabId == 'all',
               isDarkMode: isDarkMode,
               activeGradient: const [
