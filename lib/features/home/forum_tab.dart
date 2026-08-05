@@ -12,9 +12,7 @@ import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'poll_widget.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:my_uni/theme/app_colors.dart';
 import 'package:my_uni/features/chat/services/chat_service.dart';
-import 'package:my_uni/features/chat/pages/chat_detail_page.dart';
 import 'package:my_uni/features/chat/widgets/student_identity_card.dart';
 import 'package:my_uni/utils/anonymous_utils.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
@@ -30,6 +28,7 @@ class ForumTab extends StatefulWidget {
 
 class _ForumTabState extends State<ForumTab> {
   List<String>? _sortedPostIds;
+  final Map<String, QueryDocumentSnapshot> _cachedPostsMap = {};
 
   @override
   void initState() {
@@ -298,38 +297,25 @@ class _ForumTabState extends State<ForumTab> {
               return bScore.compareTo(aScore);
             });
             _sortedPostIds = sorted.map((doc) => doc.id).toList();
-          } else {
-            // Khi có tương tác (like, comment), thứ tự được khóa cố định.
-            // Chỉ cập nhật các bài viết mới tạo bằng cách đưa chúng lên đầu danh sách.
-            final currentIds = posts.map((doc) => doc.id).toSet();
-            final cachedIdsSet = _sortedPostIds!.toSet();
-            final newIds = currentIds.difference(cachedIdsSet);
-
-            if (newIds.isNotEmpty) {
-              final newDocs = posts.where((doc) => newIds.contains(doc.id)).toList();
-              newDocs.sort((a, b) {
-                final aTime = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                final bTime = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                if (aTime == null && bTime == null) return 0;
-                if (aTime == null) return 1;
-                if (bTime == null) return -1;
-                return bTime.compareTo(aTime);
-              });
-              _sortedPostIds!.insertAll(0, newDocs.map((doc) => doc.id));
+            _cachedPostsMap.clear();
+            for (var doc in posts) {
+              _cachedPostsMap[doc.id] = doc;
             }
-
-            // Đồng thời xóa các bài viết đã bị xóa khỏi cơ sở dữ liệu
-            _sortedPostIds!.removeWhere((id) => !currentIds.contains(id));
+          } else {
+            // Khóa vị trí danh sách hiện tại để tránh trôi/nhảy bài khi đang đọc.
+            // Cập nhật dữ liệu mới (like, comment) cho các bài viết đã có trong cache.
+            for (var doc in posts) {
+              if (_cachedPostsMap.containsKey(doc.id)) {
+                _cachedPostsMap[doc.id] = doc;
+              }
+            }
           }
 
           // Ánh xạ lại các bài viết theo thứ tự đã được khóa
-          final Map<String, QueryDocumentSnapshot> postsMap = {
-            for (var doc in posts) doc.id: doc
-          };
           final List<QueryDocumentSnapshot> orderedPosts = [];
           for (var id in _sortedPostIds!) {
-            if (postsMap.containsKey(id)) {
-              orderedPosts.add(postsMap[id]!);
+            if (_cachedPostsMap.containsKey(id)) {
+              orderedPosts.add(_cachedPostsMap[id]!);
             }
           }
 
@@ -339,7 +325,8 @@ class _ForumTabState extends State<ForumTab> {
               child: RefreshIndicator(
                 onRefresh: () async {
                   setState(() {
-                    _sortedPostIds = null; // Reset để sắp xếp lại theo điểm Trending mới nhất
+                    _sortedPostIds = null;
+                    _cachedPostsMap.clear();
                   });
                 },
                 child: ListView.builder(
@@ -555,7 +542,7 @@ class _ForumTabState extends State<ForumTab> {
                                   ),
 
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 8),
+                                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: isDarkMode
@@ -588,23 +575,29 @@ class _ForumTabState extends State<ForumTab> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: "fab_forum_tab",
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const CreatePostPage()),
-          );
-        },
-        backgroundColor: const Color(0xFF5893D8),
-        elevation: 5,
-        shape: const CircleBorder(),
-        child: const Icon(
-          Icons.edit_outlined,
-          color: Colors.white,
-          size: 28,
-        ),
-      ),
-    );
-  }
+  floatingActionButton: FloatingActionButton(
+    heroTag: "fab_forum_tab",
+    onPressed: () async {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CreatePostPage()),
+      );
+      if (result == true || result != null) {
+        setState(() {
+          _sortedPostIds = null;
+          _cachedPostsMap.clear();
+        });
+      }
+    },
+    backgroundColor: const Color(0xFF5893D8),
+    elevation: 5,
+    shape: const CircleBorder(),
+    child: const Icon(
+      Icons.edit_outlined,
+      color: Colors.white,
+      size: 28,
+    ),
+  ),
+);
+}
 }
