@@ -543,6 +543,20 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
                 if (result == true) _loadInitialMetaData(); // QUAN TRỌNG: Load lại sau khi tạo
               },
             ),
+            ListTile(
+              leading: const Icon(Icons.event_available_rounded, color: Color(0xFF5893D8)),
+              title: const Text("Tạo Sự kiện cá nhân", style: TextStyle(fontFamily: 'Poppins')),
+              onTap: () async {
+                Navigator.pop(sheetContext);
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CreatePersonalEventPage(),
+                  ),
+                );
+                if (result == true || result != null) _loadInitialMetaData();
+              },
+            ),
           ],
         ),
       ),
