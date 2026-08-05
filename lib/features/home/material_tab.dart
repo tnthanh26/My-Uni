@@ -8,12 +8,19 @@ import 'create_material_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'package:my_uni/utils/base64_image_cache.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'widgets/home_skeleton.dart';
 
-class MaterialTab extends StatelessWidget {
+class MaterialTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
   const MaterialTab({super.key, required this.onSave});
+
+  @override
+  State<MaterialTab> createState() => _MaterialTabState();
+}
+
+class _MaterialTabState extends State<MaterialTab> {
+  List<String>? _cachedMaterialIds;
+  final Map<String, QueryDocumentSnapshot> _cachedMaterialDocsMap = {};
 
   Future<void> _handleOpenFile(
       BuildContext context,
@@ -394,7 +401,7 @@ class MaterialTab extends StatelessWidget {
                       child: PostActionRow(
                         docId: docId,
                         data: data,
-                        onSave: onSave,
+                        onSave: widget.onSave,
                         collectionPath: 'study_materials',
                       ),
                     ),
@@ -465,34 +472,73 @@ class MaterialTab extends StatelessWidget {
             );
           }
 
+          List<QueryDocumentSnapshot> docs = snapshot.data!.docs.toList();
+
+          if (_cachedMaterialIds == null) {
+            _cachedMaterialIds = docs.map((d) => d.id).toList();
+            _cachedMaterialDocsMap.clear();
+            for (var d in docs) {
+              _cachedMaterialDocsMap[d.id] = d;
+            }
+          } else {
+            for (var d in docs) {
+              if (_cachedMaterialDocsMap.containsKey(d.id)) {
+                _cachedMaterialDocsMap[d.id] = d;
+              }
+            }
+          }
+
+          final List<QueryDocumentSnapshot> orderedMaterials = [];
+          for (var id in _cachedMaterialIds!) {
+            if (_cachedMaterialDocsMap.containsKey(id)) {
+              orderedMaterials.add(_cachedMaterialDocsMap[id]!);
+            }
+          }
+
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600.0),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-              var doc = snapshot.data!.docs[index];
-              var data = doc.data() as Map<String, dynamic>;
-              String docId = doc.id;
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _cachedMaterialIds = null;
+                    _cachedMaterialDocsMap.clear();
+                  });
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                  itemCount: orderedMaterials.length,
+                  itemBuilder: (context, index) {
+                    var doc = orderedMaterials[index];
+                    var data = doc.data() as Map<String, dynamic>;
+                    String docId = doc.id;
 
-              return _buildMaterialCard(
-                context,
-                data,
-                docId,
-                isDarkMode,
-              );
-            },
-          )));
+                    return _buildMaterialCard(
+                      context,
+                      data,
+                      docId,
+                      isDarkMode,
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_material_tab",
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final res = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CreateMaterialPage()),
           );
+          if (res == true || res != null) {
+            setState(() {
+              _cachedMaterialIds = null;
+              _cachedMaterialDocsMap.clear();
+            });
+          }
         },
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,

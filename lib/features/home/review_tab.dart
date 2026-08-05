@@ -1,14 +1,21 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'create_review_page.dart';
 import 'post_action_row.dart';
 import 'post_detail_page.dart';
 import 'widgets/home_skeleton.dart';
 
-class ReviewTab extends StatelessWidget {
+class ReviewTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
   const ReviewTab({super.key, required this.onSave});
+
+  @override
+  State<ReviewTab> createState() => _ReviewTabState();
+}
+
+class _ReviewTabState extends State<ReviewTab> {
+  List<String>? _cachedReviewIds;
+  final Map<String, QueryDocumentSnapshot> _cachedReviewDocsMap = {};
 
   Widget _buildRatingStars(int rating, bool isDarkMode) {
     return Row(
@@ -262,7 +269,7 @@ class ReviewTab extends StatelessWidget {
                       child: PostActionRow(
                         docId: docId,
                         data: data,
-                        onSave: onSave,
+                        onSave: widget.onSave,
                         collectionPath: 'course_reviews',
                       ),
                     ),
@@ -333,34 +340,73 @@ class ReviewTab extends StatelessWidget {
             );
           }
 
+          List<QueryDocumentSnapshot> docs = snapshot.data!.docs.toList();
+
+          if (_cachedReviewIds == null) {
+            _cachedReviewIds = docs.map((d) => d.id).toList();
+            _cachedReviewDocsMap.clear();
+            for (var d in docs) {
+              _cachedReviewDocsMap[d.id] = d;
+            }
+          } else {
+            for (var d in docs) {
+              if (_cachedReviewDocsMap.containsKey(d.id)) {
+                _cachedReviewDocsMap[d.id] = d;
+              }
+            }
+          }
+
+          final List<QueryDocumentSnapshot> orderedReviews = [];
+          for (var id in _cachedReviewIds!) {
+            if (_cachedReviewDocsMap.containsKey(id)) {
+              orderedReviews.add(_cachedReviewDocsMap[id]!);
+            }
+          }
+
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600.0),
-              child: ListView.builder(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
-                itemCount: snapshot.data!.docs.length,
-                itemBuilder: (context, index) {
-              var doc = snapshot.data!.docs[index];
-              var data = doc.data() as Map<String, dynamic>;
-              String docId = doc.id;
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _cachedReviewIds = null;
+                    _cachedReviewDocsMap.clear();
+                  });
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 90),
+                  itemCount: orderedReviews.length,
+                  itemBuilder: (context, index) {
+                    var doc = orderedReviews[index];
+                    var data = doc.data() as Map<String, dynamic>;
+                    String docId = doc.id;
 
-              return _buildReviewCard(
-                context,
-                data,
-                docId,
-                isDarkMode,
-              );
-            },
-          )));
+                    return _buildReviewCard(
+                      context,
+                      data,
+                      docId,
+                      isDarkMode,
+                    );
+                  },
+                ),
+              ),
+            ),
+          );
         },
       ),
       floatingActionButton: FloatingActionButton(
         heroTag: "fab_review_tab",
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final res = await Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const CreateReviewPage()),
           );
+          if (res == true || res != null) {
+            setState(() {
+              _cachedReviewIds = null;
+              _cachedReviewDocsMap.clear();
+            });
+          }
         },
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,

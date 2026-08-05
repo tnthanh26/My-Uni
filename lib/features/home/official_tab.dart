@@ -24,6 +24,9 @@ class _OfficialTabState extends State<OfficialTab> {
   // Sub-tab id: 'all' (Toàn trường), 'my_faculty' (Khoa của bạn), hoặc 'fit'/'chemistry'/'physics'
   String _selectedSubTabId = 'all';
   late PageController _pageController;
+  final Map<String, List<String>> _cachedSubTabNewsIds = {};
+  final Map<String, Map<String, QueryDocumentSnapshot>> _cachedNewsDocsMap = {};
+  final Map<String, int> _newNewsCounts = {};
 
   @override
   void initState() {
@@ -2048,31 +2051,63 @@ class _OfficialTabState extends State<OfficialTab> {
             );
           }
 
+          List<QueryDocumentSnapshot> docs = snapshot.data!.docs;
+          if (_cachedSubTabNewsIds['all'] == null) {
+            _cachedSubTabNewsIds['all'] = docs.map((d) => d.id).toList();
+            _cachedNewsDocsMap['all'] = {for (var d in docs) d.id: d};
+            _newNewsCounts['all'] = 0;
+          } else {
+            final currentIds = docs.map((d) => d.id).toSet();
+            final cachedIds = _cachedSubTabNewsIds['all']!.toSet();
+            final newIds = currentIds.difference(cachedIds);
+            _newNewsCounts['all'] = newIds.length;
+
+            for (var d in docs) {
+              if (_cachedNewsDocsMap['all']!.containsKey(d.id)) {
+                _cachedNewsDocsMap['all']![d.id] = d;
+              }
+            }
+          }
+
+          final List<QueryDocumentSnapshot> orderedNews = [];
+          for (var id in _cachedSubTabNewsIds['all']!) {
+            if (_cachedNewsDocsMap['all']!.containsKey(id)) {
+              orderedNews.add(_cachedNewsDocsMap['all']![id]!);
+            }
+          }
+
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600.0),
-              child: ListView.builder(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                itemCount: snapshot.data!.docs.length + 1,
-                itemBuilder: (context, index) {
-                  if (index == 0) {
-                    return DailyDigestCard(
-                      isDarkMode: isDarkMode,
-                    );
-                  }
-
-                  var doc = snapshot.data!.docs[index - 1];
-                  var data = doc.data() as Map<String, dynamic>;
-                  return _buildNewsCard(
-                    context: context,
-                    isDarkMode: isDarkMode,
-                    docId: doc.id,
-                    data: data,
-                    collectionPath: 'official_news',
-                    user: user,
-                  );
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  setState(() {
+                    _cachedSubTabNewsIds.remove('all');
+                    _cachedNewsDocsMap.remove('all');
+                  });
                 },
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  itemCount: orderedNews.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return DailyDigestCard(
+                        isDarkMode: isDarkMode,
+                      );
+                    }
+
+                    var doc = orderedNews[index - 1];
+                    var data = doc.data() as Map<String, dynamic>;
+                    return _buildNewsCard(
+                      context: context,
+                      isDarkMode: isDarkMode,
+                      docId: doc.id,
+                      data: data,
+                      collectionPath: 'official_news',
+                      user: user,
+                    );
+                  },
+                ),
               ),
             ),
           );
@@ -2124,6 +2159,7 @@ class _OfficialTabState extends State<OfficialTab> {
     required User? user,
     required FacultyInfo targetFacultyInfo,
   }) {
+    final String key = targetFacultyInfo.id;
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('faculty_official_news')
@@ -2159,33 +2195,64 @@ class _OfficialTabState extends State<OfficialTab> {
           return getDocDate(bData).compareTo(getDocDate(aData));
         });
 
+        if (_cachedSubTabNewsIds[key] == null) {
+          _cachedSubTabNewsIds[key] = docs.map((d) => d.id).toList();
+          _cachedNewsDocsMap[key] = {for (var d in docs) d.id: d};
+          _newNewsCounts[key] = 0;
+        } else {
+          final currentIds = docs.map((d) => d.id).toSet();
+          final cachedIds = _cachedSubTabNewsIds[key]!.toSet();
+          final newIds = currentIds.difference(cachedIds);
+          _newNewsCounts[key] = newIds.length;
+
+          for (var d in docs) {
+            if (_cachedNewsDocsMap[key]!.containsKey(d.id)) {
+              _cachedNewsDocsMap[key]![d.id] = d;
+            }
+          }
+        }
+
+        final List<QueryDocumentSnapshot> orderedNews = [];
+        for (var id in _cachedSubTabNewsIds[key]!) {
+          if (_cachedNewsDocsMap[key]!.containsKey(id)) {
+            orderedNews.add(_cachedNewsDocsMap[key]![id]!);
+          }
+        }
+
         return Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600.0),
-            child: ListView.builder(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-              itemCount: docs.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) {
-                  return FacultyDailyDigestCard(
-                    isDarkMode: isDarkMode,
-                    facultyInfo: targetFacultyInfo,
-                  );
-                }
-
-                var doc = docs[index - 1];
-                var data = doc.data() as Map<String, dynamic>;
-
-                return _buildNewsCard(
-                  context: context,
-                  isDarkMode: isDarkMode,
-                  docId: doc.id,
-                  data: data,
-                  collectionPath: 'faculty_official_news',
-                  user: user,
-                );
+            child: RefreshIndicator(
+              onRefresh: () async {
+                setState(() {
+                  _cachedSubTabNewsIds.remove(key);
+                  _cachedNewsDocsMap.remove(key);
+                });
               },
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                itemCount: orderedNews.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return FacultyDailyDigestCard(
+                      isDarkMode: isDarkMode,
+                      facultyInfo: targetFacultyInfo,
+                    );
+                  }
+
+                  var doc = orderedNews[index - 1];
+                  var data = doc.data() as Map<String, dynamic>;
+
+                  return _buildNewsCard(
+                    context: context,
+                    isDarkMode: isDarkMode,
+                    docId: doc.id,
+                    data: data,
+                    collectionPath: 'faculty_official_news',
+                    user: user,
+                  );
+                },
+              ),
             ),
           ),
         );
