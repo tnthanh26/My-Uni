@@ -11,6 +11,7 @@ import '../event/create_personal_event_page.dart';
 import '../home/post_detail_page.dart';
 import '../services/notification_service.dart';
 import 'package:my_uni/utils/app_feedback.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
 
 class NotificationScreen extends StatelessWidget {
   const NotificationScreen({super.key});
@@ -1674,20 +1675,11 @@ class NotificationScreen extends StatelessWidget {
                             BorderRadius.circular(16),
                             child: Stack(
                               children: [
-                                Image.network(
-                                  thumbnailUrl,
+                                Base64ImageCache.buildSmartImage(
+                                  imageUrl: thumbnailUrl,
                                   height: 180,
                                   width: double.infinity,
-                                  fit: BoxFit.cover,
-                                  errorBuilder:
-                                      (_, __, ___) {
-                                    return Image.asset(
-                                      'assets/images/news.png',
-                                      height: 180,
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                    );
-                                  },
+                                  fallbackAsset: 'assets/images/news.png',
                                 ),
 
                                 Positioned.fill(

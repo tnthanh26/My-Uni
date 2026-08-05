@@ -10,6 +10,7 @@ import 'faculty_helper.dart';
 import 'faculty_daily_digest_card.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
 import 'widgets/home_skeleton.dart';
+import '../../utils/base64_image_cache.dart';
 
 class OfficialTab extends StatefulWidget {
   final Function(String, Map<String, dynamic>) onSave;
@@ -1736,45 +1737,11 @@ class _OfficialTabState extends State<OfficialTab> {
                     borderRadius: BorderRadius.circular(18),
                     child: Stack(
                       children: [
-                        uploadedImageUrl.isNotEmpty
-                            ? Image.network(
-                          uploadedImageUrl,
-                          width: double.infinity,
+                        Base64ImageCache.buildSmartImage(
+                          imageUrl: uploadedImageUrl,
                           height: 200,
-                          fit: BoxFit.cover,
-                          webHtmlElementStrategy:
-                          WebHtmlElementStrategy.prefer,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              fallbackImagePath,
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                              errorBuilder:
-                                  (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/announcement.jpg',
-                                  width: double.infinity,
-                                  height: 200,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            );
-                          },
-                        )
-                            : Image.asset(
-                          fallbackImagePath,
                           width: double.infinity,
-                          height: 200,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/announcement.jpg',
-                              width: double.infinity,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            );
-                          },
+                          fallbackAsset: fallbackImagePath,
                         ),
                         Positioned.fill(
                           child: DecoratedBox(
@@ -2052,6 +2019,11 @@ class _OfficialTabState extends State<OfficialTab> {
           }
 
           List<QueryDocumentSnapshot> docs = snapshot.data!.docs;
+          final urlsToPreload = docs.map((d) {
+            final data = d.data() as Map<String, dynamic>;
+            return data['uploadedImageUrl'] ?? data['imageUrl'] ?? data['thumbnailUrl'];
+          }).map((e) => e?.toString()).whereType<String>().toList();
+          Base64ImageCache.preloadImages(urlsToPreload);
           if (_cachedSubTabNewsIds['all'] == null) {
             _cachedSubTabNewsIds['all'] = docs.map((d) => d.id).toList();
             _cachedNewsDocsMap['all'] = {for (var d in docs) d.id: d};
@@ -2173,6 +2145,11 @@ class _OfficialTabState extends State<OfficialTab> {
         }
 
         List<QueryDocumentSnapshot> docs = snapshot.data!.docs.toList();
+        final urlsToPreload = docs.map((d) {
+          final data = d.data() as Map<String, dynamic>;
+          return data['uploadedImageUrl'] ?? data['imageUrl'] ?? data['thumbnailUrl'];
+        }).map((e) => e?.toString()).whereType<String>().toList();
+        Base64ImageCache.preloadImages(urlsToPreload);
 
         // Sort theo publishedAt/timestamp/createdAt giảm dần trong bộ nhớ
         docs.sort((a, b) {
