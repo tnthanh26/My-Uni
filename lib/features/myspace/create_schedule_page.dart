@@ -8,6 +8,7 @@ import 'models/myspace_models.dart';
 import 'campus_data.dart';
 import 'models/weather_models.dart';
 import 'package:intl/intl.dart';
+import 'package:my_uni/utils/app_feedback.dart';
 
 class CreateSchedulePage extends StatefulWidget {
   final StudyClass? schedule;
@@ -611,9 +612,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
 
   Future<void> _saveSchedule() async {
     if (_subjectController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên môn học')),
-      );
+      AppFeedback.showWarning(context, 'Vui lòng nhập tên môn học');
       return;
     }
 
@@ -621,9 +620,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     final int endMinutes = _endTime.hour * 60 + _endTime.minute;
 
     if (startMinutes >= endMinutes) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Giờ bắt đầu phải nhỏ hơn giờ kết thúc')),
-      );
+      AppFeedback.showWarning(context, 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc');
       return;
     }
 
@@ -758,9 +755,7 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     } catch (e) {
       debugPrint("Lỗi khi lưu môn học cục bộ: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi: $e')),
-        );
+        AppFeedback.showError(context, 'Lỗi: $e');
       }
     }
   }

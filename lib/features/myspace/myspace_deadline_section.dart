@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import './models/myspace_models.dart';
 import './services/moodle_service.dart';
 import './services/moodle_token_storage.dart';
+import 'package:my_uni/utils/app_feedback.dart';
 
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusLightGrey = Color(0xFFEFEFEF);
@@ -522,9 +523,7 @@ Future<void> showAutoDeadlineConfigSheet(
           Future<void> saveCurrentConfig({bool closeAfterSave = false}) async {
             final moodleUrl = moodleUrlController.text.trim();
             if (isEnabled && moodleUrl.isEmpty) {
-              ScaffoldMessenger.of(sheetContext).showSnackBar(
-                const SnackBar(content: Text('Điền đường dẫn Moodle trước đã.')),
-              );
+              AppFeedback.showWarning(sheetContext, 'Điền đường dẫn Moodle trước đã.');
               return;
             }
 
@@ -691,13 +690,13 @@ Future<void> showAutoDeadlineConfigSheet(
                                 });
                                 await saveCurrentConfig();
                                 if (sheetContext.mounted) {
-                                  ScaffoldMessenger.of(sheetContext).showSnackBar(const SnackBar(content: Text('Đã ngắt kết nối Moodle.')));
+                                  AppFeedback.showInfo(sheetContext, 'Đã ngắt kết nối Moodle.');
                                 }
                                 return;
                               }
                               final moodleUrl = moodleUrlController.text.trim();
                               if (moodleUrl.isEmpty) {
-                                ScaffoldMessenger.of(sheetContext).showSnackBar(const SnackBar(content: Text('Điền đường dẫn Moodle trước đã.')));
+                                AppFeedback.showWarning(sheetContext, 'Điền đường dẫn Moodle trước đã.');
                                 return;
                               }
                               final connected = await showMoodleLoginDialog(sheetContext, moodleUrl: moodleUrl);
@@ -721,7 +720,7 @@ Future<void> showAutoDeadlineConfigSheet(
                               await onSyncNow();
                               if (!sheetContext.mounted) return;
                               setModalState(() { isSyncing = false; });
-                              ScaffoldMessenger.of(sheetContext).showSnackBar(const SnackBar(content: Text('Đã chạy đồng bộ Moodle.')));
+                              AppFeedback.showSuccess(sheetContext, 'Đã chạy đồng bộ Moodle.');
                             },
                             icon: isSyncing
                                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
@@ -833,14 +832,14 @@ Future<bool> showMoodleLoginDialog(BuildContext context, {required String moodle
                     final username = usernameController.text.trim();
                     final password = passwordController.text.trim();
                     if (username.isEmpty || password.isEmpty) {
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Điền username và password Moodle.')));
+                      AppFeedback.showWarning(dialogContext, 'Điền username và password Moodle.');
                       return;
                     }
                     setDialogState(() { isConnecting = true; });
                     final token = await MoodleService.connectAndGetToken(moodleUrl: moodleUrl, username: username, password: password);
                     if (token == null || token.trim().isEmpty) {
                       setDialogState(() { isConnecting = false; });
-                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Không thể kết nối Moodle.')));
+                      AppFeedback.showError(dialogContext, 'Không thể kết nối Moodle.');
                       return;
                     }
                     await MoodleTokenStorage.saveToken(token);
