@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../../theme/app_colors.dart';
 import '../../../utils/base64_image_cache.dart';
@@ -7,6 +8,17 @@ import '../models/chat_models.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_page.dart';
 import 'search_user_page.dart';
+
+String _removeVietnameseDiacritics(String str) {
+  var withDiacritics =
+      'àáãảạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳỵỷỹđÀÁÃẢẠĂẰẮẲẴẶÂẦẤẨẪẬÈÉẺẼẸÊỀẾỂỄỆÌÍỈĨỊÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢÙÚỦŨỤƯỪỨỬỮỰỲỴỶỸĐ';
+  var withoutDiacritics =
+      'aaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyydaaaaaaaaaaaaaaaaaeeeeeeeeeeeiiiiiooooooooooooooooouuuuuuuuuuuyyyyd';
+  for (int i = 0; i < withDiacritics.length; i++) {
+    str = str.replaceAll(withDiacritics[i], withoutDiacritics[i]);
+  }
+  return str;
+}
 
 class ChatListPage extends StatefulWidget {
   const ChatListPage({super.key});
@@ -67,79 +79,95 @@ class _ChatListPageState extends State<ChatListPage> {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value.trim().toLowerCase();
-                });
-              },
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 13,
+            child: Container(
+              height: 44,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
                 color: isDark
-                    ? Colors.white
-                    : const Color(0xFF1D2939),
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : const Color(0xFFF2F4F7),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.10)
+                      : const Color(0xFFE4E7EC),
+                ),
               ),
-              decoration: InputDecoration(
-                hintText: 'Tìm kiếm cuộc trò chuyện',
-                hintStyle: TextStyle(
+              child: TextField(
+                controller: _searchController,
+                textAlignVertical: TextAlignVertical.center,
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value.trim().toLowerCase();
+                  });
+                },
+                style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w400,
+                  fontSize: 13,
+                  height: 1.2,
                   color: isDark
-                      ? Colors.white38
-                      : const Color(0xFF98A2B3),
+                      ? Colors.white
+                      : const Color(0xFF1D2939),
                 ),
-                prefixIcon: Icon(
-                  Icons.search_rounded,
-                  size: 21,
-                  color: isDark
-                      ? Colors.white54
-                      : const Color(0xFF667085),
-                ),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                  tooltip: 'Xóa tìm kiếm',
-                  splashRadius: 18,
-                  onPressed: () {
-                    _searchController.clear();
-
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                  icon: Icon(
-                    Icons.close_rounded,
+                decoration: InputDecoration(
+                  isDense: true,
+                  filled: false,
+                  fillColor: Colors.transparent,
+                  hintText: 'Tìm kiếm cuộc trò chuyện...',
+                  hintStyle: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w400,
+                    color: isDark
+                        ? Colors.white38
+                        : const Color(0xFF98A2B3),
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search_rounded,
                     size: 19,
                     color: isDark
                         ? Colors.white54
                         : const Color(0xFF667085),
                   ),
-                )
-                    : null,
-                filled: true,
-                fillColor: isDark
-                    ? const Color(0xFF1C1E21)
-                    : Colors.white,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: BorderSide(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.08)
-                        : const Color(0xFFE4E7EC),
+                  prefixIconConstraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
                   ),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(15),
-                  borderSide: const BorderSide(
-                    color: Color(0xFF5893D8),
-                    width: 1.4,
+                  suffixIcon: _searchQuery.isNotEmpty
+                      ? IconButton(
+                    tooltip: 'Xóa tìm kiếm',
+                    splashRadius: 18,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(
+                      minWidth: 40,
+                      minHeight: 40,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {
+                        _searchQuery = '';
+                      });
+                    },
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: isDark
+                          ? Colors.white54
+                          : const Color(0xFF667085),
+                    ),
+                  )
+                      : null,
+                  suffixIconConstraints: const BoxConstraints(
+                    minWidth: 40,
+                    minHeight: 40,
                   ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.only(right: 8),
                 ),
               ),
             ),
@@ -158,7 +186,10 @@ class _ChatListPageState extends State<ChatListPage> {
 
                 final filteredRooms = rooms.where((room) {
                   final otherName = room.getOtherUserName(currentUid).toLowerCase();
-                  return otherName.contains(_searchQuery);
+                  final cleanName = _removeVietnameseDiacritics(otherName);
+                  final q = _searchQuery.trim().toLowerCase();
+                  final cleanQ = _removeVietnameseDiacritics(q);
+                  return otherName.contains(q) || cleanName.contains(cleanQ);
                 }).toList();
 
                 if (filteredRooms.isEmpty) {
@@ -274,28 +305,68 @@ class _ChatListPageState extends State<ChatListPage> {
                               Stack(
                                 clipBehavior: Clip.none,
                                 children: [
-                                  (() {
-                                    final avatarProvider = Base64ImageCache.getAvatarProvider(otherPhoto);
-                                    return CircleAvatar(
-                                      radius: 26,
-                                      backgroundColor: AppColors.hcmusTeal.withValues(
-                                        alpha: 0.15,
-                                      ),
-                                      backgroundImage: avatarProvider,
-                                      child: avatarProvider == null
-                                          ? Text(
-                                              otherName.trim().isNotEmpty
-                                                  ? otherName.trim()[0].toUpperCase()
-                                                  : 'S',
-                                              style: const TextStyle(
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.w700,
-                                                color: AppColors.hcmusTeal,
-                                              ),
-                                            )
-                                          : null,
-                                    );
-                                  })(),
+                                  StreamBuilder<DocumentSnapshot>(
+                                    stream: FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(otherUid)
+                                        .snapshots(),
+                                    builder: (context, userSnap) {
+                                      String resolvedPhoto =
+                                          Base64ImageCache.getCachedUserAvatar(
+                                              otherUid) ??
+                                              otherPhoto;
+                                      String resolvedName = otherName;
+
+                                      if (userSnap.hasData &&
+                                          userSnap.data?.data() != null) {
+                                        final uData = userSnap.data!.data()
+                                        as Map<String, dynamic>;
+                                        resolvedName = uData['displayName'] ??
+                                            uData['name'] ??
+                                            uData['fullName'] ??
+                                            otherName;
+                                        resolvedPhoto = uData['photoURL'] ??
+                                            uData['photoUrl'] ??
+                                            uData['avatar'] ??
+                                            uData['authorAvatar'] ??
+                                            uData['avatarUrl'] ??
+                                            uData['userAvatar'] ??
+                                            resolvedPhoto;
+                                        Base64ImageCache.updateUserAvatar(
+                                            otherUid, resolvedPhoto);
+                                      }
+
+                                      final avatarProvider =
+                                      Base64ImageCache.getAvatarProvider(
+                                          resolvedPhoto);
+
+                                      return CircleAvatar(
+                                        radius: 26,
+                                        backgroundColor:
+                                        AppColors.hcmusTeal.withValues(
+                                          alpha: 0.15,
+                                        ),
+                                        backgroundImage: avatarProvider,
+                                        child: avatarProvider == null
+                                            ? Text(
+                                          resolvedName
+                                              .trim()
+                                              .isNotEmpty
+                                              ? resolvedName
+                                              .trim()[0]
+                                              .toUpperCase()
+                                              : 'S',
+                                          style: const TextStyle(
+                                            fontSize: 18,
+                                            fontWeight:
+                                            FontWeight.w700,
+                                            color: AppColors.hcmusTeal,
+                                          ),
+                                        )
+                                            : null,
+                                      );
+                                    },
+                                  ),
                                   Positioned(
                                     right: -1,
                                     bottom: -1,

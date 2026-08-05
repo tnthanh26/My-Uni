@@ -693,62 +693,95 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               StudentIdentitySheet.show(context, _targetUserInfo!);
             }
           },
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
-                backgroundImage: Base64ImageCache.getAvatarProvider(widget.targetUserPhoto),
-                child: widget.targetUserPhoto.isEmpty
-                    ? Text(
-                        widget.targetUserName.isNotEmpty
-                            ? widget.targetUserName[0].toUpperCase()
-                            : 'S',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.hcmusTeal,
-                        ),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+          child: StreamBuilder<DocumentSnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('users')
+                .doc(widget.targetUserId)
+                .snapshots(),
+            builder: (context, userSnap) {
+              String resolvedName = widget.targetUserName;
+              String resolvedPhoto = Base64ImageCache.getCachedUserAvatar(
+                      widget.targetUserId) ??
+                  widget.targetUserPhoto;
+
+              if (userSnap.hasData && userSnap.data?.data() != null) {
+                final uData = userSnap.data!.data() as Map<String, dynamic>;
+                resolvedName = uData['displayName'] ??
+                    uData['name'] ??
+                    uData['fullName'] ??
+                    widget.targetUserName;
+                resolvedPhoto = uData['photoURL'] ??
+                    uData['photoUrl'] ??
+                    uData['avatar'] ??
+                    uData['authorAvatar'] ??
+                    uData['avatarUrl'] ??
+                    uData['userAvatar'] ??
+                    resolvedPhoto;
+                Base64ImageCache.updateUserAvatar(
+                    widget.targetUserId, resolvedPhoto);
+              }
+
+              final avatarProvider =
+              Base64ImageCache.getAvatarProvider(resolvedPhoto);
+
+              return Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
+                    backgroundImage: avatarProvider,
+                    child: avatarProvider == null
+                        ? Text(
+                      resolvedName.trim().isNotEmpty
+                          ? resolvedName.trim()[0].toUpperCase()
+                          : 'S',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.hcmusTeal,
+                      ),
+                    )
+                        : null,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Flexible(
-                          child: Text(
-                            widget.targetUserName,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                resolvedName,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.verified_rounded,
+                              size: 16,
+                              color: AppColors.hcmusTeal,
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.verified_rounded,
-                          size: 16,
-                          color: AppColors.hcmusTeal,
+                        const Text(
+                          'Sinh viên HCMUS đã xác thực',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.hcmusTeal,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
-                    const Text(
-                      'Sinh viên HCMUS đã xác thực',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.hcmusTeal,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
+                ],
+              );
+            },
           ),
         ),
         actions: [

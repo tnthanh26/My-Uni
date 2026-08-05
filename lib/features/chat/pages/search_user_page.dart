@@ -1,8 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../theme/app_colors.dart';
+import '../../../utils/base64_image_cache.dart';
 import '../services/chat_service.dart';
 import 'chat_detail_page.dart';
 
@@ -38,20 +38,7 @@ class _SearchUserPageState extends State<SearchUserPage> {
   }
 
   Widget _buildUserAvatar(String photo, String name, bool isDark) {
-    final cleanPhoto = photo.trim();
-    ImageProvider? imageProvider;
-    if (cleanPhoto.isNotEmpty) {
-      if (cleanPhoto.startsWith('http://') || cleanPhoto.startsWith('https://')) {
-        imageProvider = NetworkImage(cleanPhoto);
-      } else {
-        try {
-          final bytes = base64Decode(cleanPhoto);
-          imageProvider = MemoryImage(bytes);
-        } catch (_) {
-          imageProvider = null;
-        }
-      }
-    }
+    final imageProvider = Base64ImageCache.getAvatarProvider(photo);
 
     return CircleAvatar(
       radius: 24,
@@ -498,6 +485,9 @@ class _SearchUserPageState extends State<SearchUserPage> {
                   data['photoURL'] ??
                       data['photoUrl'] ??
                       data['avatar'] ??
+                      data['authorAvatar'] ??
+                      data['avatarUrl'] ??
+                      data['userAvatar'] ??
                       ''
               ).toString();
 
