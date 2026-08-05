@@ -1018,8 +1018,67 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     }
   }
 
-  Widget _buildResultList(BuildContext context, List<dynamic> results) {
+  List<dynamic> _deduplicateSearchResults(List<dynamic> rawResults) {
+    final Set<String> seenIds = <String>{};
+    final Set<String> seenContentKeys = <String>{};
+    final List<dynamic> deduplicated = [];
+
+    for (final item in rawResults) {
+      if (item is! Map) continue;
+
+      final String docId = (item['id'] ?? '').toString().trim();
+      final Map<String, dynamic> data =
+          Map<String, dynamic>.from(item['data'] as Map? ?? {});
+
+      final String title =
+          (data['title'] ?? data['name'] ?? '').toString().trim().toLowerCase();
+      final String link = (data['sourceArticleUrl'] ??
+              data['articleUrl'] ??
+              data['link'] ??
+              data['url'] ??
+              '')
+          .toString()
+          .trim()
+          .toLowerCase();
+      final String summary =
+          (data['summary'] ?? data['content'] ?? '').toString().trim().toLowerCase();
+
+      // 1. Check duplicate doc ID
+      if (docId.isNotEmpty) {
+        if (seenIds.contains(docId)) continue;
+        seenIds.add(docId);
+      }
+
+      // 2. Check duplicate title + link OR title + summary
+      if (title.isNotEmpty) {
+        final String shortSummary =
+            summary.length > 50 ? summary.substring(0, 50) : summary;
+        final String contentKey =
+            link.isNotEmpty ? '$title|$link' : '$title|$shortSummary';
+        if (seenContentKeys.contains(contentKey)) continue;
+        seenContentKeys.add(contentKey);
+      }
+
+      deduplicated.add(item);
+    }
+
+    return deduplicated;
+  }
+
+  Widget _buildResultList(BuildContext context, List<dynamic> rawResults) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final results = _deduplicateSearchResults(rawResults);
+
+    if (results.isEmpty) {
+      return Center(
+        child: Text(
+          'Không tìm thấy kết quả',
+          style: TextStyle(
+            color: _secondaryText(isDarkMode),
+          ),
+        ),
+      );
+    }
 
     return Container(
       color: _backgroundColor(isDarkMode),
