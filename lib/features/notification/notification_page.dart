@@ -310,7 +310,13 @@ class NotificationScreen extends StatelessWidget {
         ? Colors.white60
         : const Color(0xFF667085);
 
+    final bool isEventNoti = noti.type == 'faculty_event' || noti.collectionPath == 'faculty_events';
+
     String displayContent = noti.content.trim();
+    displayContent = displayContent
+        .replaceAll('Khoa Khoa ', 'Khoa ')
+        .replaceAll('Khoa Khoa', 'Khoa')
+        .replaceAll('Khoa  vừa', 'Khoa vừa');
 
     if (displayContent.startsWith('đã ')) {
       displayContent = 'Ai đó $displayContent';
@@ -320,6 +326,36 @@ class NotificationScreen extends StatelessWidget {
 
     if (displayContent.isEmpty) {
       displayContent = 'Bạn có một thông báo mới.';
+    }
+
+    // Process event notification title and badges
+    String displayTitle = noti.title.trim().isNotEmpty ? noti.title : 'Thông báo mới';
+    String? eventBadgeText;
+    Color eventBadgeColor = _primaryColor;
+
+    if (isEventNoti) {
+      if (displayTitle.contains('Cập nhật sự kiện')) {
+        eventBadgeText = 'CẬP NHẬT SỰ KIỆN';
+        eventBadgeColor = const Color(0xFFF79009); // Amber
+        displayTitle = displayTitle
+            .replaceAll('🔄 ', '')
+            .replaceAll('🔄', '')
+            .replaceFirst('Cập nhật sự kiện: ', '')
+            .replaceFirst('Cập nhật sự kiện:', '')
+            .trim();
+      } else if (displayTitle.contains('Sự kiện mới')) {
+        eventBadgeText = 'SỰ KIỆN MỚI';
+        eventBadgeColor = _primaryColor;
+        displayTitle = displayTitle
+            .replaceAll('📌 ', '')
+            .replaceAll('📌', '')
+            .replaceFirst('Sự kiện mới: ', '')
+            .replaceFirst('Sự kiện mới:', '')
+            .trim();
+      } else {
+        eventBadgeText = 'SỰ KIỆN KHOA';
+        eventBadgeColor = _primaryColor;
+      }
     }
 
     return Material(
@@ -359,6 +395,7 @@ class NotificationScreen extends StatelessWidget {
               _getNotificationIcon(
                 context,
                 noti.type,
+                title: noti.title,
               ),
               const SizedBox(width: 13),
               Expanded(
@@ -366,15 +403,36 @@ class NotificationScreen extends StatelessWidget {
                   crossAxisAlignment:
                   CrossAxisAlignment.start,
                   children: [
+                    if (isEventNoti && eventBadgeText != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 3,
+                        ),
+                        decoration: BoxDecoration(
+                          color: eventBadgeColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          eventBadgeText,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w700,
+                            color: eventBadgeColor,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                    ],
                     Row(
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
-                            noti.title.trim().isNotEmpty
-                                ? noti.title
-                                : 'Thông báo mới',
+                            displayTitle,
                             maxLines: 2,
                             overflow:
                             TextOverflow.ellipsis,
@@ -479,8 +537,9 @@ class NotificationScreen extends StatelessWidget {
 
   Widget _getNotificationIcon(
       BuildContext context,
-      String type,
-      ) {
+      String type, {
+      String? title,
+      }) {
     final bool isDarkMode =
         Theme.of(context).brightness == Brightness.dark;
 
@@ -492,6 +551,16 @@ class NotificationScreen extends StatelessWidget {
         iconData =
             Icons.local_fire_department_rounded;
         iconColor = const Color(0xFFF79009);
+        break;
+
+      case 'faculty_event':
+        if (title != null && (title.contains('Cập nhật') || title.contains('🔄'))) {
+          iconData = Icons.edit_calendar_rounded;
+          iconColor = const Color(0xFFF79009); // Amber
+        } else {
+          iconData = Icons.event_available_rounded;
+          iconColor = _primaryColor; // Blue
+        }
         break;
 
       case 'warning':

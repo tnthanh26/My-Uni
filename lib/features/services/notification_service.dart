@@ -244,15 +244,18 @@ class NotificationService {
             final String eventTitle =
                 (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên mới')
                     .toString();
-            final String facultyName =
+            final String rawFaculty =
                 (data['facultyName'] ?? data['department'] ?? 'Khoa')
-                    .toString();
+                    .toString().trim();
+            final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
+                ? rawFaculty
+                : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
             final String eventDateText =
                 (data['eventDateText'] ?? data['date'] ?? '').toString();
             final String locationName =
                 (data['locationName'] ?? '').toString();
 
-            String bodyStr = '$facultyName';
+            String bodyStr = facultyName;
             if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
             if (locationName.isNotEmpty) bodyStr += ' • $locationName';
 
