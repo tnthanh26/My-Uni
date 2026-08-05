@@ -121,6 +121,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
     return 'forum_posts';
   }
 
+  bool get _isOfficialPost {
+    return _collectionPath == 'official_news' ||
+        _collectionPath == 'faculty_official_news' ||
+        widget.initialPostData['scope'] == 'official_news' ||
+        widget.initialPostData['type'] == 'official' ||
+        widget.initialPostData.containsKey('link');
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1450,7 +1458,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 ),
               ],
             )
-          else
+          else if (!_isOfficialPost)
             IconButton(
               icon: const Icon(
                 Icons.report_gmailerrorred_outlined,
