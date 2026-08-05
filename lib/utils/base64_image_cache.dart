@@ -18,19 +18,23 @@ class Base64ImageCache {
       return Uint8List(0);
     }
 
-    if (_cache.containsKey(base64Str)) {
-      final value = _cache.remove(base64Str)!;
-      _cache[base64Str] = value;
+    final clean = base64Str.contains(',') ? base64Str.split(',')[1] : base64Str;
+    final sanitized = clean.replaceAll(RegExp(r'\s+'), '');
+    if (sanitized.isEmpty) return Uint8List(0);
+
+    if (_cache.containsKey(sanitized)) {
+      final value = _cache.remove(sanitized)!;
+      _cache[sanitized] = value;
       return value;
     }
 
     try {
-      final decoded = base64Decode(base64Str);
+      final decoded = base64Decode(sanitized);
       if (_cache.length >= _maxCapacity) {
         final firstKey = _cache.keys.first;
         _cache.remove(firstKey);
       }
-      _cache[base64Str] = decoded;
+      _cache[sanitized] = decoded;
       return decoded;
     } catch (e) {
       return Uint8List(0);
@@ -41,23 +45,23 @@ class Base64ImageCache {
   static MemoryImage? getMemoryImage(String base64Str) {
     if (base64Str.isEmpty) return null;
     final clean = base64Str.contains(',') ? base64Str.split(',')[1] : base64Str;
-    final trimmed = clean.trim();
-    if (trimmed.isEmpty || trimmed.length < 10) return null;
+    final sanitized = clean.replaceAll(RegExp(r'\s+'), '');
+    if (sanitized.isEmpty || sanitized.length < 10) return null;
 
-    if (_providerCache.containsKey(trimmed)) {
-      final provider = _providerCache.remove(trimmed)!;
-      _providerCache[trimmed] = provider;
+    if (_providerCache.containsKey(sanitized)) {
+      final provider = _providerCache.remove(sanitized)!;
+      _providerCache[sanitized] = provider;
       return provider;
     }
 
-    final bytes = decode(trimmed);
+    final bytes = decode(sanitized);
     if (bytes.isEmpty) return null;
 
     final provider = MemoryImage(bytes);
     if (_providerCache.length >= _maxCapacity) {
       _providerCache.remove(_providerCache.keys.first);
     }
-    _providerCache[trimmed] = provider;
+    _providerCache[sanitized] = provider;
     return provider;
   }
 
@@ -82,9 +86,23 @@ class Base64ImageCache {
     return getMemoryImage(trimmed);
   }
 
+  static final LinkedHashMap<String, String> _userAvatarMap = LinkedHashMap<String, String>();
+
+  /// Updates or registers a user's latest avatar photo string in memory
+  static void updateUserAvatar(String userId, String? photoUrl) {
+    if (userId.isEmpty || photoUrl == null || photoUrl.isEmpty) return;
+    _userAvatarMap[userId] = photoUrl;
+  }
+
+  /// Returns the latest cached avatar photo string for a user ID if available
+  static String? getCachedUserAvatar(String userId) {
+    return _userAvatarMap[userId];
+  }
+
   /// Clears the cache
   static void clear() {
     _cache.clear();
     _providerCache.clear();
+    _userAvatarMap.clear();
   }
 }

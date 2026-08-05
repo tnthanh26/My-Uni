@@ -440,6 +440,36 @@ class _EditProfilePageState extends State<EditProfilePage> {
     } catch (e) {
       debugPrint("Lỗi đồng bộ comments: $e");
     }
+
+    // 4. Sync chat_rooms participantPhotos and participantNames
+    try {
+      final chatRoomsQuery = await firestore
+          .collection('chat_rooms')
+          .where('participants', arrayContains: uid)
+          .get();
+
+      if (chatRoomsQuery.docs.isNotEmpty) {
+        WriteBatch batch = firestore.batch();
+        int count = 0;
+        for (var doc in chatRoomsQuery.docs) {
+          batch.update(doc.reference, {
+            'participantNames.$uid': newName,
+            'participantPhotos.$uid': newAvatar ?? '',
+          });
+          count++;
+          if (count >= 400) {
+            await batch.commit();
+            batch = firestore.batch();
+            count = 0;
+          }
+        }
+        if (count > 0) {
+          await batch.commit();
+        }
+      }
+    } catch (e) {
+      debugPrint("Lỗi đồng bộ chat_rooms: $e");
+    }
   }
 
   Widget _buildSectionTitle(String title, bool isDarkMode) {

@@ -56,13 +56,13 @@ class ChatService {
       if (myDoc != null && myDoc.exists) {
         final myData = myDoc.data() as Map<String, dynamic>? ?? {};
         myName = myData['displayName'] ?? myData['name'] ?? myData['username'] ?? myName;
-        myPhoto = myData['photoURL'] ?? myData['avatar'] ?? myData['authorAvatar'] ?? myData['avatarUrl'] ?? myData['userAvatar'] ?? myPhoto;
+        myPhoto = myData['photoURL'] ?? myData['photoUrl'] ?? myData['avatar'] ?? myData['authorAvatar'] ?? myData['avatarUrl'] ?? myData['userAvatar'] ?? myPhoto;
       }
 
       if (targetDoc != null && targetDoc.exists) {
         final targetData = targetDoc.data() as Map<String, dynamic>? ?? {};
         resolvedTargetName = targetData['displayName'] ?? targetData['name'] ?? targetData['username'] ?? resolvedTargetName;
-        resolvedTargetPhoto = targetData['photoURL'] ?? targetData['avatar'] ?? targetData['authorAvatar'] ?? targetData['avatarUrl'] ?? targetData['userAvatar'] ?? resolvedTargetPhoto;
+        resolvedTargetPhoto = targetData['photoURL'] ?? targetData['photoUrl'] ?? targetData['avatar'] ?? targetData['authorAvatar'] ?? targetData['avatarUrl'] ?? targetData['userAvatar'] ?? resolvedTargetPhoto;
       }
 
       final participantNames = {
@@ -446,7 +446,7 @@ class ChatService {
         'university': data['university'] ?? 'HCMUS - ĐH Khoa học Tự nhiên',
         'faculty': data['faculty'] ?? data['department'] ?? 'Chưa cập nhật khoa',
         'studentId': data['studentId'] ?? data['mssv'] ?? '',
-        'photoURL': data['photoURL'] ?? data['avatar'] ?? '',
+        'photoURL': data['photoURL'] ?? data['photoUrl'] ?? data['avatar'] ?? data['authorAvatar'] ?? data['avatarUrl'] ?? data['userAvatar'] ?? '',
         'zalo': data['zalo'] ?? data['phone'] ?? '',
         'facebook': data['facebook'] ?? '',
         'phone': data['phone'] ?? '',
