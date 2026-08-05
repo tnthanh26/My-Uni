@@ -15,6 +15,7 @@ import '../services/chat_service.dart';
 import '../widgets/chat_bubble.dart';
 import '../widgets/student_identity_card.dart';
 import '../../../utils/base64_image_cache.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 
 class ChatDetailPage extends StatefulWidget {
   final String roomId;
@@ -46,6 +47,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     super.initState();
     _chatService.markRoomAsRead(widget.roomId);
     _loadTargetUserInfo();
+    _chatService.cleanupExpiredMessages(widget.roomId);
   }
 
   Future<void> _loadTargetUserInfo() async {
@@ -55,6 +57,49 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         _targetUserInfo = info;
       });
     }
+  }
+
+  void _confirmDeleteChatRoom() async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
+      context: context,
+      title: 'Xóa cuộc trò chuyện?',
+      message: 'Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa. Bạn có chắc chắn không?',
+      confirmText: 'Xóa',
+    );
+    if (confirm == true) {
+      try {
+        await _chatService.deleteChatRoom(widget.roomId);
+        if (mounted) {
+          Navigator.pop(context);
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Lỗi xóa cuộc trò chuyện: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  void _showChatOptionsMenu() {
+    AppActionDialogs.showActionBottomSheet(
+      context: context,
+      title: 'Tùy chọn cuộc trò chuyện',
+      actions: [
+        AppActionItem(
+          title: 'Báo cáo cuộc trò chuyện',
+          icon: Icons.report_gmailerrorred_outlined,
+          onTap: _showReportUserOptions,
+        ),
+        AppActionItem(
+          title: 'Xóa cuộc trò chuyện',
+          icon: Icons.delete_outline_rounded,
+          isDanger: true,
+          onTap: _confirmDeleteChatRoom,
+        ),
+      ],
+    );
   }
 
   Future<void> _showReportUserOptions() async {
@@ -786,9 +831,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.report_gmailerrorred_outlined, color: Colors.redAccent),
-            tooltip: 'Báo cáo người dùng',
-            onPressed: _showReportUserOptions,
+            icon: const Icon(Icons.more_vert_rounded),
+            tooltip: 'Tùy chọn cuộc trò chuyện',
+            onPressed: _showChatOptionsMenu,
           ),
         ],
       ),

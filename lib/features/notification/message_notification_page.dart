@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import '../../models/notification_model.dart';
 import '../services/notification_service.dart';
@@ -8,6 +9,7 @@ import '../chat/services/chat_service.dart';
 import '../../theme/app_colors.dart';
 import '../../utils/base64_image_cache.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 
 class _GroupedMessageNoti {
   final MyUniNotification latestNoti;
@@ -26,277 +28,51 @@ class MessageNotificationScreen extends StatelessWidget {
 
   static const Color _dangerColor = Color(0xFFE5484D);
 
-  void _showDeleteAllDialog(BuildContext parentContext) {
-    final bool isDarkMode =
-        Theme.of(parentContext).brightness == Brightness.dark;
-
-    final Color textColor =
-    isDarkMode ? Colors.white : const Color(0xFF1F2937);
-
-    final Color secondaryTextColor =
-    isDarkMode ? Colors.white60 : const Color(0xFF667085);
-
-    final Color borderColor = isDarkMode
-        ? Colors.white.withValues(alpha: 0.12)
-        : const Color(0xFFE4E7EC);
-
-    showDialog(
+  void _showDeleteAllDialog(BuildContext parentContext) async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: parentContext,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor:
-          isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          title: Text(
-            "Xóa tất cả thông báo?",
-            style: TextStyle(
-              fontFamily: 'Nunito',
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-          content: Text(
-            "Toàn bộ thông báo tin nhắn sẽ bị xóa và không thể khôi phục.",
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 13,
-              height: 1.45,
-              color: secondaryTextColor,
-            ),
-          ),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(dialogContext);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: secondaryTextColor,
-                        side: BorderSide(color: borderColor),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Hủy",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: FilledButton(
-                      onPressed: () async {
-                        Navigator.pop(dialogContext);
-
-                        await NotificationService
-                            .deleteAllMessageNotifications();
-
-                        if (parentContext.mounted) {
-                          ScaffoldMessenger.of(parentContext)
-                            ..hideCurrentSnackBar()
-                            ..showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Đã xóa tất cả thông báo tin nhắn",
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                        }
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE5484D),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Xóa tất cả",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+      title: 'Xóa tất cả thông báo?',
+      message: 'Toàn bộ thông báo tin nhắn sẽ bị xóa và không thể khôi phục.',
+      confirmText: 'Xóa tất cả',
     );
+    if (confirm == true) {
+      await NotificationService.deleteAllMessageNotifications();
+    }
   }
 
   void _showDeleteGroupDialog(
-      BuildContext parentContext,
-      _GroupedMessageNoti group,
-      ) {
-    final bool isDarkMode =
-        Theme.of(parentContext).brightness == Brightness.dark;
-
-    final Color textColor =
-    isDarkMode ? Colors.white : const Color(0xFF1F2937);
-
-    final Color secondaryTextColor =
-    isDarkMode ? Colors.white60 : const Color(0xFF667085);
-
-    final Color borderColor = isDarkMode
-        ? Colors.white.withValues(alpha: 0.12)
-        : const Color(0xFFE4E7EC);
-
+    BuildContext parentContext,
+    _GroupedMessageNoti group,
+  ) async {
     final String senderName =
-    group.latestNoti.senderName?.trim().isNotEmpty == true
-        ? group.latestNoti.senderName!
-        : "sinh viên này";
+        group.latestNoti.senderName?.trim().isNotEmpty == true
+            ? group.latestNoti.senderName!
+            : "sinh viên này";
 
-    showDialog(
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: parentContext,
-      builder: (dialogContext) {
-        return AlertDialog(
-          backgroundColor:
-          isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-          contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-          title: Text(
-            "Xóa thông báo?",
-            style: TextStyle(
-              fontFamily: 'Nunito',
-              fontSize: 19,
-              fontWeight: FontWeight.w700,
-              color: textColor,
-            ),
-          ),
-          content: Text(
-            "Bạn có chắc muốn xóa tất cả thông báo tin nhắn từ $senderName không?",
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 13,
-              height: 1.45,
-              color: secondaryTextColor,
-            ),
-          ),
-          actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(dialogContext);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: secondaryTextColor,
-                        side: BorderSide(color: borderColor),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Hủy",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: FilledButton(
-                      onPressed: () async {
-                        Navigator.pop(dialogContext);
-
-                        for (final noti in group.allNotis) {
-                          await NotificationService.deleteNotification(
-                            noti.id,
-                          );
-                        }
-
-                        if (parentContext.mounted) {
-                          ScaffoldMessenger.of(parentContext)
-                            ..hideCurrentSnackBar()
-                            ..showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  "Đã xóa thông báo tin nhắn",
-                                ),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                        }
-                      },
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFE5484D),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        "Xóa",
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
+      title: 'Xóa thông báo?',
+      message: 'Bạn có chắc muốn xóa tất cả thông báo tin nhắn từ $senderName không?',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      for (final noti in group.allNotis) {
+        await NotificationService.deleteNotification(noti.id);
+      }
+    }
   }
 
   Future<void> _handleGroupTap(
-      BuildContext context,
-      _GroupedMessageNoti group,
-      ) async {
+    BuildContext context,
+    _GroupedMessageNoti group,
+  ) async {
     final String? roomId = group.latestNoti.roomId;
 
     if (roomId == null || roomId.isEmpty) {
       return;
     }
 
-    final String currentUid =
-        ChatService().currentUserId ?? '';
+    final String currentUid = ChatService().currentUserId ?? '';
 
     String peerUid = group.latestNoti.senderId ?? '';
 
@@ -307,6 +83,12 @@ class MessageNotificationScreen extends StatelessWidget {
       );
     }
 
+    final String resolvedPhoto = (peerUid.isNotEmpty
+            ? Base64ImageCache.getCachedUserAvatar(peerUid)
+            : null) ??
+        group.latestNoti.senderAvatar ??
+        '';
+
     // 1. Thực hiện điều hướng NGAY LẬP TỨC để app ko bị khựng
     Navigator.push(
       context,
@@ -315,10 +97,8 @@ class MessageNotificationScreen extends StatelessWidget {
           roomId: roomId,
           targetUserId: peerUid,
           targetUserName:
-          group.latestNoti.senderName ??
-              group.latestNoti.title,
-          targetUserPhoto:
-          group.latestNoti.senderAvatar ?? '',
+              group.latestNoti.senderName ?? group.latestNoti.title,
+          targetUserPhoto: resolvedPhoto,
         ),
       ),
     );
@@ -337,8 +117,7 @@ class MessageNotificationScreen extends StatelessWidget {
   }
 
   Widget _buildUnreadBadge(int unreadCount) {
-    final String badgeText =
-    unreadCount > 99 ? '99+' : '$unreadCount';
+    final String badgeText = unreadCount > 99 ? '99+' : '$unreadCount';
 
     return Container(
       constraints: const BoxConstraints(
@@ -367,10 +146,10 @@ class MessageNotificationScreen extends StatelessWidget {
   }
 
   Widget _buildGroupedMessageItem(
-      BuildContext context,
-      _GroupedMessageNoti group,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    _GroupedMessageNoti group,
+    bool isDarkMode,
+  ) {
     final MyUniNotification noti = group.latestNoti;
 
     final String timeStr = timeago.format(
@@ -380,35 +159,39 @@ class MessageNotificationScreen extends StatelessWidget {
 
     final bool isUnread = group.unreadCount > 0;
 
-    final String senderName =
-    noti.senderName?.trim().isNotEmpty == true
+    final String currentUid = ChatService().currentUserId ?? '';
+    String senderUid = noti.senderId ?? '';
+    if (senderUid.isEmpty && noti.roomId != null && noti.roomId!.isNotEmpty) {
+      senderUid = noti.roomId!.split('_').firstWhere(
+        (id) => id != currentUid,
+        orElse: () => '',
+      );
+    }
+
+    final String initialName = noti.senderName?.trim().isNotEmpty == true
         ? noti.senderName!
         : noti.title.trim().isNotEmpty
-        ? noti.title
-        : 'Một sinh viên';
+            ? noti.title
+            : 'Một sinh viên';
 
-    final String avatarUrl = noti.senderAvatar ?? '';
+    final String initialAvatar = noti.senderAvatar ?? '';
 
-    final String previewContent =
-    noti.content.trim().isNotEmpty
+    final String previewContent = noti.content.trim().isNotEmpty
         ? noti.content.trim()
         : 'Đã gửi cho bạn một tin nhắn';
 
     final Color primaryTextColor =
-    isDarkMode ? Colors.white : const Color(0xFF1D2939);
+        isDarkMode ? Colors.white : const Color(0xFF1D2939);
 
-    final Color secondaryTextColor = isDarkMode
-        ? Colors.white60
-        : const Color(0xFF667085);
+    final Color secondaryTextColor =
+        isDarkMode ? Colors.white60 : const Color(0xFF667085);
 
     final Color unreadBackgroundColor = isDarkMode
         ? AppColors.hcmusTeal.withValues(alpha: 0.08)
         : AppColors.hcmusTeal.withValues(alpha: 0.06);
 
     return Material(
-      color: isUnread
-          ? unreadBackgroundColor
-          : Colors.transparent,
+      color: isUnread ? unreadBackgroundColor : Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -423,123 +206,151 @@ class MessageNotificationScreen extends StatelessWidget {
             horizontal: 12,
             vertical: 12,
           ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Stack(
-                clipBehavior: Clip.none,
+          child: StreamBuilder<DocumentSnapshot>(
+            stream: senderUid.isNotEmpty
+                ? FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(senderUid)
+                    .snapshots()
+                : null,
+            builder: (context, userSnap) {
+              String resolvedPhoto = (senderUid.isNotEmpty
+                      ? Base64ImageCache.getCachedUserAvatar(senderUid)
+                      : null) ??
+                  initialAvatar;
+              String resolvedName = initialName;
+
+              if (userSnap.hasData && userSnap.data?.data() != null) {
+                final uData = userSnap.data!.data() as Map<String, dynamic>;
+                resolvedName = uData['displayName'] ??
+                    uData['name'] ??
+                    uData['fullName'] ??
+                    initialName;
+                resolvedPhoto = uData['photoURL'] ??
+                    uData['photoUrl'] ??
+                    uData['avatar'] ??
+                    uData['authorAvatar'] ??
+                    uData['avatarUrl'] ??
+                    uData['userAvatar'] ??
+                    resolvedPhoto;
+                if (senderUid.isNotEmpty) {
+                  Base64ImageCache.updateUserAvatar(senderUid, resolvedPhoto);
+                }
+              }
+
+              final avatarProvider =
+                  Base64ImageCache.getAvatarProvider(resolvedPhoto);
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor:
-                    AppColors.hcmusTeal.withValues(
-                      alpha: 0.14,
-                    ),
-                    backgroundImage:
-                    Base64ImageCache.getAvatarProvider(
-                      avatarUrl,
-                    ),
-                    child: avatarUrl.isEmpty
-                        ? Text(
-                      senderName.isNotEmpty
-                          ? senderName[0].toUpperCase()
-                          : 'S',
-                      style: const TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.hcmusTeal,
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      CircleAvatar(
+                        radius: 25,
+                        backgroundColor: AppColors.hcmusTeal.withValues(
+                          alpha: 0.14,
+                        ),
+                        backgroundImage: avatarProvider,
+                        child: avatarProvider == null
+                            ? Text(
+                                resolvedName.isNotEmpty
+                                    ? resolvedName[0].toUpperCase()
+                                    : 'S',
+                                style: const TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.hcmusTeal,
+                                ),
+                              )
+                            : null,
                       ),
-                    )
-                        : null,
-                  ),
-                  if (isUnread)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: AppColors.hcmusTeal,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDarkMode
-                                ? const Color(0xFF101214)
-                                : Colors.white,
-                            width: 2,
+                      if (isUnread)
+                        Positioned(
+                          right: 0,
+                          bottom: 0,
+                          child: Container(
+                            width: 12,
+                            height: 12,
+                            decoration: BoxDecoration(
+                              color: AppColors.hcmusTeal,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? const Color(0xFF101214)
+                                    : Colors.white,
+                                width: 2,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      senderName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 15,
-                        fontWeight: isUnread
-                            ? FontWeight.w800
-                            : FontWeight.w600,
-                        color: primaryTextColor,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      previewContent,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 12.5,
-                        height: 1.35,
-                        fontWeight: isUnread
-                            ? FontWeight.w600
-                            : FontWeight.w400,
-                        color: isUnread
-                            ? primaryTextColor.withValues(
-                          alpha: 0.85,
-                        )
-                            : secondaryTextColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment:
-                CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    timeStr,
-                    style: TextStyle(
-                      fontSize: 10.5,
-                      fontWeight: isUnread
-                          ? FontWeight.w600
-                          : FontWeight.w400,
-                      color: isUnread
-                          ? AppColors.hcmusTeal
-                          : secondaryTextColor,
+                    ],
+                  ),
+                  const SizedBox(width: 13),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          resolvedName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 15,
+                            fontWeight:
+                                isUnread ? FontWeight.w800 : FontWeight.w600,
+                            color: primaryTextColor,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          previewContent,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 12.5,
+                            height: 1.35,
+                            fontWeight:
+                                isUnread ? FontWeight.w600 : FontWeight.w400,
+                            color: isUnread
+                                ? primaryTextColor.withValues(
+                                    alpha: 0.85,
+                                  )
+                                : secondaryTextColor,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (isUnread) ...[
-                    const SizedBox(height: 8),
-                    _buildUnreadBadge(group.unreadCount),
-                  ],
+                  const SizedBox(width: 10),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        timeStr,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight:
+                              isUnread ? FontWeight.w600 : FontWeight.w400,
+                          color: isUnread
+                              ? AppColors.hcmusTeal
+                              : secondaryTextColor,
+                        ),
+                      ),
+                      if (isUnread) ...[
+                        const SizedBox(height: 8),
+                        _buildUnreadBadge(group.unreadCount),
+                      ],
+                    ],
+                  ),
                 ],
-              ),
-            ],
+              );
+            },
           ),
         ),
       ),

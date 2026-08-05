@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:my_uni/features/home/create_review_page.dart';
 import 'package:my_uni/features/home/post_detail_page.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 
 String removeVietnameseDiacritics(String str) {
   const vietnameseMap = {
@@ -226,14 +227,17 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final bool? result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
                       PostDetailPage(docId: docId, initialPostData: data),
                 ),
               );
+              if (result == true && mounted) {
+                setState(() {});
+              }
             },
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -438,56 +442,16 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
     );
   }
 
-  void _confirmDelete(BuildContext context, DocumentReference ref) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
+  void _confirmDelete(BuildContext context, DocumentReference ref) async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor:
-            isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa đánh giá?",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Dữ liệu này sẽ bị xóa vĩnh viễn và không thể khôi phục.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.delete();
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text(
-              "Xóa ngay",
-              style: TextStyle(
-                color: Color(0xFFFF6C6C),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Xóa đánh giá?',
+      message: 'Dữ liệu này sẽ bị xóa vĩnh viễn và không thể khôi phục.',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      await ref.delete();
+    }
   }
 
   @override

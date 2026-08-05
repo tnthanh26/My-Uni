@@ -286,7 +286,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
             .add(materialData);
       }
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       debugPrint("Lỗi đăng tài liệu: $e");
 

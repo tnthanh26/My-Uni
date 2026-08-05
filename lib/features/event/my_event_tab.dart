@@ -13,6 +13,7 @@ import 'interested_event_tab.dart';
 import 'discover_event_tab.dart';
 import '../home/home_page.dart';
 import '../myspace/myspace_screen.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 
 enum EventTabMode {
   personal,
@@ -588,53 +589,23 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  void _confirmDelete(EventModel ev, bool isDarkMode) {
-    showDialog(
+  void _confirmDelete(EventModel ev, bool isDarkMode) async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: _surfaceColor(isDarkMode),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: Text(
-          'Xác nhận xóa',
-          style: TextStyle(color: _primaryTextColor(isDarkMode)),
-        ),
-        content: Text(
-          "Bạn có chắc muốn xóa sự kiện '${ev.title}' không?",
-          style: TextStyle(color: _secondaryTextColor(isDarkMode)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await _deletePersonalEvent(ev);
-
-                if (!mounted) return;
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Đã xóa sự kiện')),
-                );
-              } catch (e) {
-                if (!mounted) return;
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Lỗi xóa sự kiện: $e')),
-                );
-              }
-            },
-            child: const Text(
-              'Xóa',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
+      title: 'Xóa sự kiện?',
+      message: 'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" khỏi lịch cá nhân không?',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      try {
+        await _deletePersonalEvent(ev);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi xóa sự kiện: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildCommunityTab(bool isDarkMode) {
@@ -1412,38 +1383,39 @@ class _MyEventTabState extends State<MyEventTab>
       bool isDarkMode,
       int index,
       ) {
-    final now = DateTime.now();
-    final bool isPastEvent = ev.dateTime.isBefore(now);
+    final DateTime now = DateTime.now();
 
-    final diff = ev.dateTime.difference(now);
+    final DateTime? effectiveEndDate = ev.endDateTime;
+
+    final bool isPastEvent = effectiveEndDate != null
+        ? effectiveEndDate.isBefore(now)
+        : ev.dateTime.isBefore(now);
+
+    final Duration diff = ev.dateTime.difference(now);
 
     String timeStatus;
 
-    if (diff.isNegative) {
-      if (diff.inDays.abs() >= 1) {
-        timeStatus = '${diff.inDays.abs()} ngày trước';
-      } else if (diff.inHours.abs() >= 1) {
-        timeStatus = '${diff.inHours.abs()} giờ trước';
-      } else {
-        timeStatus = '${diff.inMinutes.abs()} phút trước';
-      }
+    if (isPastEvent) {
+      timeStatus = 'Đã diễn ra';
+    } else if (diff.inDays > 0) {
+      timeStatus = 'Còn ${diff.inDays} ngày';
+    } else if (diff.inHours > 0) {
+      timeStatus = 'Còn ${diff.inHours} giờ';
     } else {
-      if (diff.inDays > 0) {
-        timeStatus = 'Trong ${diff.inDays} ngày';
-      } else if (diff.inHours > 0) {
-        timeStatus = 'Trong ${diff.inHours} giờ';
-      } else {
-        timeStatus = 'Trong ${diff.inMinutes} phút';
-      }
+      final int minutes = diff.inMinutes <= 0
+          ? 1
+          : diff.inMinutes;
+
+      timeStatus = 'Còn $minutes phút';
     }
 
     const List<Color> googleCalendarColors = [
-      Color(0xFF4285F4),
-      Color(0xFF34A853),
-      Color(0xFFFBBC04),
-      Color(0xFFEA4335),
-      Color(0xFF8E67D4),
-      Color(0xFF00ACC1),
+      Color(0xFF4285F4), // Peacock
+      Color(0xFF34A853), // Sage
+      Color(0xFFFBBC04), // Banana
+      Color(0xFFEA4335), // Flamingo
+      Color(0xFF8E67D4), // Grape
+      Color(0xFF00ACC1), // Cyan
     ];
 
     final Color eventColor = isPastEvent
@@ -1467,23 +1439,36 @@ class _MyEventTabState extends State<MyEventTab>
     _secondaryTextColor(isDarkMode);
 
     final Color statusColor = isPastEvent
-        ? const Color(0xFF9AA0A6)
+        ? const Color(0xFF80868B)
         : diff.inDays == 0
-        ? const Color(0xFFEA8600)
+        ? const Color(0xFFD97706)
         : eventColor;
 
     final String locationText =
     ev.location.trim().isNotEmpty
         ? ev.location.trim()
         : ev.isOnline
-        ? 'Online'
-        : 'Chưa cập nhật';
+        ? 'Trực tuyến'
+        : 'Chưa cập nhật địa điểm';
+
+    final String startTime =
+    DateFormat('HH:mm').format(ev.dateTime);
+
+    final String timeText = ev.endDateTime != null
+        ? '$startTime – ${DateFormat('HH:mm').format(ev.endDateTime!)}'
+        : startTime;
+
+    final String monthText =
+    DateFormat('MMM').format(ev.dateTime).toUpperCase();
+
+    final String dayText =
+    DateFormat('dd').format(ev.dateTime);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: borderColor,
         ),
@@ -1492,16 +1477,16 @@ class _MyEventTabState extends State<MyEventTab>
             : [
           BoxShadow(
             color: Colors.black.withValues(
-              alpha: 0.035,
+              alpha: 0.025,
             ),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
@@ -1511,70 +1496,73 @@ class _MyEventTabState extends State<MyEventTab>
               isDarkMode,
             );
           },
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(16),
           child: IntrinsicHeight(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment:
+              CrossAxisAlignment.stretch,
               children: [
                 Container(
                   width: 5,
                   color: eventColor,
                 ),
+
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
                       14,
-                      14,
+                      13,
                       10,
-                      14,
+                      13,
                     ),
                     child: Row(
                       crossAxisAlignment:
                       CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 56,
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 9,
-                          ),
+                          width: 52,
+                          height: 58,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: eventColor.withValues(
-                              alpha: isDarkMode ? 0.14 : 0.09,
+                              alpha: isDarkMode
+                                  ? 0.15
+                                  : 0.09,
                             ),
                             borderRadius:
-                            BorderRadius.circular(14),
+                            BorderRadius.circular(13),
                           ),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment:
+                            MainAxisAlignment.center,
                             children: [
                               Text(
-                                DateFormat('MMM')
-                                    .format(ev.dateTime)
-                                    .toUpperCase(),
+                                monthText,
                                 style: TextStyle(
                                   fontFamily: 'Nunito',
                                   color: eventColor,
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 11,
+                                  fontSize: 10.5,
                                   letterSpacing: 0.3,
                                 ),
                               ),
                               const SizedBox(height: 1),
                               Text(
-                                DateFormat('dd')
-                                    .format(ev.dateTime),
+                                dayText,
                                 style: TextStyle(
                                   fontFamily: 'Nunito',
                                   color: primaryTextColor,
                                   fontWeight: FontWeight.w800,
-                                  fontSize: 23,
-                                  height: 1.05,
+                                  fontSize: 22,
+                                  height: 1,
                                 ),
                               ),
                             ],
                           ),
                         ),
+
                         const SizedBox(width: 13),
+
                         Expanded(
                           child: Column(
                             crossAxisAlignment:
@@ -1591,146 +1579,81 @@ class _MyEventTabState extends State<MyEventTab>
                                       overflow:
                                       TextOverflow.ellipsis,
                                       style: TextStyle(
-                                        color: primaryTextColor,
                                         fontFamily: 'Nunito',
-                                        fontWeight:
-                                        FontWeight.w700,
                                         fontSize: 16,
                                         height: 1.25,
+                                        fontWeight:
+                                        FontWeight.w700,
+                                        color: primaryTextColor,
                                       ),
                                     ),
                                   ),
+
                                   const SizedBox(width: 4),
-                                  _buildMoreMenu(
-                                    ev,
-                                    isDarkMode,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time_rounded,
-                                    size: 15,
-                                    color: secondaryTextColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    DateFormat('HH:mm')
-                                        .format(ev.dateTime),
-                                    style: TextStyle(
-                                      color: secondaryTextColor,
-                                      fontFamily:
-                                      'Encode Sans Expanded',
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+
+                                  Transform.translate(
+                                    offset: const Offset(0, -12),
+                                    child: _buildMoreMenu(
+                                      ev,
+                                      isDarkMode,
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 7),
-                              Row(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    ev.isOnline
-                                        ? Icons.videocam_outlined
-                                        : Icons.location_on_outlined,
-                                    size: 15,
-                                    color: secondaryTextColor,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      locationText,
-                                      maxLines: 1,
-                                      overflow:
-                                      TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        color: secondaryTextColor,
-                                        fontFamily:
-                                        'Encode Sans Expanded',
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w400,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+
+                              const SizedBox(height: 9),
+
+                              _buildEventMetaRow(
+                                icon:
+                                Icons.access_time_rounded,
+                                text: timeText,
+                                textColor:
+                                secondaryTextColor,
                               ),
+
+                              const SizedBox(height: 6),
+
+                              _buildEventMetaRow(
+                                icon: ev.isOnline
+                                    ? Icons.videocam_outlined
+                                    : Icons
+                                    .location_on_outlined,
+                                text: locationText,
+                                textColor:
+                                secondaryTextColor,
+                              ),
+
                               const SizedBox(height: 12),
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 9,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: statusColor.withValues(
-                                          alpha: isDarkMode
-                                              ? 0.16
-                                              : 0.10,
-                                        ),
-                                        borderRadius:
-                                        BorderRadius.circular(9),
-                                      ),
-                                      child: Text(
-                                        timeStatus,
-                                        maxLines: 1,
-                                        overflow:
-                                        TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          color: statusColor,
-                                          fontFamily:
-                                          'Encode Sans Expanded',
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
+
+                              Container(
+                                padding:
+                                const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: statusColor.withValues(
+                                    alpha: isDarkMode
+                                        ? 0.16
+                                        : 0.10,
                                   ),
-                                  if (isPastEvent) ...[
-                                    const SizedBox(width: 7),
-                                    Container(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                        horizontal: 9,
-                                        vertical: 5,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF9AA0A6)
-                                            .withValues(
-                                          alpha: isDarkMode
-                                              ? 0.16
-                                              : 0.10,
-                                        ),
-                                        borderRadius:
-                                        BorderRadius.circular(9),
-                                      ),
-                                      child: const Text(
-                                        'Đã diễn ra',
-                                        style: TextStyle(
-                                          color: Color(0xFF80868B),
-                                          fontFamily:
-                                          'Encode Sans Expanded',
-                                          fontSize: 10.5,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                  const Spacer(),
-                                  Icon(
-                                    Icons.chevron_right_rounded,
-                                    size: 20,
-                                    color: isPastEvent
-                                        ? const Color(0xFF9AA0A6)
-                                        : eventColor,
+                                  borderRadius:
+                                  BorderRadius.circular(9),
+                                ),
+                                child: Text(
+                                  timeStatus,
+                                  maxLines: 1,
+                                  overflow:
+                                  TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily:
+                                    'Encode Sans Expanded',
+                                    fontSize: 10.5,
+                                    fontWeight:
+                                    FontWeight.w600,
+                                    color: statusColor,
                                   ),
-                                ],
+                                ),
                               ),
                             ],
                           ),
@@ -1747,60 +1670,70 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
+  Widget _buildEventMetaRow({
+    required IconData icon,
+    required String text,
+    required Color textColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Icon(
+          icon,
+          size: 15,
+          color: textColor,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Encode Sans Expanded',
+              fontSize: 12,
+              height: 1.3,
+              fontWeight: FontWeight.w400,
+              color: textColor,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMoreMenu(EventModel ev, bool isDarkMode) {
-    return PopupMenuButton<String>(
-      color: _surfaceColor(isDarkMode),
+    return IconButton(
       icon: Icon(
         Icons.more_vert,
         color: _secondaryTextColor(isDarkMode),
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      onSelected: (value) {
-        if (value == 'edit') {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CreatePersonalEventPage(event: ev),
+      onPressed: () {
+        AppActionDialogs.showActionBottomSheet(
+          context: context,
+          title: ev.title,
+          actions: [
+            AppActionItem(
+              title: 'Chỉnh sửa sự kiện',
+              icon: Icons.edit_outlined,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreatePersonalEventPage(event: ev),
+                  ),
+                );
+              },
             ),
-          );
-        } else if (value == 'delete') {
-          _confirmDelete(ev, isDarkMode);
-        }
+            AppActionItem(
+              title: 'Xóa sự kiện',
+              icon: Icons.delete_outline_rounded,
+              isDanger: true,
+              onTap: () => _confirmDelete(ev, isDarkMode),
+            ),
+          ],
+        );
       },
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(
-                Icons.edit,
-                size: 18,
-                color: _primaryTextColor(isDarkMode),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Chỉnh sửa',
-                style: TextStyle(color: _primaryTextColor(isDarkMode)),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Row(
-            children: [
-              Icon(Icons.delete, size: 18, color: Colors.red),
-              SizedBox(width: 8),
-              Text(
-                'Xóa',
-                style: TextStyle(color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

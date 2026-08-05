@@ -25,6 +25,7 @@ import '../chat/pages/chat_detail_page.dart';
 import '../chat/widgets/student_identity_card.dart';
 import '../../utils/anonymous_utils.dart';
 import '../search/myuni_search_delegate.dart';
+import '../../widgets/app_action_dialogs.dart';
 
 class PostDetailPage extends StatefulWidget {
   final String docId;
@@ -633,53 +634,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  void _showDeleteConfirmation(String commentId) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
+  void _showDeleteConfirmation(String commentId) async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor:
-        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa bình luận",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Bạn có chắc chắn muốn xóa bình luận này không?",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Hủy"),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteComment(commentId);
-            },
-            child: const Text(
-              "Xóa",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Xóa bình luận?',
+      message: 'Bạn có chắc chắn muốn xóa bình luận này không?',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      _deleteComment(commentId);
+    }
   }
 
   void _showEditCommentDialog(Map<String, dynamic> comment) {
@@ -1298,49 +1262,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  void _confirmDeletePost() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
+  void _confirmDeletePost() async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa bài viết?",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Hành động này sẽ xóa vĩnh viễn bài viết của bạn.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deletePost();
-            },
-            child: const Text(
-              "Xóa",
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-          ),
-        ],
-      ),
+      title: 'Xóa bài viết?',
+      message: 'Hành động này sẽ xóa vĩnh viễn bài viết của bạn.',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      _deletePost();
+    }
   }
 
   Future<void> _deletePost() async {
@@ -1364,10 +1295,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
 
       if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã xóa bài viết thành công")),
-        );
+        Navigator.pop(context, true);
       }
     } catch (e) {
       _hasBeenDeleted = false;
@@ -1418,45 +1346,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
         elevation: 0,
         actions: [
           if (isOwner)
-            PopupMenuButton<String>(
-              onSelected: (val) {
-                if (val == 'edit') _navigateToEdit();
-                if (val == 'delete') _confirmDeletePost();
-              },
+            IconButton(
               icon: const Icon(Icons.more_vert_rounded),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              itemBuilder: (context) => [
-                if (canEditPost)
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit_outlined, size: 18, color: Colors.blue),
-                        SizedBox(width: 10),
-                        Text("Chỉnh sửa",
-                            style: TextStyle(
-                                fontFamily: 'Encode Sans Expanded',
-                                fontSize: 13)),
-                      ],
+              onPressed: () {
+                AppActionDialogs.showActionBottomSheet(
+                  context: context,
+                  title: 'Tùy chọn bài viết',
+                  actions: [
+                    if (canEditPost)
+                      AppActionItem(
+                        title: 'Chỉnh sửa bài viết',
+                        icon: Icons.edit_outlined,
+                        onTap: _navigateToEdit,
+                      ),
+                    AppActionItem(
+                      title: 'Xóa bài viết',
+                      icon: Icons.delete_outline_rounded,
+                      isDanger: true,
+                      onTap: _confirmDeletePost,
                     ),
-                  ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline_rounded,
-                          size: 18, color: Colors.red),
-                      SizedBox(width: 10),
-                      Text("Xóa bài",
-                          style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontSize: 13,
-                              color: Colors.red)),
-                    ],
-                  ),
-                ),
-              ],
+                  ],
+                );
+              },
             )
           else if (!_isOfficialPost)
             IconButton(
@@ -2102,7 +2013,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               Expanded(
                 child: _buildAuthorRow(
                   isAnonymous
-                      ? AnonymousUtils.getAnonymousName(data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'], widget.docId)
+                      ? AnonymousUtils.anonymousPostAuthorName
                       : (data['authorName'] ?? data['uploaderName'] ?? data['userName'] ?? 'Sinh viên'),
                   timeText,
                   avatarBase64: isAnonymous ? null : (data['authorAvatar'] ?? data['uploaderAvatar'] ?? data['userAvatar']),

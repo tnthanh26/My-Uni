@@ -520,9 +520,26 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () async {
+              final bool? result = await Navigator.push<bool>(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PostDetailPage(
+                    docId: docId,
+                    initialPostData: data,
+                  ),
+                ),
+              );
+              if (result == true && mounted) {
+                setState(() {});
+              }
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Container(
               width: double.infinity,
               padding:
@@ -581,7 +598,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isAnonymous ? AnonymousUtils.getAnonymousName(data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'], docId) : (data['authorName'] ?? 'Sinh viên ẩn danh'),
+                          isAnonymous ? AnonymousUtils.anonymousPostAuthorName : (data['authorName'] ?? 'Sinh viên ẩn danh'),
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.w700,
@@ -672,6 +689,8 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           ],
         ),
       ),
+    ),
+    ),
     );
   }
 
