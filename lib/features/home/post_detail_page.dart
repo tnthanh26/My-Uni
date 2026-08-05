@@ -1745,45 +1745,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
               borderRadius: BorderRadius.circular(18),
               child: Stack(
                 children: [
-                  uploadedImageUrl.isNotEmpty
-                      ? Image.network(
-                          uploadedImageUrl,
-                          width: double.infinity,
-                          height: 250,
-                          fit: BoxFit.cover,
-                          webHtmlElementStrategy:
-                              WebHtmlElementStrategy.prefer,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              imagePath,
-                              width: double.infinity,
-                              height: 250,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/announcement.jpg',
-                                  width: double.infinity,
-                                  height: 250,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            );
-                          },
-                        )
-                      : Image.asset(
-                          imagePath,
-                          width: double.infinity,
-                          height: 250,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Image.asset(
-                              'assets/images/announcement.jpg',
-                              width: double.infinity,
-                              height: 250,
-                              fit: BoxFit.cover,
-                            );
-                          },
-                        ),
+                  Base64ImageCache.buildSmartImage(
+                    imageUrl: uploadedImageUrl,
+                    height: 250,
+                    width: double.infinity,
+                    fallbackAsset: imagePath,
+                  ),
                   Positioned.fill(
                     child: DecoratedBox(
                       decoration: BoxDecoration(

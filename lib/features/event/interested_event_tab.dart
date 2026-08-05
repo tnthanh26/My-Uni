@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../utils/base64_image_cache.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
 String removeVietnameseDiacritics(String str) {
@@ -263,6 +264,16 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                     }
 
                     final allDocs = snapshot.data!.docs;
+
+                    final urlsToPreload = allDocs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>;
+                      return data['thumbnailUrl'] ??
+                          (data['imageUrls'] != null &&
+                                  (data['imageUrls'] as List).isNotEmpty
+                              ? data['imageUrls'][0]
+                              : null);
+                    }).map((e) => e?.toString()).whereType<String>().toList();
+                    Base64ImageCache.preloadImages(urlsToPreload);
 
                     if (allDocs.isEmpty) {
                       return Center(
@@ -591,30 +602,12 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                   children: [
                     Stack(
                       children: [
-                        if (thumbnailUrl != null &&
-                            thumbnailUrl.isNotEmpty)
-                          Image.network(
-                            thumbnailUrl,
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder:
-                                (_, __, ___) {
-                              return Image.asset(
-                                'assets/images/news.png',
-                                height: 150,
-                                width: double.infinity,
-                                fit: BoxFit.cover,
-                              );
-                            },
-                          )
-                        else
-                          Image.asset(
-                            'assets/images/news.png',
-                            height: 150,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                        Base64ImageCache.buildSmartImage(
+                          imageUrl: thumbnailUrl,
+                          height: 150,
+                          width: double.infinity,
+                          fallbackAsset: 'assets/images/news.png',
+                        ),
 
                         Positioned.fill(
                           child: DecoratedBox(

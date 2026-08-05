@@ -7,6 +7,7 @@ import 'package:my_uni/models/event_model.dart';
 import 'package:my_uni/features/event/create_personal_event_page.dart';
 import 'package:my_uni/features/home/faculty_helper.dart';
 import 'package:my_uni/utils/app_feedback.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
 String removeVietnameseDiacritics(String str) {
@@ -961,6 +962,17 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
                             final allEventDocs = snapshot.data!.docs;
 
+                            // Tải trước ảnh sự kiện vào bộ nhớ đệm RAM để tránh nhảy ảnh mặc định
+                            final urlsToPreload = allEventDocs.map((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              return data['thumbnailUrl'] ??
+                                  (data['imageUrls'] != null &&
+                                          (data['imageUrls'] as List).isNotEmpty
+                                      ? data['imageUrls'][0]
+                                      : null);
+                            }).map((e) => e?.toString()).whereType<String>().toList();
+                            Base64ImageCache.preloadImages(urlsToPreload);
+
                             // Lọc tài liệu theo Khoa đang chọn & từ khóa tìm kiếm
                             final cleanQuery = removeVietnameseDiacritics(_searchQuery);
                             final filteredDocs = allEventDocs.where((doc) {
@@ -1687,27 +1699,12 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                   children: [
                     Opacity(
                       opacity: isPast ? 0.75 : 1.0,
-                      child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
-                          ? Image.network(
-                              thumbnailUrl,
-                              height: 154,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) {
-                                return Image.asset(
-                                  'assets/images/news.png',
-                                  height: 154,
-                                  width: double.infinity,
-                                  fit: BoxFit.cover,
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              'assets/images/news.png',
-                              height: 154,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                      child: Base64ImageCache.buildSmartImage(
+                        imageUrl: thumbnailUrl,
+                        height: 154,
+                        width: double.infinity,
+                        fallbackAsset: 'assets/images/news.png',
+                      ),
                     ),
 
                     Positioned.fill(
