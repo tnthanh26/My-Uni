@@ -11,6 +11,8 @@ import 'package:my_uni/features/services/notification_service.dart';
 import 'create_personal_event_page.dart';
 import 'interested_event_tab.dart';
 import 'discover_event_tab.dart';
+import '../home/home_page.dart';
+import '../myspace/myspace_screen.dart';
 
 enum EventTabMode {
   personal,
@@ -207,6 +209,28 @@ class _MyEventTabState extends State<MyEventTab>
     }
 
     await ref.delete();
+
+    // Đồng bộ xóa trong collection interested_events để nút "Quan tâm" bên Tab Khám phá tự cập nhật lại
+    final String targetInterestedId = (ev.facultyEventId != null && ev.facultyEventId!.isNotEmpty)
+        ? ev.facultyEventId!
+        : ev.id;
+
+    final interestedRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('interested_events')
+        .doc(targetInterestedId);
+
+    await interestedRef.delete();
+
+    if (ev.id != targetInterestedId) {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('interested_events')
+          .doc(ev.id)
+          .delete();
+    }
   }
 
   List<EventModel> _sortEvents(List<EventModel> rawEvents, String filter) {
@@ -758,7 +782,7 @@ class _MyEventTabState extends State<MyEventTab>
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600.0),
           child: widget.mode == EventTabMode.community
-              ? _buildCommunityTab(isDarkMode)
+              ? const DiscoverEventTab(useNestedScrollOverlap: false)
               : StreamBuilder<List<EventModel>>(
                   stream: _getEventsStream(),
                   builder: (context, snapshot) {
@@ -806,7 +830,9 @@ class _MyEventTabState extends State<MyEventTab>
                                   ],
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 8),
+                              _buildSyncInfoButton(isDarkMode),
+                              const SizedBox(width: 8),
                               _buildListFilter(isDarkMode),
                             ],
                           ),
@@ -1788,9 +1814,404 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
+  Widget _buildSyncInfoButton(bool isDarkMode) {
+    const Color hcmusLightGrey = Color(0xFFEFEFEF);
+
+    return Tooltip(
+      message: 'Thông tin đồng bộ Lịch biểu',
+      child: GestureDetector(
+        onTap: () {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: _surfaceColor(isDarkMode),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  const Icon(
+                    Icons.auto_awesome,
+                    color: figmaSelectionBlue,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Đồng bộ Lịch biểu',
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: _primaryTextColor(isDarkMode),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Các sự kiện bạn lưu hoặc tạo sẽ tự động được đồng bộ với Lịch biểu ở trang Góc nhỏ của bạn.',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13.5,
+                  height: 1.45,
+                  color: _primaryTextColor(isDarkMode),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    'Đã hiểu',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontWeight: FontWeight.w700,
+                      color: figmaSelectionBlue,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey,
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(
+            Icons.auto_awesome,
+            size: 17,
+            color: figmaSelectionBlue,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMySpaceShortcutButton(bool isDarkMode) {
+    const Color hcmusLightGrey = Color(0xFFEFEFEF);
+    final bool isCalendarActive = _viewTabController?.index == 1;
+
+    return Tooltip(
+      message: isCalendarActive ? 'Xem dạng Danh sách' : 'Xem dạng Lịch chia theo giờ',
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            if (_viewTabController != null) {
+              final int nextIndex = _viewTabController!.index == 0 ? 1 : 0;
+              _viewTabController!.animateTo(nextIndex);
+            }
+          });
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: isCalendarActive
+                ? figmaSelectionBlue
+                : (isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.calendar_month_rounded,
+            size: 18,
+            color: isCalendarActive
+                ? Colors.white
+                : (isDarkMode ? Colors.white70 : Colors.black87),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHourlyCalendarView(List<EventModel> events, bool isDarkMode) {
+    final DateTime currentSelected = _selectedDay ?? DateTime.now();
+    final DateTime today = DateTime.now();
+
+    final List<EventModel> dayEvents = events.where((e) {
+      return e.dateTime.year == currentSelected.year &&
+          e.dateTime.month == currentSelected.month &&
+          e.dateTime.day == currentSelected.day;
+    }).toList();
+
+    final List<DateTime> dateStrip = List.generate(
+      21,
+      (index) => today.subtract(const Duration(days: 3)).add(Duration(days: index)),
+    );
+
+    return Column(
+      children: [
+        Container(
+          height: 66,
+          margin: const EdgeInsets.symmetric(vertical: 6),
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            itemCount: dateStrip.length,
+            itemBuilder: (context, index) {
+              final date = dateStrip[index];
+              final bool isSelected = date.year == currentSelected.year &&
+                  date.month == currentSelected.month &&
+                  date.day == currentSelected.day;
+              final bool isTodayDate = date.year == today.year &&
+                  date.month == today.month &&
+                  date.day == today.day;
+
+              final String weekdayStr = DateFormat('E', 'vi').format(date);
+              final String dayStr = DateFormat('dd').format(date);
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _selectedDay = date;
+                  });
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 180),
+                  width: 50,
+                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? figmaSelectionBlue
+                        : (isDarkMode ? const Color(0xFF1C1E21) : Colors.white),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: isSelected
+                          ? figmaSelectionBlue
+                          : (isTodayDate
+                              ? figmaSelectionBlue.withValues(alpha: 0.6)
+                              : _borderColor(isDarkMode)),
+                      width: isTodayDate && !isSelected ? 1.5 : 1.0,
+                    ),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: figmaSelectionBlue.withValues(alpha: 0.25),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            )
+                          ]
+                        : const [],
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        weekdayStr,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : _secondaryTextColor(isDarkMode),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        dayStr,
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                          color: isSelected
+                              ? Colors.white
+                              : _primaryTextColor(isDarkMode),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: 17,
+            itemBuilder: (context, index) {
+              final int hour = 6 + index;
+              final String hourStr = '${hour.toString().padLeft(2, '0')}:00';
+
+              final List<EventModel> hourEvents = dayEvents.where((e) {
+                return e.dateTime.hour == hour;
+              }).toList();
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 48,
+                      child: Text(
+                        hourStr,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: _secondaryTextColor(isDarkMode),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            height: 1,
+                            margin: const EdgeInsets.only(top: 8, bottom: 8),
+                            color: _borderColor(isDarkMode),
+                          ),
+                          if (hourEvents.isEmpty)
+                            const SizedBox(height: 16)
+                          else
+                            ...hourEvents.map((ev) => _buildHourlyEventCard(ev, isDarkMode)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHourlyEventCard(EventModel ev, bool isDarkMode) {
+    const Color primaryBlue = Color(0xFF5893D8);
+    final String timeStr = DateFormat('HH:mm').format(ev.dateTime);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: primaryBlue.withValues(alpha: 0.35),
+        ),
+        boxShadow: isDarkMode
+            ? const []
+            : [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                )
+              ],
+      ),
+      child: InkWell(
+        onTap: () => _showEventDetailsBottomSheet(context, ev, isDarkMode),
+        borderRadius: BorderRadius.circular(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: primaryBlue.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.access_time_rounded, size: 12, color: primaryBlue),
+                      const SizedBox(width: 4),
+                      Text(
+                        timeStr,
+                        style: const TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w700,
+                          color: primaryBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (ev.isFromFacultyEvent) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Text(
+                      'SỰ KIỆN KHOA',
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF8B5CF6),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              ev.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: _primaryTextColor(isDarkMode),
+              ),
+            ),
+            if (ev.location.trim().isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Icon(
+                    ev.isOnline ? Icons.videocam_outlined : Icons.location_on_outlined,
+                    size: 14,
+                    color: _secondaryTextColor(isDarkMode),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      ev.location,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 11.5,
+                        color: _secondaryTextColor(isDarkMode),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildListFilter(bool isDarkMode) {
+    const Color hcmusLightGrey = Color(0xFFEFEFEF);
+
     return PopupMenuButton<String>(
-      tooltip: 'Sắp xếp',
+      tooltip: 'Sắp xếp & Lọc',
       color: _surfaceColor(isDarkMode),
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -1801,31 +2222,63 @@ class _MyEventTabState extends State<MyEventTab>
         PopupMenuItem<String>(
           value: 'Gần nhất',
           height: 42,
-          child: Text(
-            'Gần nhất',
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _primaryTextColor(isDarkMode),
-            ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_upward_rounded,
+                size: 15,
+                color: _listFilter == 'Gần nhất' ? figmaSelectionBlue : _secondaryTextColor(isDarkMode),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Gần nhất',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12,
+                  fontWeight: _listFilter == 'Gần nhất' ? FontWeight.bold : FontWeight.w500,
+                  color: _primaryTextColor(isDarkMode),
+                ),
+              ),
+            ],
           ),
         ),
         PopupMenuItem<String>(
           value: 'Xa nhất',
           height: 42,
-          child: Text(
-            'Xa nhất',
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _primaryTextColor(isDarkMode),
-            ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.arrow_downward_rounded,
+                size: 15,
+                color: _listFilter == 'Xa nhất' ? figmaSelectionBlue : _secondaryTextColor(isDarkMode),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Xa nhất',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12,
+                  fontWeight: _listFilter == 'Xa nhất' ? FontWeight.bold : FontWeight.w500,
+                  color: _primaryTextColor(isDarkMode),
+                ),
+              ),
+            ],
           ),
         ),
       ],
-      child: _filterChip(isDarkMode, _listFilter),
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          Icons.filter_list_rounded,
+          size: 18,
+          color: isDarkMode ? Colors.white70 : Colors.black87,
+        ),
+      ),
     );
   }
 

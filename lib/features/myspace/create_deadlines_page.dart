@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'local_storage_helper.dart';
 import 'models/myspace_models.dart';
 import '../services/notification_service.dart';
+import 'package:my_uni/utils/app_feedback.dart';
 
 class ReminderControllerGroup {
   final TextEditingController controller;
@@ -578,23 +579,17 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
 
   Future<void> _saveDeadline() async {
     if (_titleController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng nhập tên deadline')),
-      );
+      AppFeedback.showWarning(context, 'Vui lòng nhập tên deadline');
       return;
     }
 
     if (_titleController.text.length > 20) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Tên deadline không được vượt quá 20 ký tự')),
-      );
+      AppFeedback.showWarning(context, 'Tên deadline không được vượt quá 20 ký tự');
       return;
     }
 
     if (_descController.text.length > 50) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ghi chú không được vượt quá 50 ký tự')),
-      );
+      AppFeedback.showWarning(context, 'Ghi chú không được vượt quá 50 ký tự');
       return;
     }
 
@@ -673,6 +668,9 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
       }
     } catch (e) {
       debugPrint("Lỗi lưu deadline: $e");
+      if (mounted) {
+        AppFeedback.showError(context, 'Lỗi lưu deadline: $e');
+      }
     }
   }
 }

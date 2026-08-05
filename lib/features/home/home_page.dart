@@ -97,11 +97,20 @@ class HomePageState extends State<HomePage> {
     super.initState();
     DailyActiveService.logDailyActiveUser();
     HomePage.activeTabNotifier.value = _selectedIndex;
+    HomePage.activeTabNotifier.addListener(_onActiveTabChanged);
     _checkOnboarding();
     HomePage.showWalkthroughNotifier.addListener(_onWalkthroughTriggered);
     _syncExistingProfileData();
     _checkWeatherAlertAndShowDialog();
     _listenToUserDocChanges();
+  }
+
+  void _onActiveTabChanged() {
+    if (mounted && HomePage.activeTabNotifier.value != _selectedIndex) {
+      setState(() {
+        _selectedIndex = HomePage.activeTabNotifier.value;
+      });
+    }
   }
 
   void _listenToUserDocChanges() {

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:my_uni/models/event_model.dart';
 import 'package:my_uni/features/event/create_personal_event_page.dart';
 import 'package:my_uni/features/home/faculty_helper.dart';
+import 'package:my_uni/utils/app_feedback.dart';
 
 /// Utility to remove Vietnamese diacritics for simple text search
 String removeVietnameseDiacritics(String str) {
@@ -129,8 +130,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       await personalRef.delete();
 
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã bỏ quan tâm & xóa khỏi Lịch cá nhân")),
+      AppFeedback.showInfo(
+        context,
+        "Đã bỏ quan tâm & hủy đồng bộ Lịch biểu ở trang góc nhỏ",
       );
     } else {
       // 2. Mở màn hình tạo / chỉnh sửa sự kiện cá nhân với nội dung điền sẵn từ bài viết
@@ -195,11 +197,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       );
 
       if (saved == true && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Đã lưu vào mục Quan tâm & Lịch cá nhân của bạn!"),
-            backgroundColor: primaryBlue,
-          ),
+        AppFeedback.showSuccess(
+          context,
+          "Đã lưu & tự động đồng bộ vào Lịch biểu ở trang góc nhỏ!",
         );
       }
     }
@@ -928,156 +928,201 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                   // Danh sách Events từ collection `faculty_events`
                   Expanded(
                     child: StreamBuilder<QuerySnapshot>(
-                      stream: FirebaseFirestore.instance
-                          .collection('faculty_events')
-                          .snapshots(),
-                      builder: (context, snapshot) {
-                        if (snapshot.hasError) {
-                          return Center(
-                            child: Text(
-                              'Đã xảy ra lỗi dữ liệu sự kiện Khoa',
-                              style: TextStyle(color: _secondaryText(isDark)),
-                            ),
-                          );
-                        }
+                      stream: user != null
+                          ? FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(user.uid)
+                              .collection('interested_events')
+                              .snapshots()
+                          : null,
+                      builder: (context, interestedSnapshot) {
+                        final Set<String> interestedDocIds =
+                            interestedSnapshot.data?.docs.map((d) => d.id).toSet() ?? {};
 
-                        if (!snapshot.hasData) {
-                          return const Center(
-                            child: CircularProgressIndicator(color: primaryBlue),
-                          );
-                        }
-
-                        final allEventDocs = snapshot.data!.docs;
-
-                        // Lọc tài liệu theo Khoa đang chọn & từ khóa tìm kiếm
-                        final cleanQuery = removeVietnameseDiacritics(_searchQuery);
-                        final filteredDocs = allEventDocs.where((doc) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          if (data['shouldPublish'] == false) return false;
-
-                          // 1. Kiểm tra Khoa
-                          bool matchesFac = false;
-                          if (activeSubTab == 'my_faculty') {
-                            if (primaryFacultyInfo == null) {
-                              matchesFac = true;
-                            } else {
-                              matchesFac = _matchesFaculty(data, primaryFacultyInfo);
+                        return StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('faculty_events')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasError) {
+                              return Center(
+                                child: Text(
+                                  'Đã xảy ra lỗi dữ liệu sự kiện Khoa',
+                                  style: TextStyle(color: _secondaryText(isDark)),
+                                ),
+                              );
                             }
-                          } else {
-                            final targetFacInfo = FacultyHelper.findById(activeSubTab);
-                            if (targetFacInfo != null) {
-                              matchesFac = _matchesFaculty(data, targetFacInfo);
-                            } else {
-                              matchesFac = true;
+
+                            if (!snapshot.hasData) {
+                              return const Center(
+                                child: CircularProgressIndicator(color: primaryBlue),
+                              );
                             }
-                          }
 
-                          if (!matchesFac) return false;
+                            final allEventDocs = snapshot.data!.docs;
 
-                          // 2. Kiểm tra từ khóa tìm kiếm
-                          if (cleanQuery.isNotEmpty) {
-                            final eventName = removeVietnameseDiacritics((data['eventName'] ?? data['title'] ?? '').toString());
-                            final desc = removeVietnameseDiacritics((data['description'] ?? '').toString());
-                            final locName = removeVietnameseDiacritics((data['locationName'] ?? '').toString());
-                            final locAddr = removeVietnameseDiacritics((data['locationAddress'] ?? '').toString());
-                            final facName = removeVietnameseDiacritics((data['facultyName'] ?? '').toString());
-                            final facCode = removeVietnameseDiacritics((data['facultyCode'] ?? '').toString());
+                            // Lọc tài liệu theo Khoa đang chọn & từ khóa tìm kiếm
+                            final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+                            final filteredDocs = allEventDocs.where((doc) {
+                              final data = doc.data() as Map<String, dynamic>;
+                              if (data['shouldPublish'] == false) return false;
 
-                            final matchesSearch = eventName.contains(cleanQuery) ||
-                                desc.contains(cleanQuery) ||
-                                locName.contains(cleanQuery) ||
-                                locAddr.contains(cleanQuery) ||
-                                facName.contains(cleanQuery) ||
-                                facCode.contains(cleanQuery);
+                              // 1. Kiểm tra Khoa
+                              bool matchesFac = false;
+                              if (activeSubTab == 'my_faculty') {
+                                if (primaryFacultyInfo == null) {
+                                  matchesFac = true;
+                                } else {
+                                  matchesFac = _matchesFaculty(data, primaryFacultyInfo);
+                                }
+                              } else {
+                                final targetFacInfo = FacultyHelper.findById(activeSubTab);
+                                if (targetFacInfo != null) {
+                                  matchesFac = _matchesFaculty(data, targetFacInfo);
+                                } else {
+                                  matchesFac = true;
+                                }
+                              }
 
-                            if (!matchesSearch) return false;
-                          }
+                              if (!matchesFac) return false;
 
-                          return true;
-                        }).toList();
+                              // 2. Kiểm tra từ khóa tìm kiếm
+                              if (cleanQuery.isNotEmpty) {
+                                final eventName = removeVietnameseDiacritics((data['eventName'] ?? data['title'] ?? '').toString());
+                                final desc = removeVietnameseDiacritics((data['description'] ?? '').toString());
+                                final locName = removeVietnameseDiacritics((data['locationName'] ?? '').toString());
+                                final locAddr = removeVietnameseDiacritics((data['locationAddress'] ?? '').toString());
+                                final facName = removeVietnameseDiacritics((data['facultyName'] ?? '').toString());
+                                final facCode = removeVietnameseDiacritics((data['facultyCode'] ?? '').toString());
 
-                        // Sắp xếp các sự kiện mới nhất lên trước
-                        filteredDocs.sort((a, b) {
-                          final dataA = a.data() as Map<String, dynamic>;
-                          final dataB = b.data() as Map<String, dynamic>;
-                          final int tsA = _extractMillis(dataA);
-                          final int tsB = _extractMillis(dataB);
-                          return tsB.compareTo(tsA);
-                        });
+                                final matchesSearch = eventName.contains(cleanQuery) ||
+                                    desc.contains(cleanQuery) ||
+                                    locName.contains(cleanQuery) ||
+                                    locAddr.contains(cleanQuery) ||
+                                    facName.contains(cleanQuery) ||
+                                    facCode.contains(cleanQuery);
 
-                        if (activeSubTab == 'my_faculty' && primaryFacultyInfo == null) {
-                          return _buildEmptyFacultySetupCard(context, isDark, userFacultyStr);
-                        }
+                                if (!matchesSearch) return false;
+                              }
 
-                        if (filteredDocs.isEmpty) {
-                          return CustomScrollView(
-                            slivers: [
-                              ..._buildOverlapSliver(context),
-                              SliverFillRemaining(
-                                hasScrollBody: false,
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(24),
-                                    child: Column(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.event_busy_rounded,
-                                          size: 48,
-                                          color: _secondaryText(isDark),
+                              return true;
+                            }).toList();
+
+                            // Sắp xếp các sự kiện theo 4 thứ tự ưu tiên:
+                            // 1. Event chưa quan tâm, sắp diễn ra gần nhất
+                            // 2. Event chưa quan tâm khác
+                            // 3. Event đã quan tâm
+                            // 4. Event đã diễn ra
+                            final now = DateTime.now();
+                            filteredDocs.sort((a, b) {
+                              final priorityA = _getEventPriority(a, interestedDocIds, now);
+                              final priorityB = _getEventPriority(b, interestedDocIds, now);
+
+                              if (priorityA != priorityB) {
+                                return priorityA.compareTo(priorityB);
+                              }
+
+                              final dataA = a.data() as Map<String, dynamic>;
+                              final dataB = b.data() as Map<String, dynamic>;
+
+                              // Nhóm 1: Chưa quan tâm, sắp diễn ra -> Xếp tăng dần theo thời gian (sắp diễn ra gần nhất lên đầu)
+                              if (priorityA == 1) {
+                                final dtA = _extractEventDateTime(dataA);
+                                final dtB = _extractEventDateTime(dataB);
+                                if (dtA != null && dtB != null) {
+                                  return dtA.compareTo(dtB);
+                                }
+                              }
+
+                              // Nhóm 4: Đã diễn ra -> Xếp giảm dần theo thời gian (vừa kết thúc gần nhất lên đầu)
+                              if (priorityA == 4) {
+                                final dtA = _extractEventDateTime(dataA);
+                                final dtB = _extractEventDateTime(dataB);
+                                if (dtA != null && dtB != null) {
+                                  return dtB.compareTo(dtA);
+                                }
+                              }
+
+                              final int tsA = _extractMillis(dataA);
+                              final int tsB = _extractMillis(dataB);
+                              return tsB.compareTo(tsA);
+                            });
+
+                            if (activeSubTab == 'my_faculty' && primaryFacultyInfo == null) {
+                              return _buildEmptyFacultySetupCard(context, isDark, userFacultyStr);
+                            }
+
+                            if (filteredDocs.isEmpty) {
+                              return CustomScrollView(
+                                slivers: [
+                                  ..._buildOverlapSliver(context),
+                                  SliverFillRemaining(
+                                    hasScrollBody: false,
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(24),
+                                        child: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.event_busy_rounded,
+                                              size: 48,
+                                              color: _secondaryText(isDark),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            Text(
+                                              'Hiện chưa có sự kiện nào từ Khoa này',
+                                              style: TextStyle(
+                                                color: _primaryText(isDark),
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              'Các thông báo sự kiện, hội thảo mới nhất sẽ tự động cập nhật ở đây.',
+                                              textAlign: TextAlign.center,
+                                              style: TextStyle(
+                                                color: _secondaryText(isDark),
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Hiện chưa có sự kiện nào từ Khoa này',
-                                          style: TextStyle(
-                                            color: _primaryText(isDark),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 15,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          'Các thông báo sự kiện, hội thảo mới nhất sẽ tự động cập nhật ở đây.',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                            color: _secondaryText(isDark),
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                      ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
+                            return CustomScrollView(
+                              slivers: [
+                                ..._buildOverlapSliver(context),
+                                SliverPadding(
+                                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                                  sliver: SliverList(
+                                    delegate: SliverChildBuilderDelegate(
+                                      (context, index) {
+                                        final doc = filteredDocs[index];
+                                        final data = doc.data() as Map<String, dynamic>;
+                                        final String docId = doc.id;
+
+                                        return _buildEventCard(
+                                          context,
+                                          docId,
+                                          data,
+                                          user,
+                                          isDark,
+                                        );
+                                      },
+                                      childCount: filteredDocs.length,
                                     ),
                                   ),
                                 ),
-                              ),
-                            ],
-                          );
-                        }
-
-                        return CustomScrollView(
-                          slivers: [
-                            ..._buildOverlapSliver(context),
-                            SliverPadding(
-                              padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
-                              sliver: SliverList(
-                                delegate: SliverChildBuilderDelegate(
-                                  (context, index) {
-                                    final doc = filteredDocs[index];
-                                    final data = doc.data() as Map<String, dynamic>;
-                                    final String docId = doc.id;
-
-                                    return _buildEventCard(
-                                      context,
-                                      docId,
-                                      data,
-                                      user,
-                                      isDark,
-                                    );
-                                  },
-                                  childCount: filteredDocs.length,
-                                ),
-                              ),
-                            ),
-                          ],
+                              ],
+                            );
+                          },
                         );
                       },
                     ),
@@ -1112,6 +1157,41 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       return (data['updatedAt'] as Timestamp).millisecondsSinceEpoch;
     }
     return 0;
+  }
+
+  DateTime? _extractEventDateTime(Map<String, dynamic> data) {
+    if (data['startAt'] != null && data['startAt'] is Timestamp) {
+      return (data['startAt'] as Timestamp).toDate();
+    }
+    if (data['startDateTime'] != null && data['startDateTime'] is String) {
+      final parsed = DateTime.tryParse(data['startDateTime']);
+      if (parsed != null) return parsed;
+    }
+    if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+      return (data['registrationDeadlineAt'] as Timestamp).toDate();
+    }
+    return null;
+  }
+
+  int _getEventPriority(DocumentSnapshot doc, Set<String> interestedDocIds, DateTime now) {
+    final data = doc.data() as Map<String, dynamic>;
+    final bool isInterested = interestedDocIds.contains(doc.id);
+    final DateTime? eventTime = _extractEventDateTime(data);
+
+    final bool isPast = eventTime != null && eventTime.isBefore(now);
+
+    if (isPast) {
+      return 4; // 4. Event đã diễn ra
+    }
+
+    if (!isInterested) {
+      if (eventTime != null && eventTime.isAfter(now)) {
+        return 1; // 1. Event chưa quan tâm, sắp diễn ra gần nhất
+      }
+      return 2; // 2. Event chưa quan tâm khác
+    }
+
+    return 3; // 3. Event đã quan tâm
   }
 
   /// Empty State khi User chưa chọn Khoa trong account
@@ -1545,6 +1625,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       'Liên hệ: $displayContact';
     }
 
+    final DateTime? eventDateTime = _extractEventDateTime(data);
+    final bool isPast = eventDateTime != null && eventDateTime.isBefore(DateTime.now());
+
     final String effectiveLink =
     onlineUrl.isNotEmpty
         ? onlineUrl
@@ -1602,30 +1685,30 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
               children: [
                 Stack(
                   children: [
-                    if (thumbnailUrl != null &&
-                        thumbnailUrl.isNotEmpty)
-                      Image.network(
-                        thumbnailUrl,
-                        height: 154,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder:
-                            (_, __, ___) {
-                          return Image.asset(
-                            'assets/images/news.png',
-                            height: 154,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          );
-                        },
-                      )
-                    else
-                      Image.asset(
-                        'assets/images/news.png',
-                        height: 154,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                      ),
+                    Opacity(
+                      opacity: isPast ? 0.75 : 1.0,
+                      child: thumbnailUrl != null && thumbnailUrl.isNotEmpty
+                          ? Image.network(
+                              thumbnailUrl,
+                              height: 154,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) {
+                                return Image.asset(
+                                  'assets/images/news.png',
+                                  height: 154,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.asset(
+                              'assets/images/news.png',
+                              height: 154,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
 
                     Positioned.fill(
                       child: DecoratedBox(
@@ -1645,6 +1728,45 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                         ),
                       ),
                     ),
+
+                    if (isPast)
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 9,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF344054).withValues(alpha: 0.88),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.25),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.history_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'ĐÃ DIỄN RA',
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
 
                     if (isOnline)
                       Positioned(
@@ -1814,6 +1936,47 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                         favSnapshot
                                             .data!
                                             .exists;
+
+                                 if (isPast) {
+                                   return FilledButton.icon(
+                                     onPressed: () {
+                                       _toggleInterest(
+                                         context,
+                                         docId,
+                                         data,
+                                       );
+                                     },
+                                     icon: Icon(
+                                       isInterested
+                                           ? Icons.check_circle_outline_rounded
+                                           : Icons.event_busy_rounded,
+                                       size: 16,
+                                     ),
+                                     label: Text(
+                                       isInterested
+                                           ? 'Đã quan tâm (Đã kết thúc)'
+                                           : 'Sự kiện đã kết thúc',
+                                       style: const TextStyle(
+                                         fontFamily: 'Encode Sans Expanded',
+                                         fontSize: 12,
+                                         fontWeight: FontWeight.w600,
+                                       ),
+                                     ),
+                                     style: FilledButton.styleFrom(
+                                       backgroundColor: isDark
+                                           ? const Color(0xFF2C2F33)
+                                           : const Color(0xFFF2F4F7),
+                                       foregroundColor: isDark
+                                           ? Colors.white54
+                                           : const Color(0xFF667085),
+                                       elevation: 0,
+                                       minimumSize: const Size(double.infinity, 42),
+                                       shape: RoundedRectangleBorder(
+                                         borderRadius: BorderRadius.circular(12),
+                                       ),
+                                     ),
+                                   );
+                                 }
 
                                 return FilledButton.icon(
                                   onPressed: () {
