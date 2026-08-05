@@ -25,9 +25,9 @@ import './services/welcome_banner_service.dart';
 import 'weather_alert_card.dart';
 import 'myspace_deadline_section.dart';
 import 'widgets/myspace_skeleton.dart';
+import 'widgets/schedule_calendar_grid.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
-import 'dart:math' as math;
 
 const Color hcmusBlueAccent = Color(0xFF5893D8);
 const Color hcmusTeal = Color(0xFF279E95);
@@ -61,11 +61,142 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   StreamSubscription<QuerySnapshot>? _personalEventsSub;
   final ScrollController _timetableScrollController = ScrollController();
   final ScrollController _dashboardScrollController = ScrollController();
+  late final PageController _dayPageController;
+  late final PageController _weekPageController;
+  static final DateTime _anchorDate = DateTime(2020, 1, 1);
+  static final DateTime _weekAnchorMonday = DateTime(2020, 1, 6);
+
+  int _getPageIndexFromDate(DateTime date) {
+    return date.difference(_anchorDate).inDays;
+  }
+
+  DateTime _getDateFromPageIndex(int pageIndex) {
+    return _anchorDate.add(Duration(days: pageIndex));
+  }
+
+  int _weekPageIndexFromDate(DateTime date) {
+    final normalizedDate = DateTime(
+      date.year,
+      date.month,
+      date.day,
+    );
+
+    final monday = normalizedDate.subtract(
+      Duration(days: normalizedDate.weekday - 1),
+    );
+
+    return monday.difference(_weekAnchorMonday).inDays ~/ 7;
+  }
+
+  DateTime _mondayFromWeekPage(int pageIndex) {
+    return _weekAnchorMonday.add(
+      Duration(days: pageIndex * 7),
+    );
+  }
+
+  void _updateFocusedDate(
+    DateTime targetDate, {
+    bool jumpPage = true,
+    bool animate = true,
+    bool updateWeekPage = true,
+  }) {
+    final DateTime normalized = DateTime(
+      targetDate.year,
+      targetDate.month,
+      targetDate.day,
+    );
+
+    final int oldWeekPage = _weekPageIndexFromDate(_focusedDate);
+    final int newWeekPage = _weekPageIndexFromDate(normalized);
+
+    setState(() {
+      _focusedDate = normalized;
+      selectedWeekday = normalized.weekday + 1;
+    });
+
+    if (updateWeekPage && _weekPageController.hasClients) {
+      final int currentWeekPage = _weekPageController.page?.round() ?? oldWeekPage;
+      if (currentWeekPage != newWeekPage) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_weekPageController.hasClients) return;
+          if (animate && (newWeekPage - currentWeekPage).abs() <= 4) {
+            _weekPageController.animateToPage(
+              newWeekPage,
+              duration: const Duration(milliseconds: 280),
+              curve: Curves.easeOutCubic,
+            );
+          } else {
+            _weekPageController.jumpToPage(newWeekPage);
+          }
+        });
+      }
+    }
+
+    if (!jumpPage || !_dayPageController.hasClients) {
+      return;
+    }
+
+    final int targetPage = _getPageIndexFromDate(normalized);
+    final int currentPage = _dayPageController.page?.round() ?? targetPage;
+
+    if (currentPage == targetPage) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_dayPageController.hasClients) return;
+      if (animate && (targetPage - currentPage).abs() == 1) {
+        _dayPageController.animateToPage(
+          targetPage,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      } else {
+        _dayPageController.jumpToPage(targetPage);
+      }
+    });
+  }
+
+  void _onDayPageChanged(int index) {
+    final targetDate = _getDateFromPageIndex(index);
+
+    if (DateUtils.isSameDay(targetDate, _focusedDate)) {
+      return;
+    }
+
+    final int oldWeekPage = _weekPageIndexFromDate(_focusedDate);
+    final int newWeekPage = _weekPageIndexFromDate(targetDate);
+
+    setState(() {
+      _focusedDate = targetDate;
+      selectedWeekday = targetDate.weekday + 1;
+    });
+
+    if (oldWeekPage != newWeekPage && _weekPageController.hasClients) {
+      final int currentWeekPage = _weekPageController.page?.round() ?? oldWeekPage;
+      if (currentWeekPage != newWeekPage) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || !_weekPageController.hasClients) return;
+          _weekPageController.animateToPage(
+            newWeekPage,
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
+          );
+        });
+      }
+    }
+  }
 
   @override
   void initState() {
     super.initState();
     selectedWeekday = DateTime.now().weekday + 1;
+    _dayPageController = PageController(
+      initialPage: _getPageIndexFromDate(_focusedDate),
+    );
+    _weekPageController = PageController(
+      initialPage: _weekPageIndexFromDate(_focusedDate),
+    );
     // Khởi tạo TabController cho phần Detail
     _tabController = TabController(length: 2, vsync: this);
 
@@ -77,9 +208,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        if (_tabController.index == 1) {
-          _scrollToCurrentFocusHour();
-        }
         setState(() {});
       }
     });
@@ -87,6 +215,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   @override
   void dispose() {
+    _weekPageController.dispose();
+    _dayPageController.dispose();
     _dashboardScrollController.dispose();
     _timetableScrollController.dispose();
     _personalEventsSub?.cancel();
@@ -105,33 +235,23 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _resetToToday() {
-    setState(() {
-      _focusedDate = DateTime.now();
-      selectedWeekday = _focusedDate.weekday + 1;
-    });
-    // _prepareWeatherFuture(); // Tạm ẩn để tránh gọi API lặp lại khi chuyển tab
+    _updateFocusedDate(DateTime.now(), jumpPage: true);
   }
 
   void _prepareWeatherFuture() {
     final now = DateTime.now();
-    final todayWeekday = now.weekday + 1;
+    final realTodayWeekday = now.weekday + 1;
 
-    // CHỈ hiển thị cảnh báo thời tiết nếu user đang xem ngày hôm nay thực tế
-    if (selectedWeekday != todayWeekday) {
-      _weatherFuture = Future.value(WeatherAlertResult.none());
-      if (mounted) setState(() {});
-      return;
-    }
-
-    final todayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
+    // Luôn luôn lấy lịch học của ngày HÔM NAY thực tế (DateTime.now())
+    final todayClasses = mockSchedule.where((c) => c.weekday == realTodayWeekday).toList()
       ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
 
     final defaultCampusId = CampusData.mapUniversityToCampusId(_userUniversity);
 
-    debugPrint('=== PREPARE WEATHER FUTURE ===');
+    debugPrint('=== PREPARE WEATHER FUTURE FOR TODAY ===');
     debugPrint('_userUniversity: $_userUniversity');
     debugPrint('defaultCampusId: $defaultCampusId');
-    debugPrint('todayClasses length: ${todayClasses.length}');
+    debugPrint('realTodayWeekday: $realTodayWeekday, todayClasses length: ${todayClasses.length}');
 
     if (todayClasses.isEmpty) {
       _weatherFuture = Future.value(WeatherAlertResult.none());
@@ -143,8 +263,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       return ScheduleItem(
         id: c.id,
         title: c.name,
-        startTime: _combineDateAndTime(DateTime.now(), c.start),
-        endTime: _combineDateAndTime(DateTime.now(), c.end),
+        startTime: _combineDateAndTime(now, c.start),
+        endTime: _combineDateAndTime(now, c.end),
         campusId: classCampusId,
         room: c.room,
       );
@@ -366,9 +486,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         _deadlineShowAll = forceShowAll;
       }
     });
-    if (tabIndex == 1) {
-      _scrollToCurrentFocusHour();
-    }
   }
 
   void _backToDashboard() {
@@ -637,13 +754,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
       },
     );
     if (picked != null && picked != _focusedDate) {
-      setState(() {
-        _focusedDate = picked;
-        // Cập nhật selectedWeekday để khớp với ngày vừa chọn
-        selectedWeekday = picked.weekday + 1;
-      });
-      _prepareWeatherFuture();
-      _scrollToCurrentFocusHour();
+      _updateFocusedDate(picked, jumpPage: true);
     }
   }
 
@@ -1088,513 +1199,148 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
   Widget _buildDetailViewContent() {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    return GestureDetector(
-      onHorizontalDragEnd: (details) {
-        // Vuốt từ trái sang phải (swipe right) để trở về trang chính MySpace
-        if (details.primaryVelocity != null && details.primaryVelocity! > 250) {
-          _backToDashboard();
-        }
-      },
-      child: Stack(
-        children: [
-          // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 150,
-            child: Container(
-              decoration: BoxDecoration(
-                color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
-                borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-              ),
+    return Stack(
+      children: [
+        // 1. Lớp phủ mờ nội bộ (Chỉ cao 150px như Figma)
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 150,
+          child: Container(
+            decoration: BoxDecoration(
+              color: (isDarkMode ? const Color(0xFF23242A) : const Color(0xFFEBEBF5)).withValues(alpha: 0.9),
+              borderRadius: const BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
             ),
           ),
+        ),
 
-          // 2. Nội dung thực tế (Lịch, Toggle, List)
-          Column(
-            children: [
-              // Header của Detail (Tháng X, Y)
-               Padding(
-                padding: const EdgeInsets.all(8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 20,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                      onPressed: _backToDashboard,
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () => _selectDate(context),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(width: 2),
-                              Text(
-                                "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: isDarkMode ? Colors.white : Colors.black87,
-                                ),
-                              ),
-                              const SizedBox(width: 2),
-                              Icon(
-                                Icons.keyboard_arrow_down_rounded,
-                                size: 20,
-                                color: isDarkMode ? Colors.white : Colors.black54,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 48),
-                  ],
-                ),
-              ),
-
-              _buildDetailCalendarStrip(),
-              const SizedBox(height: 24),
-              _buildSlidingToggle(),
-              const SizedBox(height: 2),
-
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    MySpaceDeadlineDetailList(
-                      deadlines: mockDeadlines,
-                      selectedWeekday: selectedWeekday,
-                      currentWeek: _getCurrentWeekDays(),
-                      onToggleDeadline: _toggleDeadline,
-                      onDeleteDeadline: _deleteDeadline,
-                      onEditDeadline: _editDeadline,
-                      initialShowAll: _deadlineShowAll,
-                    ),
-                    _buildScheduleCalendarGridBody(),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _parseTimeToHourFraction(String timeStr) {
-    return StudyClass.parseTimeToHourFraction(timeStr);
-  }
-
-  void _scrollToCurrentFocusHour() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_timetableScrollController.hasClients) return;
-
-      final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
-        ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
-
-      final weekDays = _getCurrentWeekDays();
-      final selectedDayMap = weekDays.firstWhere(
-        (w) => w['value'] == selectedWeekday,
-        orElse: () => weekDays.first,
-      );
-      final DateTime selectedFullDate = selectedDayMap['fullDate'] as DateTime;
-
-      final dayEvents = mockPersonalEvents
-          .where((e) => DateUtils.isSameDay(e.dateTime, selectedFullDate))
-          .toList()
-        ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
-      double targetHour = 7.0; // Mặc định cuộn đến 7:00 sáng
-      final List<double> startHours = [];
-
-      if (dayClasses.isNotEmpty) {
-        startHours.add(dayClasses.first.startHourFraction);
-      }
-      if (dayEvents.isNotEmpty) {
-        final ev = dayEvents.first;
-        final evStartFraction = ev.dateTime.hour + (ev.dateTime.minute / 60.0);
-        startHours.add(evStartFraction);
-      }
-
-      if (startHours.isNotEmpty) {
-        startHours.sort();
-        // Tự động focus vào mục sớm nhất trong ngày (trừ bớt 0.5 giờ để lề đẹp)
-        targetHour = math.max(0.0, startHours.first - 0.5);
-      }
-
-      const double hourHeight = 64.0;
-      final double targetOffset = targetHour * hourHeight;
-      final maxExtent = _timetableScrollController.position.maxScrollExtent;
-      final finalOffset = targetOffset.clamp(0.0, maxExtent);
-
-      if ((_timetableScrollController.offset - finalOffset).abs() > 10.0) {
-        _timetableScrollController.animateTo(
-          finalOffset,
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeOutCubic,
-        );
-      }
-    });
-  }
-
-  Widget _buildScheduleCalendarGridBody() {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final dayClasses = mockSchedule.where((c) => c.weekday == selectedWeekday).toList()
-      ..sort((a, b) => a.startHourFraction.compareTo(b.startHourFraction));
-
-    final weekDays = _getCurrentWeekDays();
-    final selectedDayMap = weekDays.firstWhere(
-      (w) => w['value'] == selectedWeekday,
-      orElse: () => weekDays.first,
-    );
-    final DateTime selectedFullDate = selectedDayMap['fullDate'] as DateTime;
-
-    final dayEvents = mockPersonalEvents
-        .where((e) => DateUtils.isSameDay(e.dateTime, selectedFullDate))
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
-
-    const double hourHeight = 64.0;
-    const int startHourGrid = 0; // Từ 00:00 sáng
-    const int totalHours = 24;   // 00:00 đến 23:00 (đủ 24 tiếng)
-
-    final now = DateTime.now();
-    final isTodaySelected = _focusedDate.year == now.year &&
-        _focusedDate.month == now.month &&
-        _focusedDate.day == now.day;
-    final currentHourFraction = now.hour + (now.minute / 60.0);
-    final showNowLine = isTodaySelected && currentHourFraction >= 0.0 && currentHourFraction <= 24.0;
-    final nowTop = (currentHourFraction - startHourGrid) * hourHeight;
-
-    return SingleChildScrollView(
-      controller: _timetableScrollController,
-      physics: const ClampingScrollPhysics(),
-      child: Container(
-        padding: const EdgeInsets.only(top: 12, bottom: 24, left: 12, right: 16),
-        child: Stack(
+        // 2. Nội dung thực tế (Lịch, Toggle, List)
+        Column(
           children: [
-            // Background Hour Grid Lines
-            Column(
-              children: List.generate(totalHours, (index) {
-                final hour = startHourGrid + index;
-                final timeText = "${hour.toString().padLeft(2, '0')}:00";
-                return SizedBox(
-                  height: hourHeight,
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 50,
-                        child: Text(
-                          timeText,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: isDarkMode ? Colors.white38 : Colors.black45,
-                          ),
-                        ),
-                      ),
-                      Expanded(
-                        child: Container(
-                          margin: const EdgeInsets.only(top: 8),
-                          height: 1,
-                          color: isDarkMode ? Colors.white12 : Colors.black12,
-                        ),
-                      ),
-                    ],
+            // Header của Detail (Tháng X, Y)
+             Padding(
+              padding: const EdgeInsets.all(8),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      size: 20,
+                      color: isDarkMode ? Colors.white : Colors.black87,
+                    ),
+                    onPressed: _backToDashboard,
                   ),
-                );
-              }),
+                  Expanded(
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () => _selectDate(context),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const SizedBox(width: 2),
+                            Text(
+                              "Tháng ${_focusedDate.month}, ${_focusedDate.year}",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: isDarkMode ? Colors.white : Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 20,
+                              color: isDarkMode ? Colors.white : Colors.black54,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 48),
+                ],
+              ),
             ),
 
-            // Empty State Watermark
-            if (dayClasses.isEmpty && dayEvents.isEmpty)
-              Positioned(
-                top: 120,
-                left: 60,
-                right: 20,
-                child: Center(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: BoxDecoration(
-                      color: (isDarkMode ? Colors.black26 : Colors.white).withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.event_available, color: isDarkMode ? Colors.white54 : Colors.black45),
-                        const SizedBox(width: 8),
-                        Text(
-                          "Hôm nay không có lịch học & sự kiện",
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white60 : Colors.black54,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+            _buildDetailCalendarStrip(),
+            const SizedBox(height: 24),
+            _buildSlidingToggle(),
+            const SizedBox(height: 2),
+
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  _buildDeadlinePageView(),
+                  _buildScheduleCalendarGridPageView(),
+                ],
               ),
-
-            // Class Blocks Positioned by Start & End Time (Google Calendar Solid Fill Style)
-            ...dayClasses.map((c) {
-              final startH = _parseTimeToHourFraction(c.start);
-              var endH = _parseTimeToHourFraction(c.end);
-              if (endH <= startH) endH = startH + 1.5;
-
-              final topPos = (startH - startHourGrid) * hourHeight + 8;
-              final blockHeight = math.max(48.0, (endH - startH) * hourHeight - 4);
-
-              // Solid fill color matching Google Calendar theme
-              final Color cardColor = isDarkMode
-                  ? Color.alphaBlend(Colors.black.withValues(alpha: 0.15), c.color)
-                  : c.color;
-
-              return Positioned(
-                top: topPos,
-                left: 56.0,
-                right: 0.0,
-                height: blockHeight,
-                child: GestureDetector(
-                  onTap: () => _showScheduleActionMenu(c),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: cardColor,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.12),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        // Class Name - Bold White Text (Top-Left aligned)
-                        Text(
-                          c.name,
-                          maxLines: blockHeight < 55 ? 1 : 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            fontFamily: 'Poppins',
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        // Time & Room - White Text
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time_rounded,
-                              size: 12,
-                              color: Colors.white.withValues(alpha: 0.9),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              "${c.start} - ${c.end}",
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white.withValues(alpha: 0.9),
-                              ),
-                            ),
-                            if (c.room.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              Text(
-                                "• ${c.room.startsWith('Phòng') ? c.room : 'Phòng ${c.room}'}",
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.white.withValues(alpha: 0.95),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-
-            // Event Blocks Positioned by Event Start Time (Vibrant Purple Style)
-            ...dayEvents.map((ev) {
-              final startH = ev.dateTime.hour + (ev.dateTime.minute / 60.0);
-              final topPos = (startH - startHourGrid) * hourHeight + 8;
-
-              double blockHeight = 60.0; // Mặc định 1 giờ (64.0 - 4)
-              if (ev.endDateTime != null) {
-                var endH = ev.endDateTime!.hour + (ev.endDateTime!.minute / 60.0);
-                if (endH <= startH) endH = startH + 1.0;
-                blockHeight = math.max(48.0, (endH - startH) * hourHeight - 4);
-              }
-
-              final bool isInterested = ev.isFromFacultyEvent;
-              final Color eventBgColor = isInterested
-                  ? (isDarkMode
-                      ? const Color(0xFF426C93)
-                      : const Color(0xFF5F8FB8))
-                  : (isDarkMode
-                      ? const Color(0xFF55508A)
-                      : const Color(0xFF7D74B2));
-
-              final String eventTagText = isInterested ? 'QUAN TÂM' : 'SỰ KIỆN';
-
-              final String timeStr = ev.endDateTime != null
-                  ? "${DateFormat('HH:mm').format(ev.dateTime)} - ${DateFormat('HH:mm').format(ev.endDateTime!)}"
-                  : DateFormat('HH:mm').format(ev.dateTime);
-
-              return Positioned(
-                top: topPos,
-                left: 56.0,
-                right: 0.0,
-                height: blockHeight,
-                child: GestureDetector(
-                  onTap: () => _showPersonalEventActionMenu(ev),
-                  child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: eventBgColor,
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.14),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    ev.title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white24,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    eventTagText,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 8,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: 'Poppins',
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 2),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time_rounded,
-                                  size: 11,
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  timeStr,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                  ),
-                                ),
-                                if (ev.location.isNotEmpty) ...[
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      "• ${ev.location}",
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w500,
-                                        color: Colors.white.withValues(alpha: 0.9),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-            }),
-
-            // Red Current Time Line Indicator
-            if (showNowLine)
-              Positioned(
-                top: nowTop + 8,
-                left: 44,
-                right: 0,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.redAccent,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: 2,
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            ),
           ],
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildScheduleCalendarGridPageView() {
+    return PageView.builder(
+      controller: _dayPageController,
+      onPageChanged: _onDayPageChanged,
+      itemBuilder: (context, index) {
+        final pageDate = _getDateFromPageIndex(index);
+        final pageWeekday = pageDate.weekday + 1;
+
+        final dayClasses = mockSchedule.where((c) => c.weekday == pageWeekday).toList();
+        final dayEvents = mockPersonalEvents
+            .where((e) => DateUtils.isSameDay(e.dateTime, pageDate))
+            .toList();
+
+        return ScheduleCalendarGrid(
+          key: ValueKey('schedule_grid_${pageDate.year}_${pageDate.month}_${pageDate.day}'),
+          focusedDate: pageDate,
+          selectedWeekday: pageWeekday,
+          dayClasses: dayClasses,
+          dayEvents: dayEvents,
+          onScheduleTap: _showScheduleActionMenu,
+          onEventTap: _showPersonalEventActionMenu,
+          scrollController: null,
+        );
+      },
+    );
+  }
+
+  Widget _buildDeadlinePageView() {
+    return PageView.builder(
+      controller: _dayPageController,
+      onPageChanged: _onDayPageChanged,
+      itemBuilder: (context, index) {
+        final pageDate = _getDateFromPageIndex(index);
+        final pageWeekday = pageDate.weekday + 1;
+
+        DateTime monday = pageDate.subtract(Duration(days: pageDate.weekday - 1));
+        final pageWeek = List.generate(7, (i) {
+          DateTime day = monday.add(Duration(days: i));
+          return {
+            "day": day.day.toString(),
+            "label": i == 6 ? "CN" : "T${i + 2}",
+            "value": i + 2,
+            "fullDate": DateTime(day.year, day.month, day.day)
+          };
+        });
+
+        return MySpaceDeadlineDetailList(
+          key: ValueKey('deadline_list_${pageDate.year}_${pageDate.month}_${pageDate.day}'),
+          deadlines: mockDeadlines,
+          selectedWeekday: pageWeekday,
+          currentWeek: pageWeek,
+          onToggleDeadline: _toggleDeadline,
+          onDeleteDeadline: _deleteDeadline,
+          onEditDeadline: _editDeadline,
+          initialShowAll: _deadlineShowAll,
+        );
+      },
     );
   }
   int _countDeadlinesForDate(DateTime date) {
@@ -1616,103 +1362,124 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   Widget _buildDetailCalendarStrip() {
-    final currentWeek = _getCurrentWeekDays();
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    return SizedBox(
+      height: 70,
+      child: PageView.builder(
+        controller: _weekPageController,
+        onPageChanged: (pageIndex) {
+          final DateTime newMonday = _mondayFromWeekPage(pageIndex);
+          final int selectedDayOffset = _focusedDate.weekday - 1;
+          final DateTime targetDate = newMonday.add(
+            Duration(days: selectedDayOffset),
+          );
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: Row(
-        children: List.generate(currentWeek.length, (index) {
-          final dayData = currentWeek[index];
-          DateTime dayDate = dayData['fullDate'];
-          int weekdayValue = dayData['value']; // T2=2, T3=3... CN=8
-          bool isSelected = selectedWeekday == weekdayValue;
-
-          // Logic thay đổi thông số thông báo
+          if (!DateUtils.isSameDay(targetDate, _focusedDate)) {
+            _updateFocusedDate(
+              targetDate,
+              jumpPage: true,
+              animate: false,
+              updateWeekPage: false,
+            );
+          }
+        },
+        itemBuilder: (context, pageIndex) {
+          final DateTime monday = _mondayFromWeekPage(pageIndex);
+          final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
           final isScheduleTab = _tabController.index == 1;
+          final Color badgeColor = isScheduleTab ? hcmusTeal : hcmusRed;
 
-          int count = isScheduleTab
-              ? (_countClassesForDate(weekdayValue) + _countEventsForDate(dayDate))
-              : _countDeadlinesForDate(dayDate);
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Row(
+              children: List.generate(7, (index) {
+                final DateTime dayDate = monday.add(Duration(days: index));
+                final int weekdayValue = dayDate.weekday + 1; // T2=2... CN=8
+                final bool isSelected = DateUtils.isSameDay(dayDate, _focusedDate);
 
-          Color badgeColor = isScheduleTab ? hcmusTeal : hcmusRed;
+                final int count = isScheduleTab
+                    ? (_countClassesForDate(weekdayValue) + _countEventsForDate(dayDate))
+                    : _countDeadlinesForDate(dayDate);
 
-          return Expanded(
-            child: GestureDetector(
-               onTap: () {
-                setState(() {
-                  selectedWeekday = weekdayValue;
-                  _focusedDate = dayDate;
-                });
-                _prepareWeatherFuture();
-                _scrollToCurrentFocusHour();
-              },
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 3),
-                child: Container(
-                  height: 70,
-                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-                  decoration: BoxDecoration(
-                    color: isSelected ? hcmusBlueAccent : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "${dayDate.day}",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black),
-                          ),
+                final String label = index == 6 ? "CN" : "T${index + 2}";
+
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      _updateFocusedDate(
+                        dayDate,
+                        jumpPage: true,
+                        animate: true,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Container(
+                        height: 70,
+                        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: isSelected ? hcmusBlueAccent : Colors.transparent,
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        Text(
-                          dayData['label'],
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : (isDarkMode ? Colors.white60 : const Color(0xff94A3B8)),
-                            fontSize: 11,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        // Badge thông báo (Đỏ cho Deadline, Teal cho Schedule)
-                        SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: count > 0
-                              ? Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: badgeColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: Padding(
-                                padding: const EdgeInsets.all(2.0),
-                                child: Text(
-                                  "$count",
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "${dayDate.day}",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected ? Colors.white : (isDarkMode ? Colors.white : Colors.black),
                                 ),
                               ),
-                            ),
-                          )
-                              : const SizedBox.shrink(),
+                              Text(
+                                label,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : (isDarkMode ? Colors.white60 : const Color(0xff94A3B8)),
+                                  fontSize: 11,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              // Badge thông báo hiển thị số lượng cụ thể
+                              SizedBox(
+                                height: 16,
+                                width: 16,
+                                child: count > 0
+                                    ? Container(
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: badgeColor,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: FittedBox(
+                                          fit: BoxFit.contain,
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(2.0),
+                                            child: Text(
+                                              "$count",
+                                              style: const TextStyle(
+                                                color: Colors.white,
+                                                fontSize: 8,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              }),
             ),
           );
-        }),
+        },
       ),
     );
   }

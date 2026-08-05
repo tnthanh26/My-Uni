@@ -318,9 +318,14 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final selectedDate = widget.currentWeek.firstWhere(
-          (d) => d['value'] == widget.selectedWeekday,
-    )['fullDate'] as DateTime;
+    Map<String, dynamic>? selectedDateMap;
+    for (final d in widget.currentWeek) {
+      if (d['value'] == widget.selectedWeekday) {
+        selectedDateMap = d;
+        break;
+      }
+    }
+    final selectedDate = ((selectedDateMap ?? (widget.currentWeek.isNotEmpty ? widget.currentWeek.first : null))?['fullDate'] as DateTime?) ?? DateTime.now();
 
     final List<Deadline> filteredDeadlines = widget.deadlines.where((d) {
       return d.dueDate.year == selectedDate.year &&

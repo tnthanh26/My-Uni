@@ -85,9 +85,7 @@ class HomePageState extends State<HomePage> {
   bool _showWalkthrough = false;
   int _walkthroughStep = 0;
 
-  // Pending weather alerts state
-  WeatherAlertResult? _pendingWeatherAlert;
-  WeatherAlertTheme? _pendingWeatherTheme;
+  // Weather alert state (Chỉ hiển thị 1 lần duy nhất khi vừa mở app)
   bool _hasShownWeatherAlert = false;
 
   StreamSubscription<DocumentSnapshot>? _userDocSubscription;
@@ -240,11 +238,14 @@ class HomePageState extends State<HomePage> {
         alertService: WeatherAlertService(),
       );
 
+      if (_hasShownWeatherAlert) return;
+
       final result = await coordinator.buildWeatherAlertForToday(
         schedules: scheduleItems,
       );
 
-      if (result.shouldShow && mounted) {
+      if (result.shouldShow && mounted && !_hasShownWeatherAlert) {
+        _hasShownWeatherAlert = true;
         WeatherAlertTheme theme;
         switch (result.level) {
           case WeatherAlertLevel.thunderstorm:
@@ -261,21 +262,11 @@ class HomePageState extends State<HomePage> {
             break;
         }
 
-        if (_selectedIndex == 0) {
-          _hasShownWeatherAlert = true;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _selectedIndex == 0) {
-              _showWeatherAlertDialog(result, theme: theme);
-            } else {
-              _pendingWeatherAlert = result;
-              _pendingWeatherTheme = theme;
-              _hasShownWeatherAlert = false;
-            }
-          });
-        } else {
-          _pendingWeatherAlert = result;
-          _pendingWeatherTheme = theme;
-        }
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _showWeatherAlertDialog(result, theme: theme);
+          }
+        });
       }
     } catch (e) {
       debugPrint('[WeatherDialog] Lỗi kiểm tra thời tiết: $e');
@@ -688,23 +679,6 @@ class HomePageState extends State<HomePage> {
     });
     HomePage.activeTabNotifier.value = index;
     EventPageNotifier.isActive.value = (index == 1);
-    if (index == 0 && _pendingWeatherAlert != null && !_hasShownWeatherAlert) {
-      final alert = _pendingWeatherAlert!;
-      final theme = _pendingWeatherTheme ?? WeatherAlertTheme.thunderstorm;
-      _pendingWeatherAlert = null;
-      _pendingWeatherTheme = null;
-      _hasShownWeatherAlert = true;
-
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _selectedIndex == 0) {
-          _showWeatherAlertDialog(alert, theme: theme);
-        } else {
-          _pendingWeatherAlert = alert;
-          _pendingWeatherTheme = theme;
-          _hasShownWeatherAlert = false;
-        }
-      });
-    }
   }
 
   Widget _buildHeaderActionButton({
