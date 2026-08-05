@@ -209,16 +209,23 @@ class NotificationService {
       _notifiedEventIds.addAll(cachedNotified);
 
       for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final doc = change.doc;
-          final String docId = doc.id;
-          final Map<String, dynamic>? data = doc.data();
+        final doc = change.doc;
+        final String docId = doc.id;
+        final Map<String, dynamic>? data = doc.data();
 
-          if (data == null ||
-              data['shouldPublish'] == false ||
-              data['source'] == 'collaborator') {
-            continue;
-          }
+        if (data == null || data['shouldPublish'] == false) {
+          continue;
+        }
+
+        final bool isMatch = _matchesUserFaculties(
+          data,
+          userFacultyStr,
+          followedFaculties,
+        );
+
+        if (!isMatch) continue;
+
+        if (change.type == DocumentChangeType.added) {
           if (_notifiedEventIds.contains(docId)) continue;
 
           final DateTime? createdTime = _extractEventCreatedTime(data);
@@ -228,64 +235,128 @@ class NotificationService {
             continue;
           }
 
-          final bool isMatch = _matchesUserFaculties(
-            data,
-            userFacultyStr,
-            followedFaculties,
+          _notifiedEventIds.add(docId);
+          await prefs.setStringList(
+            'notified_faculty_event_ids',
+            _notifiedEventIds.toList(),
           );
 
-          if (isMatch) {
-            _notifiedEventIds.add(docId);
-            await prefs.setStringList(
-              'notified_faculty_event_ids',
-              _notifiedEventIds.toList(),
-            );
+          final String eventTitle =
+              (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên mới')
+                  .toString();
+          final String rawFaculty =
+              (data['facultyName'] ?? data['department'] ?? 'Khoa')
+                  .toString()
+                  .trim();
+          final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
+              ? rawFaculty
+              : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
+          final String eventDateText =
+              (data['eventDateText'] ?? data['date'] ?? '').toString();
+          final String locationName =
+              (data['locationName'] ?? '').toString();
 
-            final String eventTitle =
-                (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên mới')
-                    .toString();
-            final String rawFaculty =
-                (data['facultyName'] ?? data['department'] ?? 'Khoa')
-                    .toString().trim();
-            final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
-                ? rawFaculty
-                : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
-            final String eventDateText =
-                (data['eventDateText'] ?? data['date'] ?? '').toString();
-            final String locationName =
-                (data['locationName'] ?? '').toString();
+          String bodyStr = facultyName;
+          if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
+          if (locationName.isNotEmpty) bodyStr += ' • $locationName';
 
-            String bodyStr = facultyName;
-            if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
-            if (locationName.isNotEmpty) bodyStr += ' • $locationName';
+          try {
+            final existing = await _db
+                .collection('notifications')
+                .where('userId', isEqualTo: user.uid)
+                .where('relatedPostId', isEqualTo: docId)
+                .limit(1)
+                .get();
 
-            try {
-              final existing = await _db
-                  .collection('notifications')
-                  .where('userId', isEqualTo: user.uid)
-                  .where('relatedPostId', isEqualTo: docId)
-                  .limit(1)
-                  .get();
-
-              if (existing.docs.isEmpty) {
-                await _db.collection('notifications').add({
-                  'userId': user.uid,
-                  'title': '📌 Sự kiện mới: $eventTitle',
-                  'content': bodyStr,
-                  'type': 'faculty_event',
-                  'timestamp': FieldValue.serverTimestamp(),
-                  'isRead': false,
-                  'relatedPostId': docId,
-                  'collectionPath': 'faculty_events',
-                });
-              }
-            } catch (e) {
-              debugPrint('Lỗi lưu in-app notification: $e');
+            if (existing.docs.isEmpty) {
+              await _db.collection('notifications').add({
+                'userId': user.uid,
+                'title': '📌 Sự kiện mới: $eventTitle',
+                'content': bodyStr,
+                'type': 'faculty_event',
+                'timestamp': FieldValue.serverTimestamp(),
+                'isRead': false,
+                'relatedPostId': docId,
+                'collectionPath': 'faculty_events',
+              });
             }
+          } catch (e) {
+            debugPrint('Lỗi lưu in-app notification: $e');
+          }
+        } else if (change.type == DocumentChangeType.modified) {
+          // Kiểm tra thời gian sự kiện: Chỉ thông báo nếu sự kiện ở tương lai hoặc được gia hạn/đổi lịch sang tương lai
+          final DateTime? startTime = _extractEventStartTime(data);
+          final DateTime? endTime = _extractEventEndTime(data);
+          final now = DateTime.now();
+
+          bool isUpcomingOrRescheduled = false;
+          if (endTime != null && endTime.isAfter(now)) {
+            isUpcomingOrRescheduled = true;
+          } else if (startTime != null &&
+              startTime.isAfter(now.subtract(const Duration(hours: 2)))) {
+            isUpcomingOrRescheduled = true;
+          } else if (startTime == null && endTime == null) {
+            isUpcomingOrRescheduled = true;
+          }
+
+          if (!isUpcomingOrRescheduled) continue;
+
+          final String eventTitle =
+              (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên')
+                  .toString();
+          final String rawFaculty =
+              (data['facultyName'] ?? data['department'] ?? 'Khoa')
+                  .toString()
+                  .trim();
+          final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
+              ? rawFaculty
+              : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
+          final String eventDateText =
+              (data['eventDateText'] ?? data['date'] ?? '').toString();
+          final String locationName =
+              (data['locationName'] ?? '').toString();
+
+          String bodyStr = '$facultyName • Vừa cập nhật thông tin';
+          if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
+          if (locationName.isNotEmpty) bodyStr += ' • $locationName';
+
+          try {
+            await _db.collection('notifications').add({
+              'userId': user.uid,
+              'title': '🔄 Cập nhật sự kiện: $eventTitle',
+              'content': bodyStr,
+              'type': 'faculty_event',
+              'timestamp': FieldValue.serverTimestamp(),
+              'isRead': false,
+              'relatedPostId': docId,
+              'collectionPath': 'faculty_events',
+            });
+          } catch (e) {
+            debugPrint('Lỗi lưu notification khi update event: $e');
           }
         }
       }
     });
+  }
+
+  static DateTime? _extractEventStartTime(Map<String, dynamic> data) {
+    if (data['startAt'] is Timestamp) {
+      return (data['startAt'] as Timestamp).toDate();
+    }
+    if (data['startDate'] is Timestamp) {
+      return (data['startDate'] as Timestamp).toDate();
+    }
+    return null;
+  }
+
+  static DateTime? _extractEventEndTime(Map<String, dynamic> data) {
+    if (data['endAt'] is Timestamp) {
+      return (data['endAt'] as Timestamp).toDate();
+    }
+    if (data['endDate'] is Timestamp) {
+      return (data['endDate'] as Timestamp).toDate();
+    }
+    return null;
   }
 
   static DateTime? _extractEventCreatedTime(Map<String, dynamic> data) {
@@ -337,6 +408,15 @@ class NotificationService {
           eventFacCode == fac.code.toLowerCase() ||
           fac.matchKeywords.any((kw) =>
               eventFacName.contains(kw) || eventFacId.contains(kw))) {
+        return true;
+      }
+    }
+
+    if (userFacultyStr != null && userFacultyStr.trim().isNotEmpty) {
+      final cleanUserFac = userFacultyStr.toLowerCase();
+      if (eventFacName.contains(cleanUserFac) ||
+          (eventFacId.isNotEmpty && cleanUserFac.contains(eventFacId)) ||
+          (eventFacCode.isNotEmpty && cleanUserFac.contains(eventFacCode))) {
         return true;
       }
     }
