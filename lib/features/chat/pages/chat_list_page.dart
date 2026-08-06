@@ -36,6 +36,7 @@ class _ChatListPageState extends State<ChatListPage> {
   void initState() {
     super.initState();
     timeago.setLocaleMessages('vi', timeago.ViMessages());
+    _chatService.cleanupAllUserExpiredChats();
   }
 
   @override

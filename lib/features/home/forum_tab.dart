@@ -302,11 +302,44 @@ class _ForumTabState extends State<ForumTab> {
               _cachedPostsMap[doc.id] = doc;
             }
           } else {
-            // Khóa vị trí danh sách hiện tại để tránh trôi/nhảy bài khi đang đọc.
-            // Cập nhật dữ liệu mới (like, comment) cho các bài viết đã có trong cache.
+            final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
+            // 1. Tự động xóa bài viết khỏi UI nếu bài viết đó bị xóa khỏi Firestore (không cần trượt tay)
+            final currentPostIds = posts.map((d) => d.id).toSet();
+            _sortedPostIds!.removeWhere((id) => !currentPostIds.contains(id));
+            _cachedPostsMap.removeWhere((id, _) => !currentPostIds.contains(id));
+
+            // 2. Tự động reload feed nếu chính USER ĐÓ vừa đăng bài mới
+            bool hasSelfNewPost = false;
             for (var doc in posts) {
-              if (_cachedPostsMap.containsKey(doc.id)) {
+              final data = doc.data() as Map<String, dynamic>;
+              final authorId = data['authorId']?.toString();
+              if (!_cachedPostsMap.containsKey(doc.id)) {
+                if (currentUserId != null && authorId == currentUserId) {
+                  hasSelfNewPost = true;
+                  break;
+                }
+              }
+            }
+
+            if (hasSelfNewPost) {
+              final List<QueryDocumentSnapshot> sorted = List.from(posts);
+              sorted.sort((a, b) {
+                final aScore = calculateTrendingScore(a.data() as Map<String, dynamic>);
+                final bScore = calculateTrendingScore(b.data() as Map<String, dynamic>);
+                return bScore.compareTo(aScore);
+              });
+              _sortedPostIds = sorted.map((doc) => doc.id).toList();
+              _cachedPostsMap.clear();
+              for (var doc in posts) {
                 _cachedPostsMap[doc.id] = doc;
+              }
+            } else {
+              // Cập nhật tương tác mới (like/comment) cho các bài viết đã có
+              for (var doc in posts) {
+                if (_cachedPostsMap.containsKey(doc.id)) {
+                  _cachedPostsMap[doc.id] = doc;
+                }
               }
             }
           }
@@ -372,8 +405,8 @@ class _ForumTabState extends State<ForumTab> {
                         child: Material(
                           color: Colors.transparent,
                           child: InkWell(
-                            onTap: () {
-                              Navigator.push(
+                            onTap: () async {
+                              final bool? result = await Navigator.push<bool>(
                                 context,
                                 MaterialPageRoute(
                                   builder: (context) => PostDetailPage(
@@ -382,6 +415,12 @@ class _ForumTabState extends State<ForumTab> {
                                   ),
                                 ),
                               );
+                              if (result == true && mounted) {
+                                setState(() {
+                                  _sortedPostIds = null;
+                                  _cachedPostsMap.clear();
+                                });
+                              }
                             },
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,7 +475,7 @@ class _ForumTabState extends State<ForumTab> {
                                                       }
                                                     },
                                                     child: Text(
-                                                      isAnonymous ? AnonymousUtils.getAnonymousName((data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString(), docId) : (data['authorName'] ?? 'Người dùng'),
+                                                      isAnonymous ? AnonymousUtils.anonymousPostAuthorName : (data['authorName'] ?? 'Người dùng'),
                                                       maxLines: 1,
                                                       overflow: TextOverflow.ellipsis,
                                                       style: TextStyle(

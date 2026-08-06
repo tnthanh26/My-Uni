@@ -207,7 +207,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       }
 
       if (mounted) {
-        Navigator.pop(context);
+        Navigator.pop(context, true);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Lưu đánh giá thành công!")),
         );

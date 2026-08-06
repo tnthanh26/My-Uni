@@ -457,4 +457,128 @@ class ChatService {
       return null;
     }
   }
+  static final Map<String, DateTime> _lastCleanupTimes = {};
+
+  /// Tự động dọn dẹp các tin nhắn cũ hơn 30 ngày trong phòng chat
+  Future<void> cleanupExpiredMessages(String roomId, {int daysThreshold = 30}) async {
+    final now = DateTime.now();
+    final lastCleanup = _lastCleanupTimes[roomId];
+
+    // Rate Limiter: Chỉ dọn dẹp tối đa 1 lần mỗi 12 giờ cho mỗi phòng chat để tiết kiệm chi phí Firestore
+    if (lastCleanup != null && now.difference(lastCleanup).inHours < 12) {
+      return;
+    }
+    _lastCleanupTimes[roomId] = now;
+
+    try {
+      final cutoffDate = now.subtract(Duration(days: daysThreshold));
+      final expiredMessagesQuery = await _firestore
+          .collection('chat_rooms')
+          .doc(roomId)
+          .collection('messages')
+          .where('timestamp', isLessThan: Timestamp.fromDate(cutoffDate))
+          .limit(100)
+          .get();
+
+      if (expiredMessagesQuery.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (var doc in expiredMessagesQuery.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+        debugPrint("ChatService: Auto-deleted ${expiredMessagesQuery.docs.length} messages older than $daysThreshold days in room: $roomId");
+      }
+    } catch (e) {
+      debugPrint("ChatService: Error cleaning up expired messages in room $roomId: $e");
+    }
+  }
+
+  /// Tự động quét dọn toàn bộ phòng chat của User hiện tại để xóa tin nhắn quá 30 ngày
+  Future<void> cleanupAllUserExpiredChats({int daysThreshold = 30}) async {
+    final myUid = currentUserId;
+    if (myUid == null) return;
+
+    try {
+      final roomDocs = await _firestore
+          .collection('chat_rooms')
+          .where('participants', arrayContains: myUid)
+          .get();
+
+      for (var roomDoc in roomDocs.docs) {
+        await cleanupExpiredMessages(roomDoc.id, daysThreshold: daysThreshold);
+      }
+    } catch (e) {
+      debugPrint("ChatService: Error running global user chat cleanup: $e");
+    }
+  }
+
+  /// Xóa toàn bộ cuộc trò chuyện (phòng chat và tất cả tin nhắn bên trong)
+  Future<void> deleteChatRoom(String roomId) async {
+    final myUid = currentUserId;
+    if (myUid == null) throw Exception('Bạn chưa đăng nhập');
+
+    final roomRef = _firestore.collection('chat_rooms').doc(roomId);
+
+    // 1. Xóa các thông báo tin nhắn thuộc về chính User này
+    try {
+      final notisQuery = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: myUid)
+          .where('roomId', isEqualTo: roomId)
+          .get();
+      if (notisQuery.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (var doc in notisQuery.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (e) {
+      debugPrint("Error deleting user notifications: $e");
+    }
+
+    // 2. Thử xóa tất cả tin nhắn trong subcollection 'messages'
+    try {
+      final messagesQuery = await roomRef.collection('messages').get();
+      if (messagesQuery.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+        for (var doc in messagesQuery.docs) {
+          batch.delete(doc.reference);
+        }
+        await batch.commit();
+      }
+    } catch (e) {
+      debugPrint("Batch message deletion permission restricted: $e");
+      // Fallback: Xóa các tin nhắn do chính người dùng hiện tại gửi
+      try {
+        final myMessagesQuery = await roomRef
+            .collection('messages')
+            .where('senderId', isEqualTo: myUid)
+            .get();
+        if (myMessagesQuery.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          for (var doc in myMessagesQuery.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+        }
+      } catch (_) {}
+    }
+
+    // 3. Xóa document phòng chat chính (hoặc rút khỏi danh sách tham gia nếu bị giới hạn quyền)
+    try {
+      await roomRef.delete();
+      debugPrint("ChatService: Successfully deleted chat room $roomId");
+    } catch (e) {
+      debugPrint("Hard delete room permission restricted, removing participant: $e");
+      try {
+        await roomRef.update({
+          'participants': FieldValue.arrayRemove([myUid]),
+          'unreadCounts.$myUid': FieldValue.delete(),
+        });
+      } catch (err) {
+        debugPrint("Error updating room participants: $err");
+      }
+    }
+  }
 }

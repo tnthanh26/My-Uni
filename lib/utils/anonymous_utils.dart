@@ -1,7 +1,9 @@
 class AnonymousUtils {
+  /// Tên hiển thị cố định cho tác giả bài đăng (không đánh số #000-999)
+  static String get anonymousPostAuthorName => 'Sinh viên ẩn danh';
+
   /// Tạo tên hiển thị ẩn danh kèm mã số từ 001 đến 999 dựa trên userID và postID.
-  /// Trong cùng 1 bài viết, 1 người dùng sẽ giữ nguyên 1 mã số cố định.
-  /// Khi sang bài viết khác, mã số sẽ thay đổi để bảo đảm tính riêng tư.
+  /// Dành riêng cho người bình luận (commenter) trong cùng 1 bài viết để phân biệt nhiều người thảo luận.
   static String getAnonymousName(String? uid, String? postId) {
     if (uid == null || uid.isEmpty) return 'Sinh viên ẩn danh';
     final seed = '${uid}_${postId ?? ''}';

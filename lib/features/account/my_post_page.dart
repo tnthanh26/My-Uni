@@ -9,6 +9,7 @@ import 'package:my_uni/features/home/poll_widget.dart';
 import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 
 class MyPostsPage extends StatefulWidget {
   const MyPostsPage({super.key});
@@ -194,56 +195,16 @@ class _MyPostsPageState extends State<MyPostsPage>
     );
   }
 
-  void _confirmDelete(BuildContext context, DocumentReference ref) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    showDialog(
+  void _confirmDelete(BuildContext context, DocumentReference ref) async {
+    final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor:
-        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        title: Text(
-          "Xóa bài viết?",
-          style: TextStyle(
-            fontFamily: 'Nunito',
-            fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : Colors.black87,
-          ),
-        ),
-        content: Text(
-          "Hành động này sẽ xóa vĩnh viễn dữ liệu.",
-          style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
-            color: isDarkMode ? Colors.white70 : Colors.black87,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.delete();
-              if (context.mounted) Navigator.pop(context);
-            },
-            child: const Text(
-              "Xóa",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
+      title: 'Xóa bài viết?',
+      message: 'Hành động này sẽ xóa vĩnh viễn dữ liệu.',
+      confirmText: 'Xóa',
     );
+    if (confirm == true) {
+      await ref.delete();
+    }
   }
 
   Widget _buildEmptyState(BuildContext context, String collectionPath) {
@@ -495,14 +456,17 @@ String removeVietnameseDiacritics(String str) {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final bool? result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (context) =>
                       PostDetailPage(docId: docId, initialPostData: data),
                 ),
               );
+              if (result == true && mounted) {
+                setState(() {});
+              }
             },
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

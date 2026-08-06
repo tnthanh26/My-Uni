@@ -26,6 +26,7 @@ import 'weather_alert_card.dart';
 import 'myspace_deadline_section.dart';
 import 'widgets/myspace_skeleton.dart';
 import 'widgets/schedule_calendar_grid.dart';
+import 'package:my_uni/widgets/app_action_dialogs.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 
@@ -1586,63 +1587,32 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
 
 
   void _showPersonalEventActionMenu(EventModel ev) {
-    showModalBottomSheet(
+    AppActionDialogs.showActionBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                ev.title,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white70 : Colors.grey,
-                  fontFamily: 'Poppins',
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Divider(color: isDarkMode ? Colors.white12 : null),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
-                title: Text(
-                  "Chỉnh sửa sự kiện",
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _editPersonalEvent(ev);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: hcmusRed),
-                title: Text(
-                  "Xóa sự kiện",
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deletePersonalEvent(ev.id);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      title: ev.title,
+      actions: [
+        AppActionItem(
+          title: 'Chỉnh sửa sự kiện',
+          icon: Icons.edit_outlined,
+          onTap: () => _editPersonalEvent(ev),
+        ),
+        AppActionItem(
+          title: 'Xóa sự kiện',
+          icon: Icons.delete_outline_rounded,
+          isDanger: true,
+          onTap: () async {
+            final confirm = await AppActionDialogs.showConfirmDialog(
+              context: context,
+              title: 'Xóa sự kiện?',
+              message: 'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" khỏi lịch cá nhân không?',
+              confirmText: 'Xóa',
+            );
+            if (confirm == true) {
+              _deletePersonalEvent(ev.id);
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -1789,7 +1759,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           ),
           Positioned(
             right: 8,
-            top: 8,
+            top: 0,
             child: GestureDetector(
               onTap: () => _showPersonalEventActionMenu(ev),
               child: Container(
@@ -2320,61 +2290,32 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
   }
 
   void _showScheduleActionMenu(StudyClass s) {
-    showModalBottomSheet(
+    AppActionDialogs.showActionBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        return Container(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                s.name,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white70 : Colors.grey,
-                  fontFamily: 'Poppins',
-                )
-              ),
-              Divider(color: isDarkMode ? Colors.white12 : null),
-              ListTile(
-                leading: const Icon(Icons.edit_outlined, color: hcmusTeal),
-                title: Text(
-                  "Chỉnh sửa lịch học",
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _editSchedule(s); // Gọi hàm sửa vừa tạo
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.delete_outline, color: hcmusRed),
-                title: Text(
-                  "Xóa lịch học",
-                  style: TextStyle(
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                    fontFamily: 'Poppins',
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  _deleteSchedule(s.id);
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      title: s.name,
+      actions: [
+        AppActionItem(
+          title: 'Chỉnh sửa lịch học',
+          icon: Icons.edit_outlined,
+          onTap: () => _editSchedule(s),
+        ),
+        AppActionItem(
+          title: 'Xóa lịch học',
+          icon: Icons.delete_outline_rounded,
+          isDanger: true,
+          onTap: () async {
+            final confirm = await AppActionDialogs.showConfirmDialog(
+              context: context,
+              title: 'Xóa lịch học?',
+              message: 'Bạn có chắc chắn muốn xóa môn học "${s.name}" khỏi thời khóa biểu không?',
+              confirmText: 'Xóa',
+            );
+            if (confirm == true) {
+              _deleteSchedule(s.id);
+            }
+          },
+        ),
+      ],
     );
   }
 
@@ -2498,7 +2439,7 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           // NÚT BA CHẤM (More Action)
           Positioned(
             right: 8,
-            top: 8,
+            top: 0,
             child: GestureDetector(
               onTap: () => _showScheduleActionMenu(c), // Gọi hàm Menu của Schedule
               child: Container(

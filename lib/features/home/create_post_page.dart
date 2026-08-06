@@ -265,7 +265,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         await FirebaseFirestore.instance.collection('forum_posts').add(postData);
       }
 
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
         setState(() => _isSubmitting = false);
