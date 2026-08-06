@@ -182,6 +182,97 @@ class AccountPage extends StatelessWidget {
     );
   }
 
+  Widget _buildQuickAction({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    Color color = const Color(0xFF6797E1),
+    required VoidCallback onTap,
+  }) {
+    final bool isDarkMode =
+        Theme.of(context).brightness == Brightness.dark;
+
+    return Expanded(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            constraints: const BoxConstraints(
+              minHeight: 82,
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 8,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF15171A)
+                  : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : const Color(0xFFE9EEF3),
+              ),
+              boxShadow: isDarkMode
+                  ? const []
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withValues(
+                          alpha: 0.025,
+                        ),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: color.withValues(
+                      alpha: isDarkMode ? 0.18 : 0.11,
+                    ),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    icon,
+                    size: 22,
+                    color: color,
+                  ),
+                ),
+
+                const SizedBox(height: 9),
+
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w700,
+                    color: isDarkMode
+                        ? Colors.white
+                        : const Color(0xFF1D2939),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildProfileHeader({
     required BuildContext context,
     required bool isDarkMode,
@@ -590,58 +681,91 @@ class AccountPage extends StatelessWidget {
                     isVerified: isVerified,
                     verificationStatus: verificationStatus,
                   ),
+
+                  const SizedBox(height: 16),
+
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildQuickAction(
+                          context: context,
+                          icon: Icons.badge_outlined,
+                          label: 'Thẻ MyUni',
+                          color: const Color(0xFF6797E1),
+                          onTap: () {
+                            _showStudentQrDialog(
+                              context,
+                              isDarkMode: isDarkMode,
+                              qrData: qrData,
+                              name: name,
+                              studentId: studentId,
+                              faculty: faculty,
+                              cohort: cohort,
+                              university: university,
+                            );
+                          },
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        _buildQuickAction(
+                          context: context,
+                          icon: Icons.chat_bubble_outline_rounded,
+                          label: 'Đoạn chat',
+                          color: const Color(0xFF6797E1),
+                          onTap: () {
+                            _navigateIfAllowed(
+                              context,
+                              verificationStatus,
+                              const ChatListPage(),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        _buildQuickAction(
+                          context: context,
+                          icon: Icons.person_search_rounded,
+                          label: 'Tìm sinh viên',
+                          color: const Color(0xFF6797E1),
+                          onTap: () {
+                            _navigateIfAllowed(
+                              context,
+                              verificationStatus,
+                              const SearchUserPage(),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
                   const SizedBox(height: 22),
 
-                  _buildSectionTitle('Tin nhắn & Kết nối', isDarkMode),
+                  _buildSectionTitle(
+                    'Tài khoản',
+                    isDarkMode,
+                  ),
                   _buildSettingsGroup(
                     isDarkMode: isDarkMode,
                     children: [
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'Đoạn chat',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const ChatListPage()),
-                      ),
-                      _buildDivider(isDarkMode),
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.person_search_rounded,
-                        title: 'Tìm kiếm người dùng',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SearchUserPage()),
-                      ),
-                      _buildDivider(isDarkMode),
                       _buildAccountItem(
                         context,
                         icon: Icons.contact_phone_outlined,
                         title: 'Thông tin liên hệ của tôi',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SocialContactsPage()),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 22),
-
-                  _buildSectionTitle('Tài khoản', isDarkMode),
-                  _buildSettingsGroup(
-                    isDarkMode: isDarkMode,
-                    children: [
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.qr_code_2_rounded,
-                        title: 'Thẻ sinh viên MyUni',
                         onTap: () {
-                          _showStudentQrDialog(
+                          _navigateIfAllowed(
                             context,
-                            isDarkMode: isDarkMode,
-                            qrData: qrData,
-                            name: name,
-                            studentId: studentId,
-                            faculty: faculty,
-                            cohort: cohort,
-                            university: university,
+                            verificationStatus,
+                            const SocialContactsPage(),
                           );
                         },
                       ),
+
                       _buildDivider(isDarkMode),
+
                       _buildAccountItem(
                         context,
                         icon: Icons.key_outlined,
@@ -651,12 +775,14 @@ class AccountPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                              const ChangePasswordPage(),
+                                  const ChangePasswordPage(),
                             ),
                           );
                         },
                       ),
+
                       _buildDivider(isDarkMode),
+
                       _buildAccountItem(
                         context,
                         icon: Icons.settings_outlined,
@@ -665,7 +791,8 @@ class AccountPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const SettingsPage(),
+                              builder: (context) =>
+                                  const SettingsPage(),
                             ),
                           );
                         },
