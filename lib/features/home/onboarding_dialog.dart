@@ -26,35 +26,35 @@ class WalkthroughStepData {
   });
 }
 
-// Global list of walkthrough steps
-final List<WalkthroughStepData> walkthroughSteps = [
+// Dynamic getter for walkthrough steps so Hot Reload updates content immediately
+List<WalkthroughStepData> get walkthroughSteps => [
   WalkthroughStepData(
-    title: "Trang chủ MyUni 🎓",
+    title: "Trang chủ MyUni",
     description: "Cập nhật tin tức chính thức từ HCMUS, diễn đàn thảo luận sôi nổi, review môn học và kho tài liệu học tập phong phú.",
     icon: Icons.home_rounded,
     accentColor: const Color(0xFF6C63FF),
   ),
   WalkthroughStepData(
-    title: "Hoạt động & Sự kiện 🎟️",
-    description: "Tạo và quản lý sự kiện cá nhân, xem theo lịch hoặc danh sách, đồng thời theo dõi các sự kiện của trường một cách thuận tiện.",
+    title: "Hoạt động & Sự kiện",
+    description: "Quản lý sự kiện cá nhân, khám phá các hoạt động do trường và khoa tổ chức, đồng thời theo dõi lịch sử tham gia một cách thuận tiện.",
     icon: Icons.event_rounded,
     accentColor: const Color(0xFFFF9800),
   ),
   WalkthroughStepData(
-    title: "Hỏi Đáp cùng AI 🤖",
-    description: "Trò chuyện trực tiếp với trợ lý ảo Ú Em để giải đáp nhanh chóng mọi câu hỏi về quy chế học vụ và thủ tục 24/7.",
+    title: "Hỏi Đáp cùng AI",
+    description: "Trò chuyện trực tiếp với trợ lý ảo Ú Em để giải đáp nhanh chóng các câu hỏi về quy chế học vụ và thủ tục hành chính.",
     icon: Icons.chat_bubble_rounded,
     accentColor: const Color(0xFF00BFA5),
   ),
   WalkthroughStepData(
-    title: "Góc nhỏ MySpace 🗓️",
-    description: "Không gian cá nhân giúp bạn quản lý thời khóa biểu, theo dõi deadline và cập nhật thời tiết tại cơ sở học tương ứng với từng buổi học trong ngày.",
+    title: "Góc nhỏ MySpace",
+    description: "Không gian cá nhân tập trung mọi hoạt động học tập của bạn, từ thời khóa biểu, deadline, sự kiện cá nhân đến các cảnh báo thời tiết theo lịch học trong ngày.",
     icon: Icons.space_dashboard_rounded,
     accentColor: const Color(0xFF9C27B0),
   ),
   WalkthroughStepData(
-    title: "Tài Khoản & Tiện ích 🪪",
-    description: "Quản lý tài khoản, thẻ sinh viên QR, bài đăng cá nhân và bài viết đã lưu; đồng thời truy cập nhanh các tiện ích và liên hệ trong trường.",
+    title: "Tài Khoản & Tiện ích",
+    description: "Quản lý hồ sơ cá nhân, thẻ sinh viên QR và nội dung của bạn, đồng thời truy cập nhanh tin nhắn, tìm kiếm sinh viên, tiện ích và cài đặt.",
     icon: Icons.person_rounded,
     accentColor: const Color(0xFF2196F3),
   ),

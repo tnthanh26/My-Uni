@@ -1,6 +1,8 @@
 class OfficialContentHelper {
   static bool isOfficialEvent(dynamic titleData, dynamic summaryData) {
-    final String text = titleData?.toString().toLowerCase() ?? "";
+    final String title = titleData?.toString().toLowerCase() ?? "";
+    final String summary = summaryData?.toString().toLowerCase() ?? "";
+    final String text = "$title $summary".trim();
 
     if (text.isEmpty) return false;
 

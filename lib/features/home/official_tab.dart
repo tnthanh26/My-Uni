@@ -1536,15 +1536,21 @@ class _OfficialTabState extends State<OfficialTab> {
       data['summary'],
     );
 
-    void goToDetail() => Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => PostDetailPage(
-          docId: docId,
-          initialPostData: data,
+    void goToDetail() async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PostDetailPage(
+            docId: docId,
+            initialPostData: {
+              ...data,
+              'collectionPath': collectionPath,
+            },
+            collectionPath: collectionPath,
+          ),
         ),
-      ),
-    );
+      );
+    }
 
     final String departmentDisplay = data['department']?.toString() ??
         data['facultyName']?.toString() ??

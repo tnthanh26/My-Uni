@@ -30,11 +30,13 @@ import '../../widgets/app_action_dialogs.dart';
 class PostDetailPage extends StatefulWidget {
   final String docId;
   final Map<String, dynamic> initialPostData;
+  final String? collectionPath;
 
   const PostDetailPage({
     super.key,
     required this.docId,
     required this.initialPostData,
+    this.collectionPath,
   });
 
   @override
@@ -111,12 +113,23 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String get _collectionPath {
+    if (widget.collectionPath != null && widget.collectionPath!.isNotEmpty) {
+      return widget.collectionPath!;
+    }
     if (widget.initialPostData.containsKey('collectionPath') &&
         widget.initialPostData['collectionPath'] != null &&
         widget.initialPostData['collectionPath'].toString().isNotEmpty) {
       return widget.initialPostData['collectionPath'].toString();
     }
-    if (widget.initialPostData.containsKey('link')) return 'official_news';
+    if (widget.initialPostData['scope'] == 'faculty_official_news' ||
+        widget.initialPostData.containsKey('facultyId')) {
+      return 'faculty_official_news';
+    }
+    if (widget.initialPostData.containsKey('link') ||
+        widget.initialPostData['type'] == 'official' ||
+        widget.initialPostData['scope'] == 'official_news') {
+      return 'official_news';
+    }
     if (widget.initialPostData.containsKey('rating')) return 'course_reviews';
     if (widget.initialPostData.containsKey('fileData')) return 'study_materials';
     return 'forum_posts';
@@ -1202,10 +1215,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
       final docSnapshot = await docRef.get();
       if (docSnapshot.exists) {
         await docRef.delete();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context)
-              .showSnackBar(const SnackBar(content: Text("Đã bỏ lưu bài viết")));
-        }
       } else {
         final Map<String, dynamic> saveData = Map.from(data);
 
@@ -1219,10 +1228,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
         saveData['savedAt'] = FieldValue.serverTimestamp();
         saveData['originalDocId'] = docId;
         await docRef.set(saveData);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")));
-        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -1548,6 +1553,44 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     );
                   },
                 ),
+                if (isEvent)
+                  GestureDetector(
+                    onTap: () {
+                      showSearch(
+                        context: context,
+                        delegate: MyUniSearchDelegate(
+                          currentScope: SearchScope.official,
+                          initialHashtag: 'Sự kiện',
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.stars_rounded,
+                              size: 13, color: Colors.white),
+                          SizedBox(width: 4),
+                          Text(
+                            'Sự kiện nổi bật',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
