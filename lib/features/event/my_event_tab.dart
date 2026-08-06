@@ -164,7 +164,7 @@ class _MyEventTabState extends State<MyEventTab>
 
     try {
       final deleteBefore = Timestamp.fromDate(
-        DateTime.now().subtract(const Duration(days: 7)),
+        DateTime.now().subtract(const Duration(days: 3)),
       );
 
       final snapshot = await FirebaseFirestore.instance
@@ -236,13 +236,16 @@ class _MyEventTabState extends State<MyEventTab>
 
   List<EventModel> _sortEvents(List<EventModel> rawEvents, String filter) {
     final now = DateTime.now();
+    final threeDaysAgo = now.subtract(const Duration(days: 3));
 
     final List<EventModel> futureEvents = [];
     final List<EventModel> pastEvents = [];
 
     for (final event in rawEvents) {
       if (event.dateTime.isBefore(now)) {
-        pastEvents.add(event);
+        if (!event.dateTime.isBefore(threeDaysAgo)) {
+          pastEvents.add(event);
+        }
       } else {
         futureEvents.add(event);
       }
@@ -267,8 +270,8 @@ class _MyEventTabState extends State<MyEventTab>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
 
-    final sevenDaysAgo = DateTime.now().subtract(
-      const Duration(days: 7),
+    final threeDaysAgo = DateTime.now().subtract(
+      const Duration(days: 3),
     );
 
     return FirebaseFirestore.instance
@@ -277,12 +280,13 @@ class _MyEventTabState extends State<MyEventTab>
         .collection('personal_events')
         .where(
           'dateTime',
-          isGreaterThanOrEqualTo: Timestamp.fromDate(sevenDaysAgo),
+          isGreaterThanOrEqualTo: Timestamp.fromDate(threeDaysAgo),
         )
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
               .map((doc) => EventModel.fromFirestore(doc))
+              .where((ev) => !ev.dateTime.isBefore(threeDaysAgo))
               .toList(),
         );
   }
