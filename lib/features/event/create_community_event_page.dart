@@ -18,7 +18,7 @@ class CommunityEventPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Sự kiện cộng đồng mới", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF6797E1),
+        backgroundColor: isDark ? const Color(0xFF15171A) : const Color(0xFF5893D8),
         foregroundColor: Colors.white,
         elevation: 0,
       ),

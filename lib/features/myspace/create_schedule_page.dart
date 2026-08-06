@@ -32,7 +32,6 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
   TimeOfDay _endTime = const TimeOfDay(hour: 9, minute: 10);
 
   static const Color headerBg = Color(0xFF545454);
-  static const Color accentBlue = Color(0xFF92B9E6);
   static const Color fieldBg = Color(0xFFEFF6FF);
   static const Color borderGrey = Color(0xFF8E8E93);
   static const Color hintGrey = Color(0xFF787878);
@@ -261,23 +260,23 @@ class _CreateSchedulePageState extends State<CreateSchedulePage> {
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : headerBg,
-        elevation: 4,
+        backgroundColor: isDarkMode ? const Color(0xFF15171A) : const Color(0xFF5893D8),
+        elevation: 0,
         leadingWidth: 80,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Hủy',
-              style: TextStyle(color: accentBlue, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
+              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
         ),
         title: const Text('Tạo Môn học',
             style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
         centerTitle: true,
         actions: [
           TextButton(
-            onPressed: _saveSchedule, // Gọi hàm chúng ta vừa sửa ở trên
+            onPressed: _saveSchedule,
             child: const Text('Lưu',
                 style: TextStyle(
-                    color: accentBlue,
+                    color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Encode Sans Expanded'

@@ -101,13 +101,13 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
     return Scaffold(
       backgroundColor: scaffoldBg,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : headerBg,
-        elevation: 4,
+        backgroundColor: isDarkMode ? const Color(0xFF15171A) : const Color(0xFF5893D8),
+        elevation: 0,
         leadingWidth: 80,
         leading: TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Hủy',
-              style: TextStyle(color: accentBlue, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
+              style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
         ),
         title: const Text('Tạo Deadline',
             style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600, fontFamily: 'Encode Sans Expanded')),
@@ -117,7 +117,7 @@ class _CreateDeadlinesPageState extends State<CreateDeadlinesPage> {
             onPressed: _saveDeadline,
             child: const Text('Lưu',
                 style: TextStyle(
-                    color: accentBlue,
+                    color: Colors.white,
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     fontFamily: 'Encode Sans Expanded'

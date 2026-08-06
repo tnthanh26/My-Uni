@@ -301,7 +301,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
   @override
   Widget build(BuildContext context) {
-    const Color figmaHeaderBlue = Color(0xFF457EC0);
+    const Color figmaHeaderBlue = Color(0xFF5893D8);
     const Color figmaDashedColor = Color(0xFF1C95BE);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final double screenWidth = MediaQuery.of(context).size.width;
@@ -313,7 +313,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
         preferredSize: const Size.fromHeight(54),
         child: Container(
           decoration: BoxDecoration(
-            color: isDarkMode ? const Color(0xFF1E1E1E) : figmaHeaderBlue,
+            color: isDarkMode ? const Color(0xFF15171A) : figmaHeaderBlue,
             boxShadow: const [
               BoxShadow(
                 color: Color.fromRGBO(0, 0, 0, 0.25),

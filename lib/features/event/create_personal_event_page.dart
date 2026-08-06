@@ -672,7 +672,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: primaryBrown,
+        backgroundColor: isDarkMode ? const Color(0xFF15171A) : const Color(0xFF5893D8),
         elevation: 0,
         leadingWidth: 70,
         leading: TextButton(
