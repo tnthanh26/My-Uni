@@ -421,7 +421,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                         child: Wrap(
                           spacing: 8,
                           runSpacing: 10,
-                          children: availableHashtags.map((tag) {
+                          children: ((currentScope == SearchScope.official) ? officialQuickTags : availableHashtags).map((tag) {
                             final isSelected = selectedHashtags.contains(tag);
 
                             return _hashtagChip(
@@ -498,7 +498,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         child: Row(
           children: [
-            if (currentScope == SearchScope.forum)
+            if (currentScope == SearchScope.forum || currentScope == SearchScope.official)
               Padding(
                 padding: const EdgeInsets.only(right: 8),
                 child: ActionChip(
@@ -683,13 +683,21 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     final String cleanTag = tag.trim().replaceAll('#', '');
     if (cleanTag.isEmpty) return true;
 
+    final lowerTag = cleanTag.toLowerCase();
+
+    // 0. If searching for "Sự kiện" or "Event", match any post that is an official event
+    if ((lowerTag == 'sự kiện' || lowerTag == 'event') &&
+        OfficialContentHelper.isOfficialEvent(data['title'], data['summary'])) {
+      return true;
+    }
+
     // 1. Prioritize computed category tag from OfficialContentHelper
     final String computedCategory = OfficialContentHelper.getOfficialCategoryTag(
       data['title'],
       data['summary'],
       data['hashtags'],
     );
-    if (computedCategory.toLowerCase() == cleanTag.toLowerCase()) {
+    if (computedCategory.toLowerCase() == lowerTag) {
       return true;
     }
 
@@ -698,29 +706,26 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
       final List rawTags = data['hashtags'] as List;
       for (final item in rawTags) {
         final String tagStr = item.toString().replaceAll('#', '').trim();
-        if (tagStr.toLowerCase() == cleanTag.toLowerCase()) {
+        if (tagStr.toLowerCase() == lowerTag) {
           return true;
         }
       }
     }
 
     // 3. Fallback keyword matching for standard official categories
-    final String content = data['title']?.toString().toLowerCase() ?? '';
+    final String content = (data['title']?.toString() ?? '') + ' ' + (data['summary']?.toString() ?? '');
+    final String contentLower = content.toLowerCase();
 
-    switch (cleanTag.toLowerCase()) {
+    switch (lowerTag) {
       case 'hội thảo':
-        return content.contains('hội thảo') ||
-            content.contains('seminar') ||
-            content.contains('workshop') ||
-            content.contains('talkshow') ||
-            content.contains('tọa đàm') ||
-            content.contains('webinar');
+        return contentLower.contains('hội thảo') ||
+            contentLower.contains('seminar') ||
+            contentLower.contains('workshop') ||
+            contentLower.contains('talkshow') ||
+            contentLower.contains('tọa đàm') ||
+            contentLower.contains('webinar');
       case 'sự kiện':
-        return content.contains('sự kiện') ||
-            content.contains('event') ||
-            content.contains('ngày hội') ||
-            content.contains('diễn đàn') ||
-            content.contains('hội thao');
+        return OfficialContentHelper.isOfficialEvent(data['title'], data['summary']);
       case 'tốt nghiệp':
         return content.contains('tốt nghiệp') ||
             content.contains('bảo vệ đề tài') ||
@@ -827,10 +832,38 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
   Future<List<dynamic>> _fetchOfficialPostsFallback(
       String cleanQuery, List<String> activeTags) async {
     try {
-      final QuerySnapshot snapshot = await FirebaseFirestore.instance
+      final QuerySnapshot officialSnap = await FirebaseFirestore.instance
           .collection('official_news')
           .get()
           .timeout(const Duration(seconds: 10));
+
+      QuerySnapshot? facultySnap;
+      try {
+        facultySnap = await FirebaseFirestore.instance
+            .collection('faculty_official_news')
+            .get()
+            .timeout(const Duration(seconds: 10));
+      } catch (_) {}
+
+      final List<dynamic> allDocs = [
+        ...officialSnap.docs.map((doc) => {
+          'id': doc.id,
+          'data': {
+            ...doc.data() as Map<String, dynamic>,
+            'collectionPath': 'official_news',
+            'scope': 'official_news',
+          }
+        }),
+        if (facultySnap != null)
+          ...facultySnap.docs.map((doc) => {
+            'id': doc.id,
+            'data': {
+              ...doc.data() as Map<String, dynamic>,
+              'collectionPath': 'faculty_official_news',
+              'scope': 'faculty_official_news',
+            }
+          }),
+      ];
 
       final String cleanQueryWithoutHash =
           cleanQuery.replaceAll('#', '').trim();
@@ -840,16 +873,7 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
           .where((w) => w.trim().isNotEmpty)
           .toList();
 
-      final List<dynamic> results = snapshot.docs
-          .map((doc) {
-            return {
-              'id': doc.id,
-              'data': {
-                ...doc.data() as Map<String, dynamic>,
-                'scope': 'official_news',
-              }
-            };
-          })
+      final List<dynamic> results = allDocs
           .where((item) {
             final Map<String, dynamic> data =
                 Map<String, dynamic>.from((item as Map)['data'] as Map);

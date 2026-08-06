@@ -34,7 +34,11 @@ class DailyDigestCard extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => PostDetailPage(
           docId: postId,
-          initialPostData: doc.data()!,
+          initialPostData: {
+            ...doc.data()!,
+            'collectionPath': 'official_news',
+          },
+          collectionPath: 'official_news',
         ),
       ),
     );
