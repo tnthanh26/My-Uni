@@ -22,9 +22,9 @@ class AutoUpdateToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const double width = 110;
-    const double height = 32;
-    const double knobSize = 24;
+    const double width = 92;
+    const double height = 30;
+    const double knobSize = 22;
     const Color offColor = Color(0xFF545454);
     const Color onColor = hcmusBlueAccent;
 
@@ -36,33 +36,26 @@ class AutoUpdateToggle extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: isEnabled ? onColor : offColor,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
             // Text Layer
-            AnimatedAlign(
+            AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
-              alignment: isEnabled ? Alignment.centerLeft : Alignment.centerRight,
-              child: Padding(
-                padding: EdgeInsets.only(
-                  left: isEnabled ? 8 : 4,
-                  right: isEnabled ? 4 : 8,
-                ),
-                child: SizedBox(
-                  width: width - knobSize - 12,
-                  child: Text(
-                    'Auto-update',
-                    textAlign: isEnabled ? TextAlign.left : TextAlign.right,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
+              left: isEnabled ? 8 : (knobSize + 8),
+              right: isEnabled ? (knobSize + 8) : 8,
+              child: Center(
+                child: Text(
+                  'Đồng bộ',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
                   ),
                 ),
               ),
@@ -83,11 +76,11 @@ class AutoUpdateToggle extends StatelessWidget {
                   alignment: Alignment.center,
                   child: Text(
                     isEnabled ? 'ON' : 'OFF',
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
                       fontSize: 8,
                       fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                      color: isEnabled ? onColor : const Color(0xFF333333),
                     ),
                   ),
                 ),
