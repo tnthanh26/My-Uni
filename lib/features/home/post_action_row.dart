@@ -69,10 +69,10 @@ class _PostActionRowState extends State<PostActionRow> {
       if (isLiked) {
         final newLikeCount = currentLikeCount > 0 ? FieldValue.increment(-1) : 0;
         await postRef.update({'likeCount': newLikeCount});
-        userLikeRef.delete();
+        await userLikeRef.delete();
       } else {
         await postRef.update({'likeCount': FieldValue.increment(1)});
-        userLikeRef.set({
+        await userLikeRef.set({
           'userId': user.uid,
           'timestamp': FieldValue.serverTimestamp(),
         });
@@ -233,7 +233,11 @@ class _PostActionRowState extends State<PostActionRow> {
       MaterialPageRoute(
         builder: (context) => PostDetailPage(
           docId: widget.docId,
-          initialPostData: widget.data,
+          initialPostData: {
+            ...widget.data,
+            'collectionPath': widget.collectionPath,
+          },
+          collectionPath: widget.collectionPath,
         ),
       ),
     );

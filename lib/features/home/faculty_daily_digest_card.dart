@@ -49,7 +49,11 @@ class FacultyDailyDigestCard extends StatelessWidget {
           MaterialPageRoute(
             builder: (context) => PostDetailPage(
               docId: postId,
-              initialPostData: doc.data() as Map<String, dynamic>,
+              initialPostData: {
+                ...(doc.data() as Map<String, dynamic>),
+                'collectionPath': 'faculty_official_news',
+              },
+              collectionPath: 'faculty_official_news',
             ),
           ),
         );

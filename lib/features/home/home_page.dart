@@ -653,18 +653,12 @@ class HomePageState extends State<HomePage> {
       final docSnapshot = await docRef.get();
       if (docSnapshot.exists) {
         await docRef.delete();
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã bỏ lưu bài viết")));
-        }
       } else {
         final Map<String, dynamic> saveData = Map.from(data);
         saveData['saveType'] = saveType;
         saveData['savedAt'] = FieldValue.serverTimestamp();
         saveData['originalDocId'] = docId;
         await docRef.set(saveData);
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Đã lưu vào mục Bài đã lưu")));
-        }
       }
     } catch (e) {
       if (context.mounted) {
@@ -1151,60 +1145,69 @@ class HomePageState extends State<HomePage> {
                       Positioned(
                         left: 18,
                         top: 16,
-                        width: 36,
-                        height: 36,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: stepData.accentColor.withValues(alpha: 0.15),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            stepData.icon,
-                            color: stepData.accentColor,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-
-                      Positioned(
-                        left: 64,
-                        top: 17,
-                        right: 54,
-                        height: 42,
-                        child: Text(
-                          stepData.title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            decoration: TextDecoration.none,
-                            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
-                          ),
-                        ),
-                      ),
-
-                      Positioned(
                         right: 18,
-                        top: 24,
-                        child: Text(
-                          "${_walkthroughStep + 1}/${walkthroughSteps.length}",
-                          style: TextStyle(
-                            fontFamily: 'Nunito',
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            decoration: TextDecoration.none,
-                            color: isDarkMode ? Colors.white54 : Colors.black45,
-                          ),
+                        height: 38,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 36,
+                              height: 36,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: stepData.accentColor.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                stepData.icon,
+                                color: stepData.accentColor,
+                                size: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                stepData.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w800,
+                                  decoration: TextDecoration.none,
+                                  color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.08)
+                                    : const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                "${_walkthroughStep + 1}/${walkthroughSteps.length}",
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.none,
+                                  color: isDarkMode ? Colors.white70 : const Color(0xFF6B7280),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
 
                       Positioned(
                         left: 18,
                         right: 18,
-                        top: 72,
-                        height: 104,
+                        top: 66,
+                        height: 110,
                         child: Text(
                           stepData.description.replaceAll('**', ''),
                           maxLines: 5,
