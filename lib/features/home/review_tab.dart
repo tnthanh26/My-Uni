@@ -17,16 +17,36 @@ class _ReviewTabState extends State<ReviewTab> {
   List<String>? _cachedReviewIds;
   final Map<String, QueryDocumentSnapshot> _cachedReviewDocsMap = {};
 
-  Widget _buildRatingStars(int rating, bool isDarkMode) {
+  Widget _buildRatingStars(dynamic rawRatingData, bool isDarkMode) {
+    final double rawRating = (rawRatingData is num)
+        ? rawRatingData.toDouble()
+        : double.tryParse(rawRatingData?.toString() ?? '0') ?? 0.0;
+    final double roundedRating = (rawRating * 2).round() / 2;
+    final String ratingDisplay = (roundedRating % 1 == 0)
+        ? roundedRating.toInt().toString()
+        : roundedRating.toStringAsFixed(1);
+
     return Row(
       children: [
         ...List.generate(5, (i) {
-          final bool filled = i < rating;
+          final double starValue = i + 1.0;
+          IconData icon;
+          bool isFilled = false;
+          if (roundedRating >= starValue) {
+            icon = Icons.star_rounded;
+            isFilled = true;
+          } else if (roundedRating >= starValue - 0.5) {
+            icon = Icons.star_half_rounded;
+            isFilled = true;
+          } else {
+            icon = Icons.star_outline_rounded;
+          }
+
           return Padding(
             padding: const EdgeInsets.only(right: 4),
             child: Icon(
-              filled ? Icons.star_rounded : Icons.star_outline_rounded,
-              color: filled
+              icon,
+              color: isFilled
                   ? const Color(0xFFFFCB45)
                   : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
               size: 22,
@@ -35,7 +55,7 @@ class _ReviewTabState extends State<ReviewTab> {
         }),
         const SizedBox(width: 8),
         Text(
-          "$rating/5",
+          "$ratingDisplay/5",
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontWeight: FontWeight.w700,

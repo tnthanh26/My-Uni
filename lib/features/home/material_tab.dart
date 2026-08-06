@@ -349,13 +349,22 @@ class _MaterialTabState extends State<MaterialTab> {
                           label: semester,
                           isDarkMode: isDarkMode,
                         ),
+                      if (data['hashtags'] != null && data['hashtags'] is List)
+                        ...(data['hashtags'] as List).map(
+                          (tag) => _buildInfoChip(
+                            icon: Icons.tag_rounded,
+                            label: tag.toString().replaceAll('#', '').trim(),
+                            isDarkMode: isDarkMode,
+                            iconColor: const Color(0xFF5893D8),
+                          ),
+                        ),
                     ],
                   ),
                 ),
 
                 if (content.trim().isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     child: Text(
                       content,
                       maxLines: 4,
@@ -373,7 +382,12 @@ class _MaterialTabState extends State<MaterialTab> {
 
                 if (fileData != null && fileData.isNotEmpty)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      content.trim().isNotEmpty ? 0 : 14,
+                      16,
+                      14,
+                    ),
                     child: GestureDetector(
                       onTap: () => _handleOpenFile(
                         context,

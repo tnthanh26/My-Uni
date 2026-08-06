@@ -1783,9 +1783,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildReviewUI(Map<String, dynamic> data) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final int rating = (data['rating'] is num)
-        ? (data['rating'] as num).toInt()
-        : int.tryParse(data['rating']?.toString() ?? '0') ?? 0;
+    final double rawRating = (data['rating'] is num)
+        ? (data['rating'] as num).toDouble()
+        : double.tryParse(data['rating']?.toString() ?? '0') ?? 0.0;
+    final double roundedRating = (rawRating * 2).round() / 2;
+    final String ratingDisplay = (roundedRating % 1 == 0)
+        ? roundedRating.toInt().toString()
+        : roundedRating.toStringAsFixed(1);
 
     final String contentStr = (data['content'] ?? '').toString().trim();
     final bool hasContent = contentStr.isNotEmpty;
@@ -1861,19 +1865,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
               child: Row(
                 children: [
-                  ...List.generate(
-                    5,
-                        (i) => Icon(
-                      i < rating
-                          ? Icons.star_rounded
-                          : Icons.star_outline_rounded,
+                  ...List.generate(5, (i) {
+                    final double starValue = i + 1.0;
+                    IconData icon;
+                    if (roundedRating >= starValue) {
+                      icon = Icons.star_rounded;
+                    } else if (roundedRating >= starValue - 0.5) {
+                      icon = Icons.star_half_rounded;
+                    } else {
+                      icon = Icons.star_outline_rounded;
+                    }
+
+                    return Icon(
+                      icon,
                       color: const Color(0xFFFFCB45),
                       size: 30,
-                    ),
-                  ),
+                    );
+                  }),
                   const SizedBox(width: 10),
                   Text(
-                    "$rating/5",
+                    "$ratingDisplay/5",
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w700,
@@ -1968,9 +1979,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       : const Color(0xFF4B5563),
                 ),
               ),
-            if ((data['content'] ?? '').toString().trim().isNotEmpty)
-              const SizedBox(height: 18),
-            if (data['fileData'] != null)
+            if (data['fileData'] != null) ...[
+              const SizedBox(height: 16),
               GestureDetector(
                 onTap: () => _handleOpenFile(
                   context,
@@ -2025,6 +2035,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   ),
                 ),
               ),
+            ],
           ],
         ),
       ),

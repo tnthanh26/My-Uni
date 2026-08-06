@@ -311,16 +311,27 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
                         ),
                         const SizedBox(height: 14),
                         Row(
-                          children: List.generate(
-                            5,
-                                (i) => Icon(
-                              i < (reviewData['rating'] ?? 5)
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
+                          children: List.generate(5, (i) {
+                            final double rawRating = (reviewData['rating'] is num)
+                                ? (reviewData['rating'] as num).toDouble()
+                                : double.tryParse(reviewData['rating']?.toString() ?? '5') ?? 5.0;
+                            final double roundedRating = (rawRating * 2).round() / 2;
+                            final double starValue = i + 1.0;
+                            IconData icon;
+                            if (roundedRating >= starValue) {
+                              icon = Icons.star_rounded;
+                            } else if (roundedRating >= starValue - 0.5) {
+                              icon = Icons.star_half_rounded;
+                            } else {
+                              icon = Icons.star_outline_rounded;
+                            }
+
+                            return Icon(
+                              icon,
                               color: const Color(0xFFFFCB45),
                               size: 18,
-                            ),
-                          ),
+                            );
+                          }),
                         ),
                         const SizedBox(height: 12),
                         Text(

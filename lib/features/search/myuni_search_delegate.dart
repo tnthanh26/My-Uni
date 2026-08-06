@@ -1477,7 +1477,8 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
     }
 
     final int reviewCount = data['reviewCount'] ?? 0;
-    final double rating = (data['rating'] ?? 5.0).toDouble();
+    final double rawRating = (data['rating'] ?? 5.0).toDouble();
+    final double roundedRating = (rawRating * 2).round() / 2;
 
     return GestureDetector(
       onTap: () {
@@ -1541,10 +1542,18 @@ class MyUniSearchDelegate extends SearchDelegate<String> {
                   children: [
                     Row(
                       children: List.generate(5, (index) {
+                        final double starValue = index + 1.0;
+                        IconData icon;
+                        if (roundedRating >= starValue) {
+                          icon = Icons.star_rounded;
+                        } else if (roundedRating >= starValue - 0.5) {
+                          icon = Icons.star_half_rounded;
+                        } else {
+                          icon = Icons.star_border_rounded;
+                        }
+
                         return Icon(
-                          index < rating.floor()
-                              ? Icons.star_rounded
-                              : Icons.star_border_rounded,
+                          icon,
                           color: Colors.amber,
                           size: 18,
                         );
