@@ -1,3 +1,10 @@
+/// UI Refactoring Changes for my_review_page.dart (Reference Standard):
+/// - Unified Design System: Primary Color #5893D8, Background #F8FAFC, Surface Light White, Surface Dark #15171A, Border #E4E7EC.
+/// - Typography: Header font Nunito, Content font Encode Sans Expanded.
+/// - Card Hierarchy: Compact card layout with radius 16, margin bottom 14, padding 14, subtle shadow (opacity 0.03, blur 10, offset (0, 3)).
+/// - Aligned empty state layout with circular icon background and primary action CTA button.
+/// - Preserved all Firestore queries, edit/delete callbacks, status badges, and search filtering logic.
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -65,13 +72,13 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         ...List.generate(5, (i) {
           final bool filled = i < rating;
           return Padding(
-            padding: const EdgeInsets.only(right: 4),
+            padding: const EdgeInsets.only(right: 3),
             child: Icon(
               filled ? Icons.star_rounded : Icons.star_outline_rounded,
               color: filled
                   ? const Color(0xFFFFCB45)
                   : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
-              size: 22,
+              size: 20,
             ),
           );
         }),
@@ -81,7 +88,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
           style: TextStyle(
             fontFamily: 'Encode Sans Expanded',
             fontWeight: FontWeight.w700,
-            fontSize: 14,
+            fontSize: 13.5,
             color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
           ),
         ),
@@ -95,12 +102,12 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
     required bool isDarkMode,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: isDarkMode
             ? Colors.white.withValues(alpha: 0.06)
             : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
         ),
@@ -135,17 +142,17 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
     required bool isDarkMode,
   }) {
     return InkWell(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(10),
       onTap: onTap,
       child: Container(
-        width: 38,
-        height: 38,
+        width: 36,
+        height: 36,
         decoration: BoxDecoration(
           color: color.withValues(alpha: isDarkMode ? 0.16 : 0.10),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: color.withValues(alpha: 0.20)),
         ),
-        child: Icon(icon, color: color, size: 20),
+        child: Icon(icon, color: color, size: 18),
       ),
     );
   }
@@ -163,7 +170,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         isPending ? Icons.schedule_rounded : Icons.check_circle_rounded;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(999),
@@ -172,8 +179,8 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: textColor),
-          const SizedBox(width: 5),
+          Icon(icon, size: 12, color: textColor),
+          const SizedBox(width: 4),
           Text(
             isPending ? "Đang chờ duyệt" : "Đã duyệt",
             style: TextStyle(
@@ -205,25 +212,25 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
     final String currentStatus = data['status'] ?? 'pending';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
                 BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 18,
-                  offset: const Offset(0, 6),
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
                 ),
               ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -240,12 +247,13 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
               }
             },
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         child: Text(
@@ -253,7 +261,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                            fontSize: 15.5,
                             color: isDarkMode
                                 ? Colors.white
                                 : const Color(0xFF1F2937),
@@ -264,12 +272,12 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                       _buildStatusBadge(currentStatus),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(
                         Icons.person_outline_rounded,
-                        size: 14,
+                        size: 13.5,
                         color: isDarkMode
                             ? Colors.white54
                             : const Color(0xFF667085),
@@ -278,9 +286,11 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                       Expanded(
                         child: Text(
                           "GV: $teacher",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
-                            fontSize: 13,
+                            fontSize: 12.5,
                             color: isDarkMode
                                 ? Colors.white54
                                 : const Color(0xFF667085),
@@ -289,22 +299,22 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   _buildRatingStars(rating, isDarkMode),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     content,
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
-                      fontSize: 14,
+                      fontSize: 13.5,
                       height: 1.45,
                       color:
                           isDarkMode ? Colors.white70 : const Color(0xFF374151),
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -371,8 +381,8 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 80,
-              height: 80,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
                 color: isDarkMode
                     ? Colors.white.withValues(alpha: 0.05)
@@ -381,17 +391,17 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
               ),
               child: const Icon(
                 Icons.rate_review_outlined,
-                size: 38,
+                size: 36,
                 color: Color(0xFF5893D8),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
               "Chưa có đánh giá nào",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'Encode Sans Expanded',
+                fontFamily: 'Nunito',
                 color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
               ),
             ),
@@ -400,12 +410,12 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
               "Các bài đánh giá môn học bạn đăng sẽ xuất hiện ở đây.",
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 13.5,
                 fontFamily: 'Encode Sans Expanded',
-                color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -420,17 +430,18 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
-                  vertical: 14,
+                  vertical: 12,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
+                elevation: 0,
               ),
               icon: const Icon(Icons.edit_outlined, size: 18),
               label: const Text(
                 "Tạo đánh giá mới",
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'Encode Sans Expanded',
                 ),
@@ -466,9 +477,10 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         title: Text(
           "Đánh giá của tôi",
           style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
+            fontFamily: 'Nunito',
             fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : const Color(0xFF545454),
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
@@ -489,63 +501,62 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         children: [
           // Search Input Bar
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : const Color(0xFFF1F2F6),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 13,
+                color: isDarkMode ? Colors.white : const Color(0xFF1D2939),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 14),
-                  const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF5893D8),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Tìm kiếm đánh giá...',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13.5,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : const Color(0xFF94A3B8),
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm đánh giá...',
+                hintStyle: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: isDarkMode ? Colors.white38 : const Color(0xFF98A2B3),
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 21,
+                  color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Xóa tìm kiếm',
+                        splashRadius: 18,
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
                         ),
-                        border: InputBorder.none,
-                        isDense: true,
-                      ),
-                    ),
+                      )
+                    : null,
+                filled: true,
+                fillColor: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE4E7EC),
                   ),
-                  if (_searchQuery.isNotEmpty)
-                    IconButton(
-                      icon: Icon(
-                        Icons.cancel_rounded,
-                        size: 18,
-                        color: isDarkMode
-                            ? Colors.white38
-                            : const Color(0xFF94A3B8),
-                      ),
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                    ),
-                ],
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF6797E1),
+                    width: 1.4,
+                  ),
+                ),
               ),
             ),
           ),

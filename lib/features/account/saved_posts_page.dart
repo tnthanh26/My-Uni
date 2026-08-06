@@ -1,3 +1,14 @@
+/// UI Refactoring Changes for saved_posts_page.dart:
+/// - Unified Design System: Primary Color #5893D8, Background #F8FAFC, Surface Light White, Surface Dark #15171A, Border #E4E7EC.
+/// - Header & Typography: Nunito font for AppBar title, Encode Sans Expanded for content text.
+/// - Banner Removal: Eliminated full-width colored header banners across Official, Forum, Review, and Material cards.
+/// - Type Chips & Bookmark: Replaced banners with sleek category chips (Tin chính thức, Diễn đàn, Đánh giá, Tài liệu) and standardized compact 36x36 bookmark buttons at top-right.
+/// - Hashtags: Limited to maximum 3 hashtags with an overflow chip (+N) on Forum cards.
+/// - Review Card Alignment: Standardized saved review cards to mirror the my_review_page.dart card layout.
+/// - Material Card Alignment: Standardized saved material cards with file preview boxes and clear action hierarchy.
+/// - Aligned empty state layout with circular icon container and primary CTA button.
+/// - Preserved all Firestore queries, saved item deletion logic (_removeSave), search diacritics removal, navigation delegates, and file opening handlers.
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -87,10 +98,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   }
 
   Future<void> _handleOpenFile(
-      BuildContext context,
-      String base64Data,
-      String fileName,
-      ) async {
+    BuildContext context,
+    String base64Data,
+    String fileName,
+  ) async {
     try {
       final tempDir = await getTemporaryDirectory();
       final filePath = '${tempDir.path}/$fileName';
@@ -125,7 +136,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       context: context,
       barrierDismissible: false,
       builder: (context) => Container(
-        color: Colors.black.withOpacity(0.18),
+        color: Colors.black.withValues(alpha: 0.18),
         child: const Center(
           child: CircularProgressIndicator(color: Color(0xFF5893D8)),
         ),
@@ -144,7 +155,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
 
       if (originalDoc.exists) {
         Map<String, dynamic> currentData =
-        originalDoc.data() as Map<String, dynamic>;
+            originalDoc.data() as Map<String, dynamic>;
 
         if (currentData['status'] == 'hidden') {
           _showUnavailableMessage(savedDocId);
@@ -176,7 +187,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor:
-        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+            isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
         ),
@@ -228,79 +239,99 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     );
   }
 
-  Widget _buildInfoChip({
-    required IconData icon,
-    required String label,
-    required bool isDarkMode,
-    Color? customColor,
-    Color? customIconColor,
-  }) {
-    final Color textColor = customColor ??
-        (isDarkMode ? Colors.white70 : const Color(0xFF344054));
-    final Color iconColor = customIconColor ?? textColor;
-
+  Widget _buildTypeChip(String label, Color color, bool isDarkMode) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: isDarkMode
-            ? Colors.white.withOpacity(0.06)
-            : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
+        color: color.withValues(alpha: isDarkMode ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+          color: color.withValues(alpha: 0.25),
+          width: 0.8,
         ),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: iconColor),
-          const SizedBox(width: 5),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Encode Sans Expanded',
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: textColor,
-            ),
-          ),
-        ],
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 10.5,
+          fontWeight: FontWeight.w700,
+          color: color,
+        ),
       ),
     );
   }
 
-  Widget _buildBookmarkButton(String docId, bool isDarkMode) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () => _removeSave(docId),
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFCB45).withOpacity(isDarkMode ? 0.18 : 0.12),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: const Color(0xFFFFCB45).withOpacity(0.25),
+  String _formatTimestampText(Map<String, dynamic> data) {
+    if (data['timestamp'] != null) {
+      try {
+        if (data['timestamp'] is Timestamp) {
+          return timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi');
+        } else if (data['timestamp'] is String &&
+            data['timestamp'].toString().trim().isNotEmpty) {
+          return data['timestamp'].toString().trim();
+        }
+      } catch (_) {}
+    }
+    if (data['savedAt'] != null) {
+      try {
+        if (data['savedAt'] is Timestamp) {
+          return timeago.format((data['savedAt'] as Timestamp).toDate(), locale: 'vi');
+        }
+      } catch (_) {}
+    }
+    if (data['date'] != null && data['date'].toString().trim().isNotEmpty) {
+      return data['date'].toString().trim();
+    }
+    if (data['createdAt'] != null) {
+      try {
+        if (data['createdAt'] is Timestamp) {
+          return timeago.format((data['createdAt'] as Timestamp).toDate(), locale: 'vi');
+        }
+      } catch (_) {}
+    }
+    return 'Vừa xong';
+  }
+
+  Widget _buildRatingStars(int rating, bool isDarkMode) {
+    return Row(
+      children: [
+        ...List.generate(
+          5,
+          (i) => Padding(
+            padding: const EdgeInsets.only(right: 3),
+            child: Icon(
+              i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
+              color: i < rating
+                  ? const Color(0xFFFFCB45)
+                  : (isDarkMode ? Colors.white12 : const Color(0xFFD9D9D9)),
+              size: 20,
+            ),
           ),
         ),
-        child: const Icon(
-          Icons.bookmark_rounded,
-          color: Color(0xFFFFCB45),
-          size: 20,
+        const SizedBox(width: 8),
+        Text(
+          "$rating/5",
+          style: TextStyle(
+            fontFamily: 'Encode Sans Expanded',
+            fontWeight: FontWeight.w700,
+            fontSize: 13.5,
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+          ),
         ),
-      ),
+      ],
     );
   }
 
   Widget _buildImagePreviewFromMemory(Uint8List bytes) {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
       child: Stack(
         children: [
           Image.memory(
             bytes,
             width: double.infinity,
-            height: 190,
+            height: 180,
             fit: BoxFit.cover,
           ),
           Positioned.fill(
@@ -310,8 +341,8 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.02),
-                    Colors.black.withOpacity(0.22),
+                    Colors.black.withValues(alpha: 0.02),
+                    Colors.black.withValues(alpha: 0.22),
                   ],
                 ),
               ),
@@ -326,65 +357,35 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF5893D8).withOpacity(
-                  isDarkMode ? 0.16 : 0.10,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.campaign_outlined,
-                    size: 16,
-                    color: Color(0xFF5893D8),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Tin chính thức đã lưu",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF356DA8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Row(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CircleAvatar(
-                    radius: 22,
+                    radius: 20,
                     backgroundColor: Colors.white,
                     child: Padding(
                       padding: const EdgeInsets.all(2),
@@ -394,13 +395,15 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           data['department'] ?? 'HCMUS News',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontWeight: FontWeight.w700,
@@ -410,9 +413,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                                 : const Color(0xFF1F2937),
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 4),
                         Text(
-                          data['date'] ?? '',
+                          _formatTimestampText(data),
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 12,
@@ -424,55 +427,56 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       ],
                     ),
                   ),
-                  _buildBookmarkButton(docId, isDarkMode),
+                  const SizedBox(width: 8),
+                  _buildTypeChip("Tin chính thức", const Color(0xFF5893D8), isDarkMode),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
+              const SizedBox(height: 10),
+              Text(
                 data['title'] ?? '',
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.w700,
-                  fontSize: 17,
+                  fontSize: 15.5,
                   height: 1.4,
                   color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
                 ),
               ),
-            ),
-            const SizedBox(height: 14),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
                 child: Image.asset(
                   OfficialContentHelper.getOfficialImageByContent(
                     data['title'],
                     data['summary'],
                   ),
                   width: double.infinity,
-                  height: 190,
+                  height: 180,
                   fit: BoxFit.cover,
                 ),
               ),
-            ),
-            if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim().isNotEmpty ?? false)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                child: SizedBox(
+              if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])
+                      ?.toString()
+                      .trim()
+                      .isNotEmpty ??
+                  false) ...[
+                const SizedBox(height: 12),
+                SizedBox(
                   width: double.infinity,
-                  height: 44,
+                  height: 40,
                   child: OutlinedButton.icon(
-                    onPressed: () => _launchURL((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString() ?? ''),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
+                    onPressed: () => _launchURL(
+                        (data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])
+                            ?.toString() ??
+                            ''),
+                    icon: const Icon(Icons.open_in_new_rounded, size: 16),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF5893D8)),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       backgroundColor: isDarkMode
-                          ? Colors.white.withOpacity(0.02)
+                          ? Colors.white.withValues(alpha: 0.02)
                           : const Color(0xFFF8FBFF),
                     ),
                     label: const Text(
@@ -481,12 +485,14 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                         color: Color(0xFF5893D8),
                         fontWeight: FontWeight.bold,
                         fontFamily: 'Encode Sans Expanded',
+                        fontSize: 13,
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -495,31 +501,32 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   Widget _buildForumCard(Map<String, dynamic> data, String docId) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
-    final bool isAnonymous =
-        (data['isAnonymous'] == true) ||
-            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+    final bool isAnonymous = (data['isAnonymous'] == true) ||
+        (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
+        (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+
+    List rawTags = (data['hashtags'] is List) ? data['hashtags'] : [];
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -537,160 +544,195 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                 setState(() {});
               }
             },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-            Container(
-              width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withOpacity(
-                  isDarkMode ? 0.16 : 0.10,
-                ),
-              ),
-              child: Row(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
-                    Icons.forum_outlined,
-                    size: 16,
-                    color: Color(0xFF8B5CF6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 20,
+                        backgroundColor:
+                            isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
+                        backgroundImage: (!isAnonymous &&
+                                avatarData != null &&
+                                avatarData.isNotEmpty)
+                            ? MemoryImage(base64Decode(avatarData))
+                            : null,
+                        child: (isAnonymous ||
+                                avatarData == null ||
+                                avatarData.isEmpty)
+                            ? Icon(
+                                Icons.person,
+                                size: 20,
+                                color: isDarkMode
+                                    ? Colors.white38
+                                    : Colors.grey,
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              isAnonymous
+                                  ? AnonymousUtils.anonymousPostAuthorName
+                                  : (data['authorName'] ?? 'Sinh viên ẩn danh'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
+                                color: isDarkMode
+                                    ? Colors.white
+                                    : const Color(0xFF1F2937),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formatTimestampText(data),
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 12,
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : const Color(0xFF667085),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      _buildTypeChip("Diễn đàn", const Color(0xFF8B5CF6), isDarkMode),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Bài diễn đàn đã lưu",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF6D28D9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundColor:
-                    isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
-                    backgroundImage:
-                    (!isAnonymous && avatarData != null && avatarData.isNotEmpty)
-                        ? MemoryImage(base64Decode(avatarData))
-                        : null,
-                    child: (isAnonymous || avatarData == null || avatarData.isEmpty)
-                        ? Icon(
-                      Icons.person,
-                      color: isDarkMode
-                          ? Colors.white38
-                          : Colors.grey,
-                    )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                  if (rawTags.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
                       children: [
-                        Text(
-                          isAnonymous ? AnonymousUtils.anonymousPostAuthorName : (data['authorName'] ?? 'Sinh viên ẩn danh'),
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                            color: isDarkMode
-                                ? Colors.white
-                                : const Color(0xFF1F2937),
+                        ...rawTags.take(3).map((tag) {
+                          return GestureDetector(
+                            onTap: () {
+                              final cleanTag =
+                                  tag.toString().replaceAll('#', '').trim();
+                              if (cleanTag.isNotEmpty) {
+                                showSearch(
+                                  context: context,
+                                  delegate: MyUniSearchDelegate(
+                                    currentScope: SearchScope.forum,
+                                    initialHashtag: cleanTag,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xFFE2E8F0),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.tag_rounded,
+                                    size: 13,
+                                    color: Color(0xFF306CFE),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tag.toString(),
+                                    style: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : const Color(0xFF344054),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        if (rawTags.length > 3)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.06)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: isDarkMode
+                                    ? Colors.white10
+                                    : const Color(0xFFE2E8F0),
+                              ),
+                            ),
+                            child: Text(
+                              "+${rawTags.length - 3}",
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : const Color(0xFF667085),
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          data['timestamp'] != null
-                              ? timeago.format(
-                            (data['timestamp'] as Timestamp).toDate(),
-                            locale: 'vi',
-                          )
-                              : 'Vừa xong',
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 12,
-                            color: isDarkMode
-                                ? Colors.white54
-                                : const Color(0xFF667085),
-                          ),
-                        ),
                       ],
                     ),
+                  ],
+
+                  const SizedBox(height: 10),
+                  Text(
+                    data['content'] ?? '',
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 13.5,
+                      color: isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                      height: 1.45,
+                    ),
                   ),
-                  _buildBookmarkButton(docId, isDarkMode),
+
+                  if (data['imageUrl'] != null &&
+                      data['imageUrl'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    _buildImagePreviewFromMemory(
+                      base64Decode(data['imageUrl']),
+                    ),
+                  ],
                 ],
               ),
             ),
-            if (data['hashtags'] != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: (data['hashtags'] as List)
-                      .map(
-                        (tag) => GestureDetector(
-                          onTap: () {
-                            final cleanTag = tag.toString().replaceAll('#', '').trim();
-                            if (cleanTag.isNotEmpty) {
-                              showSearch(
-                                context: context,
-                                delegate: MyUniSearchDelegate(
-                                  currentScope: SearchScope.forum,
-                                  initialHashtag: cleanTag,
-                                ),
-                              );
-                            }
-                          },
-                          child: _buildInfoChip(
-                            icon: Icons.tag_rounded,
-                            label: tag,
-                            isDarkMode: isDarkMode,
-                            customIconColor: const Color(0xFF306CFE),
-                          ),
-                        ),
-                      )
-                      .toList(),
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: Text(
-                data['content'] ?? '',
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  fontSize: 15,
-                  color:
-                  isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
-                  height: 1.6,
-                ),
-              ),
-            ),
-            if (data['imageUrl'] != null &&
-                data['imageUrl'].toString().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: _buildImagePreviewFromMemory(
-                  base64Decode(data['imageUrl']),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
-    ),
-    ),
     );
   }
 
@@ -700,63 +742,35 @@ class _SavedPostsPageState extends State<SavedPostsPage>
         ? data['rating'] ?? 0
         : ((data['rating'] ?? 0) as num).toInt();
 
+    final String teacherName = data['teacherName'] ?? data['teacher'] ?? '';
+    final String semester = (data['semester'] ?? '').toString();
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFCB45).withOpacity(
-                  isDarkMode ? 0.14 : 0.10,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.rate_review_rounded,
-                    size: 16,
-                    color: Color(0xFFC98A00),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Review đã lưu",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF946200),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Row(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
@@ -764,35 +778,42 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data['courseName'] ?? '',
+                          data['courseName'] ?? 'Đánh giá môn học',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.5,
                             color: isDarkMode
                                 ? Colors.white
                                 : const Color(0xFF1F2937),
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          "Giảng viên: ${data['teacherName'] ?? ''}",
-                          style: const TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            color: Color(0xFF5893D8),
-                          ),
-                        ),
-                        if ((data['semester'] ?? '').toString().isNotEmpty) ...[
-                          const SizedBox(height: 4),
+                        if (teacherName.isNotEmpty) ...[
+                          const SizedBox(height: 3),
                           Text(
-                            data['semester'],
+                            "GV: $teacherName",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontFamily: 'Encode Sans Expanded',
-                              fontSize: 13,
+                              fontSize: 12.5,
                               color: isDarkMode
-                                  ? Colors.white60
+                                  ? Colors.white54
+                                  : const Color(0xFF667085),
+                            ),
+                          ),
+                        ],
+                        if (semester.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            semester,
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 12,
+                              color: isDarkMode
+                                  ? Colors.white54
                                   : const Color(0xFF667085),
                             ),
                           ),
@@ -800,62 +821,26 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                       ],
                     ),
                   ),
-                  _buildBookmarkButton(docId, isDarkMode),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  ...List.generate(
-                    5,
-                        (i) => Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Icon(
-                        i < rating
-                            ? Icons.star_rounded
-                            : Icons.star_outline_rounded,
-                        color: i < rating
-                            ? const Color(0xFFFFCB45)
-                            : (isDarkMode
-                            ? Colors.white12
-                            : const Color(0xFFD9D9D9)),
-                        size: 22,
-                      ),
-                    ),
-                  ),
                   const SizedBox(width: 8),
-                  Text(
-                    "$rating/5",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                      color: isDarkMode
-                          ? Colors.white
-                          : const Color(0xFF1F2937),
-                    ),
-                  ),
+                  _buildTypeChip("Đánh giá", const Color(0xFFFF9800), isDarkMode),
                 ],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: Text(
-                data['content'] ?? '',
+              const SizedBox(height: 10),
+              _buildRatingStars(rating, isDarkMode),
+              const SizedBox(height: 10),
+              Text(
+                data['content'] ?? data['reviewContent'] ?? '',
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
-                  fontSize: 15,
-                  color:
-                  isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
-                  height: 1.6,
+                  fontSize: 13.5,
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                  height: 1.45,
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -866,117 +851,92 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     String? fileData = data['fileData'];
     String? fileName = data['fileName'];
     bool isImage = data['isImage'] ?? false;
+    final String teacherName = data['teacherName'] ?? data['teacher'] ?? '';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: double.infinity,
-              padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8B5CF6).withOpacity(
-                  isDarkMode ? 0.16 : 0.10,
-                ),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.menu_book_rounded,
-                    size: 16,
-                    color: Color(0xFF8B5CF6),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    "Tài liệu đã lưu",
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      color: isDarkMode
-                          ? Colors.white70
-                          : const Color(0xFF6D28D9),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-              child: Row(
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          data['courseName'] ?? 'Tài liệu',
+                          data['courseName'] ?? 'Tài liệu môn học',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w700,
-                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15.5,
                             color: isDarkMode
                                 ? Colors.white
                                 : const Color(0xFF1F2937),
                           ),
                         ),
-                        const SizedBox(height: 5),
-                        Text(
-                          "Giảng viên: ${data['teacherName'] ?? ''}",
-                          style: const TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w500,
-                            fontSize: 14,
-                            color: Color(0xFF5893D8),
+                        if (teacherName.isNotEmpty) ...[
+                          const SizedBox(height: 3),
+                          Text(
+                            "GV: $teacherName",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 12.5,
+                              color: isDarkMode
+                                  ? Colors.white54
+                                  : const Color(0xFF667085),
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
-                  _buildBookmarkButton(docId, isDarkMode),
+                  const SizedBox(width: 8),
+                  _buildTypeChip("Tài liệu", const Color(0xFF00C853), isDarkMode),
                 ],
               ),
-            ),
-            if ((data['content'] ?? '').toString().trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                child: Text(
+              if ((data['content'] ?? '').toString().trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
                   data['content'] ?? '',
-                  maxLines: 4,
+                  maxLines: 3,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontFamily: 'Encode Sans Expanded',
-                    fontSize: 15,
-                    color:
-                    isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
-                    height: 1.6,
+                    fontSize: 13.5,
+                    color: isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                    height: 1.45,
                   ),
                 ),
-              ),
-            if (fileData != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: GestureDetector(
+              ],
+              if (fileData != null) ...[
+                const SizedBox(height: 10),
+                GestureDetector(
                   onTap: () => _handleOpenFile(
                     context,
                     fileData,
@@ -985,62 +945,64 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   child: isImage
                       ? _buildImagePreviewFromMemory(base64Decode(fileData))
                       : Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: isDarkMode
-                          ? Colors.white.withOpacity(0.04)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(
-                        color: isDarkMode
-                            ? Colors.white10
-                            : const Color(0xFFEAEFF5),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 46,
-                          height: 46,
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF5893D8)
-                                .withOpacity(0.12),
+                            color: isDarkMode
+                                ? Colors.white.withValues(alpha: 0.04)
+                                : const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(
-                            Icons.description_rounded,
-                            color: Color(0xFF5893D8),
-                            size: 26,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            fileName ?? 'Tài liệu',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontFamily: 'Encode Sans Expanded',
-                              fontWeight: FontWeight.w600,
-                              fontSize: 14,
+                            border: Border.all(
                               color: isDarkMode
-                                  ? Colors.white
-                                  : const Color(0xFF1F2937),
+                                  ? Colors.white10
+                                  : const Color(0xFFE2E8F0),
                             ),
                           ),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF5893D8)
+                                      .withValues(alpha: 0.12),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: const Icon(
+                                  Icons.description_rounded,
+                                  color: Color(0xFF5893D8),
+                                  size: 22,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  fileName ?? 'Tài liệu',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13.5,
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF1F2937),
+                                  ),
+                                ),
+                              ),
+                              Icon(
+                                Icons.file_download_outlined,
+                                size: 20,
+                                color: isDarkMode
+                                    ? Colors.white38
+                                    : const Color(0xFF777777),
+                              ),
+                            ],
+                          ),
                         ),
-                        Icon(
-                          Icons.file_download_outlined,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : const Color(0xFF777777),
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
-              ),
-          ],
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -1050,54 +1012,58 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.bookmark_border_rounded,
-              size: 72,
-              color: isDarkMode ? Colors.white38 : const Color(0xFFCBD5E1),
-            ),
-            const SizedBox(height: 18),
-            Text(
-              "Danh sách lưu trống!",
-              style: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? Colors.white70 : const Color(0xFF545454),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.bookmark_border_rounded,
+                size: 36,
+                color: Color(0xFF5893D8),
               ),
             ),
-            const SizedBox(height: 12),
-            const Text(
+            const SizedBox(height: 16),
+            Text(
+              "Danh sách lưu trống",
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
               "Lưu lại những bài viết, review hay tài liệu quan trọng để xem lại sau.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
-                color: Colors.grey,
-                fontSize: 14,
-                height: 1.5,
+                color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                fontSize: 13.5,
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () =>
                   Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5893D8),
-                minimumSize: const Size(200, 46),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 elevation: 0,
               ),
@@ -1107,6 +1073,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   fontFamily: 'Encode Sans Expanded',
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14.5,
                 ),
               ),
             ),
@@ -1134,8 +1101,25 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           );
         }
 
-        final docs = snapshot.data!.docs;
+        final docs = List<QueryDocumentSnapshot>.from(snapshot.data!.docs);
         if (docs.isEmpty) return _buildEmptyState();
+
+        // Sort descending by saved timestamp (newest saved items first)
+        docs.sort((a, b) {
+          final dataA = a.data() as Map<String, dynamic>;
+          final dataB = b.data() as Map<String, dynamic>;
+
+          dynamic timeA = dataA['savedAt'] ?? dataA['timestamp'] ?? dataA['createdAt'];
+          dynamic timeB = dataB['savedAt'] ?? dataB['timestamp'] ?? dataB['createdAt'];
+
+          DateTime dateA = DateTime.fromMillisecondsSinceEpoch(0);
+          DateTime dateB = DateTime.fromMillisecondsSinceEpoch(0);
+
+          if (timeA is Timestamp) dateA = timeA.toDate();
+          if (timeB is Timestamp) dateB = timeB.toDate();
+
+          return dateB.compareTo(dateA);
+        });
 
         final cleanQuery = removeVietnameseDiacritics(_searchQuery);
         final filteredDocs = docs.where((doc) {
@@ -1181,7 +1165,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
           itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
             var data = filteredDocs[index].data() as Map<String, dynamic>;
@@ -1242,104 +1226,128 @@ class _SavedPostsPageState extends State<SavedPostsPage>
         title: Text(
           "Bài đã lưu",
           style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
+            fontFamily: 'Nunito',
             fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : const Color(0xFF545454),
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(64),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+            child: Container(
+              height: 44,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F2F6),
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorSize: TabBarIndicatorSize.tab,
+                dividerColor: Colors.transparent,
+                indicator: BoxDecoration(
+                  borderRadius: BorderRadius.circular(25),
+                  color: const Color(0xFF5893D8),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor:
+                    isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                labelStyle: const TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+                tabs: const [
+                  Tab(
+                    child: Text(
+                      "Tin tức & Diễn đàn",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Tab(
+                    child: Text(
+                      "Review & Tài liệu",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
       ),
       body: Column(
         children: [
           // Search Input Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : const Color(0xFFF1F2F6),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 13,
+                color: isDarkMode ? Colors.white : const Color(0xFF1D2939),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm bài đã lưu...',
+                hintStyle: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: isDarkMode ? Colors.white38 : const Color(0xFF98A2B3),
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 21,
+                  color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Xóa tìm kiếm',
+                        splashRadius: 18,
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                        ),
+                      )
+                    : null,
+                filled: true,
+                fillColor: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE4E7EC),
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF6797E1),
+                    width: 1.4,
+                  ),
                 ),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 14),
-                  const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF5893D8),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Tìm kiếm bài đã lưu...',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13.5,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : const Color(0xFF94A3B8),
-                        ),
-                        border: InputBorder.none,
-                        isDense: true,
-                      ),
-                    ),
-                  ),
-                  if (_searchQuery.isNotEmpty)
-                    IconButton(
-                      icon: Icon(
-                        Icons.cancel_rounded,
-                        size: 18,
-                        color: isDarkMode
-                            ? Colors.white38
-                            : const Color(0xFF94A3B8),
-                      ),
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                    ),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            margin: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-            decoration: BoxDecoration(
-              color: isDarkMode
-                  ? Colors.white.withOpacity(0.05)
-                  : const Color(0xFFF0F0F0),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              indicatorSize: TabBarIndicatorSize.tab,
-              dividerColor: Colors.transparent,
-              indicator: BoxDecoration(
-                borderRadius: BorderRadius.circular(30),
-                color: const Color(0xFF5893D8),
-              ),
-              labelColor: Colors.white,
-              unselectedLabelColor:
-                  isDarkMode ? Colors.white38 : const Color(0xFF777777),
-              labelStyle: const TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontWeight: FontWeight.bold,
-              ),
-              tabs: const [
-                Tab(text: "Diễn đàn chung"),
-                Tab(text: "Khóa học"),
-              ],
             ),
           ),
           Expanded(

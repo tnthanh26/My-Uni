@@ -1,3 +1,13 @@
+/// UI Refactoring Changes for my_post_page.dart:
+/// - Unified Design System: Primary Color #5893D8, Background #F8FAFC, Surface Light White, Surface Dark #15171A, Border #E4E7EC.
+/// - Header & Typography: Nunito font for AppBar title, Encode Sans Expanded for content text.
+/// - Card Hierarchy Optimization: Reduced card height by removing CircleAvatar and moving Edit/Delete actions into a top-right 3-dot menu (⋮).
+/// - Conditional Status Badges: Badges are hidden for published/posted status, only appearing for pending/special statuses.
+/// - Hashtags: Limited to maximum 3 hashtags with an overflow chip (+N).
+/// - Metrics: Compact Like and Comment counters grouped cleanly at the bottom of the card.
+/// - Aligned empty state with circular icon container and primary CTA button.
+/// - Preserved all Firestore streams, edit timeframe checks (12 hours limit), search diacritics removal, poll widgets, and delete dialogs.
+
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +20,33 @@ import 'package:timeago/timeago.dart' as timeago;
 import 'package:my_uni/utils/custom_timeago_messages.dart';
 import 'package:my_uni/features/search/myuni_search_delegate.dart';
 import 'package:my_uni/widgets/app_action_dialogs.dart';
+
+String removeVietnameseDiacritics(String str) {
+  const vietnameseMap = {
+    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
+    'A': 'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ',
+    'd': 'đ',
+    'D': 'Đ',
+    'e': 'èéẹẻẽêềếệểễ',
+    'E': 'ÈÉẸẺẼÊỀẾỆỂỄ',
+    'i': 'ìíịỉĩ',
+    'I': 'ÌÍỊỈĨ',
+    'o': 'òóọỏõôồốộổỗơờớợởỡ',
+    'O': 'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ',
+    'u': 'ùúụủũưừứựửữ',
+    'U': 'ÙÚỤỦŨƯỪỨỰỬỮ',
+    'y': 'ỳýỵỷỹ',
+    'Y': 'ỲÝỴỶỸ',
+  };
+
+  String result = str;
+  vietnameseMap.forEach((nonDiacritics, diacritics) {
+    for (int i = 0; i < diacritics.length; i++) {
+      result = result.replaceAll(diacritics[i], nonDiacritics);
+    }
+  });
+  return result.toLowerCase();
+}
 
 class MyPostsPage extends StatefulWidget {
   const MyPostsPage({super.key});
@@ -45,18 +82,34 @@ class _MyPostsPageState extends State<MyPostsPage>
 
   Widget _buildStatusBadge(String status) {
     final bool isPending = status == 'pending';
-    final Color bgColor = isPending
-        ? Colors.orange.withOpacity(0.12)
-        : Colors.green.withOpacity(0.12);
-    final Color borderColor = isPending
-        ? Colors.orange.withOpacity(0.35)
-        : Colors.green.withOpacity(0.35);
-    final Color textColor = isPending ? Colors.orange : Colors.green;
-    final IconData icon =
-    isPending ? Icons.schedule_rounded : Icons.check_circle_rounded;
+    final bool isRejected = status == 'rejected';
+    final bool isNeedEdit = status == 'need_edit';
+
+    String label = "Đang chờ duyệt";
+    Color baseColor = Colors.orange;
+
+    if (isRejected) {
+      label = "Bị từ chối";
+      baseColor = Colors.red;
+    } else if (isNeedEdit) {
+      label = "Cần chỉnh sửa";
+      baseColor = Colors.amber;
+    } else if (isPending) {
+      label = "Đang chờ duyệt";
+      baseColor = Colors.orange;
+    } else {
+      label = status;
+      baseColor = const Color(0xFF5893D8);
+    }
+
+    final Color bgColor = baseColor.withValues(alpha: 0.12);
+    final Color borderColor = baseColor.withValues(alpha: 0.35);
+    final IconData icon = isPending
+        ? Icons.schedule_rounded
+        : (isRejected ? Icons.cancel_outlined : Icons.info_outline_rounded);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(999),
@@ -65,15 +118,15 @@ class _MyPostsPageState extends State<MyPostsPage>
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: textColor),
-          const SizedBox(width: 5),
+          Icon(icon, size: 12, color: baseColor),
+          const SizedBox(width: 4),
           Text(
-            isPending ? "Đang chờ duyệt" : "Đã đăng",
+            label,
             style: TextStyle(
               fontFamily: 'Encode Sans Expanded',
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: textColor,
+              color: baseColor,
             ),
           ),
         ],
@@ -87,12 +140,12 @@ class _MyPostsPageState extends State<MyPostsPage>
     required bool isDarkMode,
   }) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: isDarkMode
-            ? Colors.white.withOpacity(0.06)
+            ? Colors.white.withValues(alpha: 0.06)
             : const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
         ),
@@ -120,41 +173,17 @@ class _MyPostsPageState extends State<MyPostsPage>
     );
   }
 
-  Widget _buildActionButton({
-    required IconData icon,
-    required Color color,
-    required VoidCallback onTap,
-    required bool isDarkMode,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: color.withOpacity(isDarkMode ? 0.16 : 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.20),
-          ),
-        ),
-        child: Icon(icon, color: color, size: 20),
-      ),
-    );
-  }
-
   Widget _buildImagePreview(String base64Str) {
     return Padding(
-      padding: const EdgeInsets.only(top: 12, bottom: 10),
+      padding: const EdgeInsets.only(top: 10, bottom: 8),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         child: Stack(
           children: [
             Image.memory(
               base64Decode(base64Str),
               width: double.infinity,
-              height: 190,
+              height: 180,
               fit: BoxFit.cover,
             ),
             Positioned.fill(
@@ -164,8 +193,8 @@ class _MyPostsPageState extends State<MyPostsPage>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withOpacity(0.02),
-                      Colors.black.withOpacity(0.22),
+                      Colors.black.withValues(alpha: 0.02),
+                      Colors.black.withValues(alpha: 0.22),
                     ],
                   ),
                 ),
@@ -178,11 +207,11 @@ class _MyPostsPageState extends State<MyPostsPage>
   }
 
   void _navigateToEdit(
-      BuildContext context,
-      String collection,
-      String docId,
-      Map<String, dynamic> data,
-      ) {
+    BuildContext context,
+    String collection,
+    String docId,
+    Map<String, dynamic> data,
+  ) {
     Widget targetPage;
     if (collection == 'study_materials') {
       targetPage = CreateMaterialPage(docId: docId, existingData: data);
@@ -212,37 +241,51 @@ class _MyPostsPageState extends State<MyPostsPage>
     final bool isForum = collectionPath == 'forum_posts';
 
     return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
-        decoration: BoxDecoration(
-          color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isForum ? Icons.forum_outlined : Icons.menu_book_outlined,
-              size: 42,
-              color: isDarkMode ? Colors.white38 : Colors.grey,
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: isDarkMode
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isForum ? Icons.forum_outlined : Icons.menu_book_outlined,
+                size: 36,
+                color: const Color(0xFF5893D8),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               isForum
-                  ? "Bạn chưa có bài đăng diễn đàn nào."
-                  : "Bạn chưa có tài liệu nào.",
+                  ? "Chưa có bài đăng nào"
+                  : "Chưa có tài liệu nào",
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isForum
+                  ? "Bạn chưa có bài đăng diễn đàn nào. Đăng bài ngay để chia sẻ với mọi người."
+                  : "Bạn chưa có tài liệu nào. Tải tài liệu môn học để lưu trữ và chia sẻ.",
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
-                fontSize: 14,
-                color: isDarkMode ? Colors.white70 : Colors.black54,
+                fontSize: 13.5,
+                color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: () {
                 Navigator.push(
@@ -256,21 +299,25 @@ class _MyPostsPageState extends State<MyPostsPage>
               },
               icon: Icon(
                 isForum ? Icons.add_comment_rounded : Icons.upload_file_rounded,
-                size: 20,
+                size: 18,
               ),
               label: Text(
                 isForum ? "Tạo bài đăng ngay" : "Tải tài liệu lên",
                 style: const TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.bold,
+                  fontSize: 14.5,
                 ),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5893D8),
                 foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 elevation: 0,
               ),
@@ -280,33 +327,6 @@ class _MyPostsPageState extends State<MyPostsPage>
       ),
     );
   }
-
-String removeVietnameseDiacritics(String str) {
-  const vietnameseMap = {
-    'a': 'àáạảãâầấậẩẫăằắặẳẵ',
-    'A': 'ÀÁẠẢÃÂẦẤẬẨẪĂẰẮẶẲẴ',
-    'd': 'đ',
-    'D': 'Đ',
-    'e': 'èéẹẻẽêềếệểễ',
-    'E': 'ÈÉẸẺẼÊỀẾỆỂỄ',
-    'i': 'ìíịỉĩ',
-    'I': 'ÌÍỊỈĨ',
-    'o': 'òóọỏõôồốộổỗơờớợởỡ',
-    'O': 'ÒÓỌỎÕÔỒỐỘỔỖƠỜỚỢỞỠ',
-    'u': 'ùúụủũưừứựửữ',
-    'U': 'ÙÚỤỦŨƯỪỨỰỬỮ',
-    'y': 'ỳýỵỷỹ',
-    'Y': 'ỲÝỴỶỸ',
-  };
-
-  String result = str;
-  vietnameseMap.forEach((nonDiacritics, diacritics) {
-    for (int i = 0; i < diacritics.length; i++) {
-      result = result.replaceAll(diacritics[i], nonDiacritics);
-    }
-  });
-  return result.toLowerCase();
-}
 
   Widget _buildPostList(String collectionPath) {
     final user = FirebaseAuth.instance.currentUser;
@@ -375,7 +395,7 @@ String removeVietnameseDiacritics(String str) {
         }
 
         return ListView.builder(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 20),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
           itemCount: filteredDocs.length,
           itemBuilder: (context, index) {
             var doc = filteredDocs[index];
@@ -394,14 +414,13 @@ String removeVietnameseDiacritics(String str) {
   }
 
   Widget _buildDetailedItem(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      String collectionPath,
-      DocumentReference ref,
-      ) {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+    String collectionPath,
+    DocumentReference ref,
+  ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    String? avatarData = data['authorAvatar'];
     String currentStatus = data['status'] ?? 'pending';
     final bool isForum = collectionPath == 'forum_posts';
 
@@ -421,8 +440,8 @@ String removeVietnameseDiacritics(String str) {
     final String title = isForum
         ? "Bạn"
         : (data['courseName']?.toString().isNotEmpty == true
-        ? data['courseName']
-        : "Tài liệu");
+            ? data['courseName']
+            : "Tài liệu");
 
     final String subtitle = data['timestamp'] != null
         ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
@@ -433,26 +452,33 @@ String removeVietnameseDiacritics(String str) {
             ? (data['fileName'] ?? 'Tài liệu không tên')
             : '');
 
+    final bool showBadge = currentStatus != 'published' &&
+        currentStatus != 'approved' &&
+        currentStatus != 'posted' &&
+        currentStatus != 'active';
+
+    List rawTags = (data['hashtags'] is List) ? data['hashtags'] : [];
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 18),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFE4E7EC),
         ),
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(16),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -468,32 +494,14 @@ String removeVietnameseDiacritics(String str) {
                 setState(() {});
               }
             },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
-                  child: Row(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 23,
-                        backgroundColor:
-                        isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
-                        backgroundImage:
-                        (avatarData != null && avatarData.isNotEmpty)
-                            ? MemoryImage(base64Decode(avatarData))
-                            : null,
-                        child: (avatarData == null || avatarData.isEmpty)
-                            ? Icon(
-                          Icons.person,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : Colors.grey,
-                        )
-                            : null,
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -504,14 +512,14 @@ String removeVietnameseDiacritics(String str) {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
-                                fontWeight: FontWeight.w700,
-                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15.5,
                                 color: isDarkMode
                                     ? Colors.white
                                     : const Color(0xFF1F2937),
                               ),
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               subtitle,
                               style: TextStyle(
@@ -525,132 +533,222 @@ String removeVietnameseDiacritics(String str) {
                           ],
                         ),
                       ),
-                      _buildStatusBadge(currentStatus),
-                    ],
-                  ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      if (!isForum &&
-                          (data['semester']?.toString().isNotEmpty == true))
-                        _buildInfoChip(
-                          icon: Icons.calendar_month_rounded,
-                          label: data['semester'],
-                          isDarkMode: isDarkMode,
+                      if (showBadge) ...[
+                        const SizedBox(width: 8),
+                        _buildStatusBadge(currentStatus),
+                      ],
+                      const SizedBox(width: 4),
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert_rounded,
+                          size: 20,
+                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
                         ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        color: isDarkMode ? const Color(0xFF1E2024) : Colors.white,
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            _navigateToEdit(context, collectionPath, docId, data);
+                          } else if (value == 'delete') {
+                            _confirmDelete(context, ref);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) {
+                          return [
+                            if (canEdit)
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.edit_outlined,
+                                      size: 18,
+                                      color: Color(0xFF5893D8),
+                                    ),
+                                    SizedBox(width: 10),
+                                    Text(
+                                      "Chỉnh sửa",
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF5893D8),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            PopupMenuItem<String>(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.delete_outline_rounded,
+                                    size: 18,
+                                    color: Color(0xFFFF6C6C),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(
+                                    collectionPath == 'study_materials'
+                                        ? "Xóa tài liệu"
+                                        : "Xóa bài viết",
+                                    style: const TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w600,
+                                      color: Color(0xFFFF6C6C),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ];
+                        },
+                      ),
                     ],
                   ),
-                ),
 
-                if (isForum && data['hashtags'] != null)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: (data['hashtags'] as List).map((tag) {
-                        return GestureDetector(
-                          onTap: () {
-                            final cleanTag = tag.toString().replaceAll('#', '').trim();
-                            if (cleanTag.isNotEmpty) {
-                              showSearch(
-                                context: context,
-                                delegate: MyUniSearchDelegate(
-                                  currentScope: SearchScope.forum,
-                                  initialHashtag: cleanTag,
+                  if (!isForum &&
+                      (data['semester']?.toString().isNotEmpty == true)) ...[
+                    const SizedBox(height: 6),
+                    _buildInfoChip(
+                      icon: Icons.calendar_month_rounded,
+                      label: data['semester'],
+                      isDarkMode: isDarkMode,
+                    ),
+                  ],
+
+                  if (isForum && rawTags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        ...rawTags.take(3).map((tag) {
+                          return GestureDetector(
+                            onTap: () {
+                              final cleanTag =
+                                  tag.toString().replaceAll('#', '').trim();
+                              if (cleanTag.isNotEmpty) {
+                                showSearch(
+                                  context: context,
+                                  delegate: MyUniSearchDelegate(
+                                    currentScope: SearchScope.forum,
+                                    initialHashtag: cleanTag,
+                                  ),
+                                );
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDarkMode
+                                    ? Colors.white.withValues(alpha: 0.06)
+                                    : const Color(0xFFF1F5F9),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xFFE2E8F0),
                                 ),
-                              );
-                            }
-                          },
-                          child: Container(
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.tag_rounded,
+                                    size: 13,
+                                    color: Color(0xFF306CFE),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    tag.toString(),
+                                    style: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDarkMode
+                                          ? Colors.white70
+                                          : const Color(0xFF344054),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+                        if (rawTags.length > 3)
+                          Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 6,
+                              horizontal: 8,
+                              vertical: 4,
                             ),
                             decoration: BoxDecoration(
                               color: isDarkMode
-                                  ? Colors.white10
+                                  ? Colors.white.withValues(alpha: 0.06)
                                   : const Color(0xFFF1F5F9),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(14),
                               border: Border.all(
                                 color: isDarkMode
                                     ? Colors.white10
                                     : const Color(0xFFE2E8F0),
                               ),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.tag_rounded,
-                                  size: 14,
-                                  color: Color(0xFF306CFE),
-                                ),
-                                const SizedBox(width: 5),
-                                Text(
-                                  tag.toString(),
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDarkMode
-                                        ? Colors.white70
-                                        : const Color(0xFF344054),
-                                  ),
-                                ),
-                              ],
+                            child: Text(
+                              "+${rawTags.length - 3}",
+                              style: TextStyle(
+                                fontFamily: 'Encode Sans Expanded',
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: isDarkMode
+                                    ? Colors.white54
+                                    : const Color(0xFF667085),
+                              ),
                             ),
                           ),
-                        );
-                      }).toList(),
+                      ],
                     ),
-                  ),
+                  ],
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                  child: Text(
-                    content,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 15,
-                      color:
-                      isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
-                      height: 1.6,
+                  if (content.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      content,
+                      maxLines: 4,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 13.5,
+                        color: isDarkMode
+                            ? Colors.white70
+                            : const Color(0xFF374151),
+                        height: 1.45,
+                      ),
                     ),
-                  ),
-                ),
+                  ],
 
-                if (data['imageUrl'] != null &&
-                    data['imageUrl'].toString().isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildImagePreview(data['imageUrl']),
-                  ),
+                  if (data['imageUrl'] != null &&
+                      data['imageUrl'].toString().isNotEmpty)
+                    _buildImagePreview(data['imageUrl']),
 
-                if (collectionPath == 'study_materials' &&
-                    data['isImage'] == true &&
-                    data['fileData'] != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildImagePreview(data['fileData']),
-                  ),
+                  if (collectionPath == 'study_materials' &&
+                      data['isImage'] == true &&
+                      data['fileData'] != null)
+                    _buildImagePreview(data['fileData']),
 
-                if (isForum && data['poll'] != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: PollWidget(docId: docId, pollData: data['poll']),
-                  ),
+                  if (isForum && data['poll'] != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: PollWidget(docId: docId, pollData: data['poll']),
+                    ),
 
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-                  child: Row(
+                  const SizedBox(height: 12),
+                  Row(
                     children: [
                       _buildInfoChip(
                         icon: Icons.favorite_outline_rounded,
@@ -665,90 +763,8 @@ String removeVietnameseDiacritics(String str) {
                       ),
                     ],
                   ),
-                ),
-
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                  child: Row(
-                    children: [
-                      if (canEdit) ...[
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _navigateToEdit(
-                              context,
-                              collectionPath,
-                              docId,
-                              data,
-                            ),
-                            icon: const Icon(
-                              Icons.edit_outlined,
-                              color: Color(0xFF5893D8),
-                              size: 18,
-                            ),
-                            label: const Text(
-                              "Chỉnh sửa",
-                              style: TextStyle(
-                                color: Color(0xFF5893D8),
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Encode Sans Expanded',
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF5893D8)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: isDarkMode
-                                  ? Colors.white.withOpacity(0.02)
-                                  : const Color(0xFFF8FBFF),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                      ],
-                      if (!canEdit)
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () => _confirmDelete(context, ref),
-                            icon: const Icon(
-                              Icons.delete_outline_rounded,
-                              color: Color(0xFFFF6C6C),
-                              size: 18,
-                            ),
-                            label: Text(
-                              collectionPath == 'study_materials'
-                                  ? "Xóa tài liệu"
-                                  : "Xóa bài viết",
-                              style: const TextStyle(
-                                color: Color(0xFFFF6C6C),
-                                fontWeight: FontWeight.w700,
-                                fontFamily: 'Encode Sans Expanded',
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFFF6C6C)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              backgroundColor: isDarkMode
-                                  ? Colors.white.withOpacity(0.02)
-                                  : const Color(0xFFFFF5F5),
-                            ),
-                          ),
-                        )
-                      else
-                        _buildActionButton(
-                          icon: Icons.delete_outline_rounded,
-                          color: const Color(0xFFFF6C6C),
-                          onTap: () => _confirmDelete(context, ref),
-                          isDarkMode: isDarkMode,
-                        ),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -762,7 +778,7 @@ String removeVietnameseDiacritics(String str) {
 
     return Scaffold(
       backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+          isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
@@ -777,22 +793,22 @@ String removeVietnameseDiacritics(String str) {
         title: Text(
           "Bài đăng của tôi",
           style: TextStyle(
-            fontFamily: 'Encode Sans Expanded',
+            fontFamily: 'Nunito',
             fontWeight: FontWeight.bold,
-            color: isDarkMode ? Colors.white : const Color(0xFF545454),
+            color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
             fontSize: 18,
           ),
         ),
         centerTitle: true,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(76),
+          preferredSize: const Size.fromHeight(64),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 6, 20, 14),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
             child: Container(
-              height: 46,
+              height: 44,
               decoration: BoxDecoration(
                 color: isDarkMode
-                    ? Colors.white.withOpacity(0.05)
+                    ? Colors.white.withValues(alpha: 0.05)
                     : const Color(0xFFF1F2F6),
                 borderRadius: BorderRadius.circular(25),
               ),
@@ -806,11 +822,11 @@ String removeVietnameseDiacritics(String str) {
                 ),
                 labelColor: Colors.white,
                 unselectedLabelColor:
-                isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                    isDarkMode ? Colors.white38 : const Color(0xFF777777),
                 labelStyle: const TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontSize: 13.5,
                 ),
                 tabs: const [
                   Tab(text: "Diễn đàn"),
@@ -826,62 +842,61 @@ String removeVietnameseDiacritics(String str) {
           // Search Input Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: Container(
-              height: 46,
-              decoration: BoxDecoration(
-                color: isDarkMode
-                    ? Colors.white.withValues(alpha: 0.05)
-                    : const Color(0xFFF1F2F6),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
-                ),
+            child: TextField(
+              controller: _searchController,
+              style: TextStyle(
+                fontFamily: 'Encode Sans Expanded',
+                fontSize: 13,
+                color: isDarkMode ? Colors.white : const Color(0xFF1D2939),
               ),
-              child: Row(
-                children: [
-                  const SizedBox(width: 14),
-                  const Icon(
-                    Icons.search_rounded,
-                    color: Color(0xFF5893D8),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 14,
-                        color: isDarkMode ? Colors.white : Colors.black87,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Tìm kiếm bài đăng...',
-                        hintStyle: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 13.5,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : const Color(0xFF94A3B8),
+              decoration: InputDecoration(
+                hintText: 'Tìm kiếm bài đăng...',
+                hintStyle: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: isDarkMode ? Colors.white38 : const Color(0xFF98A2B3),
+                ),
+                prefixIcon: Icon(
+                  Icons.search_rounded,
+                  size: 21,
+                  color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        tooltip: 'Xóa tìm kiếm',
+                        splashRadius: 18,
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                        icon: Icon(
+                          Icons.close_rounded,
+                          size: 19,
+                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
                         ),
-                        border: InputBorder.none,
-                        isDense: true,
-                      ),
-                    ),
+                      )
+                    : null,
+                filled: true,
+                fillColor: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: BorderSide(
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.08)
+                        : const Color(0xFFE4E7EC),
                   ),
-                  if (_searchQuery.isNotEmpty)
-                    IconButton(
-                      icon: Icon(
-                        Icons.cancel_rounded,
-                        size: 18,
-                        color: isDarkMode
-                            ? Colors.white38
-                            : const Color(0xFF94A3B8),
-                      ),
-                      onPressed: () {
-                        _searchController.clear();
-                      },
-                    ),
-                ],
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(15),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF6797E1),
+                    width: 1.4,
+                  ),
+                ),
               ),
             ),
           ),
