@@ -42,10 +42,10 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
 
   final List<String> _suggestedQuestions = [
     "Điểm rèn luyện",
-    "Học bổng khuyến khích học tập",
-    "Câu lạc bộ học thuật",
-    "Cảnh báo học tập",
     "Địa chỉ các cơ sở",
+    "Học bổng khuyến khích học tập",
+    "Đăng ký học phần",
+    "Giấy xác nhận sinh viên",
   ];
 
   @override
