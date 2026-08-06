@@ -136,6 +136,17 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         "Đã bỏ quan tâm & hủy đồng bộ Lịch biểu ở trang góc nhỏ",
       );
     } else {
+      // Kiểm tra sự kiện đã kết thúc chưa trước khi mở màn hình tạo / lưu sự kiện
+      final DateTime? eventDateTime = _extractEventDateTime(data);
+      if (eventDateTime != null && eventDateTime.isBefore(DateTime.now())) {
+        if (!context.mounted) return;
+        AppFeedback.showInfo(
+          context,
+          "Sự kiện này đã kết thúc, không thể thêm vào danh sách quan tâm",
+        );
+        return;
+      }
+
       // 2. Mở màn hình tạo / chỉnh sửa sự kiện cá nhân với nội dung điền sẵn từ bài viết
       final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
       final String description = (data['description'] ?? '').toString();
@@ -975,9 +986,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
                             // Lọc tài liệu theo Khoa đang chọn & từ khóa tìm kiếm
                             final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+                            final nowForFilter = DateTime.now();
+                            final threeDaysAgoForFilter = nowForFilter.subtract(const Duration(days: 3));
+
                             final filteredDocs = allEventDocs.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
                               if (data['shouldPublish'] == false) return false;
+
+                              // 0. Lọc sự kiện đã diễn ra quá 3 ngày (chỉ lưu/hiển thị tối đa 3 ngày sau khi diễn ra)
+                              final DateTime? eventDateTime = _extractEventDateTime(data);
+                              if (eventDateTime != null && eventDateTime.isBefore(threeDaysAgoForFilter)) {
+                                return false;
+                              }
 
                               // 1. Kiểm tra Khoa
                               bool matchesFac = false;
@@ -1172,6 +1192,13 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
   }
 
   DateTime? _extractEventDateTime(Map<String, dynamic> data) {
+    if (data['endAt'] != null && data['endAt'] is Timestamp) {
+      return (data['endAt'] as Timestamp).toDate();
+    }
+    if (data['endDateTime'] != null && data['endDateTime'] is String) {
+      final parsed = DateTime.tryParse(data['endDateTime']);
+      if (parsed != null) return parsed;
+    }
     if (data['startAt'] != null && data['startAt'] is Timestamp) {
       return (data['startAt'] as Timestamp).toDate();
     }

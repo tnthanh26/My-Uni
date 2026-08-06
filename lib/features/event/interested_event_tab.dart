@@ -104,6 +104,30 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     }
   }
 
+  DateTime? _extractEventDateTime(Map<String, dynamic> data) {
+    if (data['dateTime'] != null && data['dateTime'] is Timestamp) {
+      return (data['dateTime'] as Timestamp).toDate();
+    }
+    if (data['endAt'] != null && data['endAt'] is Timestamp) {
+      return (data['endAt'] as Timestamp).toDate();
+    }
+    if (data['endDateTime'] != null && data['endDateTime'] is String) {
+      final parsed = DateTime.tryParse(data['endDateTime']);
+      if (parsed != null) return parsed;
+    }
+    if (data['startAt'] != null && data['startAt'] is Timestamp) {
+      return (data['startAt'] as Timestamp).toDate();
+    }
+    if (data['startDateTime'] != null && data['startDateTime'] is String) {
+      final parsed = DateTime.tryParse(data['startDateTime']);
+      if (parsed != null) return parsed;
+    }
+    if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+      return (data['registrationDeadlineAt'] as Timestamp).toDate();
+    }
+    return null;
+  }
+
   Color _backgroundColor(bool isDarkMode) =>
       isDarkMode ? const Color(0xFF121212) : const Color(0xFFF7F9FC);
 
@@ -322,11 +346,21 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                       );
                     }
 
-                    // Filter search query
+                    // Filter search query & expiration (> 3 days past)
                     final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+                    final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
+
                     final filteredDocs = allDocs.where((doc) {
-                      if (cleanQuery.isEmpty) return true;
                       final data = doc.data() as Map<String, dynamic>;
+
+                      // 0. Lọc sự kiện đã diễn ra quá 3 ngày
+                      final DateTime? eventDateTime = _extractEventDateTime(data);
+                      if (eventDateTime != null && eventDateTime.isBefore(threeDaysAgo)) {
+                        return false;
+                      }
+
+                      if (cleanQuery.isEmpty) return true;
+
                       final title = removeVietnameseDiacritics(
                           (data['eventName'] ?? data['title'] ?? data['eventTitle'] ?? data['name'] ?? '').toString());
                       final desc = removeVietnameseDiacritics(
