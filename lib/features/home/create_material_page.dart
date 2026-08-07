@@ -345,7 +345,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                     ),
                   ),
                   Text(
-                    widget.docId != null ? "Sửa Tài Liệu" : "Tài Liệu",
+                    widget.docId != null ? "Sửa tài liệu" : "Tài liệu",
                     style: const TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w600,

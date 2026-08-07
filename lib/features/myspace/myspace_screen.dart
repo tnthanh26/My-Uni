@@ -8,6 +8,7 @@ import 'campus_data.dart';
 import 'create_deadlines_page.dart';
 import 'create_schedule_page.dart';
 import 'package:my_uni/features/event/create_personal_event_page.dart';
+import 'package:my_uni/features/event/event_detail_sheet.dart';
 import 'local_storage_helper.dart';
 import 'myspace_firebase_service.dart';
 import 'package:my_uni/features/notification/notification_page.dart';
@@ -1662,9 +1663,17 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
         ? "${DateFormat('HH:mm').format(ev.dateTime)} - ${DateFormat('HH:mm').format(ev.endDateTime!)}"
         : DateFormat('HH:mm').format(ev.dateTime);
 
-    return Container(
-      height: 80,
-      margin: const EdgeInsets.only(bottom: 24),
+    return GestureDetector(
+      onTap: () => EventDetailSheet.show(
+        context,
+        ev,
+        onRefresh: () {
+          if (mounted) setState(() {});
+        },
+      ),
+      child: Container(
+        height: 80,
+        margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: eventBgColor,
         borderRadius: BorderRadius.circular(8),
@@ -1774,7 +1783,8 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildHeaderNotificationButton({

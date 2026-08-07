@@ -9,9 +9,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 //     items: [
 //       AnimatedNavItem(icon: 'assets/icons/home.svg',    label: 'Home'),
 //       AnimatedNavItem(icon: 'assets/icons/event.svg',   label: 'Sự kiện'),
-//       AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi Đáp'),
+//       AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi đáp'),
 //       AnimatedNavItem(icon: 'assets/icons/space.svg',   label: 'Góc nhỏ'),
-//       AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài Khoản'),
+//       AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài khoản'),
 //     ],
 //   )
 // ───────────────────────────────────────────────────────────

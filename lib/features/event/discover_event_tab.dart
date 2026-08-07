@@ -190,13 +190,15 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         dateTime: parsedDateTime,
         location: locStr,
         reminder: '15 phút trước',
-        description: '',
+        description: fullDesc,
         sourceArticleUrl: sourceArticleUrl,
         onlineUrl: onlineUrl,
         isOnline: isOnline,
         facultyEventId: docId,
         isFromFacultyEvent: true,
         contact: contactStr.isNotEmpty ? contactStr : null,
+        facultyName: facultyName,
+        imageUrl: (data['thumbnailUrl'] ?? data['imageUrl'] ?? data['bannerUrl'])?.toString(),
       );
 
       if (!context.mounted) return;

@@ -15,6 +15,8 @@ class EventModel {
   final String? facultyEventId;
   final bool isFromFacultyEvent;
   final String? contact;
+  final String? facultyName;
+  final String? imageUrl;
 
   EventModel({
     required this.id,
@@ -31,6 +33,8 @@ class EventModel {
     this.facultyEventId,
     this.isFromFacultyEvent = false,
     this.contact,
+    this.facultyName,
+    this.imageUrl,
   });
 
   // Chuyển đổi từ Firestore Document thành EventModel
@@ -43,6 +47,9 @@ class EventModel {
     if (data['endDateTime'] != null && data['endDateTime'] is Timestamp) {
       endDt = (data['endDateTime'] as Timestamp).toDate();
     }
+    final String? fName = (data['facultyName'] ?? data['department'] ?? data['organizer'] ?? data['organizerName'])?.toString();
+    final String? imgUrl = (data['imageUrl'] ?? data['thumbnailUrl'] ?? data['bannerUrl'] ?? data['image'] ?? data['thumbnail'])?.toString();
+
     return EventModel(
       id: doc.id,
       title: data['title'] ?? '',
@@ -57,8 +64,10 @@ class EventModel {
       onlineUrl: oUrl,
       isOnline: online,
       facultyEventId: fId,
-      isFromFacultyEvent: data['isFromFacultyEvent'] == true || (fId != null && fId.isNotEmpty),
+      isFromFacultyEvent: fId != null && fId.trim().isNotEmpty,
       contact: (data['contact'] ?? data['organizer'] ?? data['organizerName'])?.toString(),
+      facultyName: fName,
+      imageUrl: imgUrl,
     );
   }
 
@@ -78,6 +87,8 @@ class EventModel {
       'facultyEventId': facultyEventId,
       'isFromFacultyEvent': isFromFacultyEvent,
       if (contact != null) 'contact': contact,
+      if (facultyName != null) 'facultyName': facultyName,
+      if (imageUrl != null) 'imageUrl': imageUrl,
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }
