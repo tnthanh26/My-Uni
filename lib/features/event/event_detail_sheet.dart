@@ -412,33 +412,103 @@ class EventDetailSheet {
 
   static Widget _buildOrganizerTile(
       EventModel ev, bool isDarkMode, Color primaryText, Color border) {
-    final String displayFaculty = ev.facultyName?.trim().isNotEmpty == true
-        ? ev.facultyName!.trim()
-        : (ev.isFromFacultyEvent ? 'Khoa / Đơn vị HCMUS' : 'Sự kiện cá nhân');
+    // 1. Nếu là sự kiện cá nhân tự tạo không có facultyEventId và facultyName -> Ẩn ô này
+    final bool isPersonalWithoutFaculty = !ev.isFromFacultyEvent &&
+        (ev.facultyEventId == null || ev.facultyEventId!.isEmpty) &&
+        (ev.facultyName == null || ev.facultyName!.trim().isEmpty || ev.facultyName!.trim() == 'Sự kiện cá nhân');
 
+    if (isPersonalWithoutFaculty) {
+      return const SizedBox.shrink();
+    }
+
+    final String? directFaculty = (ev.facultyName != null &&
+            ev.facultyName!.trim().isNotEmpty &&
+            ev.facultyName!.trim() != 'Khoa HCMUS' &&
+            ev.facultyName!.trim() != 'Chưa cập nhật' &&
+            ev.facultyName!.trim() != 'Sự kiện cá nhân')
+        ? ev.facultyName!.trim()
+        : null;
+
+    // 2. Nếu đã có tên Khoa trực tiếp trong memory -> Hiển thị ngay lập tức (0ms delay!)
+    if (directFaculty != null) {
+      return _buildOrganizerContainer(directFaculty, isDarkMode, primaryText, border);
+    }
+
+    // 3. Nếu là sự kiện Khoa và ev.facultyEventId có sẵn -> Tải tên Khoa từ Firestore
+    if (ev.facultyEventId != null && ev.facultyEventId!.trim().isNotEmpty) {
+      return FutureBuilder<DocumentSnapshot>(
+        future: FirebaseFirestore.instance
+            .collection('faculty_events')
+            .doc(ev.facultyEventId!.trim())
+            .get(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData && snapshot.data?.data() != null) {
+            final data = snapshot.data!.data() as Map<String, dynamic>;
+            final fetched = (data['facultyName'] ??
+                    data['department'] ??
+                    data['faculty'] ??
+                    data['organizer'] ??
+                    data['organizerName'])
+                ?.toString()
+                .trim();
+            if (fetched != null && fetched.isNotEmpty && fetched != 'Khoa HCMUS') {
+              return _buildOrganizerContainer(fetched, isDarkMode, primaryText, border);
+            }
+          }
+          final String fallback = (ev.facultyName?.trim().isNotEmpty == true &&
+                  ev.facultyName!.trim() != 'Sự kiện cá nhân')
+              ? ev.facultyName!.trim()
+              : 'Ban tổ chức Khoa HCMUS';
+          return _buildOrganizerContainer(fallback, isDarkMode, primaryText, border);
+        },
+      );
+    }
+
+    if (ev.facultyName != null && ev.facultyName!.trim().isNotEmpty && ev.facultyName!.trim() != 'Sự kiện cá nhân') {
+      return _buildOrganizerContainer(ev.facultyName!.trim(), isDarkMode, primaryText, border);
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  static Widget _buildOrganizerContainer(
+      String facultyText, bool isDarkMode, Color primaryText, Color border) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: isDarkMode ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: border),
+        color: isDarkMode
+            ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
+            : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           const Icon(
             Icons.school_rounded,
             size: 20,
-            color: Color(0xFF457EC0),
+            color: Color(0xFF2563EB),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              displayFaculty,
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: primaryText,
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 13,
+                  color: primaryText,
+                ),
+                children: [
+                  const TextSpan(
+                    text: 'Khoa / Đơn vị: ',
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                  ),
+                  TextSpan(
+                    text: facultyText,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ],
               ),
             ),
           ),
@@ -449,9 +519,12 @@ class EventDetailSheet {
 
   static Widget _buildContactDetailRow(
       EventModel ev, bool isDarkMode, Color primaryText, Color secondaryText) {
-    final String? directContact = ev.contact?.trim();
+    final String? directContact = (ev.contact != null && ev.contact!.trim().isNotEmpty)
+        ? ev.contact!.trim()
+        : null;
 
-    if (directContact != null && directContact.isNotEmpty) {
+    // 1. Nếu đã có contact trực tiếp -> Hiển thị ngay lập tức (0ms delay!)
+    if (directContact != null) {
       return _buildDetailRow(
         Icons.contact_phone_rounded,
         'Liên hệ / BTC',
@@ -461,7 +534,14 @@ class EventDetailSheet {
       );
     }
 
-    // If contact is empty but facultyEventId exists, fetch original faculty event
+    final String? directFaculty = (ev.facultyName != null &&
+            ev.facultyName!.trim().isNotEmpty &&
+            ev.facultyName!.trim() != 'Khoa HCMUS' &&
+            ev.facultyName!.trim() != 'Sự kiện cá nhân')
+        ? ev.facultyName!.trim()
+        : null;
+
+    // 2. Nếu là sự kiện Khoa và có facultyEventId -> Tải thông tin liên hệ chi tiết từ bài viết gốc Firestore
     if (ev.facultyEventId != null && ev.facultyEventId!.trim().isNotEmpty) {
       return FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
@@ -469,31 +549,34 @@ class EventDetailSheet {
             .doc(ev.facultyEventId!.trim())
             .get(),
         builder: (context, snapshot) {
-          String contactVal = ev.facultyName?.trim().isNotEmpty == true
-              ? ev.facultyName!.trim()
-              : 'Ban tổ chức Khoa';
-
           if (snapshot.hasData && snapshot.data?.data() != null) {
             final data = snapshot.data!.data() as Map<String, dynamic>;
             final fetchedContact = (data['contact'] ??
                     data['organizer'] ??
                     data['organizerName'] ??
                     data['contactInfo'] ??
-                    data['facultyName'] ??
-                    data['department'] ??
                     data['phone'] ??
-                    data['email'])
+                    data['email'] ??
+                    data['facultyName'] ??
+                    data['department'])
                 ?.toString()
                 .trim();
             if (fetchedContact != null && fetchedContact.isNotEmpty) {
-              contactVal = fetchedContact;
+              return _buildDetailRow(
+                Icons.contact_phone_rounded,
+                'Liên hệ / BTC',
+                fetchedContact,
+                primaryText,
+                secondaryText,
+              );
             }
           }
 
+          final String fallback = directFaculty ?? 'Ban tổ chức Khoa HCMUS';
           return _buildDetailRow(
             Icons.contact_phone_rounded,
             'Liên hệ / BTC',
-            contactVal,
+            fallback,
             primaryText,
             secondaryText,
           );
@@ -501,22 +584,11 @@ class EventDetailSheet {
       );
     }
 
-    // Fallback if facultyName is present
-    if (ev.facultyName != null && ev.facultyName!.trim().isNotEmpty) {
-      return _buildDetailRow(
-        Icons.contact_phone_rounded,
-        'Liên hệ / BTC',
-        ev.facultyName!.trim(),
-        primaryText,
-        secondaryText,
-      );
-    }
-
-    // Default fallback for pure personal events without explicit contact
+    final String displayContact = directFaculty ?? 'Chưa cập nhật thông tin liên hệ';
     return _buildDetailRow(
       Icons.contact_phone_rounded,
       'Liên hệ / BTC',
-      'Chưa cập nhật thông tin liên hệ',
+      displayContact,
       primaryText,
       secondaryText,
     );

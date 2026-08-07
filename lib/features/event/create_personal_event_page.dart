@@ -368,7 +368,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
         'location': _locationController.text.trim(),
         'contact': _contactController.text.trim().isNotEmpty
             ? _contactController.text.trim()
-            : null,
+            : (widget.event?.contact ?? widget.event?.facultyName),
         'description': _descController.text.trim(),
         'dateTime': Timestamp.fromDate(finalDateTime),
 
