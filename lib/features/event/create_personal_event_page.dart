@@ -36,6 +36,7 @@ class CreatePersonalEventPage extends StatefulWidget {
 class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _contactController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
 
   DateTime _selectedDate = DateTime.now();
@@ -55,6 +56,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
     if (widget.event != null) {
       _titleController.text = widget.event!.title;
       _locationController.text = widget.event!.location;
+      _contactController.text = widget.event!.contact ?? "";
       _descController.text = widget.event!.description ?? "";
       _selectedDate = widget.event!.dateTime;
       _selectedTime = TimeOfDay.fromDateTime(widget.event!.dateTime);
@@ -117,6 +119,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   void dispose() {
     _titleController.dispose();
     _locationController.dispose();
+    _contactController.dispose();
     _descController.dispose();
 
     for (var group in _reminderGroups) {
@@ -363,6 +366,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       final eventData = {
         'title': _titleController.text.trim(),
         'location': _locationController.text.trim(),
+        'contact': _contactController.text.trim().isNotEmpty
+            ? _contactController.text.trim()
+            : null,
         'description': _descController.text.trim(),
         'dateTime': Timestamp.fromDate(finalDateTime),
 
@@ -383,24 +389,31 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           'onlineUrl': widget.event!.onlineUrl,
         if (widget.event?.isOnline != null)
           'isOnline': widget.event!.isOnline,
+        if (widget.event?.facultyName != null)
+          'facultyName': widget.event!.facultyName,
+        if (widget.event?.imageUrl != null)
+          'imageUrl': widget.event!.imageUrl,
 
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
       final String? targetDocId = widget.event?.id;
-      final String? facultyEventId = widget.event?.facultyEventId ??
-          (widget.event?.isFromFacultyEvent == true ? targetDocId : null);
+      final String? existingFacultyId = widget.event?.facultyEventId;
+      final bool isFromFaculty = widget.event?.isFromFacultyEvent == true &&
+          (existingFacultyId != null && existingFacultyId.trim().isNotEmpty);
+      final String? facultyEventId = isFromFaculty ? existingFacultyId : null;
+
+      eventData['facultyEventId'] = facultyEventId;
+      eventData['isFromFacultyEvent'] = isFromFaculty;
 
       if (targetDocId != null && targetDocId.isNotEmpty) {
-        eventData['facultyEventId'] = facultyEventId;
-        eventData['isFromFacultyEvent'] = true;
         await collection.doc(targetDocId).set(eventData, SetOptions(merge: true));
       } else {
         eventData['createdAt'] = FieldValue.serverTimestamp();
         await collection.add(eventData);
       }
 
-      if (facultyEventId != null && facultyEventId.isNotEmpty) {
+      if (isFromFaculty && facultyEventId != null && facultyEventId.isNotEmpty) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
@@ -799,6 +812,22 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                 style: TextStyle(color: textColor),
                 decoration: const InputDecoration(
                   hintText: 'Địa điểm',
+                  border: InputBorder.none,
+                  isDense: true,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            _buildInputRow(
+              inputBg,
+              Icons.contact_phone_outlined,
+              child: TextField(
+                controller: _contactController,
+                style: TextStyle(color: textColor),
+                decoration: const InputDecoration(
+                  hintText: 'Thông tin liên hệ / BTC (tùy chọn)',
                   border: InputBorder.none,
                   isDense: true,
                 ),

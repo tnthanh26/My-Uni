@@ -990,10 +990,10 @@ class HomePageState extends State<HomePage> {
                           unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 12),
                           dividerColor: Colors.transparent,
                           tabs: const [
-                            Tab(text: 'Chính Thức'),
-                            Tab(text: 'Diễn Đàn'),
+                            Tab(text: 'Chính thức'),
+                            Tab(text: 'Diễn đàn'),
                             Tab(text: 'Review'),
-                            Tab(text: 'Tài Liệu'),
+                            Tab(text: 'Tài liệu'),
                           ],
                         ),
                       ),
@@ -1358,9 +1358,9 @@ class HomePageState extends State<HomePage> {
          items: [
            AnimatedNavItem(icon: 'assets/icons/home.svg',    label: 'Home'),
            AnimatedNavItem(icon: 'assets/icons/event.svg',   label: 'Sự kiện'),
-           AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi Đáp'),
+           AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi đáp'),
            AnimatedNavItem(icon: 'assets/icons/space.svg',   label: 'Góc nhỏ'),
-           AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài Khoản'),
+           AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài khoản'),
          ],
       ),
     );

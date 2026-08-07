@@ -456,7 +456,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                     ),
                   ),
                   Text(
-                    widget.docId == null ? "Diễn Đàn" : "Sửa Bài Đăng",
+                    widget.docId == null ? "Diễn đàn" : "Sửa bài đăng",
                     style: const TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w600,

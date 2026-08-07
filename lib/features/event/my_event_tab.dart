@@ -14,6 +14,8 @@ import 'discover_event_tab.dart';
 import '../home/home_page.dart';
 import '../myspace/myspace_screen.dart';
 import 'package:my_uni/widgets/app_action_dialogs.dart';
+import 'package:my_uni/utils/base64_image_cache.dart';
+import 'event_detail_sheet.dart';
 
 enum EventTabMode {
   personal,
@@ -351,175 +353,12 @@ class _MyEventTabState extends State<MyEventTab>
       EventModel ev,
       bool isDarkMode,
       ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: _surfaceColor(isDarkMode),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-      ),
-      isScrollControlled: true,
-      builder: (context) => Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.85,
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      ev.title,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: _primaryTextColor(isDarkMode),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: Icon(
-                      Icons.close,
-                      color: _secondaryTextColor(isDarkMode),
-                    ),
-                  ),
-                ],
-              ),
-              Divider(color: _borderColor(isDarkMode)),
-              const SizedBox(height: 10),
-              FutureBuilder<bool>(
-                future: _checkOriginalEventExists(ev.facultyEventId),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData && snapshot.data == false) {
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.12),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.red.shade300),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
-                          const SizedBox(width: 10),
-                          const Expanded(
-                            child: Text(
-                              'Sự kiện gốc này đã bị hủy hoặc xóa khỏi hệ thống bởi Ban tổ chức.',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.redAccent,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-              _buildDetailRow(
-                Icons.access_time_filled_rounded,
-                'Thời gian',
-                DateFormat('dd/MM/yyyy HH:mm').format(ev.dateTime),
-                isDarkMode,
-              ),
-              _buildDetailRow(
-                ev.isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
-                'Vị trí',
-                ev.location.trim().isNotEmpty ? ev.location : (ev.isOnline ? 'Online' : 'Chưa cập nhật'),
-                isDarkMode,
-              ),
-              if (ev.description.trim().isNotEmpty)
-                _buildDetailRow(
-                  Icons.description_rounded,
-                  'Mô tả',
-                  ev.description,
-                  isDarkMode,
-                ),
-              if (ev.contact != null && ev.contact!.trim().isNotEmpty)
-                _buildDetailRow(
-                  Icons.contact_phone_rounded,
-                  'Liên hệ',
-                  ev.contact!,
-                  isDarkMode,
-                ),
-              if (ev.reminder != 'Không' &&
-                  ev.reminder != 'Đặt lời nhắc' &&
-                  ev.reminder.trim().isNotEmpty)
-                _buildDetailRow(
-                  Icons.add_alert_rounded,
-                  'Nhắc nhở',
-                  ev.reminder,
-                  isDarkMode,
-                ),
-              if (ev.onlineUrl != null && ev.onlineUrl!.trim().isNotEmpty) ...[
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _launchURL(ev.onlineUrl!),
-                    icon: const Icon(Icons.videocam_rounded, size: 18),
-                    label: const Text(
-                      'Tham gia Online',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF8B5CF6),
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-              if (ev.sourceArticleUrl != null &&
-                  ev.sourceArticleUrl!.trim().isNotEmpty &&
-                  ev.sourceArticleUrl!.trim() != ev.onlineUrl?.trim()) ...[
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: ElevatedButton.icon(
-                    onPressed: () => _launchURL(ev.sourceArticleUrl!),
-                    icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                    label: const Text(
-                      'Xem bài viết gốc',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: figmaSelectionBlue,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
+    EventDetailSheet.show(
+      context,
+      ev,
+      onRefresh: () {
+        if (mounted) setState(() {});
+      },
     );
   }
 
