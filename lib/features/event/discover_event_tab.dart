@@ -178,11 +178,6 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       }
 
       final String contactStr = (data['contact'] ?? data['organizer'] ?? '').toString().trim();
-      String fullDesc = description;
-      if (contactStr.isNotEmpty && !fullDesc.contains(contactStr)) {
-        if (fullDesc.isNotEmpty) fullDesc += '\n\n';
-        fullDesc += '📞 Liên hệ: $contactStr';
-      }
 
       final noteEvent = EventModel(
         id: docId,
@@ -190,7 +185,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         dateTime: parsedDateTime,
         location: locStr,
         reminder: '15 phút trước',
-        description: fullDesc,
+        description: '',
         sourceArticleUrl: sourceArticleUrl,
         onlineUrl: onlineUrl,
         isOnline: isOnline,
