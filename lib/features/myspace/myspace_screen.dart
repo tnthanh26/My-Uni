@@ -339,8 +339,6 @@ class _MySpaceScreenState extends State<MySpaceScreen> with SingleTickerProvider
           });
         }
 
-        await _maybeSyncMoodleDeadlines();
-
         await LocalStorageHelper.saveAutoDeadlineConfig(mergedConfig);
       }
     } catch (e) {

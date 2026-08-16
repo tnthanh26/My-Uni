@@ -61,3 +61,5 @@ node_modules/
 
 # Usability testing and survey assets
 survey/
+*.csv
+
