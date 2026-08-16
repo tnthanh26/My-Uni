@@ -2101,7 +2101,7 @@ class NotificationScreen extends StatelessWidget {
       dateTime: parsedDateTime,
       location: locStr,
       reminder: '15 phút trước',
-      description: description,
+      description: '',
       sourceArticleUrl: sourceArticleUrl,
       onlineUrl: onlineUrl,
       isOnline: isOnline,
