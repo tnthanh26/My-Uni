@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import './models/myspace_models.dart';
 import './services/moodle_service.dart';
 import './services/moodle_token_storage.dart';
+import 'moodle_webview_page.dart';
 import 'package:my_uni/utils/app_feedback.dart';
 
 const Color hcmusBlueAccent = Color(0xFF5893D8);
@@ -779,8 +780,17 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                         setState(() {
                           _permissionRequested = true;
                           _permissionGranted = true;
+                          _isEnabled = true;
                         });
                         await _saveCurrentConfig();
+                        if (mounted) {
+                          setState(() { _isSyncing = true; });
+                          await widget.onSyncNow();
+                          if (mounted) {
+                            setState(() { _isSyncing = false; });
+                            AppFeedback.showSuccess(context, 'Đã kết nối Moodle & tự động tải deadline!');
+                          }
+                        }
                       },
                       icon: Icon(_permissionGranted ? Icons.link_off_rounded : Icons.link_rounded),
                       label: Text(_permissionGranted ? 'Ngắt kết nối' : 'Connect Moodle'),
@@ -1055,7 +1065,66 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                   ),
                 ),
               ],
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
+
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: _isConnecting
+                      ? null
+                      : () async {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          final connected = await Navigator.push<bool>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MoodleWebviewPage(moodleUrl: widget.moodleUrl),
+                            ),
+                          );
+                          if (connected == true && mounted) {
+                            Navigator.pop(context, true);
+                          }
+                        },
+                  icon: const Icon(Icons.language_rounded, size: 20),
+                  label: const Text(
+                    'Đăng nhập Moodle qua Web',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hcmusBlueAccent,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 1,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(child: Divider(color: borderColor)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    child: Text(
+                      'Hoặc mật khẩu Moodle thủ công',
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 11,
+                        color: secondaryTextColor,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: borderColor)),
+                ],
+              ),
+              const SizedBox(height: 16),
+
               TextField(
                 controller: _usernameController,
                 enabled: !_isConnecting,
