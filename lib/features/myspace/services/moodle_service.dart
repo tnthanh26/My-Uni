@@ -19,14 +19,25 @@ class MoodleService {
           'password': password,
           'service': 'moodle_mobile_app',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
-      final data = jsonDecode(response.body);
+      if (response.statusCode != 200) {
+        debugPrint('MOODLE CONNECT ERROR: status code ${response.statusCode}');
+        return null;
+      }
+
+      final bodyText = response.body.trim();
+      if (bodyText.startsWith('<') || bodyText.toLowerCase().contains('<html')) {
+        debugPrint('MOODLE CONNECT ERROR: Moodle returned HTML instead of JSON token (likely using SSO/Outlook login).');
+        return null;
+      }
+
+      final data = jsonDecode(bodyText);
 
       debugPrint('MOODLE TOKEN RESPONSE: $data');
 
-      if (data['token'] != null) {
-        return data['token'];
+      if (data is Map && data['token'] != null) {
+        return data['token'].toString();
       }
 
       return null;

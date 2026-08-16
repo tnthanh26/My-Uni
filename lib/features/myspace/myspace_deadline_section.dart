@@ -500,261 +500,336 @@ Future<void> showAutoDeadlineConfigSheet(
       required Future<void> Function(AutoDeadlineConfig config) onSave,
       required Future<void> Function() onSyncNow,
     }) async {
-  final baseConfig = currentConfig ?? AutoDeadlineConfig.empty(moodleUrl: '');
-  final moodleUrlController = TextEditingController(text: baseConfig.moodleUrl);
-
-  bool isEnabled = baseConfig.isEnabled;
-  bool permissionRequested = baseConfig.permissionRequested;
-  bool permissionGranted = baseConfig.permissionGranted;
-  bool isSaving = false;
-  bool isSyncing = false;
-
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (sheetContext) {
-      return StatefulBuilder(
-        builder: (context, setModalState) {
-          final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    builder: (sheetContext) => _AutoDeadlineConfigSheet(
+      currentConfig: currentConfig,
+      onSave: onSave,
+      onSyncNow: onSyncNow,
+    ),
+  );
+}
 
-          Future<void> saveCurrentConfig({bool closeAfterSave = false}) async {
-            final moodleUrl = moodleUrlController.text.trim();
-            if (isEnabled && moodleUrl.isEmpty) {
-              AppFeedback.showWarning(sheetContext, 'Điền đường dẫn Moodle trước đã.');
-              return;
+class _AutoDeadlineConfigSheet extends StatefulWidget {
+  final AutoDeadlineConfig? currentConfig;
+  final Future<void> Function(AutoDeadlineConfig config) onSave;
+  final Future<void> Function() onSyncNow;
+
+  const _AutoDeadlineConfigSheet({
+    required this.currentConfig,
+    required this.onSave,
+    required this.onSyncNow,
+  });
+
+  @override
+  State<_AutoDeadlineConfigSheet> createState() => _AutoDeadlineConfigSheetState();
+}
+
+class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
+  late final TextEditingController _moodleUrlController;
+  late bool _isEnabled;
+  late bool _permissionRequested;
+  late bool _permissionGranted;
+  bool _isSaving = false;
+  bool _isSyncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final baseConfig = widget.currentConfig ?? AutoDeadlineConfig.empty(moodleUrl: '');
+    _moodleUrlController = TextEditingController(text: baseConfig.moodleUrl);
+    _isEnabled = baseConfig.isEnabled;
+    _permissionRequested = baseConfig.permissionRequested;
+    _permissionGranted = baseConfig.permissionGranted;
+  }
+
+  @override
+  void dispose() {
+    _moodleUrlController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _saveCurrentConfig({bool closeAfterSave = false}) async {
+    final moodleUrl = _moodleUrlController.text.trim();
+    if (_isEnabled && moodleUrl.isEmpty) {
+      if (mounted) {
+        AppFeedback.showWarning(context, 'Điền đường dẫn Moodle trước đã.');
+      }
+      return;
+    }
+
+    if (mounted) {
+      setState(() { _isSaving = true; });
+    }
+    final config = AutoDeadlineConfig(
+      isEnabled: _isEnabled,
+      provider: 'moodle',
+      moodleUrl: moodleUrl,
+      permissionRequested: _permissionRequested,
+      permissionGranted: _permissionGranted,
+      updatedAt: DateTime.now(),
+    );
+    await widget.onSave(config);
+    if (!mounted) return;
+    if (closeAfterSave) {
+      FocusManager.instance.primaryFocus?.unfocus();
+      Navigator.pop(context);
+    } else {
+      setState(() { _isSaving = false; });
+    }
+  }
+
+  Widget _buildMoodlePresetChipStateful(BuildContext context, {required String label, required String url, required TextEditingController controller, bool isManual = false}) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isSelected = isManual
+        ? (controller.text.isNotEmpty && !['https://courses.hcmus.edu.vn', 'https://courses.fit.hcmus.edu.vn', 'https://courses.ctda.hcmus.edu.vn'].contains(controller.text))
+        : controller.text == url;
+
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (bool selected) {
+        if (selected) {
+          setState(() {
+            if (!isManual) {
+              controller.text = url;
+            } else if (!isSelected) {
+              controller.clear();
             }
+          });
+        }
+      },
+      labelStyle: TextStyle(
+        fontSize: 12, fontFamily: 'Poppins',
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87),
+      ),
+      selectedColor: hcmusBlueAccent,
+      backgroundColor: isDarkMode ? const Color(0xFF2A2A2E) : const Color(0xFFF0F4F8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      side: BorderSide(color: isSelected ? hcmusBlueAccent : (isDarkMode ? Colors.white10 : Colors.black12)),
+    );
+  }
 
-            setModalState(() { isSaving = true; });
-            final config = AutoDeadlineConfig(
-              isEnabled: isEnabled,
-              provider: 'moodle',
-              moodleUrl: moodleUrl,
-              permissionRequested: permissionRequested,
-              permissionGranted: permissionGranted,
-              updatedAt: DateTime.now(),
-            );
-            await onSave(config);
-            if (!sheetContext.mounted) return;
-            setModalState(() { isSaving = false; });
-            if (closeAfterSave) Navigator.pop(sheetContext);
-          }
+  @override
+  Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-          return Padding(
-            padding: EdgeInsets.only(
-              left: 16, right: 16, top: 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            ),
-            child: Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 16, right: 16, top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42, height: 42,
+                    decoration: BoxDecoration(
+                      color: isDarkMode ? hcmusBlueAccent.withOpacity(0.18) : const Color(0xFFEAF2FF),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.school_rounded, color: hcmusBlueAccent, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Moodle deadline sync',
+                      style: TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Poppins',
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: _isSaving || _isSyncing ? null : () {
+                      FocusManager.instance.primaryFocus?.unfocus();
+                      Navigator.pop(context);
+                    },
+                    icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
+                  ),
+                ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 8),
+              Text(
+                'Cấu hình Moodle để MyUni đồng bộ upcoming events. Đăng nhập Moodle được tách riêng, mật khẩu không lưu trong app.',
+                style: TextStyle(
+                  fontSize: 12, height: 1.45, fontFamily: 'Poppins',
+                  color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                ),
+              ),
+              const SizedBox(height: 18),
+              SwitchListTile.adaptive(
+                value: _isEnabled,
+                contentPadding: EdgeInsets.zero,
+                activeThumbColor: hcmusBlueAccent,
+                title: Text(
+                  'Bật tự động cập nhật deadline',
+                  style: TextStyle(
+                    fontFamily: 'Poppins', fontWeight: FontWeight.w600,
+                    color: isDarkMode ? Colors.white : Colors.black87,
+                  ),
+                ),
+                subtitle: Text(
+                  'Đồng bộ khi mở app hoặc khi bạn bấm Sync now.',
+                  style: TextStyle(
+                    fontFamily: 'Poppins', fontSize: 12,
+                    color: isDarkMode ? Colors.white60 : Colors.grey.shade700,
+                  ),
+                ),
+                onChanged: _isSaving || _isSyncing ? null : (value) {
+                  setState(() { _isEnabled = value; });
+                },
+              ),
+              const SizedBox(height: 14),
+              _configLabel(context, 'Đường dẫn Moodle'),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8, runSpacing: 8,
+                children: [
+                  _buildMoodlePresetChipStateful(context, label: 'Chung', url: 'https://courses.hcmus.edu.vn', controller: _moodleUrlController),
+                  _buildMoodlePresetChipStateful(context, label: 'FIT', url: 'https://courses.fit.hcmus.edu.vn', controller: _moodleUrlController),
+                  _buildMoodlePresetChipStateful(context, label: 'CTDA', url: 'https://courses.ctda.hcmus.edu.vn', controller: _moodleUrlController),
+                  _buildMoodlePresetChipStateful(context, label: 'Khác', url: '', controller: _moodleUrlController, isManual: true),
+                ],
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _moodleUrlController,
+                keyboardType: TextInputType.url,
+                onChanged: (value) => setState(() {}),
+                decoration: _configInputDecoration(context, 'vd: https://moodle.your-school.edu.vn'),
+              ),
+              const SizedBox(height: 14),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F8FF),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isDarkMode ? Colors.white10 : const Color(0xFFDCE7FF)),
+                ),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 42, height: 42,
-                          decoration: BoxDecoration(
-                            color: isDarkMode ? hcmusBlueAccent.withOpacity(0.18) : const Color(0xFFEAF2FF),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Icon(Icons.school_rounded, color: hcmusBlueAccent, size: 22),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Moodle deadline sync',
-                            style: TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Poppins',
-                              color: isDarkMode ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: isSaving || isSyncing ? null : () => Navigator.pop(sheetContext),
-                          icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
-                        ),
-                      ],
+                    Icon(
+                      _permissionGranted ? Icons.verified_rounded : Icons.link_off_rounded,
+                      size: 18, color: _permissionGranted ? const Color(0xFF448E58) : Colors.orange,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Cấu hình Moodle để MyUni đồng bộ upcoming events. Đăng nhập Moodle được tách riêng, mật khẩu không lưu trong app.',
-                      style: TextStyle(
-                        fontSize: 12, height: 1.45, fontFamily: 'Poppins',
-                        color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    SwitchListTile.adaptive(
-                      value: isEnabled,
-                      contentPadding: EdgeInsets.zero,
-                      activeThumbColor: hcmusBlueAccent,
-                      title: Text(
-                        'Bật tự động cập nhật deadline',
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _permissionGranted
+                            ? 'Moodle đã kết nối. Bạn có thể bấm Sync now để thử đồng bộ ngay.'
+                            : 'Chưa kết nối Moodle. Bấm Connect Moodle để đăng nhập một lần và lấy token.',
                         style: TextStyle(
-                          fontFamily: 'Poppins', fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white : Colors.black87,
+                          fontFamily: 'Poppins', fontSize: 12, height: 1.45,
+                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                         ),
-                      ),
-                      subtitle: Text(
-                        'Đồng bộ khi mở app hoặc khi bạn bấm Sync now.',
-                        style: TextStyle(
-                          fontFamily: 'Poppins', fontSize: 12,
-                          color: isDarkMode ? Colors.white60 : Colors.grey.shade700,
-                        ),
-                      ),
-                      onChanged: isSaving || isSyncing ? null : (value) {
-                        setModalState(() { isEnabled = value; });
-                      },
-                    ),
-                    const SizedBox(height: 14),
-                    _configLabel(context, 'Đường dẫn Moodle'),
-                    const SizedBox(height: 8),
-                    
-                    Wrap(
-                      spacing: 8, runSpacing: 8,
-                      children: [
-                        _buildMoodlePresetChip(context, label: 'Chung', url: 'https://courses.hcmus.edu.vn', controller: moodleUrlController, setModalState: setModalState),
-                        _buildMoodlePresetChip(context, label: 'FIT', url: 'https://courses.fit.hcmus.edu.vn', controller: moodleUrlController, setModalState: setModalState),
-                        _buildMoodlePresetChip(context, label: 'CTDA', url: 'https://courses.ctda.hcmus.edu.vn', controller: moodleUrlController, setModalState: setModalState),
-                        _buildMoodlePresetChip(context, label: 'Khác', url: '', controller: moodleUrlController,
-                            setModalState: setModalState, isManual: true),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-
-                    TextField(
-                      controller: moodleUrlController,
-                      keyboardType: TextInputType.url,
-                      onChanged: (value) => setModalState(() {}),
-                      decoration: _configInputDecoration(context, 'vd: https://moodle.your-school.edu.vn'),
-                    ),
-
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F8FF),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: isDarkMode ? Colors.white10 : const Color(0xFFDCE7FF)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            permissionGranted ? Icons.verified_rounded : Icons.link_off_rounded,
-                            size: 18, color: permissionGranted ? const Color(0xFF448E58) : Colors.orange,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              permissionGranted
-                                  ? 'Moodle đã kết nối. Bạn có thể bấm Sync now để thử đồng bộ ngay.'
-                                  : 'Chưa kết nối Moodle. Bấm Connect Moodle để đăng nhập một lần và lấy token.',
-                              style: TextStyle(
-                                fontFamily: 'Poppins', fontSize: 12, height: 1.45,
-                                color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            style: permissionGranted
-                                ? OutlinedButton.styleFrom(
-                                    foregroundColor: const Color(0xFFDC2626),
-                                    side: const BorderSide(color: Color(0xFFDC2626)),
-                                  )
-                                : null,
-                            onPressed: isSaving || isSyncing ? null : () async {
-                              if (permissionGranted) {
-                                await MoodleTokenStorage.clearToken();
-                                setModalState(() {
-                                  permissionGranted = false;
-                                  permissionRequested = false;
-                                  isEnabled = false;
-                                });
-                                await saveCurrentConfig();
-                                if (sheetContext.mounted) {
-                                  AppFeedback.showInfo(sheetContext, 'Đã ngắt kết nối Moodle.');
-                                }
-                                return;
-                              }
-                              final moodleUrl = moodleUrlController.text.trim();
-                              if (moodleUrl.isEmpty) {
-                                AppFeedback.showWarning(sheetContext, 'Điền đường dẫn Moodle trước đã.');
-                                return;
-                              }
-                              final connected = await showMoodleLoginDialog(sheetContext, moodleUrl: moodleUrl);
-                              if (!connected) return;
-                              setModalState(() {
-                                permissionRequested = true;
-                                permissionGranted = true;
-                              });
-                              await saveCurrentConfig();
-                            },
-                            icon: Icon(permissionGranted ? Icons.link_off_rounded : Icons.link_rounded),
-                            label: Text(permissionGranted ? 'Ngắt kết nối' : 'Connect Moodle'),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: isSaving || isSyncing || !permissionGranted ? null : () async {
-                              await saveCurrentConfig();
-                              setModalState(() { isSyncing = true; });
-                              await onSyncNow();
-                              if (!sheetContext.mounted) return;
-                              setModalState(() { isSyncing = false; });
-                              AppFeedback.showSuccess(sheetContext, 'Đã chạy đồng bộ Moodle.');
-                            },
-                            icon: isSyncing
-                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                                : const Icon(Icons.sync_rounded),
-                            label: const Text('Sync now'),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 18),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: hcmusBlueAccent,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: isSaving || isSyncing ? null : () async {
-                          await saveCurrentConfig(closeAfterSave: true);
-                        },
-                        child: isSaving
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                            : const Text('Lưu cấu hình', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: _permissionGranted
+                          ? OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFFDC2626),
+                              side: const BorderSide(color: Color(0xFFDC2626)),
+                            )
+                          : null,
+                      onPressed: _isSaving || _isSyncing ? null : () async {
+                        if (_permissionGranted) {
+                          await MoodleTokenStorage.clearToken();
+                          if (!mounted) return;
+                          setState(() {
+                            _permissionGranted = false;
+                            _permissionRequested = false;
+                            _isEnabled = false;
+                          });
+                          await _saveCurrentConfig();
+                          if (mounted) {
+                            AppFeedback.showInfo(context, 'Đã ngắt kết nối Moodle.');
+                          }
+                          return;
+                        }
+                        final moodleUrl = _moodleUrlController.text.trim();
+                        if (moodleUrl.isEmpty) {
+                          AppFeedback.showWarning(context, 'Điền đường dẫn Moodle trước đã.');
+                          return;
+                        }
+                        final connected = await showMoodleLoginDialog(context, moodleUrl: moodleUrl);
+                        if (!connected || !mounted) return;
+                        setState(() {
+                          _permissionRequested = true;
+                          _permissionGranted = true;
+                        });
+                        await _saveCurrentConfig();
+                      },
+                      icon: Icon(_permissionGranted ? Icons.link_off_rounded : Icons.link_rounded),
+                      label: Text(_permissionGranted ? 'Ngắt kết nối' : 'Connect Moodle'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _isSaving || _isSyncing || !_permissionGranted ? null : () async {
+                        await _saveCurrentConfig();
+                        if (!mounted) return;
+                        setState(() { _isSyncing = true; });
+                        await widget.onSyncNow();
+                        if (!mounted) return;
+                        setState(() { _isSyncing = false; });
+                        AppFeedback.showSuccess(context, 'Đã chạy đồng bộ Moodle.');
+                      },
+                      icon: _isSyncing
+                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          : const Icon(Icons.sync_rounded),
+                      label: const Text('Sync now'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: hcmusBlueAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: _isSaving || _isSyncing ? null : () async {
+                    await _saveCurrentConfig(closeAfterSave: true);
+                  },
+                  child: _isSaving
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Text('Lưu cấu hình', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 // --- Helper Widgets & Dialogs ---
@@ -763,478 +838,333 @@ Future<bool> showMoodleLoginDialog(
     BuildContext context, {
       required String moodleUrl,
     }) async {
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
-
-  bool isConnecting = false;
-  bool obscurePassword = true;
-
   final bool? result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
-    builder: (dialogContext) {
-      return StatefulBuilder(
-        builder: (context, setDialogState) {
-          final bool isDarkMode =
-              Theme.of(context).brightness == Brightness.dark;
+    builder: (dialogContext) => _MoodleLoginDialog(moodleUrl: moodleUrl),
+  );
+  return result ?? false;
+}
 
-          final Color surfaceColor = isDarkMode
-              ? const Color(0xFF1C1E21)
-              : Colors.white;
+class _MoodleLoginDialog extends StatefulWidget {
+  final String moodleUrl;
+  const _MoodleLoginDialog({required this.moodleUrl});
 
-          final Color primaryTextColor = isDarkMode
-              ? Colors.white
-              : const Color(0xFF1D2939);
+  @override
+  State<_MoodleLoginDialog> createState() => _MoodleLoginDialogState();
+}
 
-          final Color secondaryTextColor = isDarkMode
-              ? Colors.white60
-              : const Color(0xFF667085);
+class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
+  late final TextEditingController _usernameController;
+  late final TextEditingController _passwordController;
 
-          final Color borderColor = isDarkMode
-              ? Colors.white.withValues(alpha: 0.10)
-              : const Color(0xFFE4E7EC);
+  bool _isConnecting = false;
+  bool _obscurePassword = true;
+  String? _errorMessage;
 
-          final Color fieldColor = isDarkMode
-              ? Colors.white.withValues(alpha: 0.06)
-              : const Color(0xFFF7F9FC);
+  @override
+  void initState() {
+    super.initState();
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
 
-          Future<void> handleConnect() async {
-            final String username =
-            usernameController.text.trim();
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
-            final String password =
-            passwordController.text.trim();
+  Future<void> _handleConnect() async {
+    final String username = _usernameController.text.trim();
+    final String password = _passwordController.text.trim();
 
-            if (username.isEmpty || password.isEmpty) {
-              AppFeedback.showWarning(
-                dialogContext,
-                'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.',
-              );
-              return;
-            }
+    if (username.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = 'Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.';
+      });
+      return;
+    }
 
-            FocusScope.of(dialogContext).unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
 
-            setDialogState(() {
-              isConnecting = true;
-            });
+    setState(() {
+      _isConnecting = true;
+      _errorMessage = null;
+    });
 
-            try {
-              final token =
-              await MoodleService.connectAndGetToken(
-                moodleUrl: moodleUrl,
-                username: username,
-                password: password,
-              );
+    try {
+      final token = await MoodleService.connectAndGetToken(
+        moodleUrl: widget.moodleUrl,
+        username: username,
+        password: password,
+      );
 
-              if (token == null ||
-                  token.trim().isEmpty) {
-                if (!dialogContext.mounted) return;
+      if (token == null || token.trim().isEmpty) {
+        if (!mounted) return;
 
-                setDialogState(() {
-                  isConnecting = false;
-                });
+        setState(() {
+          _isConnecting = false;
+          _errorMessage =
+              'Không thể kết nối Moodle. Vui lòng kiểm tra lại thông tin đăng nhập hoặc đường dẫn (Moodle dùng đăng nhập Outlook SSO sẽ không kết nối được bằng mật khẩu trực tiếp).';
+        });
+        return;
+      }
 
-                AppFeedback.showError(
-                  dialogContext,
-                  'Không thể kết nối Moodle. Vui lòng kiểm tra lại thông tin đăng nhập.',
-                );
-                return;
-              }
+      await MoodleTokenStorage.saveToken(token);
 
-              await MoodleTokenStorage.saveToken(token);
+      if (mounted) {
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (!mounted) return;
 
-              if (dialogContext.mounted) {
-                Navigator.pop(dialogContext, true);
-              }
-            } catch (e) {
-              if (!dialogContext.mounted) return;
+      setState(() {
+        _isConnecting = false;
+        _errorMessage = 'Đã xảy ra lỗi khi kết nối Moodle.';
+      });
+    }
+  }
 
-              setDialogState(() {
-                isConnecting = false;
-              });
+  @override
+  Widget build(BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-              AppFeedback.showError(
-                dialogContext,
-                'Đã xảy ra lỗi khi kết nối Moodle.',
-              );
-            }
-          }
+    final Color surfaceColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1D2939);
+    final Color secondaryTextColor = isDarkMode ? Colors.white60 : const Color(0xFF667085);
+    final Color borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E7EC);
+    final Color fieldColor = isDarkMode ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF7F9FC);
 
-          InputDecoration buildInputDecoration({
-            required String label,
-            required String hint,
-            required IconData prefixIcon,
-            Widget? suffixIcon,
-          }) {
-            return InputDecoration(
-              labelText: label,
-              hintText: hint,
-              filled: true,
-              fillColor: fieldColor,
-              prefixIcon: Icon(
-                prefixIcon,
-                size: 20,
-                color: secondaryTextColor,
-              ),
-              suffixIcon: suffixIcon,
-              labelStyle: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 12,
-                color: secondaryTextColor,
-              ),
-              floatingLabelStyle: const TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: hcmusBlueAccent,
-              ),
-              hintStyle: TextStyle(
-                fontFamily: 'Encode Sans Expanded',
-                fontSize: 12,
-                color: isDarkMode
-                    ? Colors.white30
-                    : const Color(0xFF98A2B3),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 15,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: borderColor,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: borderColor,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(
-                  color: hcmusBlueAccent,
-                  width: 1.5,
-                ),
-              ),
-            );
-          }
+    InputDecoration buildInputDecoration({
+      required String label,
+      required String hint,
+      required IconData prefixIcon,
+      Widget? suffixIcon,
+    }) {
+      return InputDecoration(
+        labelText: label,
+        hintText: hint,
+        filled: true,
+        fillColor: fieldColor,
+        prefixIcon: Icon(prefixIcon, size: 20, color: secondaryTextColor),
+        suffixIcon: suffixIcon,
+        labelStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: secondaryTextColor),
+        floatingLabelStyle: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, fontWeight: FontWeight.w600, color: hcmusBlueAccent),
+        hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: isDarkMode ? Colors.white30 : const Color(0xFF98A2B3)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: hcmusBlueAccent, width: 1.5)),
+      );
+    }
 
-          return Dialog(
-            backgroundColor: Colors.transparent,
-            insetPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 24,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 420),
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+        decoration: BoxDecoration(
+          color: surfaceColor,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDarkMode ? 0.30 : 0.10),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
             ),
-            child: Container(
-              constraints: const BoxConstraints(
-                maxWidth: 420,
-              ),
-              padding: const EdgeInsets.fromLTRB(
-                20,
-                16,
-                20,
-                20,
-              ),
-              decoration: BoxDecoration(
-                color: surfaceColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: borderColor,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(
-                      alpha: isDarkMode ? 0.30 : 0.10,
+          ],
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Kết nối Moodle',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 19,
+                        fontWeight: FontWeight.w700,
+                        color: primaryTextColor,
+                      ),
                     ),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
+                  ),
+                  IconButton(
+                    splashRadius: 20,
+                    onPressed: _isConnecting
+                        ? null
+                        : () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            Navigator.pop(context, false);
+                          },
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: 21,
+                      color: _isConnecting
+                          ? secondaryTextColor.withValues(alpha: 0.40)
+                          : secondaryTextColor,
+                    ),
                   ),
                 ],
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              const SizedBox(height: 4),
+              Text(
+                'Đăng nhập bằng tài khoản Moodle của trường để đồng bộ deadline và dữ liệu học tập.',
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 12.5,
+                  height: 1.5,
+                  color: secondaryTextColor,
+                ),
+              ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDarkMode ? const Color(0xFF3B1818) : const Color(0xFFFDE8E8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFF87171), width: 1),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.error_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontSize: 12,
+                            height: 1.4,
+                            color: isDarkMode ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              TextField(
+                controller: _usernameController,
+                enabled: !_isConnecting,
+                textInputAction: TextInputAction.next,
+                autofillHints: const [AutofillHints.username],
+                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: primaryTextColor),
+                decoration: buildInputDecoration(
+                  label: 'Tên đăng nhập',
+                  hint: 'Nhập tên đăng nhập Moodle',
+                  prefixIcon: Icons.person_outline_rounded,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _passwordController,
+                enabled: !_isConnecting,
+                obscureText: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                autofillHints: const [AutofillHints.password],
+                onSubmitted: (_) {
+                  if (!_isConnecting) _handleConnect();
+                },
+                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: primaryTextColor),
+                decoration: buildInputDecoration(
+                  label: 'Mật khẩu',
+                  hint: 'Nhập mật khẩu Moodle',
+                  prefixIcon: Icons.lock_outline_rounded,
+                  suffixIcon: IconButton(
+                    splashRadius: 18,
+                    onPressed: _isConnecting
+                        ? null
+                        : () => setState(() => _obscurePassword = !_obscurePassword),
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                      color: secondaryTextColor,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: hcmusBlueAccent.withValues(alpha: isDarkMode ? 0.12 : 0.07),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Kết nối Moodle',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 19,
-                              fontWeight: FontWeight.w700,
-                              color: primaryTextColor,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: 'Đóng',
-                          splashRadius: 20,
-                          onPressed: isConnecting
-                              ? null
-                              : () {
-                            Navigator.pop(
-                              dialogContext,
-                              false,
-                            );
-                          },
-                          icon: Icon(
-                            Icons.close_rounded,
-                            size: 21,
-                            color: isConnecting
-                                ? secondaryTextColor.withValues(
-                              alpha: 0.40,
-                            )
-                                : secondaryTextColor,
-                          ),
-                        ),
-                      ],
+                    const Padding(
+                      padding: EdgeInsets.only(top: 1),
+                      child: Icon(Icons.shield_outlined, size: 17, color: hcmusBlueAccent),
                     ),
-
-                    const SizedBox(height: 4),
-
-                    Text(
-                      'Đăng nhập bằng tài khoản Moodle của trường để đồng bộ deadline và dữ liệu học tập.',
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 12.5,
-                        height: 1.5,
-                        color: secondaryTextColor,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    TextField(
-                      controller: usernameController,
-                      enabled: !isConnecting,
-                      textInputAction:
-                      TextInputAction.next,
-                      autofillHints: const [
-                        AutofillHints.username,
-                      ],
-                      style: TextStyle(
-                        fontFamily:
-                        'Encode Sans Expanded',
-                        fontSize: 13,
-                        color: primaryTextColor,
-                      ),
-                      decoration: buildInputDecoration(
-                        label: 'Tên đăng nhập',
-                        hint: 'Nhập tên đăng nhập Moodle',
-                        prefixIcon:
-                        Icons.person_outline_rounded,
-                      ),
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    TextField(
-                      controller: passwordController,
-                      enabled: !isConnecting,
-                      obscureText: obscurePassword,
-                      textInputAction:
-                      TextInputAction.done,
-                      autofillHints: const [
-                        AutofillHints.password,
-                      ],
-                      onSubmitted: (_) {
-                        if (!isConnecting) {
-                          handleConnect();
-                        }
-                      },
-                      style: TextStyle(
-                        fontFamily:
-                        'Encode Sans Expanded',
-                        fontSize: 13,
-                        color: primaryTextColor,
-                      ),
-                      decoration: buildInputDecoration(
-                        label: 'Mật khẩu',
-                        hint: 'Nhập mật khẩu Moodle',
-                        prefixIcon:
-                        Icons.lock_outline_rounded,
-                        suffixIcon: IconButton(
-                          tooltip: obscurePassword
-                              ? 'Hiện mật khẩu'
-                              : 'Ẩn mật khẩu',
-                          splashRadius: 18,
-                          onPressed: isConnecting
-                              ? null
-                              : () {
-                            setDialogState(() {
-                              obscurePassword =
-                              !obscurePassword;
-                            });
-                          },
-                          icon: Icon(
-                            obscurePassword
-                                ? Icons
-                                .visibility_off_outlined
-                                : Icons
-                                .visibility_outlined,
-                            size: 20,
-                            color: secondaryTextColor,
-                          ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: hcmusBlueAccent.withValues(
-                          alpha: isDarkMode ? 0.12 : 0.07,
-                        ),
-                        borderRadius:
-                        BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 1),
-                            child: Icon(
-                              Icons
-                                  .shield_outlined,
-                              size: 17,
-                              color: hcmusBlueAccent,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              'MyUni chỉ sử dụng thông tin này để kết nối và đồng bộ dữ liệu. Mật khẩu không được lưu trên máy chủ của ứng dụng.',
-                              style: TextStyle(
-                                fontFamily:
-                                'Encode Sans Expanded',
-                                fontSize: 11.5,
-                                height: 1.45,
-                                color: isDarkMode
-                                    ? Colors.white70
-                                    : const Color(
-                                  0xFF475467,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 46,
-                      child: FilledButton.icon(
-                        onPressed: isConnecting
-                            ? null
-                            : handleConnect,
-                        icon: isConnecting
-                            ? const SizedBox(
-                          width: 17,
-                          height: 17,
-                          child:
-                          CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                            : const Icon(
-                          Icons.link_rounded,
-                          size: 18,
-                        ),
-                        label: Text(
-                          isConnecting
-                              ? 'Đang kết nối...'
-                              : 'Kết nối Moodle',
-                          style: const TextStyle(
-                            fontFamily:
-                            'Encode Sans Expanded',
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        style: FilledButton.styleFrom(
-                          backgroundColor:
-                          hcmusBlueAccent,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor:
-                          hcmusBlueAccent.withValues(
-                            alpha: 0.55,
-                          ),
-                          disabledForegroundColor:
-                          Colors.white,
-                          elevation: 0,
-                          shape:
-                          RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
-                          ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'MyUni chỉ sử dụng thông tin này để kết nối và đồng bộ dữ liệu. Mật khẩu không được lưu trên máy chủ của ứng dụng.',
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 11.5,
+                          height: 1.45,
+                          color: isDarkMode ? Colors.white70 : const Color(0xFF475467),
                         ),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        },
-      );
-    },
-  );
-
-  usernameController.dispose();
-  passwordController.dispose();
-
-  return result ?? false;
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton.icon(
+                  onPressed: _isConnecting ? null : _handleConnect,
+                  icon: _isConnecting
+                      ? const SizedBox(
+                          width: 17, height: 17,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.link_rounded, size: 18),
+                  label: Text(
+                    _isConnecting ? 'Đang kết nối...' : 'Kết nối Moodle',
+                    style: const TextStyle(
+                      fontFamily: 'Encode Sans Expanded',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: hcmusBlueAccent,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: hcmusBlueAccent.withValues(alpha: 0.55),
+                    disabledForegroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-Widget _buildMoodlePresetChip(BuildContext context, {required String label, required String url, required TextEditingController controller, required StateSetter setModalState, bool isManual = false}) {
-  final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-  final bool isSelected = isManual 
-      ? (controller.text.isNotEmpty && !['https://courses.hcmus.edu.vn', 'https://courses.fit.hcmus.edu.vn', 'https://courses.ctda.hcmus.edu.vn'].contains(controller.text))
-      : controller.text == url;
 
-  return ChoiceChip(
-    label: Text(label),
-    selected: isSelected,
-    onSelected: (bool selected) {
-      if (selected) {
-        setModalState(() {
-          if (!isManual) {
-            controller.text = url;
-          } else if (!isSelected) {
-            controller.clear();
-          }
-        });
-      }
-    },
-    labelStyle: TextStyle(
-      fontSize: 12, fontFamily: 'Poppins',
-      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-      color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87),
-    ),
-    selectedColor: hcmusBlueAccent,
-    backgroundColor: isDarkMode ? const Color(0xFF2A2A2E) : const Color(0xFFF0F4F8),
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-    side: BorderSide(color: isSelected ? hcmusBlueAccent : (isDarkMode ? Colors.white10 : Colors.black12)),
-  );
-}
 
 Widget _configLabel(BuildContext context, String text) {
   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
