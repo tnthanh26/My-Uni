@@ -170,7 +170,7 @@ exports.chatWithUEm = (0, https_1.onCall)({ timeoutSeconds: 60, memory: "512MiB"
         await limitRef.set({ count: count + 1, lastReset: today }, { merge: true });
         return cachedData;
     }
-    let serverUrl = "https://chatbot.85-211-240-41.sslip.io/chat";
+    let serverUrl = "https://chatbot.85-211-243-145.sslip.io/chat";
     try {
         const configDoc = await db
             .collection("system_config")
@@ -255,7 +255,7 @@ exports.semanticSearch = (0, https_1.onCall)({ timeoutSeconds: 60, memory: "512M
     if (typeof query !== "string" || !query.trim()) {
         throw new https_1.HttpsError("invalid-argument", "Từ khóa tìm kiếm không hợp lệ.");
     }
-    let serverUrl = "https://search.85-211-240-41.sslip.io/search";
+    let serverUrl = "https://search.85-211-243-145.sslip.io/search";
     try {
         const configDoc = await db
             .collection("system_config")

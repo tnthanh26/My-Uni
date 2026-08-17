@@ -220,7 +220,7 @@ export const chatWithUEm = onCall(
       return cachedData;
     }
 
-    let serverUrl = "https://chatbot.85-211-240-41.sslip.io/chat";
+    let serverUrl = "https://chatbot.85-211-243-145.sslip.io/chat";
 
     try {
       const configDoc = await db
@@ -332,7 +332,7 @@ export const semanticSearch = onCall(
       throw new HttpsError("invalid-argument", "Từ khóa tìm kiếm không hợp lệ.");
     }
 
-    let serverUrl = "https://search.85-211-240-41.sslip.io/search";
+    let serverUrl = "https://search.85-211-243-145.sslip.io/search";
 
     try {
       const configDoc = await db
