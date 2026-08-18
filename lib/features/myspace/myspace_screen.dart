@@ -130,7 +130,9 @@ class _MySpaceScreenState extends State<MySpaceScreen>
       }
     }
 
-    if (!jumpPage || !_dayPageController.hasClients) {
+    if (!jumpPage ||
+        !_dayPageController.hasClients ||
+        _dayPageController.positions.length != 1) {
       return;
     }
 
@@ -207,7 +209,9 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        if (_tabController.index == 1 && _dayPageController.hasClients) {
+        if (_tabController.index == 1 &&
+            _dayPageController.hasClients &&
+            _dayPageController.positions.length == 1) {
           final targetPage = _getPageIndexFromDate(_focusedDate);
           if (_dayPageController.page?.round() != targetPage) {
             _dayPageController.jumpToPage(targetPage);
@@ -1338,7 +1342,9 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
   Widget _buildScheduleCalendarGridPageView() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _dayPageController.hasClients) {
+      if (mounted &&
+          _dayPageController.hasClients &&
+          _dayPageController.positions.length == 1) {
         final targetPage = _getPageIndexFromDate(_focusedDate);
         if (_dayPageController.page?.round() != targetPage) {
           _dayPageController.jumpToPage(targetPage);
