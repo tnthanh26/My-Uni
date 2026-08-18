@@ -64,7 +64,8 @@ class _MySpaceScreenState extends State<MySpaceScreen>
   StreamSubscription<QuerySnapshot>? _personalEventsSub;
   final ScrollController _timetableScrollController = ScrollController();
   final ScrollController _dashboardScrollController = ScrollController();
-  late final PageController _dayPageController;
+  late final PageController _deadlinePageController;
+  late final PageController _schedulePageController;
   late final PageController _weekPageController;
   static final DateTime _anchorDate = DateTime(2020, 1, 1);
   static final DateTime _weekAnchorMonday = DateTime(2020, 1, 6);
@@ -130,29 +131,36 @@ class _MySpaceScreenState extends State<MySpaceScreen>
       }
     }
 
-    if (!jumpPage || !_dayPageController.hasClients) {
+    if (!jumpPage) {
       return;
     }
 
     final int targetPage = _getPageIndexFromDate(normalized);
-    final int currentPage = _dayPageController.page?.round() ?? targetPage;
 
-    if (currentPage == targetPage) {
-      return;
+    void syncController(PageController controller) {
+      if (!controller.hasClients) return;
+      final int currentPage = controller.page?.round() ?? targetPage;
+
+      if (currentPage == targetPage) {
+        return;
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !controller.hasClients) return;
+        if (animate && (targetPage - currentPage).abs() == 1) {
+          controller.animateToPage(
+            targetPage,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+          );
+        } else {
+          controller.jumpToPage(targetPage);
+        }
+      });
     }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_dayPageController.hasClients) return;
-      if (animate && (targetPage - currentPage).abs() == 1) {
-        _dayPageController.animateToPage(
-          targetPage,
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-        );
-      } else {
-        _dayPageController.jumpToPage(targetPage);
-      }
-    });
+    syncController(_deadlinePageController);
+    syncController(_schedulePageController);
   }
 
   void _onDayPageChanged(int index) {
@@ -190,7 +198,10 @@ class _MySpaceScreenState extends State<MySpaceScreen>
   void initState() {
     super.initState();
     selectedWeekday = DateTime.now().weekday + 1;
-    _dayPageController = PageController(
+    _deadlinePageController = PageController(
+      initialPage: _getPageIndexFromDate(_focusedDate),
+    );
+    _schedulePageController = PageController(
       initialPage: _getPageIndexFromDate(_focusedDate),
     );
     _weekPageController = PageController(
@@ -207,6 +218,17 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
+        final targetPage = _getPageIndexFromDate(_focusedDate);
+        if (_tabController.index == 0 && _deadlinePageController.hasClients) {
+          if (_deadlinePageController.page?.round() != targetPage) {
+            _deadlinePageController.jumpToPage(targetPage);
+          }
+        } else if (_tabController.index == 1 &&
+            _schedulePageController.hasClients) {
+          if (_schedulePageController.page?.round() != targetPage) {
+            _schedulePageController.jumpToPage(targetPage);
+          }
+        }
         setState(() {});
       }
     });
@@ -215,7 +237,8 @@ class _MySpaceScreenState extends State<MySpaceScreen>
   @override
   void dispose() {
     _weekPageController.dispose();
-    _dayPageController.dispose();
+    _deadlinePageController.dispose();
+    _schedulePageController.dispose();
     _dashboardScrollController.dispose();
     _timetableScrollController.dispose();
     _personalEventsSub?.cancel();
@@ -490,9 +513,12 @@ class _MySpaceScreenState extends State<MySpaceScreen>
     });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && _dayPageController.hasClients) {
-        final targetPage = _getPageIndexFromDate(_focusedDate);
-        _dayPageController.jumpToPage(targetPage);
+      if (!mounted) return;
+      final targetPage = _getPageIndexFromDate(_focusedDate);
+      if (tabIndex == 0 && _deadlinePageController.hasClients) {
+        _deadlinePageController.jumpToPage(targetPage);
+      } else if (tabIndex == 1 && _schedulePageController.hasClients) {
+        _schedulePageController.jumpToPage(targetPage);
       }
     });
   }
@@ -1339,7 +1365,7 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
   Widget _buildScheduleCalendarGridPageView() {
     return PageView.builder(
-      controller: _dayPageController,
+      controller: _schedulePageController,
       onPageChanged: _onDayPageChanged,
       itemBuilder: (context, index) {
         final pageDate = _getDateFromPageIndex(index);
@@ -1370,7 +1396,7 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
   Widget _buildDeadlinePageView() {
     return PageView.builder(
-      controller: _dayPageController,
+      controller: _deadlinePageController,
       onPageChanged: _onDayPageChanged,
       itemBuilder: (context, index) {
         final pageDate = _getDateFromPageIndex(index);
