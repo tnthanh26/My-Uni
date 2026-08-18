@@ -263,9 +263,7 @@ class _MyPostsPageState extends State<MyPostsPage>
             ),
             const SizedBox(height: 16),
             Text(
-              isForum
-                  ? "Chưa có bài đăng nào"
-                  : "Chưa có tài liệu nào",
+              isForum ? "Chưa có bài đăng nào" : "Chưa có tài liệu nào",
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 18,
@@ -356,11 +354,15 @@ class _MyPostsPageState extends State<MyPostsPage>
           if (cleanQuery.isEmpty) return true;
           final data = doc.data() as Map<String, dynamic>;
           final content = removeVietnameseDiacritics(
-              (data['content'] ?? data['fileName'] ?? data['description'] ?? '').toString());
+            (data['content'] ?? data['fileName'] ?? data['description'] ?? '')
+                .toString(),
+          );
           final subject = removeVietnameseDiacritics(
-              (data['subject'] ?? data['courseName'] ?? '').toString());
+            (data['subject'] ?? data['courseName'] ?? '').toString(),
+          );
           final hashtags = removeVietnameseDiacritics(
-              (data['hashtags'] ?? []).join(' '));
+            (data['hashtags'] ?? []).join(' '),
+          );
           return content.contains(cleanQuery) ||
               subject.contains(cleanQuery) ||
               hashtags.contains(cleanQuery);
@@ -440,19 +442,24 @@ class _MyPostsPageState extends State<MyPostsPage>
     final String title = isForum
         ? "Bạn"
         : (data['courseName']?.toString().isNotEmpty == true
-            ? data['courseName']
-            : "Tài liệu");
+              ? data['courseName']
+              : "Tài liệu");
 
     final String subtitle = data['timestamp'] != null
-        ? timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi')
+        ? timeago.format(
+            (data['timestamp'] as Timestamp).toDate(),
+            locale: 'vi',
+          )
         : 'Vừa xong';
 
-    final String content = data['content'] ??
+    final String content =
+        data['content'] ??
         (collectionPath == 'study_materials'
             ? (data['fileName'] ?? 'Tài liệu không tên')
             : '');
 
-    final bool showBadge = currentStatus != 'published' &&
+    final bool showBadge =
+        currentStatus != 'published' &&
         currentStatus != 'approved' &&
         currentStatus != 'posted' &&
         currentStatus != 'active';
@@ -542,15 +549,24 @@ class _MyPostsPageState extends State<MyPostsPage>
                         icon: Icon(
                           Icons.more_vert_rounded,
                           size: 20,
-                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                          color: isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        color: isDarkMode ? const Color(0xFF1E2024) : Colors.white,
+                        color: isDarkMode
+                            ? const Color(0xFF1E2024)
+                            : Colors.white,
                         onSelected: (value) {
                           if (value == 'edit') {
-                            _navigateToEdit(context, collectionPath, docId, data);
+                            _navigateToEdit(
+                              context,
+                              collectionPath,
+                              docId,
+                              data,
+                            );
                           } else if (value == 'delete') {
                             _confirmDelete(context, ref);
                           }
@@ -629,8 +645,10 @@ class _MyPostsPageState extends State<MyPostsPage>
                         ...rawTags.take(3).map((tag) {
                           return GestureDetector(
                             onTap: () {
-                              final cleanTag =
-                                  tag.toString().replaceAll('#', '').trim();
+                              final cleanTag = tag
+                                  .toString()
+                                  .replaceAll('#', '')
+                                  .trim();
                               if (cleanTag.isNotEmpty) {
                                 showSearch(
                                   context: context,
@@ -777,8 +795,9 @@ class _MyPostsPageState extends State<MyPostsPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
@@ -821,8 +840,9 @@ class _MyPostsPageState extends State<MyPostsPage>
                   color: const Color(0xFF5893D8),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor:
-                    isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                unselectedLabelColor: isDarkMode
+                    ? Colors.white38
+                    : const Color(0xFF777777),
                 labelStyle: const TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.bold,
@@ -872,7 +892,9 @@ class _MyPostsPageState extends State<MyPostsPage>
                         icon: Icon(
                           Icons.close_rounded,
                           size: 19,
-                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                          color: isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                       )
                     : null,

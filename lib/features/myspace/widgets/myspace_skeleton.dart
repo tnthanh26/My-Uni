@@ -8,11 +8,7 @@ class MySpaceWelcomeBannerSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const AppShimmer(
-      child: SkeletonBox(
-        width: double.infinity,
-        height: 72,
-        borderRadius: 20,
-      ),
+      child: SkeletonBox(width: double.infinity, height: 72, borderRadius: 20),
     );
   }
 }
@@ -76,11 +72,8 @@ class MySpaceScheduleSectionSkeleton extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(
               7,
-              (index) => const SkeletonBox(
-                width: 42,
-                height: 58,
-                borderRadius: 14,
-              ),
+              (index) =>
+                  const SkeletonBox(width: 42, height: 58, borderRadius: 14),
             ),
           ),
           const SizedBox(height: 16),

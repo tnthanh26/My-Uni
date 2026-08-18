@@ -52,9 +52,7 @@ class _UserActivityDialogState extends State<UserActivityDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       titlePadding: EdgeInsets.zero,
       contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 10),
       actionsPadding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
@@ -88,9 +86,7 @@ class _UserActivityDialogState extends State<UserActivityDialog> {
                     docs: widget.materials,
                     emptyText: "Người dùng này chưa đăng tài liệu.",
                   ),
-                  _LogList(
-                    docs: widget.logs,
-                  ),
+                  _LogList(docs: widget.logs),
                 ],
               ),
             ),
@@ -119,18 +115,13 @@ class _Header extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFF8FAFC),
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB)),
-        ),
+        border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB))),
       ),
       child: Row(
         children: [
           const CircleAvatar(
             backgroundColor: Color(0xFFE0E7FF),
-            child: Icon(
-              Icons.person_search_rounded,
-              color: Color(0xFF4F46E5),
-            ),
+            child: Icon(Icons.person_search_rounded, color: Color(0xFF4F46E5)),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -188,9 +179,7 @@ class _TabBar extends StatelessWidget {
 
         return Expanded(
           child: Padding(
-            padding: EdgeInsets.only(
-              right: index == tabs.length - 1 ? 0 : 10,
-            ),
+            padding: EdgeInsets.only(right: index == tabs.length - 1 ? 0 : 10),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () => onChanged(index),
@@ -201,10 +190,14 @@ class _TabBar extends StatelessWidget {
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0xFFEEF2FF) : const Color(0xFFF9FAFB),
+                  color: selected
+                      ? const Color(0xFFEEF2FF)
+                      : const Color(0xFFF9FAFB),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: selected ? const Color(0xFF4F46E5) : const Color(0xFFE5E7EB),
+                    color: selected
+                        ? const Color(0xFF4F46E5)
+                        : const Color(0xFFE5E7EB),
                   ),
                 ),
                 child: Row(
@@ -213,7 +206,9 @@ class _TabBar extends StatelessWidget {
                     Icon(
                       tab.icon,
                       size: 18,
-                      color: selected ? const Color(0xFF4F46E5) : Colors.black45,
+                      color: selected
+                          ? const Color(0xFF4F46E5)
+                          : Colors.black45,
                     ),
                     const SizedBox(width: 8),
                     Flexible(
@@ -224,18 +219,27 @@ class _TabBar extends StatelessWidget {
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w800,
                           fontSize: 13,
-                          color: selected ? const Color(0xFF4F46E5) : Colors.black54,
+                          color: selected
+                              ? const Color(0xFF4F46E5)
+                              : Colors.black54,
                         ),
                       ),
                     ),
                     const SizedBox(width: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        color: selected ? const Color(0xFF4F46E5) : Colors.white,
+                        color: selected
+                            ? const Color(0xFF4F46E5)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(999),
                         border: Border.all(
-                          color: selected ? const Color(0xFF4F46E5) : const Color(0xFFE5E7EB),
+                          color: selected
+                              ? const Color(0xFF4F46E5)
+                              : const Color(0xFFE5E7EB),
                         ),
                       ),
                       child: Text(
@@ -260,10 +264,7 @@ class _TabBar extends StatelessWidget {
 }
 
 class _ActivityList extends StatelessWidget {
-  const _ActivityList({
-    required this.docs,
-    required this.emptyText,
-  });
+  const _ActivityList({required this.docs, required this.emptyText});
 
   final List<QueryDocumentSnapshot> docs;
   final String emptyText;
@@ -280,7 +281,8 @@ class _ActivityList extends StatelessWidget {
       itemBuilder: (context, index) {
         final data = docs[index].data() as Map<String, dynamic>;
 
-        final content = data['content'] ??
+        final content =
+            data['content'] ??
             data['courseName'] ??
             data['fileName'] ??
             'Không có nội dung';
@@ -297,10 +299,7 @@ class _ActivityList extends StatelessWidget {
 }
 
 class _ActivityCard extends StatelessWidget {
-  const _ActivityCard({
-    required this.content,
-    required this.status,
-  });
+  const _ActivityCard({required this.content, required this.status});
 
   final String content;
   final String status;
@@ -428,9 +427,7 @@ _StatusStyle _statusStyle(String rawStatus) {
 }
 
 class _LogList extends StatelessWidget {
-  const _LogList({
-    required this.docs,
-  });
+  const _LogList({required this.docs});
 
   final List<QueryDocumentSnapshot> docs;
 
@@ -514,7 +511,9 @@ class _LogList extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      reason.toString().isEmpty ? "Không có lý do." : "Lý do: $reason",
+                      reason.toString().isEmpty
+                          ? "Không có lý do."
+                          : "Lý do: $reason",
                       style: const TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 13,
@@ -552,11 +551,7 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.inbox_rounded,
-              size: 34,
-              color: Colors.black26,
-            ),
+            const Icon(Icons.inbox_rounded, size: 34, color: Colors.black26),
             const SizedBox(height: 10),
             Text(
               text,

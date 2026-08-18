@@ -93,10 +93,7 @@ class UserCard extends StatelessWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -147,7 +144,9 @@ class UserCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 1),
                       Text(
-                        email.isNotEmpty ? email : (studentId.isNotEmpty ? 'MSSV: $studentId' : ''),
+                        email.isNotEmpty
+                            ? email
+                            : (studentId.isNotEmpty ? 'MSSV: $studentId' : ''),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -219,14 +218,8 @@ class UserCard extends StatelessWidget {
                     icon: Icons.badge_outlined,
                     label: "MSSV: $studentId",
                   ),
-                ModUserInfoChip(
-                  icon: Icons.school_outlined,
-                  label: university,
-                ),
-                ModUserInfoChip(
-                  icon: Icons.apartment_outlined,
-                  label: faculty,
-                ),
+                ModUserInfoChip(icon: Icons.school_outlined, label: university),
+                ModUserInfoChip(icon: Icons.apartment_outlined, label: faculty),
                 ModUserInfoChip(
                   icon: Icons.warning_amber_rounded,
                   label: "$violationCount VP",
@@ -271,19 +264,24 @@ class UserCard extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (onApproveVerification != null &&
-                      (verificationStatus == 'pending' || verificationStatus == 'rejected' || !isVerified))
+                      (verificationStatus == 'pending' ||
+                          verificationStatus == 'rejected' ||
+                          !isVerified))
                     SizedBox(
                       width: 140,
                       height: 38,
                       child: ModActionButton(
                         icon: Icons.verified_user_outlined,
-                        label: verificationStatus == 'rejected' ? "Duyệt lại" : "Duyệt xác thực",
+                        label: verificationStatus == 'rejected'
+                            ? "Duyệt lại"
+                            : "Duyệt xác thực",
                         color: Colors.green,
                         onPressed: onApproveVerification!,
                       ),
                     ),
                   if (onRejectVerification != null &&
-                      (verificationStatus == 'pending' || (!isVerified && verificationStatus != 'rejected')))
+                      (verificationStatus == 'pending' ||
+                          (!isVerified && verificationStatus != 'rejected')))
                     SizedBox(
                       width: 110,
                       height: 38,

@@ -51,7 +51,11 @@ class CollaboratorSidebar extends StatelessWidget {
                 _sectionTitle('QUẢN LÝ HOẠT ĐỘNG & SỰ KIỆN'),
                 _menuItem(2, Icons.dashboard_outlined, 'Tổng quan'),
                 _menuItem(3, Icons.event_note_outlined, 'Hoạt động của tôi'),
-                _menuItem(4, Icons.add_circle_outline_rounded, 'Tạo hoạt động mới'),
+                _menuItem(
+                  4,
+                  Icons.add_circle_outline_rounded,
+                  'Tạo hoạt động mới',
+                ),
                 _menuItem(5, Icons.fact_check_outlined, 'Điểm danh sinh viên'),
               ],
             ),
@@ -72,12 +76,18 @@ class CollaboratorSidebar extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
         decoration: BoxDecoration(
-          color: selected ? Colors.orangeAccent.withOpacity(0.2) : Colors.transparent,
+          color: selected
+              ? Colors.orangeAccent.withOpacity(0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           children: [
-            Icon(icon, color: selected ? Colors.orangeAccent : Colors.grey, size: 20),
+            Icon(
+              icon,
+              color: selected ? Colors.orangeAccent : Colors.grey,
+              size: 20,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Text(
@@ -196,10 +206,9 @@ class CollaboratorSidebar extends StatelessWidget {
                   await FirebaseAuth.instance.signOut();
 
                   if (context.mounted) {
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/',
-                      (route) => false,
-                    );
+                    Navigator.of(
+                      context,
+                    ).pushNamedAndRemoveUntil('/', (route) => false);
                   }
                 },
                 icon: const Icon(
@@ -216,9 +225,7 @@ class CollaboratorSidebar extends StatelessWidget {
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: Colors.redAccent.withOpacity(0.35),
-                  ),
+                  side: BorderSide(color: Colors.redAccent.withOpacity(0.35)),
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),

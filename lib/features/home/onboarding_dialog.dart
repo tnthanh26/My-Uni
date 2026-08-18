@@ -30,31 +30,36 @@ class WalkthroughStepData {
 List<WalkthroughStepData> get walkthroughSteps => [
   WalkthroughStepData(
     title: "Trang chủ MyUni",
-    description: "Cập nhật tin tức chính thức từ HCMUS, diễn đàn thảo luận sôi nổi, review môn học và kho tài liệu học tập phong phú.",
+    description:
+        "Cập nhật tin tức chính thức từ HCMUS, diễn đàn thảo luận sôi nổi, review môn học và kho tài liệu học tập phong phú.",
     icon: Icons.home_rounded,
     accentColor: const Color(0xFF6C63FF),
   ),
   WalkthroughStepData(
     title: "Hoạt động & Sự kiện",
-    description: "Quản lý sự kiện cá nhân, khám phá các hoạt động do trường và khoa tổ chức, đồng thời theo dõi lịch sử tham gia một cách thuận tiện.",
+    description:
+        "Quản lý sự kiện cá nhân, khám phá các hoạt động do trường và khoa tổ chức, đồng thời theo dõi lịch sử tham gia một cách thuận tiện.",
     icon: Icons.event_rounded,
     accentColor: const Color(0xFFFF9800),
   ),
   WalkthroughStepData(
     title: "Hỏi Đáp cùng AI",
-    description: "Trò chuyện trực tiếp với trợ lý ảo Ú Em để giải đáp nhanh chóng các câu hỏi về quy chế học vụ và thủ tục hành chính.",
+    description:
+        "Trò chuyện trực tiếp với trợ lý ảo Ú Em để giải đáp nhanh chóng các câu hỏi về quy chế học vụ và thủ tục hành chính.",
     icon: Icons.chat_bubble_rounded,
     accentColor: const Color(0xFF00BFA5),
   ),
   WalkthroughStepData(
     title: "Góc nhỏ MySpace",
-    description: "Không gian cá nhân tập trung mọi hoạt động học tập của bạn, từ thời khóa biểu, deadline, sự kiện cá nhân đến các cảnh báo thời tiết theo lịch học trong ngày.",
+    description:
+        "Không gian cá nhân tập trung mọi hoạt động học tập của bạn, từ thời khóa biểu, deadline, sự kiện cá nhân đến các cảnh báo thời tiết theo lịch học trong ngày.",
     icon: Icons.space_dashboard_rounded,
     accentColor: const Color(0xFF9C27B0),
   ),
   WalkthroughStepData(
     title: "Tài Khoản & Tiện ích",
-    description: "Quản lý hồ sơ cá nhân, thẻ sinh viên QR và nội dung của bạn, đồng thời truy cập nhanh tin nhắn, tìm kiếm sinh viên, tiện ích và cài đặt.",
+    description:
+        "Quản lý hồ sơ cá nhân, thẻ sinh viên QR và nội dung của bạn, đồng thời truy cập nhanh tin nhắn, tìm kiếm sinh viên, tiện ích và cài đặt.",
     icon: Icons.person_rounded,
     accentColor: const Color(0xFF2196F3),
   ),
@@ -76,8 +81,7 @@ class WalkthroughSpotlightPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final overlayPaint = Paint()
-      ..color = Colors.black.withValues(alpha: 0.65);
+    final overlayPaint = Paint()..color = Colors.black.withValues(alpha: 0.65);
 
     if (step < 0 || step >= walkthroughSteps.length) {
       canvas.drawRect(
@@ -103,18 +107,14 @@ class WalkthroughSpotlightPainter extends CustomPainter {
       const Radius.circular(16),
     );
 
-    canvas.saveLayer(
-      Rect.fromLTWH(0, 0, screenWidth, screenHeight),
-      Paint(),
-    );
+    canvas.saveLayer(Rect.fromLTWH(0, 0, screenWidth, screenHeight), Paint());
 
     canvas.drawRect(
       Rect.fromLTWH(0, 0, screenWidth, screenHeight),
       overlayPaint,
     );
 
-    final clearPaint = Paint()
-      ..blendMode = BlendMode.clear;
+    final clearPaint = Paint()..blendMode = BlendMode.clear;
 
     canvas.drawRRect(spotlightRRect, clearPaint);
 

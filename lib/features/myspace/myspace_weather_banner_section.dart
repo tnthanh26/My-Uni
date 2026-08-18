@@ -44,27 +44,38 @@ class _MySpaceWeatherBannerSectionState
 
   Future<WeatherAlertResult> _loadWeatherAlert() async {
     try {
-      final defaultCampusId = CampusData.mapUniversityToCampusId(widget.userUniversity);
-      debugPrint('[WeatherBanner] Bắt đầu nạp thời tiết cho trường: ${widget.userUniversity} (defaultCampusId: $defaultCampusId)');
+      final defaultCampusId = CampusData.mapUniversityToCampusId(
+        widget.userUniversity,
+      );
+      debugPrint(
+        '[WeatherBanner] Bắt đầu nạp thời tiết cho trường: ${widget.userUniversity} (defaultCampusId: $defaultCampusId)',
+      );
 
-      final scheduleItems = widget.todayClasses.map((c) {
-        final classCampusId = c.campusId ?? defaultCampusId ?? '';
-        return ScheduleItem(
-          id: c.id,
-          title: c.name,
-          startTime: _combineTodayAndTime(c.start),
-          endTime: _combineTodayAndTime(c.end),
-          campusId: classCampusId,
-          room: c.room,
-        );
-      }).where((item) => item.campusId.isNotEmpty).toList();
+      final scheduleItems = widget.todayClasses
+          .map((c) {
+            final classCampusId = c.campusId ?? defaultCampusId ?? '';
+            return ScheduleItem(
+              id: c.id,
+              title: c.name,
+              startTime: _combineTodayAndTime(c.start),
+              endTime: _combineTodayAndTime(c.end),
+              campusId: classCampusId,
+              room: c.room,
+            );
+          })
+          .where((item) => item.campusId.isNotEmpty)
+          .toList();
 
       if (scheduleItems.isEmpty) {
-        debugPrint('[WeatherBanner] Không tìm thấy campusId phù hợp cho môn học nào hôm nay.');
+        debugPrint(
+          '[WeatherBanner] Không tìm thấy campusId phù hợp cho môn học nào hôm nay.',
+        );
         return WeatherAlertResult.none();
       }
 
-      debugPrint('[WeatherBanner] Số lượng môn học hôm nay cần kiểm tra: ${scheduleItems.length}');
+      debugPrint(
+        '[WeatherBanner] Số lượng môn học hôm nay cần kiểm tra: ${scheduleItems.length}',
+      );
 
       final coordinator = MySpaceWeatherCoordinator(
         weatherService: WeatherService(),
@@ -75,7 +86,9 @@ class _MySpaceWeatherBannerSectionState
         schedules: scheduleItems,
       );
 
-      debugPrint('[WeatherBanner] Kết quả phân tích thời tiết: level=${result.level}, title="${result.title}", shouldShow=${result.shouldShow}');
+      debugPrint(
+        '[WeatherBanner] Kết quả phân tích thời tiết: level=${result.level}, title="${result.title}", shouldShow=${result.shouldShow}',
+      );
       return result;
     } catch (e) {
       debugPrint('[WeatherBanner] Lỗi trong quá trình nạp thời tiết: $e');
@@ -95,7 +108,6 @@ class _MySpaceWeatherBannerSectionState
       int.parse(parts[1]),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

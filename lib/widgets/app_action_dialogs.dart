@@ -35,28 +35,29 @@ class AppActionDialogs {
   }) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color textColor =
-        isDarkMode ? Colors.white : const Color(0xFF1F2937);
+    final Color textColor = isDarkMode ? Colors.white : const Color(0xFF1F2937);
 
-    final Color secondaryTextColor =
-        isDarkMode ? Colors.white60 : const Color(0xFF667085);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
 
     final Color borderColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.12)
         : const Color(0xFFE4E7EC);
 
-    final Color actionButtonColor =
-        isDanger ? _dangerColor : AppColors.hcmusTeal;
+    final Color actionButtonColor = isDanger
+        ? _dangerColor
+        : AppColors.hcmusTeal;
 
-    final IconData icon = customIcon ??
+    final IconData icon =
+        customIcon ??
         (isDanger ? Icons.delete_outline_rounded : Icons.info_outline_rounded);
 
     return showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
-          backgroundColor:
-              isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
+          backgroundColor: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
@@ -74,11 +75,7 @@ class AppActionDialogs {
                   ),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: actionButtonColor,
-                ),
+                child: Icon(icon, size: 20, color: actionButtonColor),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -176,14 +173,17 @@ class AppActionDialogs {
   }) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color backgroundColor =
-        isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+    final Color backgroundColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
 
-    final Color primaryTextColor =
-        isDarkMode ? Colors.white : const Color(0xFF1D2939);
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
 
-    final Color secondaryTextColor =
-        isDarkMode ? Colors.white54 : const Color(0xFF667085);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white54
+        : const Color(0xFF667085);
 
     final Color handleColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.2)
@@ -197,9 +197,7 @@ class AppActionDialogs {
       context: context,
       backgroundColor: backgroundColor,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (bottomSheetContext) {
         return SafeArea(
@@ -231,11 +229,7 @@ class AppActionDialogs {
                   ),
                 ),
                 const SizedBox(height: 10),
-                Divider(
-                  height: 1,
-                  thickness: 1,
-                  color: dividerColor,
-                ),
+                Divider(height: 1, thickness: 1, color: dividerColor),
               ],
               const SizedBox(height: 8),
               Flexible(
@@ -250,8 +244,8 @@ class AppActionDialogs {
                       final Color iconColor = item.isDanger
                           ? _dangerColor
                           : (isDarkMode
-                              ? AppColors.hcmusTeal
-                              : const Color(0xFF344054));
+                                ? AppColors.hcmusTeal
+                                : const Color(0xFF344054));
 
                       return ListTile(
                         leading: Container(
@@ -267,11 +261,7 @@ class AppActionDialogs {
                                   ),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Icon(
-                            item.icon,
-                            size: 20,
-                            color: iconColor,
-                          ),
+                          child: Icon(item.icon, size: 20, color: iconColor),
                         ),
                         title: Text(
                           item.title,

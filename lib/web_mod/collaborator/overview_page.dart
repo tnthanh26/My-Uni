@@ -13,7 +13,8 @@ class OverviewPage extends StatelessWidget {
 
   final VoidCallback onCreateActivity;
   final VoidCallback onOpenActivities;
-  final void Function(String activityId, Map<String, dynamic> data) onOpenAttendance;
+  final void Function(String activityId, Map<String, dynamic> data)
+  onOpenAttendance;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,9 @@ class OverviewPage extends StatelessWidget {
 
         QueryDocumentSnapshot<Map<String, dynamic>>? mostCheckedInDoc;
 
-        int getAttendanceCount(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
+        int getAttendanceCount(
+          QueryDocumentSnapshot<Map<String, dynamic>> doc,
+        ) {
           final value = doc.data()['attendanceCount'];
           if (value is int) return value;
           if (value is num) return value.toInt();
@@ -94,16 +97,16 @@ class OverviewPage extends StatelessWidget {
                       title: 'Hoạt động gần đây',
                       child: recentDocs.isEmpty
                           ? _miniEmptyState(
-                        icon: Icons.event_busy_outlined,
-                        title: 'Chưa có hoạt động nào',
-                        subtitle:
-                        'Hãy tạo hoạt động đầu tiên để bắt đầu quản lý điểm danh.',
-                      )
+                              icon: Icons.event_busy_outlined,
+                              title: 'Chưa có hoạt động nào',
+                              subtitle:
+                                  'Hãy tạo hoạt động đầu tiên để bắt đầu quản lý điểm danh.',
+                            )
                           : Column(
-                        children: recentDocs.map((doc) {
-                          return _recentActivityTile(doc.id, doc.data());
-                        }).toList(),
-                      ),
+                              children: recentDocs.map((doc) {
+                                return _recentActivityTile(doc.id, doc.data());
+                              }).toList(),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 18),
@@ -113,11 +116,11 @@ class OverviewPage extends StatelessWidget {
                       title: 'Nổi bật',
                       child: mostCheckedInDoc == null
                           ? _miniEmptyState(
-                        icon: Icons.insights_outlined,
-                        title: 'Chưa có dữ liệu',
-                        subtitle:
-                        'Sau khi có sinh viên check-in, thống kê sẽ hiện ở đây.',
-                      )
+                              icon: Icons.insights_outlined,
+                              title: 'Chưa có dữ liệu',
+                              subtitle:
+                                  'Sau khi có sinh viên check-in, thống kê sẽ hiện ở đây.',
+                            )
                           : _highlightActivity(mostCheckedInDoc.data()),
                     ),
                   ),
@@ -202,10 +205,7 @@ class OverviewPage extends StatelessWidget {
     );
   }
 
-  Widget _overviewPanel({
-    required String title,
-    required Widget child,
-  }) {
+  Widget _overviewPanel({required String title, required Widget child}) {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -339,7 +339,11 @@ class OverviewPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.emoji_events_outlined, color: Colors.orange, size: 42),
+          const Icon(
+            Icons.emoji_events_outlined,
+            color: Colors.orange,
+            size: 42,
+          ),
           const SizedBox(height: 14),
           const Text(
             'Hoạt động nhiều check-in nhất',

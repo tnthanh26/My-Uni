@@ -4,10 +4,7 @@ import '../services/image_upload_helper.dart';
 import '../services/news_service.dart';
 
 class NewsListPage extends StatefulWidget {
-  const NewsListPage({
-    super.key,
-    required this.onNavigateToCreate,
-  });
+  const NewsListPage({super.key, required this.onNavigateToCreate});
 
   final VoidCallback onNavigateToCreate;
 
@@ -28,11 +25,11 @@ class _NewsListPageState extends State<NewsListPage> {
   }
 
   Future<void> _confirmDeleteNews(
-      BuildContext context,
-      String collectionPath,
-      String docId,
-      String title,
-      ) async {
+    BuildContext context,
+    String collectionPath,
+    String docId,
+    String title,
+  ) async {
     if (docId.trim().isEmpty) {
       _showMessage('Không tìm thấy mã bài viết để xóa.', isError: true);
       return;
@@ -129,9 +126,9 @@ class _NewsListPageState extends State<NewsListPage> {
   }
 
   Future<void> _showEditNewsDialog(
-      BuildContext context,
-      Map<String, dynamic> item,
-      ) async {
+    BuildContext context,
+    Map<String, dynamic> item,
+  ) async {
     final collectionPath = _safeText(item['collectionPath'], 'official_news');
     final docId = _safeText(item['docId']);
     final title = _safeText(item['title']);
@@ -142,10 +139,7 @@ class _NewsListPageState extends State<NewsListPage> {
     final link = _safeText(item['link']);
 
     if (docId.isEmpty) {
-      _showMessage(
-        'Không tìm thấy mã bài viết để chỉnh sửa.',
-        isError: true,
-      );
+      _showMessage('Không tìm thấy mã bài viết để chỉnh sửa.', isError: true);
       return;
     }
 
@@ -168,10 +162,10 @@ class _NewsListPageState extends State<NewsListPage> {
           return StatefulBuilder(
             builder: (dialogContext, setDialogState) {
               final screenSize = MediaQuery.sizeOf(dialogContext);
-              final dialogWidth =
-              screenSize.width < 700 ? screenSize.width - 32 : 640.0;
-              final dialogHeight =
-              (screenSize.height - 48).clamp(300.0, 760.0);
+              final dialogWidth = screenSize.width < 700
+                  ? screenSize.width - 32
+                  : 640.0;
+              final dialogHeight = (screenSize.height - 48).clamp(300.0, 760.0);
 
               return Dialog(
                 insetPadding: const EdgeInsets.all(16),
@@ -254,8 +248,7 @@ class _NewsListPageState extends State<NewsListPage> {
                               const SizedBox(height: 14),
                               LayoutBuilder(
                                 builder: (context, constraints) {
-                                  final compact =
-                                      constraints.maxWidth < 520;
+                                  final compact = constraints.maxWidth < 520;
 
                                   final imageField = TextField(
                                     controller: imageUrlController,
@@ -264,67 +257,61 @@ class _NewsListPageState extends State<NewsListPage> {
                                     ),
                                   );
 
-                                  final uploadButton =
-                                  ElevatedButton.icon(
+                                  final uploadButton = ElevatedButton.icon(
                                     onPressed: isUploading
                                         ? null
                                         : () async {
-                                      setDialogState(
-                                            () => isUploading = true,
-                                      );
+                                            setDialogState(
+                                              () => isUploading = true,
+                                            );
 
-                                      try {
-                                        final url =
-                                        await ImageUploadHelper
-                                            .pickAndUploadImage(
-                                          folder: 'news_images',
-                                        );
+                                            try {
+                                              final url =
+                                                  await ImageUploadHelper.pickAndUploadImage(
+                                                    folder: 'news_images',
+                                                  );
 
-                                        if (!dialogContext.mounted) {
-                                          return;
-                                        }
+                                              if (!dialogContext.mounted) {
+                                                return;
+                                              }
 
-                                        if (url != null &&
-                                            url.trim().isNotEmpty) {
-                                          imageUrlController.text =
-                                              url.trim();
-                                        }
-                                      } catch (e) {
-                                        _showMessage(
-                                          'Lỗi tải ảnh: $e',
-                                          isError: true,
-                                        );
-                                      } finally {
-                                        if (dialogContext.mounted) {
-                                          setDialogState(
-                                                () => isUploading = false,
-                                          );
-                                        }
-                                      }
-                                    },
+                                              if (url != null &&
+                                                  url.trim().isNotEmpty) {
+                                                imageUrlController.text = url
+                                                    .trim();
+                                              }
+                                            } catch (e) {
+                                              _showMessage(
+                                                'Lỗi tải ảnh: $e',
+                                                isError: true,
+                                              );
+                                            } finally {
+                                              if (dialogContext.mounted) {
+                                                setDialogState(
+                                                  () => isUploading = false,
+                                                );
+                                              }
+                                            }
+                                          },
                                     icon: isUploading
                                         ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child:
-                                      CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
+                                            width: 16,
+                                            height: 16,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                            ),
+                                          )
                                         : const Icon(
-                                      Icons.upload_file_rounded,
-                                      size: 18,
-                                    ),
+                                            Icons.upload_file_rounded,
+                                            size: 18,
+                                          ),
                                     label: Text(
-                                      isUploading
-                                          ? 'Đang tải...'
-                                          : 'Tải ảnh',
+                                      isUploading ? 'Đang tải...' : 'Tải ảnh',
                                     ),
                                     style: ElevatedButton.styleFrom(
                                       minimumSize: const Size(120, 52),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                        BorderRadius.circular(12),
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
                                   );
@@ -332,7 +319,7 @@ class _NewsListPageState extends State<NewsListPage> {
                                   if (compact) {
                                     return Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
+                                          CrossAxisAlignment.stretch,
                                       children: [
                                         imageField,
                                         const SizedBox(height: 10),
@@ -343,7 +330,7 @@ class _NewsListPageState extends State<NewsListPage> {
 
                                   return Row(
                                     crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Expanded(child: imageField),
                                       const SizedBox(width: 10),
@@ -386,32 +373,32 @@ class _NewsListPageState extends State<NewsListPage> {
                               onPressed: isUploading
                                   ? null
                                   : () {
-                                final updatedTitle =
-                                titleController.text.trim();
+                                      final updatedTitle = titleController.text
+                                          .trim();
 
-                                if (updatedTitle.isEmpty) {
-                                  _showMessage(
-                                    'Tiêu đề bài viết không được để trống.',
-                                    isError: true,
-                                  );
-                                  return;
-                                }
+                                      if (updatedTitle.isEmpty) {
+                                        _showMessage(
+                                          'Tiêu đề bài viết không được để trống.',
+                                          isError: true,
+                                        );
+                                        return;
+                                      }
 
-                                updateData = {
-                                  'title': updatedTitle,
-                                  'summary':
-                                  summaryController.text.trim(),
-                                  'content':
-                                  contentController.text.trim(),
-                                  'department':
-                                  departmentController.text.trim(),
-                                  'imageUrl':
-                                  imageUrlController.text.trim(),
-                                  'link': linkController.text.trim(),
-                                };
+                                      updateData = {
+                                        'title': updatedTitle,
+                                        'summary': summaryController.text
+                                            .trim(),
+                                        'content': contentController.text
+                                            .trim(),
+                                        'department': departmentController.text
+                                            .trim(),
+                                        'imageUrl': imageUrlController.text
+                                            .trim(),
+                                        'link': linkController.text.trim(),
+                                      };
 
-                                Navigator.of(dialogContext).pop();
-                              },
+                                      Navigator.of(dialogContext).pop();
+                                    },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blueAccent,
                                 foregroundColor: Colors.white,
@@ -422,9 +409,7 @@ class _NewsListPageState extends State<NewsListPage> {
                               ),
                               child: const Text(
                                 'Lưu thay đổi',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
+                                style: TextStyle(fontWeight: FontWeight.w700),
                               ),
                             ),
                           ],
@@ -457,10 +442,7 @@ class _NewsListPageState extends State<NewsListPage> {
 
         _showMessage('Đã cập nhật bài viết thành công!');
       } catch (e) {
-        _showMessage(
-          'Lỗi cập nhật: $e',
-          isError: true,
-        );
+        _showMessage('Lỗi cập nhật: $e', isError: true);
       }
     } finally {
       titleController.dispose();
@@ -478,10 +460,7 @@ class _NewsListPageState extends State<NewsListPage> {
       alignLabelWithHint: true,
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 15,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: _borderColor),
@@ -492,18 +471,12 @@ class _NewsListPageState extends State<NewsListPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(
-          color: Colors.blueAccent,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: Colors.blueAccent, width: 1.5),
       ),
     );
   }
 
-  void _showMessage(
-      String message, {
-        bool isError = false,
-      }) {
+  void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
@@ -540,8 +513,9 @@ class _NewsListPageState extends State<NewsListPage> {
 
           return LayoutBuilder(
             builder: (context, constraints) {
-              final horizontalPadding =
-              constraints.maxWidth < 700 ? 16.0 : 32.0;
+              final horizontalPadding = constraints.maxWidth < 700
+                  ? 16.0
+                  : 32.0;
 
               return Scrollbar(
                 child: ListView.separated(
@@ -650,14 +624,9 @@ class _NewsListPageState extends State<NewsListPage> {
     final title = _safeText(item['title'], 'Bài viết không tên');
     final summary = _safeText(item['summary']);
     final department = _safeText(item['department'], 'Đơn vị');
-    final dateText = _safeText(
-      item['publishedDateText'] ?? item['date'],
-    );
+    final dateText = _safeText(item['publishedDateText'] ?? item['date']);
     final imageUrl = _safeText(item['imageUrl']);
-    final collectionPath = _safeText(
-      item['collectionPath'],
-      'official_news',
-    );
+    final collectionPath = _safeText(item['collectionPath'], 'official_news');
     final docId = _safeText(item['docId']);
     final isFaculty = collectionPath == 'faculty_official_news';
 
@@ -689,12 +658,8 @@ class _NewsListPageState extends State<NewsListPage> {
               imageUrl: imageUrl,
               isFaculty: isFaculty,
               onEdit: () => _showEditNewsDialog(this.context, item),
-              onDelete: () => _confirmDeleteNews(
-                context,
-                collectionPath,
-                docId,
-                title,
-              ),
+              onDelete: () =>
+                  _confirmDeleteNews(context, collectionPath, docId, title),
             );
           }
 
@@ -706,12 +671,8 @@ class _NewsListPageState extends State<NewsListPage> {
             imageUrl: imageUrl,
             isFaculty: isFaculty,
             onEdit: () => _showEditNewsDialog(this.context, item),
-            onDelete: () => _confirmDeleteNews(
-              context,
-              collectionPath,
-              docId,
-              title,
-            ),
+            onDelete: () =>
+                _confirmDeleteNews(context, collectionPath, docId, title),
           );
         },
       ),
@@ -869,10 +830,10 @@ class _NewsListPageState extends State<NewsListPage> {
   }
 
   Widget _buildTypeBadge(bool isFaculty) {
-    final color =
-    isFaculty ? const Color(0xFF2563EB) : const Color(0xFFD97706);
-    final background =
-    isFaculty ? const Color(0xFFEFF6FF) : const Color(0xFFFFF7ED);
+    final color = isFaculty ? const Color(0xFF2563EB) : const Color(0xFFD97706);
+    final background = isFaculty
+        ? const Color(0xFFEFF6FF)
+        : const Color(0xFFFFF7ED);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -893,10 +854,10 @@ class _NewsListPageState extends State<NewsListPage> {
   }
 
   Widget _buildImage(
-      String imageUrl, {
-        required double width,
-        required double height,
-      }) {
+    String imageUrl, {
+    required double width,
+    required double height,
+  }) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(14),
       child: Image.network(
@@ -912,18 +873,11 @@ class _NewsListPageState extends State<NewsListPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.broken_image_outlined,
-                  size: 42,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.broken_image_outlined, size: 42, color: Colors.grey),
                 SizedBox(height: 8),
                 Text(
                   'Không thể hiển thị hình ảnh',
-                  style: TextStyle(
-                    fontFamily: 'Nunito',
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontFamily: 'Nunito', color: Colors.grey),
                 ),
               ],
             ),
@@ -941,10 +895,7 @@ class _NewsListPageState extends State<NewsListPage> {
         onPressed: onPressed,
         tooltip: 'Chỉnh sửa bài viết',
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(
-          width: 40,
-          height: 40,
-        ),
+        constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         style: IconButton.styleFrom(
           backgroundColor: const Color(0xFFEFF6FF),
           foregroundColor: const Color(0xFF2563EB),
@@ -965,10 +916,7 @@ class _NewsListPageState extends State<NewsListPage> {
         onPressed: onPressed,
         tooltip: 'Xóa bài viết',
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(
-          width: 40,
-          height: 40,
-        ),
+        constraints: const BoxConstraints.tightFor(width: 40, height: 40),
         style: IconButton.styleFrom(
           backgroundColor: const Color(0xFFFEF2F2),
           foregroundColor: Colors.redAccent,

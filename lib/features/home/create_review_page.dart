@@ -30,12 +30,15 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
   void initState() {
     super.initState();
     CourseTeacherData.initDynamicSync();
-    _courseController =
-        TextEditingController(text: widget.existingData?['courseName'] ?? '');
-    _teacherController =
-        TextEditingController(text: widget.existingData?['teacherName'] ?? '');
-    _contentController =
-        TextEditingController(text: widget.existingData?['content'] ?? '');
+    _courseController = TextEditingController(
+      text: widget.existingData?['courseName'] ?? '',
+    );
+    _teacherController = TextEditingController(
+      text: widget.existingData?['teacherName'] ?? '',
+    );
+    _contentController = TextEditingController(
+      text: widget.existingData?['content'] ?? '',
+    );
     _rating = widget.existingData?['rating'] ?? 0;
 
     String initialSemester = '2';
@@ -51,7 +54,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       }
     }
     _selectedSemester = initialSemester;
-    
+
     String startYear = '';
     String endYear = '';
     if (initialYear.contains('-')) {
@@ -97,7 +100,9 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
 
     if (startYear.length != 4 || endYear.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Năm học không hợp lệ (mỗi năm phải đủ 4 chữ số)')),
+        const SnackBar(
+          content: Text('Năm học không hợp lệ (mỗi năm phải đủ 4 chữ số)'),
+        ),
       );
       return;
     }
@@ -112,7 +117,9 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     String combinedText =
         "${_courseController.text} ${_teacherController.text} ${_contentController.text}";
     // 1. Kiểm tra từ cấm (Blacklist) - Bắt buộc sửa
-    List<String> blacklistViolations = ContentService.getBlacklistedWords(combinedText);
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(
+      combinedText,
+    );
     if (blacklistViolations.isNotEmpty) {
       await showDialog(
         context: context,
@@ -134,28 +141,32 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
     }
 
     // 2. Kiểm tra từ nhạy cảm (Sensitive List) - Cảnh báo trước khi đăng
-    List<String> sensitiveViolations = ContentService.getSensitiveWords(combinedText);
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(
+      combinedText,
+    );
     if (sensitiveViolations.isNotEmpty) {
-      bool shouldSubmit = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-          content: Text(
-            "Thông tin review có chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục lưu, review sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Quay lại sửa"),
+      bool shouldSubmit =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+              content: Text(
+                "Thông tin review có chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục lưu, review sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Quay lại sửa"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Vẫn lưu"),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Vẫn lưu"),
-            ),
-          ],
-        ),
-      ) ?? false;
+          ) ??
+          false;
 
       if (!shouldSubmit) {
         return;
@@ -242,7 +253,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                 color: Color.fromRGBO(0, 0, 0, 0.25),
                 offset: Offset(0, 1),
                 blurRadius: 4,
-              )
+              ),
             ],
           ),
           child: AppBar(
@@ -280,22 +291,22 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
                     onTap: _isSubmitting ? null : _submitReview,
                     child: _isSubmitting
                         ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : const Text(
-                      "Đăng",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17,
-                        color: Color(0xFFFFFDFD),
-                      ),
-                    ),
+                            "Đăng",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
+                              color: Color(0xFFFFFDFD),
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -321,111 +332,122 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
                 children: [
-                  Expanded(flex: 2, child: _buildSectionLabel(context, "Học kỳ")),
-                  const SizedBox(width: 16),
-                  Expanded(flex: 3, child: _buildSectionLabel(context, "Năm học")),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildSectionLabel(context, "Học kỳ"),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 3,
+                        child: _buildSectionLabel(context, "Năm học"),
+                      ),
+                    ],
+                  ),
+                  _buildSemesterInput(context),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Khóa học"),
+                  SearchableAutocompleteField(
+                    controller: _courseController,
+                    hintText: "Chọn hoặc nhập tên môn học",
+                    options: CourseTeacherData.hcmusCourses,
+                    prefixIcon: Icons.menu_book_rounded,
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Giảng viên"),
+                  SearchableAutocompleteField(
+                    controller: _teacherController,
+                    hintText: "Chọn hoặc nhập tên giảng viên",
+                    options: CourseTeacherData.hcmusTeachers,
+                    prefixIcon: Icons.person_search_rounded,
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(
+                    context,
+                    "Trải nghiệm của bạn về khóa học này?",
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: List.generate(5, (i) {
+                      return GestureDetector(
+                        onTap: () => setState(() => _rating = i + 1),
+                        child: Container(
+                          margin: const EdgeInsets.only(right: 11.6),
+                          child: Icon(
+                            Icons.star,
+                            color: i < _rating
+                                ? starYellow
+                                : (isDarkMode
+                                      ? Colors.white12
+                                      : const Color(0xFFF2F2F2)),
+                            size: 34,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Nội dung"),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 214,
+                    child: TextField(
+                      controller: _contentController,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 15,
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E1E1E),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Nội dung",
+                        hintStyle: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 15,
+                          color: isDarkMode
+                              ? Colors.white30
+                              : const Color(0xFF8E8E93),
+                        ),
+
+                        contentPadding: const EdgeInsets.all(16),
+
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDarkMode
+                                ? Colors.white24
+                                : const Color(0xFF8E8E93),
+                          ),
+                        ),
+
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF457EC0),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
               ),
-              _buildSemesterInput(context),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Khóa học"),
-              SearchableAutocompleteField(
-                controller: _courseController,
-                hintText: "Chọn hoặc nhập tên môn học",
-                options: CourseTeacherData.hcmusCourses,
-                prefixIcon: Icons.menu_book_rounded,
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Giảng viên"),
-              SearchableAutocompleteField(
-                controller: _teacherController,
-                hintText: "Chọn hoặc nhập tên giảng viên",
-                options: CourseTeacherData.hcmusTeachers,
-                prefixIcon: Icons.person_search_rounded,
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Trải nghiệm của bạn về khóa học này?"),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.start,
-                children: List.generate(5, (i) {
-                  return GestureDetector(
-                    onTap: () => setState(() => _rating = i + 1),
-                    child: Container(
-                      margin: const EdgeInsets.only(right: 11.6),
-                      child: Icon(
-                        Icons.star,
-                        color: i < _rating
-                            ? starYellow
-                            : (isDarkMode
-                            ? Colors.white12
-                            : const Color(0xFFF2F2F2)),
-                        size: 34,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Nội dung"),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 214,
-                child: TextField(
-                  controller: _contentController,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: TextStyle(
-                    fontFamily: 'Encode Sans Expanded',
-                    fontSize: 15,
-                    color: isDarkMode
-                        ? Colors.white
-                        : const Color(0xFF1E1E1E),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Nội dung",
-                    hintStyle: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 15,
-                      color: isDarkMode
-                          ? Colors.white30
-                          : const Color(0xFF8E8E93),
-                    ),
-
-                    contentPadding: const EdgeInsets.all(16),
-
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white24
-                            : const Color(0xFF8E8E93),
-                      ),
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF457EC0),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    )));
+    );
   }
 
   Widget _buildSectionLabel(BuildContext context, String text) {
@@ -454,7 +476,9 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
             padding: EdgeInsets.zero,
             child: DropdownButtonFormField<String>(
               value: _selectedSemester,
-              dropdownColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              dropdownColor: isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
@@ -563,10 +587,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       fillColor: isDarkMode
           ? Colors.white.withOpacity(0.04)
           : const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 10,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       isDense: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -582,10 +603,7 @@ class _CreateReviewPageState extends State<CreateReviewPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: Color(0xFF6797E1),
-          width: 1.4,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF6797E1), width: 1.4),
       ),
     );
   }

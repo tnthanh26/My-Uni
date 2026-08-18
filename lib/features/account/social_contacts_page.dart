@@ -101,9 +101,13 @@ class _SocialContactsPageState extends State<SocialContactsPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         elevation: 0.5,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
@@ -127,7 +131,9 @@ class _SocialContactsPageState extends State<SocialContactsPage> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.hcmusTeal.withValues(alpha: isDark ? 0.15 : 0.08),
+                        color: AppColors.hcmusTeal.withValues(
+                          alpha: isDark ? 0.15 : 0.08,
+                        ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: AppColors.hcmusTeal.withValues(alpha: 0.3),
@@ -147,7 +153,9 @@ class _SocialContactsPageState extends State<SocialContactsPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 height: 1.4,
-                                color: isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87,
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.9)
+                                    : Colors.black87,
                               ),
                             ),
                           ),
@@ -283,7 +291,10 @@ class _SocialContactsPageState extends State<SocialContactsPage> {
             ),
             filled: true,
             fillColor: isDark ? AppColors.surfaceDark : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
               borderSide: BorderSide(

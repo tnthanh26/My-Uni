@@ -5,10 +5,7 @@ import '../services/image_upload_helper.dart';
 import '../services/news_service.dart';
 
 class CreateNewsPage extends StatefulWidget {
-  const CreateNewsPage({
-    super.key,
-    required this.onCreated,
-  });
+  const CreateNewsPage({super.key, required this.onCreated});
 
   final VoidCallback onCreated;
 
@@ -54,10 +51,7 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
     super.dispose();
   }
 
-  void _showMessage(
-      String message, {
-        bool isError = false,
-      }) {
+  void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
 
     ScaffoldMessenger.of(context)
@@ -73,7 +67,8 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
 
   void _syncDepartmentWithScope() {
     if (_isFacultyNews) {
-      final faculty = FacultyHelper.findById(_selectedFacultyId) ??
+      final faculty =
+          FacultyHelper.findById(_selectedFacultyId) ??
           FacultyHelper.activeFaculties.first;
       _selectedFacultyId = faculty.id;
       _departmentController.text = faculty.name;
@@ -127,7 +122,10 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
     }
 
     if (department.isEmpty) {
-      _showMessage('Vui lòng nhập đơn vị hoặc phòng ban đăng tin.', isError: true);
+      _showMessage(
+        'Vui lòng nhập đơn vị hoặc phòng ban đăng tin.',
+        isError: true,
+      );
       return;
     }
 
@@ -139,7 +137,8 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
       return;
     }
 
-    final selectedFaculty = FacultyHelper.findById(_selectedFacultyId) ??
+    final selectedFaculty =
+        FacultyHelper.findById(_selectedFacultyId) ??
         FacultyHelper.activeFaculties.first;
 
     setState(() => _isSubmitting = true);
@@ -314,13 +313,13 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
                     : _handlePublishNews,
                 icon: _isSubmitting
                     ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.send_rounded, size: 20),
                 label: Text(
                   _isSubmitting ? 'Đang đăng bài...' : 'Đăng bài tin tức',
@@ -372,11 +371,7 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
 
         if (useColumn) {
           return Column(
-            children: [
-              facultyOption,
-              const SizedBox(height: 10),
-              schoolOption,
-            ],
+            children: [facultyOption, const SizedBox(height: 10), schoolOption],
           );
         }
 
@@ -497,12 +492,12 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
       onChanged: _isSubmitting
           ? null
           : (value) {
-        if (value == null) return;
-        setState(() {
-          _selectedFacultyId = value;
-          _syncDepartmentWithScope();
-        });
-      },
+              if (value == null) return;
+              setState(() {
+                _selectedFacultyId = value;
+                _syncDepartmentWithScope();
+              });
+            },
     );
   }
 
@@ -518,13 +513,13 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
                 : _handleUploadImage,
             icon: _isUploadingImage
                 ? const SizedBox(
-              width: 17,
-              height: 17,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
+                    width: 17,
+                    height: 17,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
                 : const Icon(Icons.upload_file_rounded, size: 20),
             label: Text(
               _isUploadingImage ? 'Đang tải...' : 'Tải ảnh từ máy',
@@ -569,10 +564,7 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
               const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerLeft,
-                child: SizedBox(
-                  width: 190,
-                  child: uploadButton,
-                ),
+                child: SizedBox(width: 190, child: uploadButton),
               ),
             ],
           );
@@ -687,8 +679,9 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
           controller: controller,
           maxLines: maxLines,
           keyboardType: keyboardType,
-          textInputAction:
-          maxLines == 1 ? TextInputAction.next : TextInputAction.newline,
+          textInputAction: maxLines == 1
+              ? TextInputAction.next
+              : TextInputAction.newline,
           decoration: _inputDecoration(
             hintText: hintText,
             helperText: helperText,
@@ -710,19 +703,13 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
         fontFamily: 'Nunito',
         color: Color(0xFF98A2B3),
       ),
-      helperStyle: const TextStyle(
-        fontFamily: 'Nunito',
-        color: Colors.grey,
-      ),
+      helperStyle: const TextStyle(fontFamily: 'Nunito', color: Colors.grey),
       prefixIcon: prefixIcon == null
           ? null
           : Icon(prefixIcon, size: 20, color: _secondaryTextColor),
       filled: true,
       fillColor: _fieldColor,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 15,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
         borderSide: const BorderSide(color: _borderColor),
@@ -735,9 +722,7 @@ class _CreateNewsPageState extends State<CreateNewsPage> {
         borderRadius: BorderRadius.circular(13),
         borderSide: const BorderSide(color: Colors.redAccent),
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(13),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
     );
   }
 }

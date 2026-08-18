@@ -55,9 +55,7 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   await initializeDateFormatting('vi_VN', null);
   await NotificationService.init();
@@ -85,9 +83,7 @@ final GoRouter _webRouter = GoRouter(
       'huynhhuuhau01@gmail.com',
     ];
 
-    const allowedCollaborators = [
-      'trannhatthanha2@gmail.com',
-    ];
+    const allowedCollaborators = ['trannhatthanha2@gmail.com'];
 
     final isAdmin = email != null && allowedAdmins.contains(email);
     final isCollaborator =
@@ -128,10 +124,7 @@ final GoRouter _webRouter = GoRouter(
       path: '/mod-login',
       builder: (context, state) => const ModLoginPage(),
     ),
-    GoRoute(
-      path: '/mod',
-      builder: (context, state) => const ModDashboard(),
-    ),
+    GoRoute(path: '/mod', builder: (context, state) => const ModDashboard()),
     GoRoute(
       path: '/collaborator',
       builder: (context, state) => const CollaboratorDashboard(),
@@ -159,10 +152,7 @@ class MyUniApp extends StatelessWidget {
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('vi', 'VN'),
-          Locale('en', 'US'),
-        ],
+        supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
         builder: (context, child) {
           final mediaQueryData = MediaQuery.of(context);
           final constrainedTextScaler = mediaQueryData.textScaler.clamp(
@@ -170,9 +160,7 @@ class MyUniApp extends StatelessWidget {
             maxScaleFactor: 1.15,
           );
           return MediaQuery(
-            data: mediaQueryData.copyWith(
-              textScaler: constrainedTextScaler,
-            ),
+            data: mediaQueryData.copyWith(textScaler: constrainedTextScaler),
             child: child ?? const SizedBox.shrink(),
           );
         },
@@ -192,9 +180,7 @@ class MyUniApp extends StatelessWidget {
         '/otp': (context) => const OtpPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
         '/blocked': (context) => const BlockedAccountPage(),
-        '/home': (context) => const UserStatusGate(
-          child: HomePage(),
-        ),
+        '/home': (context) => const UserStatusGate(child: HomePage()),
       },
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
@@ -206,9 +192,7 @@ class MyUniApp extends StatelessWidget {
           maxScaleFactor: 1.15,
         );
         return MediaQuery(
-          data: mediaQueryData.copyWith(
-            textScaler: constrainedTextScaler,
-          ),
+          data: mediaQueryData.copyWith(textScaler: constrainedTextScaler),
           child: child ?? const SizedBox.shrink(),
         );
       },
@@ -217,10 +201,7 @@ class MyUniApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
-        Locale('vi', 'VN'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('vi', 'VN'), Locale('en', 'US')],
       locale: appProvider.locale ?? const Locale('vi', 'VN'),
     );
   }
@@ -240,104 +221,106 @@ class MyUniHomePage extends StatelessWidget {
       value: isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       child: Scaffold(
         body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 500.0),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 20),
-                  
-                  // Logo
-                  SizedBox(
-                    width: 140,
-                    height: 140,
-                    child: Hero(
-                      tag: 'app_logo', // Thêm Hero animation nếu cần sau này
-                      child: Image.asset(
-                        'assets/images/logoApp.png',
-                        fit: BoxFit.contain,
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500.0),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(height: 20),
+
+                    // Logo
+                    SizedBox(
+                      width: 140,
+                      height: 140,
+                      child: Hero(
+                        tag: 'app_logo', // Thêm Hero animation nếu cần sau này
+                        child: Image.asset(
+                          'assets/images/logoApp.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
-                  ),
-                  
-                  const SizedBox(height: 40),
-                  
-                  // Tiêu đề
-                  Text(
-                    'Chào mừng bạn đến với',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w500,
-                      color: isDark ? Colors.white70 : Colors.black54,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'MyUni',
-                    style: TextStyle(
-                      fontSize: 40,
-                      fontWeight: FontWeight.w800,
-                      color: primaryColor,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 12),
 
-                  // Tagline nhỏ
-                  Text(
-                    'Your Campus. Your Way.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                      color: isDark ? Colors.white54 : Colors.black45,
+                    const SizedBox(height: 40),
+
+                    // Tiêu đề
+                    Text(
+                      'Chào mừng bạn đến với',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                        color: isDark ? Colors.white70 : Colors.black54,
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'MyUni',
+                      style: TextStyle(
+                        fontSize: 40,
+                        fontWeight: FontWeight.w800,
+                        color: primaryColor,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
 
-                  const SizedBox(height: 60),
+                    const SizedBox(height: 12),
 
-                  // Nút Đăng nhập (Primary)
-                  _buildButton(
-                    context,
-                    'Đăng nhập',
-                    primaryColor,
-                    () => Navigator.pushNamed(context, '/login'),
-                    isOutlined: false,
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Nút Đăng ký (Secondary/Outlined)
-                  _buildButton(
-                    context,
-                    'Đăng ký tài khoản',
-                    primaryColor,
-                    () => Navigator.pushNamed(context, '/signup'),
-                    isOutlined: true,
-                  ),
-                  
-                  const SizedBox(height: 40),
-                ],
+                    // Tagline nhỏ
+                    Text(
+                      'Your Campus. Your Way.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                        color: isDark ? Colors.white54 : Colors.black45,
+                      ),
+                    ),
+
+                    const SizedBox(height: 60),
+
+                    // Nút Đăng nhập (Primary)
+                    _buildButton(
+                      context,
+                      'Đăng nhập',
+                      primaryColor,
+                      () => Navigator.pushNamed(context, '/login'),
+                      isOutlined: false,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Nút Đăng ký (Secondary/Outlined)
+                    _buildButton(
+                      context,
+                      'Đăng ký tài khoản',
+                      primaryColor,
+                      () => Navigator.pushNamed(context, '/signup'),
+                      isOutlined: true,
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ));
+    );
   }
 
   Widget _buildButton(
-    BuildContext context, 
-    String text, 
-    Color color, 
-    VoidCallback onPressed, 
-    {required bool isOutlined, IconData? icon}
-  ) {
+    BuildContext context,
+    String text,
+    Color color,
+    VoidCallback onPressed, {
+    required bool isOutlined,
+    IconData? icon,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 56,
@@ -346,7 +329,9 @@ class MyUniHomePage extends StatelessWidget {
               onPressed: onPressed,
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 foregroundColor: color,
               ),
               child: Row(
@@ -357,8 +342,11 @@ class MyUniHomePage extends StatelessWidget {
                     const SizedBox(width: 10),
                   ],
                   Text(
-                    text, 
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -369,7 +357,9 @@ class MyUniHomePage extends StatelessWidget {
                 backgroundColor: color,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -379,8 +369,11 @@ class MyUniHomePage extends StatelessWidget {
                     const SizedBox(width: 10),
                   ],
                   Text(
-                    text, 
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
               ),

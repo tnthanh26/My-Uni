@@ -1,11 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum AppFeedbackType {
-  success,
-  error,
-  info,
-  warning,
-}
+enum AppFeedbackType { success, error, info, warning }
 
 class AppFeedback {
   AppFeedback._();
@@ -63,11 +58,7 @@ class AppFeedback {
           ),
           content: Row(
             children: [
-              Icon(
-                icon,
-                size: 19,
-                color: accentColor,
-              ),
+              Icon(icon, size: 19, color: accentColor),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -96,38 +87,22 @@ class AppFeedback {
 
   /// Shorthand cho thông báo thành công
   static void showSuccess(BuildContext context, String message) {
-    showSnackBar(
-      context,
-      message: message,
-      type: AppFeedbackType.success,
-    );
+    showSnackBar(context, message: message, type: AppFeedbackType.success);
   }
 
   /// Shorthand cho thông báo lỗi
   static void showError(BuildContext context, String message) {
-    showSnackBar(
-      context,
-      message: message,
-      type: AppFeedbackType.error,
-    );
+    showSnackBar(context, message: message, type: AppFeedbackType.error);
   }
 
   /// Shorthand cho thông báo thông tin / đồng bộ
   static void showInfo(BuildContext context, String message) {
-    showSnackBar(
-      context,
-      message: message,
-      type: AppFeedbackType.info,
-    );
+    showSnackBar(context, message: message, type: AppFeedbackType.info);
   }
 
   /// Shorthand cho thông báo cảnh báo
   static void showWarning(BuildContext context, String message) {
-    showSnackBar(
-      context,
-      message: message,
-      type: AppFeedbackType.warning,
-    );
+    showSnackBar(context, message: message, type: AppFeedbackType.warning);
   }
 
   /// Dialog xác nhận đồng bộ thiết kế chuẩn toàn ứng dụng
@@ -142,8 +117,12 @@ class AppFeedback {
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     final Color surfaceColor = isDark ? const Color(0xFF1C1E21) : Colors.white;
-    final Color primaryTextColor = isDark ? Colors.white : const Color(0xFF1D2939);
-    final Color secondaryTextColor = isDark ? Colors.white60 : const Color(0xFF667085);
+    final Color primaryTextColor = isDark
+        ? Colors.white
+        : const Color(0xFF1D2939);
+    final Color secondaryTextColor = isDark
+        ? Colors.white60
+        : const Color(0xFF667085);
 
     final bool? result = await showDialog<bool>(
       context: context,

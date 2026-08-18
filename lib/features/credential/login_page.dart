@@ -43,7 +43,10 @@ class _LoginPageState extends State<LoginPage> {
 
       try {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+        await prefs.setInt(
+          'login_timestamp',
+          DateTime.now().millisecondsSinceEpoch,
+        );
       } catch (e) {
         debugPrint("Error saving login timestamp: $e");
       }
@@ -88,7 +91,9 @@ class _LoginPageState extends State<LoginPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
+      value: isDarkMode
+          ? SystemUiOverlayStyle.light
+          : SystemUiOverlayStyle.dark,
       child: Scaffold(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: SafeArea(
@@ -99,106 +104,131 @@ class _LoginPageState extends State<LoginPage> {
                 padding: const EdgeInsets.symmetric(horizontal: 30.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Icon hoặc Logo app
-                SizedBox(
-                  width: 160,
-                  height: 160,
-                  child: Image.asset(
-                    'assets/images/logoAppName.png',
-                    fit: BoxFit.contain,
-                  ),
-                ),
-                Text(
-                  'Đăng nhập',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: isDarkMode ? Colors.white : Colors.black87,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 40),
-
-                // Email Field
-                _buildTextField(
-                  controller: _emailController,
-                  label: 'Email sinh viên',
-                  icon: Icons.email_outlined,
-                  isDarkMode: isDarkMode,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 20),
-
-                // Password Field
-                _buildTextField(
-                  controller: _passwordController,
-                  label: 'Mật khẩu',
-                  icon: Icons.lock_outline,
-                  isDarkMode: isDarkMode,
-                  isPassword: true,
-                  obscureText: _isObscured,
-                  onSuffixIconTap: () => setState(() => _isObscured = !_isObscured),
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _isLoading ? null : _handleLogin(),
-                ),
-
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/forgot_password'),
-                    child: Text(
-                      'Quên mật khẩu?',
-                      style: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey[600]),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 25),
-
-                // Button Login
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6797E1),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    elevation: isDarkMode ? 0 : 4,
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
-                      : const Text('Đăng nhập', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ),
-                const SizedBox(height: 25),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Chưa có tài khoản?',
-                      style: TextStyle(color: isDarkMode ? Colors.white70 : Colors.black54),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pushNamed(context, '/signup'),
-                      child: const Text(
-                        ' Đăng ký ngay',
-                        style: TextStyle(color: Color(0xFF6797E1), fontWeight: FontWeight.bold),
+                    // Icon hoặc Logo app
+                    SizedBox(
+                      width: 160,
+                      height: 160,
+                      child: Image.asset(
+                        'assets/images/logoAppName.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
+                    Text(
+                      'Đăng nhập',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Email Field
+                    _buildTextField(
+                      controller: _emailController,
+                      label: 'Email sinh viên',
+                      icon: Icons.email_outlined,
+                      isDarkMode: isDarkMode,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Password Field
+                    _buildTextField(
+                      controller: _passwordController,
+                      label: 'Mật khẩu',
+                      icon: Icons.lock_outline,
+                      isDarkMode: isDarkMode,
+                      isPassword: true,
+                      obscureText: _isObscured,
+                      onSuffixIconTap: () =>
+                          setState(() => _isObscured = !_isObscured),
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _isLoading ? null : _handleLogin(),
+                    ),
+
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () =>
+                            Navigator.pushNamed(context, '/forgot_password'),
+                        child: Text(
+                          'Quên mật khẩu?',
+                          style: TextStyle(
+                            color: isDarkMode
+                                ? Colors.white60
+                                : Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 25),
+
+                    // Button Login
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6797E1),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: isDarkMode ? 0 : 4,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Đăng nhập',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 25),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Chưa có tài khoản?',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white70 : Colors.black54,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              Navigator.pushNamed(context, '/signup'),
+                          child: const Text(
+                            ' Đăng ký ngay',
+                            style: TextStyle(
+                              color: Color(0xFF6797E1),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
                   ],
                 ),
-                const SizedBox(height: 10),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    )));
+    );
   }
 
   Widget _buildTextField({
@@ -228,19 +258,29 @@ class _LoginPageState extends State<LoginPage> {
         style: TextStyle(color: isDarkMode ? Colors.white : Colors.black),
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(color: isDarkMode ? Colors.white60 : Colors.grey[600]),
-          prefixIcon: Icon(icon, color: isDarkMode ? Colors.white60 : Colors.grey),
+          labelStyle: TextStyle(
+            color: isDarkMode ? Colors.white60 : Colors.grey[600],
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: isDarkMode ? Colors.white60 : Colors.grey,
+          ),
           suffixIcon: isPassword
               ? IconButton(
-            icon: Icon(
-              obscureText ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-              color: isDarkMode ? Colors.white60 : Colors.grey,
-            ),
-            onPressed: onSuffixIconTap,
-          )
+                  icon: Icon(
+                    obscureText
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined,
+                    color: isDarkMode ? Colors.white60 : Colors.grey,
+                  ),
+                  onPressed: onSuffixIconTap,
+                )
               : null,
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
         ),
       ),
     );

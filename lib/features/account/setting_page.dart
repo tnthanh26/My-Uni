@@ -117,7 +117,13 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Xác nhận xóa', style: TextStyle(color: Color(0xFFFF6C6C), fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Xác nhận xóa',
+              style: TextStyle(
+                color: Color(0xFFFF6C6C),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),
@@ -146,15 +152,19 @@ class _SettingsPageState extends State<SettingsPage> {
           .collection('users')
           .doc(user.uid)
           .update({
-        'status': 'deleting',
-        'scheduledDeleteAt': Timestamp.fromDate(scheduledDate),
-      });
+            'status': 'deleting',
+            'scheduledDeleteAt': Timestamp.fromDate(scheduledDate),
+          });
 
       if (!mounted) return;
       Navigator.pop(context); // Tắt loading dialog
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã gửi yêu cầu xóa tài khoản! Tài khoản sẽ được xóa hoàn toàn sau 3 ngày.")),
+        const SnackBar(
+          content: Text(
+            "Đã gửi yêu cầu xóa tài khoản! Tài khoản sẽ được xóa hoàn toàn sau 3 ngày.",
+          ),
+        ),
       );
 
       Navigator.pop(context); // Quay về trang trước
@@ -201,8 +211,8 @@ class _SettingsPageState extends State<SettingsPage> {
             color: selected
                 ? const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.18 : 0.12)
                 : (isDarkMode
-                ? Colors.white.withOpacity(0.04)
-                : const Color(0xFFF8FAFC)),
+                      ? Colors.white.withOpacity(0.04)
+                      : const Color(0xFFF8FAFC)),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
@@ -275,12 +285,12 @@ class _SettingsPageState extends State<SettingsPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(children: children),
     );
@@ -295,8 +305,9 @@ class _SettingsPageState extends State<SettingsPage> {
     bool isDestructive = false,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final Color primaryColor =
-    isDestructive ? const Color(0xFFFF6C6C) : const Color(0xFF6797E1);
+    final Color primaryColor = isDestructive
+        ? const Color(0xFFFF6C6C)
+        : const Color(0xFF6797E1);
 
     return Material(
       color: Colors.transparent,
@@ -343,11 +354,12 @@ class _SettingsPageState extends State<SettingsPage> {
                     ),
                   ),
                 ),
-              trailing ?? Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: isDarkMode ? Colors.white24 : Colors.black26,
-              ),
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: isDarkMode ? Colors.white24 : Colors.black26,
+                  ),
             ],
           ),
         ),
@@ -375,8 +387,9 @@ class _SettingsPageState extends State<SettingsPage> {
     if (appProvider.themeMode == ThemeMode.dark) themeText = 'Tối';
 
     return Scaffold(
-      backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         leading: IconButton(
           icon: Icon(
@@ -421,10 +434,13 @@ class _SettingsPageState extends State<SettingsPage> {
                       ? Icons.notifications_active_outlined
                       : Icons.notifications_off_outlined,
                   label: 'Thông báo',
-                  onTap: () => appProvider.setNotificationsEnabled(!appProvider.notificationsEnabled),
+                  onTap: () => appProvider.setNotificationsEnabled(
+                    !appProvider.notificationsEnabled,
+                  ),
                   trailing: Switch(
                     value: appProvider.notificationsEnabled,
-                    onChanged: (val) => appProvider.setNotificationsEnabled(val),
+                    onChanged: (val) =>
+                        appProvider.setNotificationsEnabled(val),
                     activeColor: const Color(0xFF6797E1),
                   ),
                 ),

@@ -5,10 +5,7 @@ class PostModerationService {
     required String collection,
     required String docId,
   }) async {
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(docId)
-        .update({
+    await FirebaseFirestore.instance.collection(collection).doc(docId).update({
       'status': 'approved',
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -25,15 +22,25 @@ class PostModerationService {
       final String? facultyEventId = data?['facultyEventId']?.toString();
       final String? activityId = data?['activityId']?.toString();
 
-      if (facultyEventId != null && facultyEventId.isNotEmpty && collection != 'faculty_events') {
+      if (facultyEventId != null &&
+          facultyEventId.isNotEmpty &&
+          collection != 'faculty_events') {
         try {
-          await FirebaseFirestore.instance.collection('faculty_events').doc(facultyEventId).delete();
+          await FirebaseFirestore.instance
+              .collection('faculty_events')
+              .doc(facultyEventId)
+              .delete();
         } catch (_) {}
       }
 
-      if (activityId != null && activityId.isNotEmpty && collection != 'student_activities') {
+      if (activityId != null &&
+          activityId.isNotEmpty &&
+          collection != 'student_activities') {
         try {
-          await FirebaseFirestore.instance.collection('student_activities').doc(activityId).delete();
+          await FirebaseFirestore.instance
+              .collection('student_activities')
+              .doc(activityId)
+              .delete();
         } catch (_) {}
       }
 
@@ -45,10 +52,7 @@ class PostModerationService {
     required String collection,
     required String docId,
   }) async {
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(docId)
-        .update({
+    await FirebaseFirestore.instance.collection(collection).doc(docId).update({
       'status': 'approved',
       'updatedAt': FieldValue.serverTimestamp(),
     });
@@ -58,10 +62,7 @@ class PostModerationService {
     required String collection,
     required String docId,
   }) async {
-    await FirebaseFirestore.instance
-        .collection(collection)
-        .doc(docId)
-        .update({
+    await FirebaseFirestore.instance.collection(collection).doc(docId).update({
       'isReported': false,
       'reportCount': 0,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -130,10 +131,7 @@ class PostModerationService {
         .doc(postId)
         .collection('comments')
         .doc(commentId)
-        .update({
-      'isReported': false,
-      'reportCount': 0,
-    });
+        .update({'isReported': false, 'reportCount': 0});
 
     await _refreshPostCommentReportState(
       collection: collection,

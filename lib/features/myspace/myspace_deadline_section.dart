@@ -64,7 +64,9 @@ class AutoUpdateToggle extends StatelessWidget {
             // Knob Layer
             AnimatedAlign(
               duration: const Duration(milliseconds: 200),
-              alignment: isEnabled ? Alignment.centerRight : Alignment.centerLeft,
+              alignment: isEnabled
+                  ? Alignment.centerRight
+                  : Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: Container(
@@ -93,7 +95,6 @@ class AutoUpdateToggle extends StatelessWidget {
     );
   }
 }
-
 
 class MySpaceDeadlineSection extends StatelessWidget {
   final AutoDeadlineConfig? autoDeadlineConfig;
@@ -127,7 +128,7 @@ class MySpaceDeadlineSection extends StatelessWidget {
           onOpenDetail: onOpenDetail,
         ),
         ...deadlines.map(
-              (deadline) => _DeadlineCard(
+          (deadline) => _DeadlineCard(
             deadline: deadline,
             onToggleDeadline: onToggleDeadline,
             onDeleteDeadline: onDeleteDeadline,
@@ -157,7 +158,9 @@ class MySpaceDeadlineSection extends StatelessWidget {
                     Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 10,
-                      color: isDarkMode ? const Color(0xFFFFFFFF) : const Color(0xFF334155),
+                      color: isDarkMode
+                          ? const Color(0xFFFFFFFF)
+                          : const Color(0xFF334155),
                     ),
                   ],
                 ),
@@ -190,7 +193,8 @@ class MySpaceDeadlineDetailList extends StatefulWidget {
   });
 
   @override
-  State<MySpaceDeadlineDetailList> createState() => _MySpaceDeadlineDetailListState();
+  State<MySpaceDeadlineDetailList> createState() =>
+      _MySpaceDeadlineDetailListState();
 }
 
 class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
@@ -230,7 +234,9 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: InkWell(
             onTap: isCompletedSection
-                ? () => setState(() => _isCompletedExpanded = !_isCompletedExpanded)
+                ? () => setState(
+                    () => _isCompletedExpanded = !_isCompletedExpanded,
+                  )
                 : null,
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -319,18 +325,24 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
         break;
       }
     }
-    final selectedDate = ((selectedDateMap ?? (widget.currentWeek.isNotEmpty ? widget.currentWeek.first : null))?['fullDate'] as DateTime?) ?? DateTime.now();
+    final selectedDate =
+        ((selectedDateMap ??
+                (widget.currentWeek.isNotEmpty
+                    ? widget.currentWeek.first
+                    : null))?['fullDate']
+            as DateTime?) ??
+        DateTime.now();
 
-    final List<Deadline> filteredDeadlines = widget.deadlines.where((d) {
-      return d.dueDate.year == selectedDate.year &&
-          d.dueDate.month == selectedDate.month &&
-          d.dueDate.day == selectedDate.day;
-    }).toList()
-      ..sort((a, b) {
-        final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
-        final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
-        return aTime.compareTo(bTime);
-      });
+    final List<Deadline> filteredDeadlines =
+        widget.deadlines.where((d) {
+          return d.dueDate.year == selectedDate.year &&
+              d.dueDate.month == selectedDate.month &&
+              d.dueDate.day == selectedDate.day;
+        }).toList()..sort((a, b) {
+          final aTime = a.dueTime.hour * 60 + a.dueTime.minute;
+          final bTime = b.dueTime.hour * 60 + b.dueTime.minute;
+          return aTime.compareTo(bTime);
+        });
 
     // Gom nhóm cho chế độ xem Tất cả
     final List<Deadline> overdue = [];
@@ -405,7 +417,9 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           fontFamily: 'Poppins',
-                          color: isDarkMode ? Colors.white : const Color(0xFF1A1A1A),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1A1A1A),
                         ),
                       ),
                     ),
@@ -422,73 +436,81 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
         Expanded(
           child: _showAll
               ? (widget.deadlines.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Không có deadline nào!',
-                        style: TextStyle(
-                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ? Center(
+                        child: Text(
+                          'Không có deadline nào!',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white70 : Colors.black87,
+                          ),
                         ),
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      padding: const EdgeInsets.only(top: 5, bottom: 20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildGroupSection(
-                            title: "Quá hạn",
-                            items: overdue,
-                            headerColor: hcmusRed,
-                            isDarkMode: isDarkMode,
-                          ),
-                          _buildGroupSection(
-                            title: "Hôm nay & Ngày mai",
-                            items: todayAndTomorrow,
-                            headerColor: isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
-                            isDarkMode: isDarkMode,
-                          ),
-                          _buildGroupSection(
-                            title: "Trong 7 ngày tới",
-                            items: thisWeek,
-                            headerColor: isDarkMode ? const Color(0xFFFB923C) : const Color(0xFFEA580C),
-                            isDarkMode: isDarkMode,
-                          ),
-                          _buildGroupSection(
-                            title: "Xa hơn (Trên 7 ngày)",
-                            items: upcoming,
-                            headerColor: isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58),
-                            isDarkMode: isDarkMode,
-                          ),
-                          _buildGroupSection(
-                            title: "Đã hoàn thành",
-                            items: completed,
-                            headerColor: isDarkMode ? const Color(0xFF4ADE80) : const Color(0xFF448E58),
-                            isDarkMode: isDarkMode,
-                            isCompletedSection: true,
-                          ),
-                        ],
-                      ),
-                    ))
+                      )
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.only(top: 5, bottom: 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildGroupSection(
+                              title: "Quá hạn",
+                              items: overdue,
+                              headerColor: hcmusRed,
+                              isDarkMode: isDarkMode,
+                            ),
+                            _buildGroupSection(
+                              title: "Hôm nay & Ngày mai",
+                              items: todayAndTomorrow,
+                              headerColor: isDarkMode
+                                  ? const Color(0xFFF87171)
+                                  : const Color(0xFFDC2626),
+                              isDarkMode: isDarkMode,
+                            ),
+                            _buildGroupSection(
+                              title: "Trong 7 ngày tới",
+                              items: thisWeek,
+                              headerColor: isDarkMode
+                                  ? const Color(0xFFFB923C)
+                                  : const Color(0xFFEA580C),
+                              isDarkMode: isDarkMode,
+                            ),
+                            _buildGroupSection(
+                              title: "Xa hơn (Trên 7 ngày)",
+                              items: upcoming,
+                              headerColor: isDarkMode
+                                  ? const Color(0xFF4ADE80)
+                                  : const Color(0xFF448E58),
+                              isDarkMode: isDarkMode,
+                            ),
+                            _buildGroupSection(
+                              title: "Đã hoàn thành",
+                              items: completed,
+                              headerColor: isDarkMode
+                                  ? const Color(0xFF4ADE80)
+                                  : const Color(0xFF448E58),
+                              isDarkMode: isDarkMode,
+                              isCompletedSection: true,
+                            ),
+                          ],
+                        ),
+                      ))
               : (filteredDeadlines.isEmpty
-                  ? Center(
-                      child: Text(
-                        'Không có deadline cho ngày này!',
-                        style: TextStyle(
-                          color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ? Center(
+                        child: Text(
+                          'Không có deadline cho ngày này!',
+                          style: TextStyle(
+                            color: isDarkMode ? Colors.white70 : Colors.black87,
+                          ),
                         ),
-                      ),
-                    )
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(top: 10, bottom: 20),
-                      itemCount: filteredDeadlines.length,
-                      itemBuilder: (context, index) => _DeadlineDetailCard(
-                        deadline: filteredDeadlines[index],
-                        onToggleDeadline: widget.onToggleDeadline,
-                        onDeleteDeadline: widget.onDeleteDeadline,
-                        onEditDeadline: widget.onEditDeadline,
-                        showDate: false,
-                      ),
-                    )),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.only(top: 10, bottom: 20),
+                        itemCount: filteredDeadlines.length,
+                        itemBuilder: (context, index) => _DeadlineDetailCard(
+                          deadline: filteredDeadlines[index],
+                          onToggleDeadline: widget.onToggleDeadline,
+                          onDeleteDeadline: widget.onDeleteDeadline,
+                          onEditDeadline: widget.onEditDeadline,
+                          showDate: false,
+                        ),
+                      )),
         ),
       ],
     );
@@ -496,11 +518,11 @@ class _MySpaceDeadlineDetailListState extends State<MySpaceDeadlineDetailList> {
 }
 
 Future<void> showAutoDeadlineConfigSheet(
-    BuildContext context, {
-      required AutoDeadlineConfig? currentConfig,
-      required Future<void> Function(AutoDeadlineConfig config) onSave,
-      required Future<void> Function() onSyncNow,
-    }) async {
+  BuildContext context, {
+  required AutoDeadlineConfig? currentConfig,
+  required Future<void> Function(AutoDeadlineConfig config) onSave,
+  required Future<void> Function() onSyncNow,
+}) async {
   await showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -525,7 +547,8 @@ class _AutoDeadlineConfigSheet extends StatefulWidget {
   });
 
   @override
-  State<_AutoDeadlineConfigSheet> createState() => _AutoDeadlineConfigSheetState();
+  State<_AutoDeadlineConfigSheet> createState() =>
+      _AutoDeadlineConfigSheetState();
 }
 
 class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
@@ -539,7 +562,8 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
   @override
   void initState() {
     super.initState();
-    final baseConfig = widget.currentConfig ?? AutoDeadlineConfig.empty(moodleUrl: '');
+    final baseConfig =
+        widget.currentConfig ?? AutoDeadlineConfig.empty(moodleUrl: '');
     _moodleUrlController = TextEditingController(text: baseConfig.moodleUrl);
     _isEnabled = baseConfig.isEnabled;
     _permissionRequested = baseConfig.permissionRequested;
@@ -562,7 +586,9 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
     }
 
     if (mounted) {
-      setState(() { _isSaving = true; });
+      setState(() {
+        _isSaving = true;
+      });
     }
     final config = AutoDeadlineConfig(
       isEnabled: _isEnabled,
@@ -578,14 +604,27 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
       FocusManager.instance.primaryFocus?.unfocus();
       Navigator.pop(context);
     } else {
-      setState(() { _isSaving = false; });
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
 
-  Widget _buildMoodlePresetChipStateful(BuildContext context, {required String label, required String url, required TextEditingController controller, bool isManual = false}) {
+  Widget _buildMoodlePresetChipStateful(
+    BuildContext context, {
+    required String label,
+    required String url,
+    required TextEditingController controller,
+    bool isManual = false,
+  }) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final bool isSelected = isManual
-        ? (controller.text.isNotEmpty && !['https://courses.hcmus.edu.vn', 'https://courses.fit.hcmus.edu.vn', 'https://courses.ctda.hcmus.edu.vn'].contains(controller.text))
+        ? (controller.text.isNotEmpty &&
+              ![
+                'https://courses.hcmus.edu.vn',
+                'https://courses.fit.hcmus.edu.vn',
+                'https://courses.ctda.hcmus.edu.vn',
+              ].contains(controller.text))
         : controller.text == url;
 
     return ChoiceChip(
@@ -603,14 +642,23 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
         }
       },
       labelStyle: TextStyle(
-        fontSize: 12, fontFamily: 'Poppins',
+        fontSize: 12,
+        fontFamily: 'Poppins',
         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        color: isSelected ? Colors.white : (isDarkMode ? Colors.white70 : Colors.black87),
+        color: isSelected
+            ? Colors.white
+            : (isDarkMode ? Colors.white70 : Colors.black87),
       ),
       selectedColor: hcmusBlueAccent,
-      backgroundColor: isDarkMode ? const Color(0xFF2A2A2E) : const Color(0xFFF0F4F8),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF2A2A2E)
+          : const Color(0xFFF0F4F8),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      side: BorderSide(color: isSelected ? hcmusBlueAccent : (isDarkMode ? Colors.white10 : Colors.black12)),
+      side: BorderSide(
+        color: isSelected
+            ? hcmusBlueAccent
+            : (isDarkMode ? Colors.white10 : Colors.black12),
+      ),
     );
   }
 
@@ -620,7 +668,9 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16, right: 16, top: 16,
+        left: 16,
+        right: 16,
+        top: 16,
         bottom: MediaQuery.of(context).viewInsets.bottom + 16,
       ),
       child: Container(
@@ -637,29 +687,43 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
               Row(
                 children: [
                   Container(
-                    width: 42, height: 42,
+                    width: 42,
+                    height: 42,
                     decoration: BoxDecoration(
-                      color: isDarkMode ? hcmusBlueAccent.withOpacity(0.18) : const Color(0xFFEAF2FF),
+                      color: isDarkMode
+                          ? hcmusBlueAccent.withOpacity(0.18)
+                          : const Color(0xFFEAF2FF),
                       borderRadius: BorderRadius.circular(14),
                     ),
-                    child: const Icon(Icons.school_rounded, color: hcmusBlueAccent, size: 22),
+                    child: const Icon(
+                      Icons.school_rounded,
+                      color: hcmusBlueAccent,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       'Moodle deadline sync',
                       style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Poppins',
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        fontFamily: 'Poppins',
                         color: isDarkMode ? Colors.white : Colors.black87,
                       ),
                     ),
                   ),
                   IconButton(
-                    onPressed: _isSaving || _isSyncing ? null : () {
-                      FocusManager.instance.primaryFocus?.unfocus();
-                      Navigator.pop(context);
-                    },
-                    icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
+                    onPressed: _isSaving || _isSyncing
+                        ? null
+                        : () {
+                            FocusManager.instance.primaryFocus?.unfocus();
+                            Navigator.pop(context);
+                          },
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: isDarkMode ? Colors.white70 : Colors.black87,
+                    ),
                   ),
                 ],
               ),
@@ -667,7 +731,9 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
               Text(
                 'Cấu hình Moodle để MyUni đồng bộ upcoming events. Đăng nhập Moodle được tách riêng, mật khẩu không lưu trong app.',
                 style: TextStyle(
-                  fontSize: 12, height: 1.45, fontFamily: 'Poppins',
+                  fontSize: 12,
+                  height: 1.45,
+                  fontFamily: 'Poppins',
                   color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
                 ),
               ),
@@ -679,31 +745,59 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                 title: Text(
                   'Bật tự động cập nhật deadline',
                   style: TextStyle(
-                    fontFamily: 'Poppins', fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w600,
                     color: isDarkMode ? Colors.white : Colors.black87,
                   ),
                 ),
                 subtitle: Text(
                   'Đồng bộ khi mở app hoặc khi bạn bấm Sync now.',
                   style: TextStyle(
-                    fontFamily: 'Poppins', fontSize: 12,
+                    fontFamily: 'Poppins',
+                    fontSize: 12,
                     color: isDarkMode ? Colors.white60 : Colors.grey.shade700,
                   ),
                 ),
-                onChanged: _isSaving || _isSyncing ? null : (value) {
-                  setState(() { _isEnabled = value; });
-                },
+                onChanged: _isSaving || _isSyncing
+                    ? null
+                    : (value) {
+                        setState(() {
+                          _isEnabled = value;
+                        });
+                      },
               ),
               const SizedBox(height: 14),
               _configLabel(context, 'Đường dẫn Moodle'),
               const SizedBox(height: 8),
               Wrap(
-                spacing: 8, runSpacing: 8,
+                spacing: 8,
+                runSpacing: 8,
                 children: [
-                  _buildMoodlePresetChipStateful(context, label: 'Chung', url: 'https://courses.hcmus.edu.vn', controller: _moodleUrlController),
-                  _buildMoodlePresetChipStateful(context, label: 'FIT', url: 'https://courses.fit.hcmus.edu.vn', controller: _moodleUrlController),
-                  _buildMoodlePresetChipStateful(context, label: 'CTDA', url: 'https://courses.ctda.hcmus.edu.vn', controller: _moodleUrlController),
-                  _buildMoodlePresetChipStateful(context, label: 'Khác', url: '', controller: _moodleUrlController, isManual: true),
+                  _buildMoodlePresetChipStateful(
+                    context,
+                    label: 'Chung',
+                    url: 'https://courses.hcmus.edu.vn',
+                    controller: _moodleUrlController,
+                  ),
+                  _buildMoodlePresetChipStateful(
+                    context,
+                    label: 'FIT',
+                    url: 'https://courses.fit.hcmus.edu.vn',
+                    controller: _moodleUrlController,
+                  ),
+                  _buildMoodlePresetChipStateful(
+                    context,
+                    label: 'CTDA',
+                    url: 'https://courses.ctda.hcmus.edu.vn',
+                    controller: _moodleUrlController,
+                  ),
+                  _buildMoodlePresetChipStateful(
+                    context,
+                    label: 'Khác',
+                    url: '',
+                    controller: _moodleUrlController,
+                    isManual: true,
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
@@ -711,23 +805,37 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                 controller: _moodleUrlController,
                 keyboardType: TextInputType.url,
                 onChanged: (value) => setState(() {}),
-                decoration: _configInputDecoration(context, 'vd: https://moodle.your-school.edu.vn'),
+                decoration: _configInputDecoration(
+                  context,
+                  'vd: https://moodle.your-school.edu.vn',
+                ),
               ),
               const SizedBox(height: 14),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F8FF),
+                  color: isDarkMode
+                      ? Colors.white.withOpacity(0.05)
+                      : const Color(0xFFF5F8FF),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isDarkMode ? Colors.white10 : const Color(0xFFDCE7FF)),
+                  border: Border.all(
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFDCE7FF),
+                  ),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      _permissionGranted ? Icons.verified_rounded : Icons.link_off_rounded,
-                      size: 18, color: _permissionGranted ? const Color(0xFF448E58) : Colors.orange,
+                      _permissionGranted
+                          ? Icons.verified_rounded
+                          : Icons.link_off_rounded,
+                      size: 18,
+                      color: _permissionGranted
+                          ? const Color(0xFF448E58)
+                          : Colors.orange,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -736,8 +844,12 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                             ? 'Moodle đã kết nối. Bạn có thể bấm Sync now để thử đồng bộ ngay.'
                             : 'Chưa kết nối Moodle. Bấm Connect Moodle để đăng nhập một lần và lấy token.',
                         style: TextStyle(
-                          fontFamily: 'Poppins', fontSize: 12, height: 1.45,
-                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                          fontFamily: 'Poppins',
+                          fontSize: 12,
+                          height: 1.45,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Colors.grey.shade700,
                         ),
                       ),
                     ),
@@ -755,61 +867,99 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                               side: const BorderSide(color: Color(0xFFDC2626)),
                             )
                           : null,
-                      onPressed: _isSaving || _isSyncing ? null : () async {
-                        if (_permissionGranted) {
-                          await MoodleTokenStorage.clearToken();
-                          if (!mounted) return;
-                          setState(() {
-                            _permissionGranted = false;
-                            _permissionRequested = false;
-                            _isEnabled = false;
-                          });
-                          await _saveCurrentConfig();
-                          if (mounted) {
-                            AppFeedback.showInfo(context, 'Đã ngắt kết nối Moodle.');
-                          }
-                          return;
-                        }
-                        final moodleUrl = _moodleUrlController.text.trim();
-                        if (moodleUrl.isEmpty) {
-                          AppFeedback.showWarning(context, 'Điền đường dẫn Moodle trước đã.');
-                          return;
-                        }
-                        final connected = await showMoodleLoginDialog(context, moodleUrl: moodleUrl);
-                        if (!connected || !mounted) return;
-                        setState(() {
-                          _permissionRequested = true;
-                          _permissionGranted = true;
-                          _isEnabled = true;
-                        });
-                        await _saveCurrentConfig();
-                        if (mounted) {
-                          setState(() { _isSyncing = true; });
-                          await widget.onSyncNow();
-                          if (mounted) {
-                            setState(() { _isSyncing = false; });
-                            AppFeedback.showSuccess(context, 'Đã kết nối Moodle & tự động tải deadline!');
-                          }
-                        }
-                      },
-                      icon: Icon(_permissionGranted ? Icons.link_off_rounded : Icons.link_rounded),
-                      label: Text(_permissionGranted ? 'Ngắt kết nối' : 'Connect Moodle'),
+                      onPressed: _isSaving || _isSyncing
+                          ? null
+                          : () async {
+                              if (_permissionGranted) {
+                                await MoodleTokenStorage.clearToken();
+                                if (!mounted) return;
+                                setState(() {
+                                  _permissionGranted = false;
+                                  _permissionRequested = false;
+                                  _isEnabled = false;
+                                });
+                                await _saveCurrentConfig();
+                                if (mounted) {
+                                  AppFeedback.showInfo(
+                                    context,
+                                    'Đã ngắt kết nối Moodle.',
+                                  );
+                                }
+                                return;
+                              }
+                              final moodleUrl = _moodleUrlController.text
+                                  .trim();
+                              if (moodleUrl.isEmpty) {
+                                AppFeedback.showWarning(
+                                  context,
+                                  'Điền đường dẫn Moodle trước đã.',
+                                );
+                                return;
+                              }
+                              final connected = await showMoodleLoginDialog(
+                                context,
+                                moodleUrl: moodleUrl,
+                              );
+                              if (!connected || !mounted) return;
+                              setState(() {
+                                _permissionRequested = true;
+                                _permissionGranted = true;
+                                _isEnabled = true;
+                              });
+                              await _saveCurrentConfig();
+                              if (mounted) {
+                                setState(() {
+                                  _isSyncing = true;
+                                });
+                                await widget.onSyncNow();
+                                if (mounted) {
+                                  setState(() {
+                                    _isSyncing = false;
+                                  });
+                                  AppFeedback.showSuccess(
+                                    context,
+                                    'Đã kết nối Moodle & tự động tải deadline!',
+                                  );
+                                }
+                              }
+                            },
+                      icon: Icon(
+                        _permissionGranted
+                            ? Icons.link_off_rounded
+                            : Icons.link_rounded,
+                      ),
+                      label: Text(
+                        _permissionGranted ? 'Ngắt kết nối' : 'Connect Moodle',
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _isSaving || _isSyncing || !_permissionGranted ? null : () async {
-                        await _saveCurrentConfig();
-                        if (!mounted) return;
-                        setState(() { _isSyncing = true; });
-                        await widget.onSyncNow();
-                        if (!mounted) return;
-                        setState(() { _isSyncing = false; });
-                        AppFeedback.showSuccess(context, 'Đã chạy đồng bộ Moodle.');
-                      },
+                      onPressed: _isSaving || _isSyncing || !_permissionGranted
+                          ? null
+                          : () async {
+                              await _saveCurrentConfig();
+                              if (!mounted) return;
+                              setState(() {
+                                _isSyncing = true;
+                              });
+                              await widget.onSyncNow();
+                              if (!mounted) return;
+                              setState(() {
+                                _isSyncing = false;
+                              });
+                              AppFeedback.showSuccess(
+                                context,
+                                'Đã chạy đồng bộ Moodle.',
+                              );
+                            },
                       icon: _isSyncing
-                          ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.sync_rounded),
                       label: const Text('Sync now'),
                     ),
@@ -824,14 +974,31 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
                     backgroundColor: hcmusBlueAccent,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
-                  onPressed: _isSaving || _isSyncing ? null : () async {
-                    await _saveCurrentConfig(closeAfterSave: true);
-                  },
+                  onPressed: _isSaving || _isSyncing
+                      ? null
+                      : () async {
+                          await _saveCurrentConfig(closeAfterSave: true);
+                        },
                   child: _isSaving
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Lưu cấu hình', style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'Lưu cấu hình',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ],
@@ -845,9 +1012,9 @@ class _AutoDeadlineConfigSheetState extends State<_AutoDeadlineConfigSheet> {
 // --- Helper Widgets & Dialogs ---
 
 Future<bool> showMoodleLoginDialog(
-    BuildContext context, {
-      required String moodleUrl,
-    }) async {
+  BuildContext context, {
+  required String moodleUrl,
+}) async {
   final bool? result = await showDialog<bool>(
     context: context,
     barrierDismissible: false,
@@ -941,11 +1108,21 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color surfaceColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
-    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1D2939);
-    final Color secondaryTextColor = isDarkMode ? Colors.white60 : const Color(0xFF667085);
-    final Color borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E7EC);
-    final Color fieldColor = isDarkMode ? Colors.white.withValues(alpha: 0.06) : const Color(0xFFF7F9FC);
+    final Color surfaceColor = isDarkMode
+        ? const Color(0xFF1C1E21)
+        : Colors.white;
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE4E7EC);
+    final Color fieldColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.06)
+        : const Color(0xFFF7F9FC);
 
     InputDecoration buildInputDecoration({
       required String label,
@@ -960,13 +1137,38 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
         fillColor: fieldColor,
         prefixIcon: Icon(prefixIcon, size: 20, color: secondaryTextColor),
         suffixIcon: suffixIcon,
-        labelStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: secondaryTextColor),
-        floatingLabelStyle: const TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, fontWeight: FontWeight.w600, color: hcmusBlueAccent),
-        hintStyle: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 12, color: isDarkMode ? Colors.white30 : const Color(0xFF98A2B3)),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
-        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: hcmusBlueAccent, width: 1.5)),
+        labelStyle: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 12,
+          color: secondaryTextColor,
+        ),
+        floatingLabelStyle: const TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: hcmusBlueAccent,
+        ),
+        hintStyle: TextStyle(
+          fontFamily: 'Encode Sans Expanded',
+          fontSize: 12,
+          color: isDarkMode ? Colors.white30 : const Color(0xFF98A2B3),
+        ),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 15,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: hcmusBlueAccent, width: 1.5),
+        ),
       );
     }
 
@@ -1040,14 +1242,23 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? const Color(0xFF3B1818) : const Color(0xFFFDE8E8),
+                    color: isDarkMode
+                        ? const Color(0xFF3B1818)
+                        : const Color(0xFFFDE8E8),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFF87171), width: 1),
+                    border: Border.all(
+                      color: const Color(0xFFF87171),
+                      width: 1,
+                    ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.error_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -1056,7 +1267,9 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 12,
                             height: 1.4,
-                            color: isDarkMode ? const Color(0xFFFCA5A5) : const Color(0xFF991B1B),
+                            color: isDarkMode
+                                ? const Color(0xFFFCA5A5)
+                                : const Color(0xFF991B1B),
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1078,7 +1291,9 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                           final connected = await Navigator.push<bool>(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => MoodleWebviewPage(moodleUrl: widget.moodleUrl),
+                              builder: (context) => MoodleWebviewPage(
+                                moodleUrl: widget.moodleUrl,
+                              ),
                             ),
                           );
                           if (connected == true && mounted) {
@@ -1130,7 +1345,11 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                 enabled: !_isConnecting,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
-                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: primaryTextColor),
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  color: primaryTextColor,
+                ),
                 decoration: buildInputDecoration(
                   label: 'Tên đăng nhập',
                   hint: 'Nhập tên đăng nhập Moodle',
@@ -1147,7 +1366,11 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                 onSubmitted: (_) {
                   if (!_isConnecting) _handleConnect();
                 },
-                style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 13, color: primaryTextColor),
+                style: TextStyle(
+                  fontFamily: 'Encode Sans Expanded',
+                  fontSize: 13,
+                  color: primaryTextColor,
+                ),
                 decoration: buildInputDecoration(
                   label: 'Mật khẩu',
                   hint: 'Nhập mật khẩu Moodle',
@@ -1156,9 +1379,13 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                     splashRadius: 18,
                     onPressed: _isConnecting
                         ? null
-                        : () => setState(() => _obscurePassword = !_obscurePassword),
+                        : () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                     icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                       size: 20,
                       color: secondaryTextColor,
                     ),
@@ -1168,9 +1395,14 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: hcmusBlueAccent.withValues(alpha: isDarkMode ? 0.12 : 0.07),
+                  color: hcmusBlueAccent.withValues(
+                    alpha: isDarkMode ? 0.12 : 0.07,
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -1178,7 +1410,11 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                   children: [
                     const Padding(
                       padding: EdgeInsets.only(top: 1),
-                      child: Icon(Icons.shield_outlined, size: 17, color: hcmusBlueAccent),
+                      child: Icon(
+                        Icons.shield_outlined,
+                        size: 17,
+                        color: hcmusBlueAccent,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -1188,7 +1424,9 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 11.5,
                           height: 1.45,
-                          color: isDarkMode ? Colors.white70 : const Color(0xFF475467),
+                          color: isDarkMode
+                              ? Colors.white70
+                              : const Color(0xFF475467),
                         ),
                       ),
                     ),
@@ -1203,8 +1441,12 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                   onPressed: _isConnecting ? null : _handleConnect,
                   icon: _isConnecting
                       ? const SizedBox(
-                          width: 17, height: 17,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          width: 17,
+                          height: 17,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Icon(Icons.link_rounded, size: 18),
                   label: Text(
@@ -1218,10 +1460,14 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
                   style: FilledButton.styleFrom(
                     backgroundColor: hcmusBlueAccent,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: hcmusBlueAccent.withValues(alpha: 0.55),
+                    disabledBackgroundColor: hcmusBlueAccent.withValues(
+                      alpha: 0.55,
+                    ),
                     disabledForegroundColor: Colors.white,
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -1233,14 +1479,14 @@ class _MoodleLoginDialogState extends State<_MoodleLoginDialog> {
   }
 }
 
-
-
 Widget _configLabel(BuildContext context, String text) {
   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
   return Text(
     text,
     style: TextStyle(
-      fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Poppins',
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      fontFamily: 'Poppins',
       color: isDarkMode ? Colors.white : Colors.black87,
     ),
   );
@@ -1250,13 +1496,30 @@ InputDecoration _configInputDecoration(BuildContext context, String hintText) {
   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
   return InputDecoration(
     hintText: hintText,
-    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: isDarkMode ? Colors.white54 : null),
+    hintStyle: TextStyle(
+      fontFamily: 'Poppins',
+      fontSize: 13,
+      color: isDarkMode ? Colors.white54 : null,
+    ),
     filled: true,
     fillColor: isDarkMode ? const Color(0xFF23262B) : const Color(0xFFF8FAFD),
     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3))),
-    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3))),
-    focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(14)), borderSide: BorderSide(color: hcmusBlueAccent, width: 1.4)),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(
+        color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3),
+      ),
+    ),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: BorderSide(
+        color: isDarkMode ? const Color(0xFF3A3F47) : const Color(0xFFD7E1F3),
+      ),
+    ),
+    focusedBorder: const OutlineInputBorder(
+      borderRadius: BorderRadius.all(Radius.circular(14)),
+      borderSide: BorderSide(color: hcmusBlueAccent, width: 1.4),
+    ),
   );
 }
 
@@ -1264,7 +1527,11 @@ class _DeadlineSectionHeader extends StatelessWidget {
   final AutoDeadlineConfig? config;
   final VoidCallback onOpenAutoConfig;
   final VoidCallback onOpenDetail;
-  const _DeadlineSectionHeader({required this.config, required this.onOpenAutoConfig, required this.onOpenDetail});
+  const _DeadlineSectionHeader({
+    required this.config,
+    required this.onOpenAutoConfig,
+    required this.onOpenDetail,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1272,15 +1539,33 @@ class _DeadlineSectionHeader extends StatelessWidget {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Expanded(child: Text('Deadlines', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, fontFamily: 'Poppins', color: isDarkMode ? Colors.white : Colors.black87))),
+        Expanded(
+          child: Text(
+            'Deadlines',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Poppins',
+              color: isDarkMode ? Colors.white : Colors.black87,
+            ),
+          ),
+        ),
         AutoUpdateToggle(isEnabled: isEnabled, onTap: onOpenAutoConfig),
         const SizedBox(width: 8),
         GestureDetector(
           onTap: onOpenDetail,
           child: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey, shape: BoxShape.circle),
-            child: Icon(Icons.calendar_month_rounded, size: 18, color: isDarkMode ? Colors.white70 : Colors.black87),
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: isDarkMode ? const Color(0xFF2A2A2E) : hcmusLightGrey,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.calendar_month_rounded,
+              size: 18,
+              color: isDarkMode ? Colors.white70 : Colors.black87,
+            ),
           ),
         ),
       ],
@@ -1292,31 +1577,55 @@ class _DeadlineCard extends StatelessWidget {
   final Deadline deadline;
   final ValueChanged<String> onToggleDeadline;
   final ValueChanged<String> onDeleteDeadline;
-  const _DeadlineCard({required this.deadline, required this.onToggleDeadline, required this.onDeleteDeadline});
+  const _DeadlineCard({
+    required this.deadline,
+    required this.onToggleDeadline,
+    required this.onDeleteDeadline,
+  });
 
   @override
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final timeLeftData = _getTimeLeft(deadline, isDarkMode);
     return Container(
-      height: 50, margin: const EdgeInsets.only(top: 12), padding: const EdgeInsets.symmetric(horizontal: 16),
+      height: 50,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF2C3A4D) : const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            blurRadius: 4,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => onToggleDeadline(deadline.id),
             child: Container(
-              width: 24, height: 24,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                color: deadline.isCompleted ? hcmusBlueAccent : Colors.transparent,
+                color: deadline.isCompleted
+                    ? hcmusBlueAccent
+                    : Colors.transparent,
                 shape: BoxShape.circle,
-                border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 2),
+                border: Border.all(
+                  color: isDarkMode ? Colors.white54 : Colors.black,
+                  width: 2,
+                ),
               ),
-              child: deadline.isCompleted ? const Icon(Icons.check_rounded, color: Colors.white, size: 16) : null,
+              child: deadline.isCompleted
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    )
+                  : null,
             ),
           ),
           const SizedBox(width: 12),
@@ -1329,7 +1638,9 @@ class _DeadlineCard extends StatelessWidget {
                 fontSize: 14,
                 fontFamily: 'Poppins',
                 color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
-                decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
+                decoration: deadline.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             ),
           ),
@@ -1337,22 +1648,35 @@ class _DeadlineCard extends StatelessWidget {
             height: 18,
             width: 1,
             margin: const EdgeInsets.symmetric(horizontal: 12),
-            color: isDarkMode ? Colors.white.withValues(alpha: 0.12) : Colors.black.withValues(alpha: 0.08),
+            color: isDarkMode
+                ? Colors.white.withValues(alpha: 0.12)
+                : Colors.black.withValues(alpha: 0.08),
           ),
           SizedBox(
             width: 100,
             child: RichText(
               textAlign: TextAlign.left,
               text: TextSpan(
-                style: TextStyle(fontSize: 10, fontFamily: 'Poppins', color: isDarkMode ? Colors.white70 : const Color(0xFF0F172A)),
+                style: TextStyle(
+                  fontSize: 10,
+                  fontFamily: 'Poppins',
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF0F172A),
+                ),
                 children: [
                   if (timeLeftData['text'] == 'Quá trễ rùi')
-                    const TextSpan(text: 'Còn ', style: TextStyle(color: Colors.transparent)),
+                    const TextSpan(
+                      text: 'Còn ',
+                      style: TextStyle(color: Colors.transparent),
+                    ),
                   if (timeLeftData['text'] != 'Quá trễ rùi')
                     const TextSpan(text: 'Còn '),
                   TextSpan(
                     text: timeLeftData['text'].replaceAll('còn ', ''),
-                    style: TextStyle(color: timeLeftData['color'], fontSize: 12, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      color: timeLeftData['color'],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ],
               ),
@@ -1370,7 +1694,10 @@ class _DeadlineCard extends StatelessWidget {
                     'assets/icons/trash.svg',
                     width: 18,
                     height: 18,
-                    colorFilter: const ColorFilter.mode(Color(0xFFFF6666), BlendMode.srcIn),
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFFFF6666),
+                      BlendMode.srcIn,
+                    ),
                   ),
                   onPressed: () => onDeleteDeadline(deadline.id),
                 ),
@@ -1403,10 +1730,27 @@ class _DeadlineDetailCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     return Container(
-      margin: const EdgeInsets.only(bottom: 22, left: 20, right: 20), height: 94,
+      margin: const EdgeInsets.only(bottom: 22, left: 20, right: 20),
+      height: 94,
       child: Stack(
         children: [
-          Container(width: double.infinity, height: 94, decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF2C3A4D) : const Color(0xFFEFF6FF), borderRadius: BorderRadius.circular(15), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 32, offset: const Offset(0, 4))])),
+          Container(
+            width: double.infinity,
+            height: 94,
+            decoration: BoxDecoration(
+              color: isDarkMode
+                  ? const Color(0xFF2C3A4D)
+                  : const Color(0xFFEFF6FF),
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 32,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
           Positioned(
             left: 14,
             top: 14,
@@ -1437,7 +1781,9 @@ class _DeadlineDetailCard extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 color: isDarkMode ? Colors.white : const Color(0xFF24252C),
-                decoration: deadline.isCompleted ? TextDecoration.lineThrough : null,
+                decoration: deadline.isCompleted
+                    ? TextDecoration.lineThrough
+                    : null,
               ),
             ),
           ),
@@ -1446,50 +1792,133 @@ class _DeadlineDetailCard extends StatelessWidget {
             top: 64,
             child: Row(
               children: [
-                const Icon(Icons.access_time_filled, size: 14, color: hcmusBlueAccent),
+                const Icon(
+                  Icons.access_time_filled,
+                  size: 14,
+                  color: hcmusBlueAccent,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   showDate
                       ? "${deadline.dueTime.hour}:${deadline.dueTime.minute.toString().padLeft(2, '0')} - ${deadline.dueDate.day.toString().padLeft(2, '0')}/${deadline.dueDate.month.toString().padLeft(2, '0')}"
                       : "${deadline.dueTime.hour}:${deadline.dueTime.minute.toString().padLeft(2, '0')}",
-                  style: const TextStyle(fontFamily: 'Lexend Deca', fontSize: 11, color: hcmusBlueAccent),
+                  style: const TextStyle(
+                    fontFamily: 'Lexend Deca',
+                    fontSize: 11,
+                    color: hcmusBlueAccent,
+                  ),
                 ),
               ],
             ),
           ),
-          Positioned(right: 18, top: 8, child: GestureDetector(onTap: () => _showDeadlineActionMenu(context, deadline, onEditDeadline: onEditDeadline, onDeleteDeadline: onDeleteDeadline), child: Icon(Icons.more_horiz, color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C), size: 20))),
-          Positioned(right: 15, top: 58, child: GestureDetector(onTap: () => onToggleDeadline(deadline.id), child: Container(width: 24, height: 24, decoration: BoxDecoration(color: deadline.isCompleted ? hcmusBlueAccent : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white), shape: BoxShape.circle, border: Border.all(color: isDarkMode ? Colors.white54 : Colors.black, width: 1)), child: deadline.isCompleted ? const Icon(Icons.check, color: Colors.white, size: 16) : null))),
+          Positioned(
+            right: 18,
+            top: 8,
+            child: GestureDetector(
+              onTap: () => _showDeadlineActionMenu(
+                context,
+                deadline,
+                onEditDeadline: onEditDeadline,
+                onDeleteDeadline: onDeleteDeadline,
+              ),
+              child: Icon(
+                Icons.more_horiz,
+                color: isDarkMode ? Colors.white60 : const Color(0xFF6E6A7C),
+                size: 20,
+              ),
+            ),
+          ),
+          Positioned(
+            right: 15,
+            top: 58,
+            child: GestureDetector(
+              onTap: () => onToggleDeadline(deadline.id),
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: deadline.isCompleted
+                      ? hcmusBlueAccent
+                      : (isDarkMode ? const Color(0xFF2C2C2E) : Colors.white),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDarkMode ? Colors.white54 : Colors.black,
+                    width: 1,
+                  ),
+                ),
+                child: deadline.isCompleted
+                    ? const Icon(Icons.check, color: Colors.white, size: 16)
+                    : null,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-void _showDeadlineActionMenu(BuildContext context, Deadline deadline, {required ValueChanged<Deadline> onEditDeadline, required ValueChanged<String> onDeleteDeadline}) {
+void _showDeadlineActionMenu(
+  BuildContext context,
+  Deadline deadline, {
+  required ValueChanged<Deadline> onEditDeadline,
+  required ValueChanged<String> onDeleteDeadline,
+}) {
   showModalBottomSheet(
-    context: context, backgroundColor: Colors.transparent,
+    context: context,
+    backgroundColor: Colors.transparent,
     builder: (context) {
       final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
       return Container(
         padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white, borderRadius: const BorderRadius.vertical(top: Radius.circular(20))),
+        decoration: BoxDecoration(
+          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(deadline.title, style: TextStyle(fontWeight: FontWeight.bold, color: isDarkMode ? Colors.white70 : Colors.grey, fontFamily: 'Lexend Deca')),
+            Text(
+              deadline.title,
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: isDarkMode ? Colors.white70 : Colors.grey,
+                fontFamily: 'Lexend Deca',
+              ),
+            ),
             Divider(color: isDarkMode ? Colors.white12 : null),
             ListTile(
-              leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent), 
-              title: Text('Chỉnh sửa deadline', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontFamily: 'Lexend Deca')),
-              onTap: () { Navigator.pop(context); onEditDeadline(deadline); },
+              leading: const Icon(Icons.edit_outlined, color: hcmusBlueAccent),
+              title: Text(
+                'Chỉnh sửa deadline',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontFamily: 'Lexend Deca',
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                onEditDeadline(deadline);
+              },
             ),
             ListTile(
-              leading: const Icon(Icons.delete_outline, color: Color(0xFFDC2626)), 
-              title: Text('Xóa deadline', style: TextStyle(color: isDarkMode ? Colors.white : Colors.black87, fontFamily: 'Lexend Deca')),
-              onTap: () { Navigator.pop(context); onDeleteDeadline(deadline.id); },
+              leading: const Icon(
+                Icons.delete_outline,
+                color: Color(0xFFDC2626),
+              ),
+              title: Text(
+                'Xóa deadline',
+                style: TextStyle(
+                  color: isDarkMode ? Colors.white : Colors.black87,
+                  fontFamily: 'Lexend Deca',
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(context);
+                onDeleteDeadline(deadline.id);
+              },
             ),
             const SizedBox(height: 10),
-
           ],
         ),
       );
@@ -1499,21 +1928,30 @@ void _showDeadlineActionMenu(BuildContext context, Deadline deadline, {required 
 
 Map<String, dynamic> _getTimeLeft(Deadline deadline, bool isDarkMode) {
   final now = DateTime.now();
-  final deadlineDateTime = DateTime(deadline.dueDate.year, deadline.dueDate.month, deadline.dueDate.day, deadline.dueTime.hour, deadline.dueTime.minute);
+  final deadlineDateTime = DateTime(
+    deadline.dueDate.year,
+    deadline.dueDate.month,
+    deadline.dueDate.day,
+    deadline.dueTime.hour,
+    deadline.dueTime.minute,
+  );
   final difference = deadlineDateTime.difference(now);
   if (difference.isNegative) {
     return {
-      'text': 'Quá trễ rùi', 
-      'color': isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626)
+      'text': 'Quá trễ rùi',
+      'color': isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626),
     };
   }
   final int days = difference.inDays;
   final int hours = difference.inHours % 24;
   final int minutes = difference.inMinutes % 60;
   String timeText = '';
-  if (days > 0) timeText += '$days ngày $hours giờ';
-  else if (hours > 0) timeText += '$hours giờ $minutes phút';
-  else timeText += '$minutes phút';
+  if (days > 0)
+    timeText += '$days ngày $hours giờ';
+  else if (hours > 0)
+    timeText += '$hours giờ $minutes phút';
+  else
+    timeText += '$minutes phút';
   late final Color textColor;
   if (difference.inDays < 1) {
     textColor = isDarkMode ? const Color(0xFFF87171) : const Color(0xFFDC2626);
@@ -1557,26 +1995,38 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                 child: Row(
                   children: [
                     Container(
-                      width: 42, height: 42,
+                      width: 42,
+                      height: 42,
                       decoration: BoxDecoration(
-                        color: isDarkMode ? hcmusBlueAccent.withValues(alpha: 0.18) : const Color(0xFFEAF2FF),
+                        color: isDarkMode
+                            ? hcmusBlueAccent.withValues(alpha: 0.18)
+                            : const Color(0xFFEAF2FF),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.description_rounded, color: hcmusBlueAccent, size: 22),
+                      child: const Icon(
+                        Icons.description_rounded,
+                        color: hcmusBlueAccent,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Chính sách đồng bộ',
                         style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Poppins',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          fontFamily: 'Poppins',
                           color: isDarkMode ? Colors.white : Colors.black87,
                         ),
                       ),
                     ),
                     IconButton(
                       onPressed: () => Navigator.pop(sheetContext, false),
-                      icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: isDarkMode ? Colors.white70 : Colors.black87,
+                      ),
                     ),
                   ],
                 ),
@@ -1598,7 +2048,9 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'Poppins',
-                          color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF0F172A),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1620,7 +2072,9 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                           fontSize: 13,
                           height: 1.5,
                           fontFamily: 'Poppins',
-                          color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Colors.grey.shade800,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -1628,14 +2082,24 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.orange.withValues(alpha: 0.1) : const Color(0xFFFFF7ED),
+                          color: isDarkMode
+                              ? Colors.orange.withValues(alpha: 0.1)
+                              : const Color(0xFFFFF7ED),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: isDarkMode ? Colors.orange.withValues(alpha: 0.3) : const Color(0xFFFED7AA)),
+                          border: Border.all(
+                            color: isDarkMode
+                                ? Colors.orange.withValues(alpha: 0.3)
+                                : const Color(0xFFFED7AA),
+                          ),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade800, size: 20),
+                            Icon(
+                              Icons.warning_amber_rounded,
+                              color: Colors.orange.shade800,
+                              size: 20,
+                            ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: RichText(
@@ -1644,15 +2108,21 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                                     fontSize: 12.5,
                                     height: 1.45,
                                     fontFamily: 'Poppins',
-                                    color: isDarkMode ? Colors.white70 : Colors.grey.shade800,
+                                    color: isDarkMode
+                                        ? Colors.white70
+                                        : Colors.grey.shade800,
                                   ),
                                   children: [
                                     TextSpan(
                                       text: 'Lưu ý: ',
-                                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange.shade800),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.orange.shade800,
+                                      ),
                                     ),
                                     const TextSpan(
-                                      text: 'Tính năng này chỉ hoạt động nếu trường hoặc chương trình đào tạo của bạn sử dụng Moodle để quản lý bài tập và thời hạn nộp. Nếu chương trình học của bạn không sử dụng Moodle, bạn vẫn có thể quản lý deadline bằng cách tạo thủ công trong MyUni.',
+                                      text:
+                                          'Tính năng này chỉ hoạt động nếu trường hoặc chương trình đào tạo của bạn sử dụng Moodle để quản lý bài tập và thời hạn nộp. Nếu chương trình học của bạn không sử dụng Moodle, bạn vẫn có thể quản lý deadline bằng cách tạo thủ công trong MyUni.',
                                     ),
                                   ],
                                 ),
@@ -1663,24 +2133,68 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                       ),
                       const SizedBox(height: 20),
                       // Section: Cách hoạt động
-                      _buildSectionHeader(context, 'Cách hoạt động', Icons.alt_route_rounded),
+                      _buildSectionHeader(
+                        context,
+                        'Cách hoạt động',
+                        Icons.alt_route_rounded,
+                      ),
                       const SizedBox(height: 12),
-                      _buildStepItem(context, '1', 'Chọn địa chỉ Moodle của trường hoặc nhập đường dẫn Moodle.'),
-                      _buildStepItem(context, '2', 'Đăng nhập bằng tài khoản Moodle của bạn.'),
-                      _buildStepItem(context, '3', 'Sau khi đăng nhập thành công, MyUni sẽ nhận access token từ Moodle để đồng bộ dữ liệu.'),
-                      _buildStepItem(context, '4', 'Những lần đồng bộ sau sẽ sử dụng token này, bạn không cần đăng nhập lại trừ khi token hết hạn hoặc bị thu hồi.'),
+                      _buildStepItem(
+                        context,
+                        '1',
+                        'Chọn địa chỉ Moodle của trường hoặc nhập đường dẫn Moodle.',
+                      ),
+                      _buildStepItem(
+                        context,
+                        '2',
+                        'Đăng nhập bằng tài khoản Moodle của bạn.',
+                      ),
+                      _buildStepItem(
+                        context,
+                        '3',
+                        'Sau khi đăng nhập thành công, MyUni sẽ nhận access token từ Moodle để đồng bộ dữ liệu.',
+                      ),
+                      _buildStepItem(
+                        context,
+                        '4',
+                        'Những lần đồng bộ sau sẽ sử dụng token này, bạn không cần đăng nhập lại trừ khi token hết hạn hoặc bị thu hồi.',
+                      ),
                       const SizedBox(height: 20),
                       // Section: Quyền riêng tư & Bảo mật
-                      _buildSectionHeader(context, '🔒 Quyền riêng tư & Bảo mật', Icons.security_rounded),
+                      _buildSectionHeader(
+                        context,
+                        '🔒 Quyền riêng tư & Bảo mật',
+                        Icons.security_rounded,
+                      ),
                       const SizedBox(height: 12),
-                      _buildPolicyPoint(context, '🔒 MyUni không lưu mật khẩu Moodle của bạn.', isTitle: true),
-                      _buildPolicyPoint(context, 'Mật khẩu chỉ được sử dụng trong quá trình đăng nhập với Moodle để lấy access token.'),
-                      _buildPolicyPoint(context, 'Sau khi đăng nhập thành công, ứng dụng chỉ lưu access token cần thiết để đồng bộ deadline.'),
-                      _buildPolicyPoint(context, 'Bạn có thể ngắt kết nối hoặc đăng nhập lại bất cứ lúc nào.'),
-                      _buildPolicyPoint(context, 'Token chỉ được sử dụng để đọc các thông tin cần thiết phục vụ việc đồng bộ deadline và không được sử dụng cho bất kỳ mục đích nào khác.'),
+                      _buildPolicyPoint(
+                        context,
+                        '🔒 MyUni không lưu mật khẩu Moodle của bạn.',
+                        isTitle: true,
+                      ),
+                      _buildPolicyPoint(
+                        context,
+                        'Mật khẩu chỉ được sử dụng trong quá trình đăng nhập với Moodle để lấy access token.',
+                      ),
+                      _buildPolicyPoint(
+                        context,
+                        'Sau khi đăng nhập thành công, ứng dụng chỉ lưu access token cần thiết để đồng bộ deadline.',
+                      ),
+                      _buildPolicyPoint(
+                        context,
+                        'Bạn có thể ngắt kết nối hoặc đăng nhập lại bất cứ lúc nào.',
+                      ),
+                      _buildPolicyPoint(
+                        context,
+                        'Token chỉ được sử dụng để đọc các thông tin cần thiết phục vụ việc đồng bộ deadline và không được sử dụng cho bất kỳ mục đích nào khác.',
+                      ),
                       const SizedBox(height: 20),
                       // Section: Bạn đồng ý tiếp tục?
-                      _buildSectionHeader(context, 'Bạn đồng ý tiếp tục?', Icons.help_outline_rounded),
+                      _buildSectionHeader(
+                        context,
+                        'Bạn đồng ý tiếp tục?',
+                        Icons.help_outline_rounded,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'Bằng việc tiếp tục, bạn xác nhận rằng:',
@@ -1692,9 +2206,18 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _buildBulletPoint(context, 'Bạn đã đọc và hiểu cách hoạt động của tính năng.'),
-                      _buildBulletPoint(context, 'Bạn đồng ý đăng nhập Moodle để MyUni lấy access token phục vụ việc đồng bộ deadline.'),
-                      _buildBulletPoint(context, 'Bạn đã đọc và hiểu chính sách bảo mật của tính năng này.'),
+                      _buildBulletPoint(
+                        context,
+                        'Bạn đã đọc và hiểu cách hoạt động của tính năng.',
+                      ),
+                      _buildBulletPoint(
+                        context,
+                        'Bạn đồng ý đăng nhập Moodle để MyUni lấy access token phục vụ việc đồng bộ deadline.',
+                      ),
+                      _buildBulletPoint(
+                        context,
+                        'Bạn đã đọc và hiểu chính sách bảo mật của tính năng này.',
+                      ),
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -1703,15 +2226,24 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
               // Footer Buttons
               const Divider(height: 16),
               Padding(
-                padding: const EdgeInsets.only(left: 20, right: 20, bottom: 16, top: 8),
+                padding: const EdgeInsets.only(
+                  left: 20,
+                  right: 20,
+                  bottom: 16,
+                  top: 8,
+                ),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          side: BorderSide(color: isDarkMode ? Colors.white30 : Colors.black26),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          side: BorderSide(
+                            color: isDarkMode ? Colors.white30 : Colors.black26,
+                          ),
                         ),
                         onPressed: () => Navigator.pop(sheetContext, false),
                         child: Text(
@@ -1731,7 +2263,9 @@ Future<bool?> showMoodlePolicyDialog(BuildContext context) async {
                           backgroundColor: hcmusBlueAccent,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                         ),
                         onPressed: () => Navigator.pop(sheetContext, true),
                         child: const Text(
@@ -1815,7 +2349,11 @@ Widget _buildStepItem(BuildContext context, String number, String text) {
   );
 }
 
-Widget _buildPolicyPoint(BuildContext context, String text, {bool isTitle = false}) {
+Widget _buildPolicyPoint(
+  BuildContext context,
+  String text, {
+  bool isTitle = false,
+}) {
   final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
   return Padding(
     padding: const EdgeInsets.only(bottom: 8.0, left: 4.0),
@@ -1836,7 +2374,7 @@ Widget _buildPolicyPoint(BuildContext context, String text, {bool isTitle = fals
               height: 1.45,
               fontWeight: isTitle ? FontWeight.w600 : FontWeight.normal,
               fontFamily: 'Poppins',
-              color: isTitle 
+              color: isTitle
                   ? (isDarkMode ? Colors.white : Colors.black87)
                   : (isDarkMode ? Colors.white70 : Colors.grey.shade800),
             ),
@@ -1856,7 +2394,11 @@ Widget _buildBulletPoint(BuildContext context, String text) {
       children: [
         const Padding(
           padding: EdgeInsets.only(top: 3.0),
-          child: Icon(Icons.check_circle_outline_rounded, size: 15, color: hcmusBlueAccent),
+          child: Icon(
+            Icons.check_circle_outline_rounded,
+            size: 15,
+            color: hcmusBlueAccent,
+          ),
         ),
         const SizedBox(width: 10),
         Expanded(

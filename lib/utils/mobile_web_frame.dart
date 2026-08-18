@@ -43,10 +43,7 @@ class MyUniRouteObserver extends NavigatorObserver {
 class MobileWebFrame extends StatelessWidget {
   final Widget child;
 
-  const MobileWebFrame({
-    super.key,
-    required this.child,
-  });
+  const MobileWebFrame({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -78,9 +75,9 @@ class MobileWebFrame extends StatelessWidget {
                   child: ColoredBox(
                     color: Theme.of(context).scaffoldBackgroundColor,
                     child: MediaQuery(
-                      data: MediaQuery.of(context).copyWith(
-                        padding: const EdgeInsets.only(top: 36),
-                      ),
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(padding: const EdgeInsets.only(top: 36)),
                       child: Stack(
                         children: [
                           child,
@@ -137,7 +134,8 @@ class _MobileStatusBarState extends State<MobileStatusBar> {
 
   @override
   Widget build(BuildContext context) {
-    final String timeStr = "${_currentTime.hour.toString().padLeft(2, '0')}:${_currentTime.minute.toString().padLeft(2, '0')}";
+    final String timeStr =
+        "${_currentTime.hour.toString().padLeft(2, '0')}:${_currentTime.minute.toString().padLeft(2, '0')}";
 
     return ValueListenableBuilder<String>(
       valueListenable: MyUniRouteObserver.activeRoute,
@@ -146,7 +144,9 @@ class _MobileStatusBarState extends State<MobileStatusBar> {
           valueListenable: HomePage.activeTabNotifier,
           builder: (context, tabIndex, _) {
             final bool isLightIcons = _isLightIcons(context, route, tabIndex);
-            final Color contentColor = isLightIcons ? Colors.white : Colors.black87;
+            final Color contentColor = isLightIcons
+                ? Colors.white
+                : Colors.black87;
 
             return Container(
               height: 36,
@@ -169,7 +169,11 @@ class _MobileStatusBarState extends State<MobileStatusBar> {
                   // Icons
                   Row(
                     children: [
-                      Icon(Icons.signal_cellular_4_bar_rounded, size: 15, color: contentColor),
+                      Icon(
+                        Icons.signal_cellular_4_bar_rounded,
+                        size: 15,
+                        color: contentColor,
+                      ),
                       const SizedBox(width: 4),
                       Icon(Icons.wifi_rounded, size: 15, color: contentColor),
                       const SizedBox(width: 6),

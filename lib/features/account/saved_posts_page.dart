@@ -110,9 +110,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       await OpenFilex.open(filePath);
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     }
   }
@@ -186,11 +186,8 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor:
-            isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           "Thông báo",
           style: TextStyle(
@@ -209,10 +206,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Đóng",
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text("Đóng", style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -228,10 +222,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
             },
             child: const Text(
               "Xóa bản lưu",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -245,10 +236,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
       decoration: BoxDecoration(
         color: color.withValues(alpha: isDarkMode ? 0.16 : 0.10),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: color.withValues(alpha: 0.25),
-          width: 0.8,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 0.8),
       ),
       child: Text(
         label,
@@ -266,7 +254,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     if (data['timestamp'] != null) {
       try {
         if (data['timestamp'] is Timestamp) {
-          return timeago.format((data['timestamp'] as Timestamp).toDate(), locale: 'vi');
+          return timeago.format(
+            (data['timestamp'] as Timestamp).toDate(),
+            locale: 'vi',
+          );
         } else if (data['timestamp'] is String &&
             data['timestamp'].toString().trim().isNotEmpty) {
           return data['timestamp'].toString().trim();
@@ -276,7 +267,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     if (data['savedAt'] != null) {
       try {
         if (data['savedAt'] is Timestamp) {
-          return timeago.format((data['savedAt'] as Timestamp).toDate(), locale: 'vi');
+          return timeago.format(
+            (data['savedAt'] as Timestamp).toDate(),
+            locale: 'vi',
+          );
         }
       } catch (_) {}
     }
@@ -286,7 +280,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     if (data['createdAt'] != null) {
       try {
         if (data['createdAt'] is Timestamp) {
-          return timeago.format((data['createdAt'] as Timestamp).toDate(), locale: 'vi');
+          return timeago.format(
+            (data['createdAt'] as Timestamp).toDate(),
+            locale: 'vi',
+          );
         }
       } catch (_) {}
     }
@@ -428,7 +425,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildTypeChip("Tin chính thức", const Color(0xFF5893D8), isDarkMode),
+                  _buildTypeChip(
+                    "Tin chính thức",
+                    const Color(0xFF5893D8),
+                    isDarkMode,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -455,7 +456,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   fit: BoxFit.cover,
                 ),
               ),
-              if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])
+              if ((data['link'] ??
+                          data['sourceUrl'] ??
+                          data['sourceArticleUrl'])
                       ?.toString()
                       .trim()
                       .isNotEmpty ??
@@ -466,9 +469,12 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   height: 40,
                   child: OutlinedButton.icon(
                     onPressed: () => _launchURL(
-                        (data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])
-                            ?.toString() ??
-                            ''),
+                      (data['link'] ??
+                                  data['sourceUrl'] ??
+                                  data['sourceArticleUrl'])
+                              ?.toString() ??
+                          '',
+                    ),
                     icon: const Icon(Icons.open_in_new_rounded, size: 16),
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Color(0xFF5893D8)),
@@ -501,9 +507,12 @@ class _SavedPostsPageState extends State<SavedPostsPage>
   Widget _buildForumCard(Map<String, dynamic> data, String docId) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     String? avatarData = data['authorAvatar'];
-    final bool isAnonymous = (data['isAnonymous'] == true) ||
-        (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-        (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+    final bool isAnonymous =
+        (data['isAnonymous'] == true) ||
+        (data['authorName']?.toString().toLowerCase().contains('vô danh') ??
+            false) ||
+        (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ??
+            false);
 
     List rawTags = (data['hashtags'] is List) ? data['hashtags'] : [];
 
@@ -534,10 +543,8 @@ class _SavedPostsPageState extends State<SavedPostsPage>
               final bool? result = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => PostDetailPage(
-                    docId: docId,
-                    initialPostData: data,
-                  ),
+                  builder: (context) =>
+                      PostDetailPage(docId: docId, initialPostData: data),
                 ),
               );
               if (result == true && mounted) {
@@ -554,14 +561,17 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     children: [
                       CircleAvatar(
                         radius: 20,
-                        backgroundColor:
-                            isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
-                        backgroundImage: (!isAnonymous &&
+                        backgroundColor: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFF0F0F0),
+                        backgroundImage:
+                            (!isAnonymous &&
                                 avatarData != null &&
                                 avatarData.isNotEmpty)
                             ? MemoryImage(base64Decode(avatarData))
                             : null,
-                        child: (isAnonymous ||
+                        child:
+                            (isAnonymous ||
                                 avatarData == null ||
                                 avatarData.isEmpty)
                             ? Icon(
@@ -608,7 +618,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      _buildTypeChip("Diễn đàn", const Color(0xFF8B5CF6), isDarkMode),
+                      _buildTypeChip(
+                        "Diễn đàn",
+                        const Color(0xFF8B5CF6),
+                        isDarkMode,
+                      ),
                     ],
                   ),
 
@@ -621,8 +635,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                         ...rawTags.take(3).map((tag) {
                           return GestureDetector(
                             onTap: () {
-                              final cleanTag =
-                                  tag.toString().replaceAll('#', '').trim();
+                              final cleanTag = tag
+                                  .toString()
+                                  .replaceAll('#', '')
+                                  .trim();
                               if (cleanTag.isNotEmpty) {
                                 showSearch(
                                   context: context,
@@ -715,7 +731,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 13.5,
-                      color: isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                      color: isDarkMode
+                          ? Colors.white70
+                          : const Color(0xFF374151),
                       height: 1.45,
                     ),
                   ),
@@ -822,7 +840,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildTypeChip("Đánh giá", const Color(0xFFFF9800), isDarkMode),
+                  _buildTypeChip(
+                    "Đánh giá",
+                    const Color(0xFFFF9800),
+                    isDarkMode,
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -917,7 +939,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  _buildTypeChip("Tài liệu", const Color(0xFF00C853), isDarkMode),
+                  _buildTypeChip(
+                    "Tài liệu",
+                    const Color(0xFF00C853),
+                    isDarkMode,
+                  ),
                 ],
               ),
               if ((data['content'] ?? '').toString().trim().isNotEmpty) ...[
@@ -929,7 +955,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   style: TextStyle(
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 13.5,
-                    color: isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                    color: isDarkMode
+                        ? Colors.white70
+                        : const Color(0xFF374151),
                     height: 1.45,
                   ),
                 ),
@@ -963,8 +991,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                                 width: 40,
                                 height: 40,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF5893D8)
-                                      .withValues(alpha: 0.12),
+                                  color: const Color(
+                                    0xFF5893D8,
+                                  ).withValues(alpha: 0.12),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Icon(
@@ -1054,8 +1083,11 @@ class _SavedPostsPageState extends State<SavedPostsPage>
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () =>
-                  Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false),
+              onPressed: () => Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/home',
+                (route) => false,
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF5893D8),
                 padding: const EdgeInsets.symmetric(
@@ -1109,8 +1141,10 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           final dataA = a.data() as Map<String, dynamic>;
           final dataB = b.data() as Map<String, dynamic>;
 
-          dynamic timeA = dataA['savedAt'] ?? dataA['timestamp'] ?? dataA['createdAt'];
-          dynamic timeB = dataB['savedAt'] ?? dataB['timestamp'] ?? dataB['createdAt'];
+          dynamic timeA =
+              dataA['savedAt'] ?? dataA['timestamp'] ?? dataA['createdAt'];
+          dynamic timeB =
+              dataB['savedAt'] ?? dataB['timestamp'] ?? dataB['createdAt'];
 
           DateTime dateA = DateTime.fromMillisecondsSinceEpoch(0);
           DateTime dateB = DateTime.fromMillisecondsSinceEpoch(0);
@@ -1126,11 +1160,20 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           if (cleanQuery.isEmpty) return true;
           final data = doc.data() as Map<String, dynamic>;
           final title = removeVietnameseDiacritics(
-              (data['title'] ?? data['subject'] ?? data['courseName'] ?? '').toString());
+            (data['title'] ?? data['subject'] ?? data['courseName'] ?? '')
+                .toString(),
+          );
           final content = removeVietnameseDiacritics(
-              (data['content'] ?? data['description'] ?? data['reviewContent'] ?? '').toString());
+            (data['content'] ??
+                    data['description'] ??
+                    data['reviewContent'] ??
+                    '')
+                .toString(),
+          );
           final author = removeVietnameseDiacritics(
-              (data['authorName'] ?? data['department'] ?? data['teacher'] ?? '').toString());
+            (data['authorName'] ?? data['department'] ?? data['teacher'] ?? '')
+                .toString(),
+          );
           return title.contains(cleanQuery) ||
               content.contains(cleanQuery) ||
               author.contains(cleanQuery);
@@ -1210,8 +1253,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF111315) : Colors.white,
         elevation: 0,
@@ -1254,8 +1298,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                   color: const Color(0xFF5893D8),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor:
-                    isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                unselectedLabelColor: isDarkMode
+                    ? Colors.white38
+                    : const Color(0xFF777777),
                 labelStyle: const TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontWeight: FontWeight.bold,
@@ -1322,7 +1367,9 @@ class _SavedPostsPageState extends State<SavedPostsPage>
                         icon: Icon(
                           Icons.close_rounded,
                           size: 19,
-                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                          color: isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                       )
                     : null,
@@ -1353,10 +1400,7 @@ class _SavedPostsPageState extends State<SavedPostsPage>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: [
-                _buildSavedList("general"),
-                _buildSavedList("course"),
-              ],
+              children: [_buildSavedList("general"), _buildSavedList("course")],
             ),
           ),
         ],

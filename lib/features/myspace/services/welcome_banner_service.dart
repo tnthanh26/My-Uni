@@ -83,9 +83,7 @@ class WelcomeBannerService {
       return WelcomeBannerData(
         greeting: greeting,
         text: quote,
-        spans: [
-          TextSpan(text: quote),
-        ],
+        spans: [TextSpan(text: quote)],
       );
     }
 
@@ -93,14 +91,24 @@ class WelcomeBannerService {
     if (hasClasses && hasEvents && hasDeadlines) {
       return WelcomeBannerData(
         greeting: greeting,
-        text: "Hôm nay bạn có $todayClasses lớp học, $todayEvents sự kiện và $todayDeadlines deadline.",
+        text:
+            "Hôm nay bạn có $todayClasses lớp học, $todayEvents sự kiện và $todayDeadlines deadline.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayClasses lớp học", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayClasses lớp học",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: ", "),
-          TextSpan(text: "$todayEvents sự kiện", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayEvents sự kiện",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " và "),
-          TextSpan(text: "$todayDeadlines deadline", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayDeadlines deadline",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: "."),
         ],
       );
@@ -113,9 +121,15 @@ class WelcomeBannerService {
         text: "Hôm nay bạn có $todayClasses lớp học và $todayEvents sự kiện.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayClasses lớp học", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayClasses lớp học",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " và "),
-          TextSpan(text: "$todayEvents sự kiện", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayEvents sự kiện",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " đang chờ."),
         ],
       );
@@ -125,12 +139,19 @@ class WelcomeBannerService {
     if (hasClasses && hasDeadlines && !hasEvents) {
       return WelcomeBannerData(
         greeting: greeting,
-        text: "Hôm nay bạn có $todayClasses lớp học và $todayDeadlines deadline.",
+        text:
+            "Hôm nay bạn có $todayClasses lớp học và $todayDeadlines deadline.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayClasses lớp học", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayClasses lớp học",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " và "),
-          TextSpan(text: "$todayDeadlines deadline", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayDeadlines deadline",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " cần xong."),
         ],
       );
@@ -140,12 +161,19 @@ class WelcomeBannerService {
     if (hasEvents && hasDeadlines && !hasClasses) {
       return WelcomeBannerData(
         greeting: greeting,
-        text: "Hôm nay bạn có $todayEvents sự kiện và $todayDeadlines deadline.",
+        text:
+            "Hôm nay bạn có $todayEvents sự kiện và $todayDeadlines deadline.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayEvents sự kiện", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayEvents sự kiện",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " và "),
-          TextSpan(text: "$todayDeadlines deadline", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayDeadlines deadline",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " cần nộp."),
         ],
       );
@@ -158,7 +186,10 @@ class WelcomeBannerService {
         text: "Hôm nay bạn có $todayClasses lớp học.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayClasses lớp học", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayClasses lớp học",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: ". Đi học đúng giờ nhé!"),
         ],
       );
@@ -171,7 +202,10 @@ class WelcomeBannerService {
         text: "Hôm nay bạn có $todayEvents sự kiện.",
         spans: [
           const TextSpan(text: "Hôm nay bạn có "),
-          TextSpan(text: "$todayEvents sự kiện", style: const TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(
+            text: "$todayEvents sự kiện",
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
           const TextSpan(text: " đừng bỏ lỡ."),
         ],
       );
@@ -183,7 +217,10 @@ class WelcomeBannerService {
       text: "Hôm nay bạn có $todayDeadlines deadline.",
       spans: [
         const TextSpan(text: "Hôm nay bạn có "),
-        TextSpan(text: "$todayDeadlines deadline", style: const TextStyle(fontWeight: FontWeight.w700)),
+        TextSpan(
+          text: "$todayDeadlines deadline",
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
         const TextSpan(text: " cần hoàn thành."),
       ],
     );

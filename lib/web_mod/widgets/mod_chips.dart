@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ModStatChip extends StatelessWidget {
-  const ModStatChip({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
+  const ModStatChip({super.key, required this.icon, required this.label});
 
   final IconData icon;
   final String label;
@@ -39,29 +35,19 @@ class ModStatChip extends StatelessWidget {
 }
 
 class ModUserInfoChip extends StatelessWidget {
-  const ModUserInfoChip({
-    super.key,
-    required this.icon,
-    required this.label,
-  });
+  const ModUserInfoChip({super.key, required this.icon, required this.label});
 
   final IconData icon;
   final String label;
 
   @override
   Widget build(BuildContext context) {
-    return ModStatChip(
-      icon: icon,
-      label: label,
-    );
+    return ModStatChip(icon: icon, label: label);
   }
 }
 
 class ModToxicityBadge extends StatelessWidget {
-  const ModToxicityBadge({
-    super.key,
-    required this.toxicity,
-  });
+  const ModToxicityBadge({super.key, required this.toxicity});
 
   final double toxicity;
 

@@ -70,6 +70,7 @@ class _OfficialTabState extends State<OfficialTab> {
 
     return '';
   }
+
   Future<void> _launchURL(String urlString) async {
     if (urlString.trim().isEmpty) return;
     final Uri url = Uri.parse(urlString);
@@ -77,10 +78,10 @@ class _OfficialTabState extends State<OfficialTab> {
   }
 
   Future<void> _toggleInterest(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      ) async {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,9 +101,9 @@ class _OfficialTabState extends State<OfficialTab> {
     if (docSnapshot.exists) {
       await docRef.delete();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã bỏ quan tâm")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Đã bỏ quan tâm")));
       }
     } else {
       await docRef.set({
@@ -123,9 +124,10 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// Dialog / BottomSheet cập nhật Khoa nhanh nếu người dùng chưa chọn Khoa
   void _showQuickFacultyPicker(BuildContext context, String? currentFaculty) {
-    String? selected = (currentFaculty != null &&
-        currentFaculty.isNotEmpty &&
-        currentFaculty != 'Chưa cập nhật khoa')
+    String? selected =
+        (currentFaculty != null &&
+            currentFaculty.isNotEmpty &&
+            currentFaculty != 'Chưa cập nhật khoa')
         ? currentFaculty
         : FacultyHelper.allHcmusFaculties.first;
 
@@ -142,14 +144,15 @@ class _OfficialTabState extends State<OfficialTab> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-                borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
                     blurRadius: 20,
                     offset: const Offset(0, -6),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -228,15 +231,15 @@ class _OfficialTabState extends State<OfficialTab> {
                             color: isSelected
                                 ? const Color(0xFF5893D8).withOpacity(0.12)
                                 : (isDarkMode
-                                ? Colors.white.withOpacity(0.04)
-                                : const Color(0xFFF8FAFC)),
+                                      ? Colors.white.withOpacity(0.04)
+                                      : const Color(0xFFF8FAFC)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF5893D8)
                                   : (isDarkMode
-                                  ? Colors.white10
-                                  : const Color(0xFFE2E8F0)),
+                                        ? Colors.white10
+                                        : const Color(0xFFE2E8F0)),
                             ),
                           ),
                           child: RadioListTile<String>(
@@ -254,8 +257,8 @@ class _OfficialTabState extends State<OfficialTab> {
                                 color: isSelected
                                     ? const Color(0xFF5893D8)
                                     : (isDarkMode
-                                    ? Colors.white
-                                    : const Color(0xFF334155)),
+                                          ? Colors.white
+                                          : const Color(0xFF334155)),
                               ),
                             ),
                             onChanged: (val) {
@@ -275,7 +278,9 @@ class _OfficialTabState extends State<OfficialTab> {
                         final user = FirebaseAuth.instance.currentUser;
                         if (user != null && selected != null) {
                           final newPrimary =
-                          FacultyHelper.findFacultyByAccountString(selected);
+                              FacultyHelper.findFacultyByAccountString(
+                                selected,
+                              );
                           final userDoc = await FirebaseFirestore.instance
                               .collection('users')
                               .doc(user.uid)
@@ -284,7 +289,7 @@ class _OfficialTabState extends State<OfficialTab> {
                               (userDoc.data()?['followedFaculties'] as List?)
                                   ?.map((e) => e.toString())
                                   .toList() ??
-                                  [];
+                              [];
                           if (newPrimary != null) {
                             followed.remove(newPrimary.id);
                           }
@@ -292,9 +297,9 @@ class _OfficialTabState extends State<OfficialTab> {
                               .collection('users')
                               .doc(user.uid)
                               .update({
-                            'faculty': selected,
-                            'followedFaculties': followed,
-                          });
+                                'faculty': selected,
+                                'followedFaculties': followed,
+                              });
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -335,10 +340,10 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// BottomSheet Quản lý theo dõi tối đa 2 Khoa khác
   void _showManageFollowedFacultiesModal(
-      BuildContext context,
-      FacultyInfo? primaryFacultyInfo,
-      List<String> currentFollowed,
-      ) {
+    BuildContext context,
+    FacultyInfo? primaryFacultyInfo,
+    List<String> currentFollowed,
+  ) {
     List<String> tempFollowed = List.from(currentFollowed);
 
     showModalBottomSheet(
@@ -347,8 +352,7 @@ class _OfficialTabState extends State<OfficialTab> {
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.42),
       builder: (ctx) {
-        final bool isDarkMode =
-            Theme.of(ctx).brightness == Brightness.dark;
+        final bool isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
 
         const Color primaryColor = Color(0xFF5893D8);
 
@@ -368,8 +372,7 @@ class _OfficialTabState extends State<OfficialTab> {
             ? Colors.white.withValues(alpha: 0.08)
             : const Color(0xFFE4E7EC);
 
-        final Color selectedBorderColor =
-        primaryColor.withValues(alpha: 0.38);
+        final Color selectedBorderColor = primaryColor.withValues(alpha: 0.38);
 
         final Color primaryTextColor = isDarkMode
             ? Colors.white
@@ -385,8 +388,7 @@ class _OfficialTabState extends State<OfficialTab> {
               top: false,
               child: Container(
                 constraints: BoxConstraints(
-                  maxHeight:
-                  MediaQuery.of(context).size.height * 0.82,
+                  maxHeight: MediaQuery.of(context).size.height * 0.82,
                 ),
                 decoration: BoxDecoration(
                   color: sheetColor,
@@ -400,10 +402,7 @@ class _OfficialTabState extends State<OfficialTab> {
                     Container(
                       width: 40,
                       height: 4,
-                      margin: const EdgeInsets.only(
-                        top: 10,
-                        bottom: 18,
-                      ),
+                      margin: const EdgeInsets.only(top: 10, bottom: 18),
                       decoration: BoxDecoration(
                         color: isDarkMode
                             ? Colors.white24
@@ -413,15 +412,9 @@ class _OfficialTabState extends State<OfficialTab> {
                     ),
 
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        20,
-                        0,
-                        12,
-                        0,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 0, 12, 0),
                       child: Row(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Container(
                             width: 42,
@@ -431,8 +424,7 @@ class _OfficialTabState extends State<OfficialTab> {
                               color: primaryColor.withValues(
                                 alpha: isDarkMode ? 0.16 : 0.10,
                               ),
-                              borderRadius:
-                              BorderRadius.circular(13),
+                              borderRadius: BorderRadius.circular(13),
                             ),
                             child: const Icon(
                               Icons.tune_rounded,
@@ -443,8 +435,7 @@ class _OfficialTabState extends State<OfficialTab> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Theo dõi tin tức các khoa',
@@ -459,8 +450,7 @@ class _OfficialTabState extends State<OfficialTab> {
                                 Text(
                                   'Bạn có thể theo dõi tối đa 2 khoa ngoài khoa chính.',
                                   style: TextStyle(
-                                    fontFamily:
-                                    'Encode Sans Expanded',
+                                    fontFamily: 'Encode Sans Expanded',
                                     fontSize: 11.5,
                                     height: 1.4,
                                     color: secondaryTextColor,
@@ -488,234 +478,178 @@ class _OfficialTabState extends State<OfficialTab> {
 
                     Flexible(
                       child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Column(
-                          children:
-                          FacultyHelper.activeFaculties.map(
-                                (fac) {
-                              final bool isPrimary =
-                                  primaryFacultyInfo?.id ==
-                                      fac.id;
+                          children: FacultyHelper.activeFaculties.map((fac) {
+                            final bool isPrimary =
+                                primaryFacultyInfo?.id == fac.id;
 
-                              final bool isFollowed =
-                              tempFollowed.contains(fac.id);
+                            final bool isFollowed = tempFollowed.contains(
+                              fac.id,
+                            );
 
-                              final bool isSelected =
-                                  isPrimary || isFollowed;
+                            final bool isSelected = isPrimary || isFollowed;
 
-                              return Padding(
-                                padding:
-                                const EdgeInsets.only(
-                                  bottom: 10,
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  borderRadius:
-                                  BorderRadius.circular(14),
-                                  child: InkWell(
-                                    borderRadius:
-                                    BorderRadius.circular(14),
-                                    onTap: isPrimary
-                                        ? null
-                                        : () {
-                                      if (isFollowed) {
-                                        setModalState(() {
-                                          tempFollowed
-                                              .remove(fac.id);
-                                        });
-                                        return;
-                                      }
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 10),
+                              child: Material(
+                                color: Colors.transparent,
+                                borderRadius: BorderRadius.circular(14),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: isPrimary
+                                      ? null
+                                      : () {
+                                          if (isFollowed) {
+                                            setModalState(() {
+                                              tempFollowed.remove(fac.id);
+                                            });
+                                            return;
+                                          }
 
-                                      if (tempFollowed.length >=
-                                          2) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        )
-                                          ..hideCurrentSnackBar()
-                                          ..showSnackBar(
-                                            const SnackBar(
-                                              content: Text(
-                                                'Bạn chỉ có thể theo dõi tối đa 2 khoa khác.',
-                                              ),
-                                              behavior:
-                                              SnackBarBehavior
-                                                  .floating,
-                                            ),
-                                          );
-                                        return;
-                                      }
+                                          if (tempFollowed.length >= 2) {
+                                            ScaffoldMessenger.of(context)
+                                              ..hideCurrentSnackBar()
+                                              ..showSnackBar(
+                                                const SnackBar(
+                                                  content: Text(
+                                                    'Bạn chỉ có thể theo dõi tối đa 2 khoa khác.',
+                                                  ),
+                                                  behavior:
+                                                      SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                            return;
+                                          }
 
-                                      setModalState(() {
-                                        tempFollowed.add(
-                                          fac.id,
-                                        );
-                                      });
-                                    },
-                                    child: AnimatedContainer(
-                                      duration: const Duration(
-                                        milliseconds: 160,
-                                      ),
-                                      curve: Curves.easeOut,
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                        horizontal: 14,
-                                        vertical: 12,
-                                      ),
-                                      decoration: BoxDecoration(
+                                          setModalState(() {
+                                            tempFollowed.add(fac.id);
+                                          });
+                                        },
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 160),
+                                    curve: Curves.easeOut,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? selectedSurfaceColor
+                                          : surfaceColor,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
                                         color: isSelected
-                                            ? selectedSurfaceColor
-                                            : surfaceColor,
-                                        borderRadius:
-                                        BorderRadius.circular(
-                                          14,
-                                        ),
-                                        border: Border.all(
-                                          color: isSelected
-                                              ? selectedBorderColor
-                                              : borderColor,
-                                        ),
+                                            ? selectedBorderColor
+                                            : borderColor,
                                       ),
-                                      child: Row(
-                                        children: [
-                                          Container(
-                                            width: 40,
-                                            height: 40,
-                                            alignment:
-                                            Alignment.center,
-                                            decoration:
-                                            BoxDecoration(
-                                              color: isSelected
-                                                  ? primaryColor
-                                                  .withValues(
-                                                alpha:
-                                                isDarkMode
-                                                    ? 0.18
-                                                    : 0.10,
-                                              )
-                                                  : (isDarkMode
-                                                  ? Colors.white
-                                                  .withValues(
-                                                alpha: 0.05,
-                                              )
-                                                  : Colors.white),
-                                              borderRadius:
-                                              BorderRadius
-                                                  .circular(
-                                                12,
-                                              ),
-                                            ),
-                                            child: Icon(
-                                              fac.icon,
-                                              size: 20,
-                                              color: isSelected
-                                                  ? primaryColor
-                                                  : secondaryTextColor,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? primaryColor.withValues(
+                                                    alpha: isDarkMode
+                                                        ? 0.18
+                                                        : 0.10,
+                                                  )
+                                                : (isDarkMode
+                                                      ? Colors.white.withValues(
+                                                          alpha: 0.05,
+                                                        )
+                                                      : Colors.white),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
                                             ),
                                           ),
-                                          const SizedBox(width: 12),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                              CrossAxisAlignment
-                                                  .start,
-                                              children: [
+                                          child: Icon(
+                                            fac.icon,
+                                            size: 20,
+                                            color: isSelected
+                                                ? primaryColor
+                                                : secondaryTextColor,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                fac.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontFamily: 'Nunito',
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: primaryTextColor,
+                                                ),
+                                              ),
+                                              if (isPrimary) ...[
+                                                const SizedBox(height: 3),
                                                 Text(
-                                                  fac.name,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                  TextOverflow
-                                                      .ellipsis,
+                                                  'Khoa chính của bạn',
                                                   style: TextStyle(
                                                     fontFamily:
-                                                    'Nunito',
-                                                    fontSize: 14,
-                                                    fontWeight:
-                                                    FontWeight
-                                                        .w700,
-                                                    color:
-                                                    primaryTextColor,
+                                                        'Encode Sans Expanded',
+                                                    fontSize: 10.5,
+                                                    color: secondaryTextColor,
                                                   ),
                                                 ),
-                                                if (isPrimary) ...[
-                                                  const SizedBox(
-                                                    height: 3,
-                                                  ),
-                                                  Text(
-                                                    'Khoa chính của bạn',
-                                                    style:
-                                                    TextStyle(
-                                                      fontFamily:
-                                                      'Encode Sans Expanded',
-                                                      fontSize: 10.5,
-                                                      color:
-                                                      secondaryTextColor,
-                                                    ),
-                                                  ),
-                                                ],
                                               ],
-                                            ),
+                                            ],
                                           ),
-                                          const SizedBox(width: 10),
-                                          AnimatedContainer(
-                                            duration: const Duration(
-                                              milliseconds: 160,
-                                            ),
-                                            width: 22,
-                                            height: 22,
-                                            alignment:
-                                            Alignment.center,
-                                            decoration:
-                                            BoxDecoration(
+                                        ),
+                                        const SizedBox(width: 10),
+                                        AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 160,
+                                          ),
+                                          width: 22,
+                                          height: 22,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? primaryColor
+                                                : Colors.transparent,
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
                                               color: isSelected
                                                   ? primaryColor
-                                                  : Colors.transparent,
-                                              shape:
-                                              BoxShape.circle,
-                                              border: Border.all(
-                                                color: isSelected
-                                                    ? primaryColor
-                                                    : borderColor,
-                                                width: 1.5,
-                                              ),
+                                                  : borderColor,
+                                              width: 1.5,
                                             ),
-                                            child: isSelected
-                                                ? const Icon(
-                                              Icons
-                                                  .check_rounded,
-                                              size: 15,
-                                              color:
-                                              Colors.white,
-                                            )
-                                                : null,
                                           ),
-                                        ],
-                                      ),
+                                          child: isSelected
+                                              ? const Icon(
+                                                  Icons.check_rounded,
+                                                  size: 15,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                          ).toList(),
+                              ),
+                            );
+                          }).toList(),
                         ),
                       ),
                     ),
 
                     Container(
-                      padding: const EdgeInsets.fromLTRB(
-                        20,
-                        14,
-                        20,
-                        18,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
                       decoration: BoxDecoration(
                         color: sheetColor,
-                        border: Border(
-                          top: BorderSide(
-                            color: borderColor,
-                          ),
-                        ),
+                        border: Border(top: BorderSide(color: borderColor)),
                       ),
                       child: Row(
                         children: [
@@ -726,29 +660,19 @@ class _OfficialTabState extends State<OfficialTab> {
                                 onPressed: () {
                                   Navigator.pop(ctx);
                                 },
-                                style:
-                                OutlinedButton.styleFrom(
-                                  foregroundColor:
-                                  secondaryTextColor,
-                                  side: BorderSide(
-                                    color: borderColor,
-                                  ),
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
-                                      12,
-                                    ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: secondaryTextColor,
+                                  side: BorderSide(color: borderColor),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 child: const Text(
                                   'Hủy',
                                   style: TextStyle(
-                                    fontFamily:
-                                    'Encode Sans Expanded',
+                                    fontFamily: 'Encode Sans Expanded',
                                     fontSize: 13,
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -760,73 +684,55 @@ class _OfficialTabState extends State<OfficialTab> {
                               height: 44,
                               child: FilledButton(
                                 onPressed: () async {
-                                  final user = FirebaseAuth
-                                      .instance.currentUser;
+                                  final user =
+                                      FirebaseAuth.instance.currentUser;
 
                                   if (user == null) {
                                     return;
                                   }
 
-                                  if (primaryFacultyInfo !=
-                                      null) {
-                                    tempFollowed.remove(
-                                      primaryFacultyInfo.id,
-                                    );
+                                  if (primaryFacultyInfo != null) {
+                                    tempFollowed.remove(primaryFacultyInfo.id);
                                   }
 
-                                  await FirebaseFirestore
-                                      .instance
+                                  await FirebaseFirestore.instance
                                       .collection('users')
                                       .doc(user.uid)
                                       .update({
-                                    'followedFaculties':
-                                    tempFollowed,
-                                  });
+                                        'followedFaculties': tempFollowed,
+                                      });
 
                                   if (ctx.mounted) {
                                     Navigator.pop(ctx);
                                   }
 
                                   if (mounted) {
-                                    ScaffoldMessenger.of(
-                                      this.context,
-                                    )
+                                    ScaffoldMessenger.of(this.context)
                                       ..hideCurrentSnackBar()
                                       ..showSnackBar(
                                         const SnackBar(
                                           content: Text(
                                             'Đã lưu danh sách khoa theo dõi',
                                           ),
-                                          behavior:
-                                          SnackBarBehavior
-                                              .floating,
+                                          behavior: SnackBarBehavior.floating,
                                         ),
                                       );
                                   }
                                 },
-                                style:
-                                FilledButton.styleFrom(
-                                  backgroundColor:
-                                  primaryColor,
-                                  foregroundColor:
-                                  Colors.white,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: primaryColor,
+                                  foregroundColor: Colors.white,
                                   elevation: 0,
-                                  shape:
-                                  RoundedRectangleBorder(
-                                    borderRadius:
-                                    BorderRadius.circular(
-                                      12,
-                                    ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
                                 child: const Text(
                                   'Lưu thay đổi',
                                   style: TextStyle(
-                                    fontFamily:
-                                    'Encode Sans Expanded',
+                                    fontFamily: 'Encode Sans Expanded',
                                     fontSize: 13,
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
@@ -850,17 +756,18 @@ class _OfficialTabState extends State<OfficialTab> {
     required bool isDarkMode,
     required String categoryTag,
   }) {
-    final bool isHighlight = categoryTag == "Sự kiện" ||
+    final bool isHighlight =
+        categoryTag == "Sự kiện" ||
         categoryTag == "Học bổng" ||
         categoryTag == "Tuyển dụng";
 
     final Color bgColor = isHighlight
         ? (isDarkMode
-        ? const Color(0xFF1E3A8A).withOpacity(0.3)
-        : const Color(0xFFE0F2FE))
+              ? const Color(0xFF1E3A8A).withOpacity(0.3)
+              : const Color(0xFFE0F2FE))
         : (isDarkMode
-        ? Colors.white.withOpacity(0.08)
-        : const Color(0xFFF1F5F9));
+              ? Colors.white.withOpacity(0.08)
+              : const Color(0xFFF1F5F9));
 
     final Color textColor = isHighlight
         ? (isDarkMode ? const Color(0xFF93C5FD) : const Color(0xFF0369A1))
@@ -890,11 +797,7 @@ class _OfficialTabState extends State<OfficialTab> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.tag_rounded,
-              size: 14,
-              color: Color(0xFF306CFE),
-            ),
+            const Icon(Icons.tag_rounded, size: 14, color: Color(0xFF306CFE)),
             const SizedBox(width: 5),
             Text(
               categoryTag,
@@ -928,19 +831,19 @@ class _OfficialTabState extends State<OfficialTab> {
           decoration: BoxDecoration(
             color: isInterested
                 ? (isDarkMode
-                ? Colors.white.withOpacity(0.1)
-                : const Color(0xFFF1F5F9))
+                      ? Colors.white.withOpacity(0.1)
+                      : const Color(0xFFF1F5F9))
                 : const Color(0xFF5893D8),
             borderRadius: BorderRadius.circular(20),
             boxShadow: isInterested || isDarkMode
                 ? []
                 : [
-              BoxShadow(
-                color: const Color(0xFF5893D8).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: const Color(0xFF5893D8).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -972,6 +875,7 @@ class _OfficialTabState extends State<OfficialTab> {
       ),
     );
   }
+
   /// Thanh chuyển đổi Sub-Tab (Toàn trường, Khoa của bạn, Các Khoa theo dõi + Nút Thêm)
   Widget _buildSubTabBar({
     required BuildContext context,
@@ -990,19 +894,10 @@ class _OfficialTabState extends State<OfficialTab> {
         : const Color(0xFFEAECF0);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        10,
-        16,
-        10,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       decoration: BoxDecoration(
         color: backgroundColor,
-        border: Border(
-          bottom: BorderSide(
-            color: borderColor,
-          ),
-        ),
+        border: Border(bottom: BorderSide(color: borderColor)),
       ),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -1015,10 +910,7 @@ class _OfficialTabState extends State<OfficialTab> {
               icon: Icons.school_rounded,
               isSelected: _selectedSubTabId == 'all',
               isDarkMode: isDarkMode,
-              activeGradient: const [
-                Color(0xFF5893D8),
-                Color(0xFF5893D8),
-              ],
+              activeGradient: const [Color(0xFF5893D8), Color(0xFF5893D8)],
               onTap: () => _onSubTabSelected('all', subTabIds),
             ),
             const SizedBox(width: 8),
@@ -1027,22 +919,15 @@ class _OfficialTabState extends State<OfficialTab> {
               label: primaryFacultyInfo != null
                   ? 'Khoa của bạn · ${primaryFacultyInfo.shortName}'
                   : 'Khoa của bạn',
-              icon: primaryFacultyInfo?.icon ??
-                  Icons.school_rounded,
-              isSelected:
-              _selectedSubTabId == 'my_faculty',
+              icon: primaryFacultyInfo?.icon ?? Icons.school_rounded,
+              isSelected: _selectedSubTabId == 'my_faculty',
               isDarkMode: isDarkMode,
-              activeGradient: const [
-                Color(0xFF5893D8),
-                Color(0xFF5893D8),
-              ],
-              badgeText:
-              primaryFacultyInfo == null ? 'Chưa chọn' : null,
+              activeGradient: const [Color(0xFF5893D8), Color(0xFF5893D8)],
+              badgeText: primaryFacultyInfo == null ? 'Chưa chọn' : null,
               onTap: () => _onSubTabSelected('my_faculty', subTabIds),
             ),
             ...followedFaculties.map((facId) {
-              final facInfo =
-              FacultyHelper.findById(facId);
+              final facInfo = FacultyHelper.findById(facId);
 
               if (facInfo == null) {
                 return const SizedBox.shrink();
@@ -1054,13 +939,9 @@ class _OfficialTabState extends State<OfficialTab> {
                   id: facInfo.id,
                   label: facInfo.shortName,
                   icon: facInfo.icon,
-                  isSelected:
-                  _selectedSubTabId == facInfo.id,
+                  isSelected: _selectedSubTabId == facInfo.id,
                   isDarkMode: isDarkMode,
-                  activeGradient: const [
-                    Color(0xFF5893D8),
-                    Color(0xFF5893D8),
-                  ],
+                  activeGradient: const [Color(0xFF5893D8), Color(0xFF5893D8)],
                   onTap: () => _onSubTabSelected(facInfo.id, subTabIds),
                 ),
               );
@@ -1080,17 +961,13 @@ class _OfficialTabState extends State<OfficialTab> {
                 },
                 child: Container(
                   height: 38,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: isDarkMode
                         ? Colors.white.withValues(alpha: 0.04)
                         : Colors.white,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: borderColor,
-                    ),
+                    border: Border.all(color: borderColor),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -1159,29 +1036,21 @@ class _OfficialTabState extends State<OfficialTab> {
           duration: const Duration(milliseconds: 180),
           curve: Curves.easeOut,
           height: 38,
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: isSelected
-                ? activeColor
-                : inactiveBackground,
+            color: isSelected ? activeColor : inactiveBackground,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
-              color: isSelected
-                  ? activeColor
-                  : inactiveBorder,
+              color: isSelected ? activeColor : inactiveBorder,
             ),
             boxShadow: isSelected && !isDarkMode
                 ? [
-              BoxShadow(
-                color: activeColor.withValues(
-                  alpha: 0.16,
-                ),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ]
+                    BoxShadow(
+                      color: activeColor.withValues(alpha: 0.16),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    ),
+                  ]
                 : const [],
           ),
           child: Row(
@@ -1190,9 +1059,7 @@ class _OfficialTabState extends State<OfficialTab> {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected
-                    ? Colors.white
-                    : inactiveTextColor,
+                color: isSelected ? Colors.white : inactiveTextColor,
               ),
               const SizedBox(width: 6),
               Text(
@@ -1200,12 +1067,8 @@ class _OfficialTabState extends State<OfficialTab> {
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 11.5,
-                  fontWeight: isSelected
-                      ? FontWeight.w700
-                      : FontWeight.w600,
-                  color: isSelected
-                      ? Colors.white
-                      : inactiveTextColor,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? Colors.white : inactiveTextColor,
                 ),
               ),
               if (badgeText != null) ...[
@@ -1240,15 +1103,14 @@ class _OfficialTabState extends State<OfficialTab> {
       ),
     );
   }
+
   /// Empty State khi User chưa chọn Khoa trong account
   Widget _buildEmptyFacultySetupCard(
-      BuildContext context,
-      bool isDarkMode,
-      String? currentFaculty,
-      ) {
-    final Color cardColor = isDarkMode
-        ? const Color(0xFF1C1E21)
-        : Colors.white;
+    BuildContext context,
+    bool isDarkMode,
+    String? currentFaculty,
+  ) {
+    final Color cardColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
 
     final Color borderColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.08)
@@ -1264,33 +1126,24 @@ class _OfficialTabState extends State<OfficialTab> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 32,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(
-            maxWidth: 420,
-          ),
+          constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: borderColor,
-            ),
+            border: Border.all(color: borderColor),
             boxShadow: isDarkMode
                 ? const []
                 : [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.035,
-                ),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.035),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1300,8 +1153,7 @@ class _OfficialTabState extends State<OfficialTab> {
                 height: 64,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5893D8)
-                      .withValues(alpha: 0.10),
+                  color: const Color(0xFF5893D8).withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1338,23 +1190,15 @@ class _OfficialTabState extends State<OfficialTab> {
                 height: 44,
                 child: FilledButton.icon(
                   onPressed: () {
-                    _showQuickFacultyPicker(
-                      context,
-                      currentFaculty,
-                    );
+                    _showQuickFacultyPicker(context, currentFaculty);
                   },
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.edit_outlined, size: 18),
                   style: FilledButton.styleFrom(
-                    backgroundColor:
-                    const Color(0xFF5893D8),
+                    backgroundColor: const Color(0xFF5893D8),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   label: const Text(
@@ -1376,13 +1220,11 @@ class _OfficialTabState extends State<OfficialTab> {
 
   /// Thông báo khi Khoa của user chưa có kênh tin tự động (vd: Khoa Môi trường)
   Widget _buildFacultyNotActiveCard(
-      BuildContext context,
-      bool isDarkMode,
-      String facultyName,
-      ) {
-    final Color cardColor = isDarkMode
-        ? const Color(0xFF1C1E21)
-        : Colors.white;
+    BuildContext context,
+    bool isDarkMode,
+    String facultyName,
+  ) {
+    final Color cardColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
 
     final Color borderColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.08)
@@ -1398,33 +1240,24 @@ class _OfficialTabState extends State<OfficialTab> {
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 24,
-          vertical: 32,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
         child: Container(
           width: double.infinity,
-          constraints: const BoxConstraints(
-            maxWidth: 420,
-          ),
+          constraints: const BoxConstraints(maxWidth: 420),
           padding: const EdgeInsets.all(22),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: borderColor,
-            ),
+            border: Border.all(color: borderColor),
             boxShadow: isDarkMode
                 ? const []
                 : [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.035,
-                ),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.035),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1434,8 +1267,7 @@ class _OfficialTabState extends State<OfficialTab> {
                 height: 64,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF5893D8)
-                      .withValues(alpha: 0.10),
+                  color: const Color(0xFF5893D8).withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
@@ -1474,27 +1306,17 @@ class _OfficialTabState extends State<OfficialTab> {
                   onPressed: () {
                     _showManageFollowedFacultiesModal(
                       context,
-                      FacultyHelper
-                          .findFacultyByAccountString(
-                        facultyName,
-                      ),
+                      FacultyHelper.findFacultyByAccountString(facultyName),
                       [],
                     );
                   },
-                  icon: const Icon(
-                    Icons.tune_rounded,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.tune_rounded, size: 18),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor:
-                    const Color(0xFF5893D8),
-                    side: const BorderSide(
-                      color: Color(0xFF5893D8),
-                    ),
+                    foregroundColor: const Color(0xFF5893D8),
+                    side: const BorderSide(color: Color(0xFF5893D8)),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius:
-                      BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   label: const Text(
@@ -1531,10 +1353,10 @@ class _OfficialTabState extends State<OfficialTab> {
     final String uploadedImageUrl = _getNewsImageUrl(data);
 
     final String fallbackImagePath =
-    OfficialContentHelper.getOfficialImageByContent(
-      data['title'],
-      data['summary'],
-    );
+        OfficialContentHelper.getOfficialImageByContent(
+          data['title'],
+          data['summary'],
+        );
 
     void goToDetail() async {
       await Navigator.push(
@@ -1542,24 +1364,21 @@ class _OfficialTabState extends State<OfficialTab> {
         MaterialPageRoute(
           builder: (context) => PostDetailPage(
             docId: docId,
-            initialPostData: {
-              ...data,
-              'collectionPath': collectionPath,
-            },
+            initialPostData: {...data, 'collectionPath': collectionPath},
             collectionPath: collectionPath,
           ),
         ),
       );
     }
 
-    final String departmentDisplay = data['department']?.toString() ??
+    final String departmentDisplay =
+        data['department']?.toString() ??
         data['facultyName']?.toString() ??
         data['sourceName']?.toString() ??
         'HCMUS News';
 
-    final String dateDisplay = data['publishedDateText']?.toString() ??
-        data['date']?.toString() ??
-        '';
+    final String dateDisplay =
+        data['publishedDateText']?.toString() ?? data['date']?.toString() ?? '';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -1569,12 +1388,12 @@ class _OfficialTabState extends State<OfficialTab> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -1670,16 +1489,18 @@ class _OfficialTabState extends State<OfficialTab> {
                         context: context,
                         isDarkMode: isDarkMode,
                         categoryTag:
-                        OfficialContentHelper.getOfficialCategoryTag(
-                          data['title'],
-                          data['summary'],
-                          data['hashtags'],
-                        ),
+                            OfficialContentHelper.getOfficialCategoryTag(
+                              data['title'],
+                              data['summary'],
+                              data['hashtags'],
+                            ),
                       ),
                       if (isEvent)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
                               colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
@@ -1689,8 +1510,11 @@ class _OfficialTabState extends State<OfficialTab> {
                           child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.stars_rounded,
-                                  size: 13, color: Colors.white),
+                              Icon(
+                                Icons.stars_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 'Sự kiện nổi bật',
@@ -1714,7 +1538,9 @@ class _OfficialTabState extends State<OfficialTab> {
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w800,
                       fontSize: 18,
-                      color: isDarkMode ? Colors.white : const Color(0xFF0F172A),
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF0F172A),
                       height: 1.3,
                       letterSpacing: -0.4,
                     ),
@@ -1774,15 +1600,26 @@ class _OfficialTabState extends State<OfficialTab> {
                   onSave: widget.onSave,
                   collectionPath: collectionPath,
                 ),
-                if ((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim().isNotEmpty ?? false)
+                if ((data['link'] ??
+                            data['sourceUrl'] ??
+                            data['sourceArticleUrl'])
+                        ?.toString()
+                        .trim()
+                        .isNotEmpty ??
+                    false)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
                     child: SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () =>
-                            _launchURL((data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString() ?? ''),
+                        onPressed: () => _launchURL(
+                          (data['link'] ??
+                                      data['sourceUrl'] ??
+                                      data['sourceArticleUrl'])
+                                  ?.toString() ??
+                              '',
+                        ),
                         style: ElevatedButton.styleFrom(
                           elevation: 0,
                           backgroundColor: isDarkMode
@@ -1820,8 +1657,7 @@ class _OfficialTabState extends State<OfficialTab> {
   }
 
   /// Header Banner hiển thị cho 1 Khoa khi chọn xem tin Khoa
-  Widget _buildFacultyHeaderBanner(
-      FacultyInfo facultyInfo, bool isDarkMode) {
+  Widget _buildFacultyHeaderBanner(FacultyInfo facultyInfo, bool isDarkMode) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
@@ -1832,9 +1668,7 @@ class _OfficialTabState extends State<OfficialTab> {
               : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE)],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: const Color(0xFF3B82F6).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -1909,10 +1743,10 @@ class _OfficialTabState extends State<OfficialTab> {
             (userData['followedFaculties'] as List?)
                 ?.map((e) => e.toString())
                 .toList() ??
-                [];
+            [];
 
         final FacultyInfo? primaryFacultyInfo =
-        FacultyHelper.findFacultyByAccountString(userFacultyStr);
+            FacultyHelper.findFacultyByAccountString(userFacultyStr);
 
         // Loại bỏ Khoa chính khỏi danh sách Khoa theo dõi phụ để tránh trùng lặp tab
         final List<String> followedFaculties = rawFollowed
@@ -1920,7 +1754,8 @@ class _OfficialTabState extends State<OfficialTab> {
             .toList();
 
         // Nếu tab đang chọn trùng với ID Khoa chính vừa chuyển đổi, chuyển tab về 'my_faculty'
-        if (primaryFacultyInfo != null && _selectedSubTabId == primaryFacultyInfo.id) {
+        if (primaryFacultyInfo != null &&
+            _selectedSubTabId == primaryFacultyInfo.id) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted && _selectedSubTabId == primaryFacultyInfo.id) {
               setState(() {
@@ -1930,7 +1765,11 @@ class _OfficialTabState extends State<OfficialTab> {
           });
         }
 
-        final List<String> subTabIds = ['all', 'my_faculty', ...followedFaculties];
+        final List<String> subTabIds = [
+          'all',
+          'my_faculty',
+          ...followedFaculties,
+        ];
 
         return Column(
           children: [
@@ -1949,12 +1788,15 @@ class _OfficialTabState extends State<OfficialTab> {
               child: NotificationListener<ScrollNotification>(
                 onNotification: (notification) {
                   if (notification is OverscrollNotification) {
-                    if (notification.overscroll > 0) { // Quẹt sang trái ở subtab cuối cùng
+                    if (notification.overscroll > 0) {
+                      // Quẹt sang trái ở subtab cuối cùng
                       final currentIndex = subTabIds.indexOf(_selectedSubTabId);
                       if (currentIndex == subTabIds.length - 1) {
                         final tabController = DefaultTabController.of(context);
                         if (tabController.index == 0) {
-                          tabController.animateTo(1); // Chuyển sang Tab Diễn Đàn!
+                          tabController.animateTo(
+                            1,
+                          ); // Chuyển sang Tab Diễn Đàn!
                         }
                       }
                     }
@@ -2025,10 +1867,16 @@ class _OfficialTabState extends State<OfficialTab> {
           }
 
           List<QueryDocumentSnapshot> docs = snapshot.data!.docs;
-          final urlsToPreload = docs.map((d) {
-            final data = d.data() as Map<String, dynamic>;
-            return data['uploadedImageUrl'] ?? data['imageUrl'] ?? data['thumbnailUrl'];
-          }).map((e) => e?.toString()).whereType<String>().toList();
+          final urlsToPreload = docs
+              .map((d) {
+                final data = d.data() as Map<String, dynamic>;
+                return data['uploadedImageUrl'] ??
+                    data['imageUrl'] ??
+                    data['thumbnailUrl'];
+              })
+              .map((e) => e?.toString())
+              .whereType<String>()
+              .toList();
           Base64ImageCache.preloadImages(urlsToPreload);
           if (_cachedSubTabNewsIds['all'] == null) {
             _cachedSubTabNewsIds['all'] = docs.map((d) => d.id).toList();
@@ -2065,13 +1913,14 @@ class _OfficialTabState extends State<OfficialTab> {
                   });
                 },
                 child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                   itemCount: orderedNews.length + 1,
                   itemBuilder: (context, index) {
                     if (index == 0) {
-                      return DailyDigestCard(
-                        isDarkMode: isDarkMode,
-                      );
+                      return DailyDigestCard(isDarkMode: isDarkMode);
                     }
 
                     var doc = orderedNews[index - 1];
@@ -2098,8 +1947,7 @@ class _OfficialTabState extends State<OfficialTab> {
       if (userFacultyStr == null ||
           userFacultyStr.trim().isEmpty ||
           userFacultyStr == 'Chưa cập nhật khoa') {
-        return _buildEmptyFacultySetupCard(
-            context, isDarkMode, userFacultyStr);
+        return _buildEmptyFacultySetupCard(context, isDarkMode, userFacultyStr);
       }
 
       if (primaryFacultyInfo == null) {
@@ -2115,8 +1963,7 @@ class _OfficialTabState extends State<OfficialTab> {
     }
 
     // CASE 3: Tab Khoa được chọn từ danh sách theo dõi
-    final FacultyInfo? targetFacultyInfo =
-    FacultyHelper.findById(subTabId);
+    final FacultyInfo? targetFacultyInfo = FacultyHelper.findById(subTabId);
 
     if (targetFacultyInfo != null) {
       return _buildFacultyNewsStream(
@@ -2151,10 +1998,16 @@ class _OfficialTabState extends State<OfficialTab> {
         }
 
         List<QueryDocumentSnapshot> docs = snapshot.data!.docs.toList();
-        final urlsToPreload = docs.map((d) {
-          final data = d.data() as Map<String, dynamic>;
-          return data['uploadedImageUrl'] ?? data['imageUrl'] ?? data['thumbnailUrl'];
-        }).map((e) => e?.toString()).whereType<String>().toList();
+        final urlsToPreload = docs
+            .map((d) {
+              final data = d.data() as Map<String, dynamic>;
+              return data['uploadedImageUrl'] ??
+                  data['imageUrl'] ??
+                  data['thumbnailUrl'];
+            })
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .toList();
         Base64ImageCache.preloadImages(urlsToPreload);
 
         // Sort theo publishedAt/timestamp/createdAt giảm dần trong bộ nhớ
@@ -2213,7 +2066,10 @@ class _OfficialTabState extends State<OfficialTab> {
                 });
               },
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
                 itemCount: orderedNews.length + 1,
                 itemBuilder: (context, index) {
                   if (index == 0) {

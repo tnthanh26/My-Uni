@@ -1,7 +1,6 @@
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
+
 
 import 'mod_log_service.dart';
 import 'mod_notification_service.dart';
@@ -92,7 +91,8 @@ class UserModerationService {
     await ModNotificationService.sendUserNotification(
       userId: uid,
       title: "Hồ sơ của bạn đã được xác thực!",
-      content: "Ban Quản trị đã duyệt thông tin sinh viên của bạn. Bạn có thể sử dụng đầy đủ các tính năng trên MyUni.",
+      content:
+          "Ban Quản trị đã duyệt thông tin sinh viên của bạn. Bạn có thể sử dụng đầy đủ các tính năng trên MyUni.",
       type: "verification_approved",
     );
   }

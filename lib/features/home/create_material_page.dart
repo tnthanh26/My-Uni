@@ -39,12 +39,15 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
   void initState() {
     super.initState();
     CourseTeacherData.initDynamicSync();
-    _courseController =
-        TextEditingController(text: widget.existingData?['courseName'] ?? '');
-    _teacherController =
-        TextEditingController(text: widget.existingData?['teacherName'] ?? '');
-    _contentController =
-        TextEditingController(text: widget.existingData?['content'] ?? '');
+    _courseController = TextEditingController(
+      text: widget.existingData?['courseName'] ?? '',
+    );
+    _teacherController = TextEditingController(
+      text: widget.existingData?['teacherName'] ?? '',
+    );
+    _contentController = TextEditingController(
+      text: widget.existingData?['content'] ?? '',
+    );
 
     String initialSemester = '2';
     String initialYear = '2025-2026';
@@ -66,7 +69,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     }
 
     _selectedSemester = initialSemester;
-    
+
     String startYear = '';
     String endYear = '';
     if (initialYear.contains('-')) {
@@ -108,7 +111,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
           'xls',
           'xlsx',
           'ppt',
-          'pptx'
+          'pptx',
         ],
         allowMultiple: false,
       );
@@ -156,7 +159,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
 
     if (startYear.length != 4 || endYear.length != 4) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Năm học không hợp lệ (mỗi năm phải đủ 4 chữ số)')),
+        const SnackBar(
+          content: Text('Năm học không hợp lệ (mỗi năm phải đủ 4 chữ số)'),
+        ),
       );
       return;
     }
@@ -171,7 +176,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     String combinedText =
         "${_courseController.text} ${_contentController.text} ${_fileName ?? ''}";
     // 1. Kiểm tra từ cấm (Blacklist) - Bắt buộc sửa
-    List<String> blacklistViolations = ContentService.getBlacklistedWords(combinedText);
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(
+      combinedText,
+    );
     if (blacklistViolations.isNotEmpty) {
       await showDialog(
         context: context,
@@ -193,28 +200,32 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
     }
 
     // 2. Kiểm tra từ nhạy cảm (Sensitive List) - Cảnh báo trước khi đăng
-    List<String> sensitiveViolations = ContentService.getSensitiveWords(combinedText);
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(
+      combinedText,
+    );
     if (sensitiveViolations.isNotEmpty) {
-      bool shouldSubmit = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-          content: Text(
-            "Tên tài liệu hoặc mô tả chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục lưu, tài liệu sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Quay lại sửa"),
+      bool shouldSubmit =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+              content: Text(
+                "Tên tài liệu hoặc mô tả chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục lưu, tài liệu sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Quay lại sửa"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Vẫn lưu"),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Vẫn lưu"),
-            ),
-          ],
-        ),
-      ) ?? false;
+          ) ??
+          false;
 
       if (!shouldSubmit) {
         return;
@@ -258,8 +269,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
             .doc(widget.docId)
             .update(commonData);
       } else {
-        final Map<String, dynamic> materialData =
-        Map<String, dynamic>.from(commonData);
+        final Map<String, dynamic> materialData = Map<String, dynamic>.from(
+          commonData,
+        );
 
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
@@ -319,7 +331,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                 color: Color.fromRGBO(0, 0, 0, 0.25),
                 offset: Offset(0, 1),
                 blurRadius: 4,
-              )
+              ),
             ],
           ),
           child: AppBar(
@@ -357,22 +369,22 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
                     onTap: _isSubmitting ? null : _submitMaterial,
                     child: _isSubmitting
                         ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : const Text(
-                      "Đăng",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17,
-                        color: Colors.white,
-                      ),
-                    ),
+                            "Đăng",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -398,168 +410,174 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
                 children: [
-                  Expanded(
-                    flex: 2,
-                    child: _buildSectionLabel(context, "Học kỳ"),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: _buildSectionLabel(context, "Học kỳ"),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        flex: 3,
+                        child: _buildSectionLabel(context, "Năm học"),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 3,
-                    child: _buildSectionLabel(context, "Năm học"),
+                  _buildSemesterInput(context),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Khóa học"),
+                  SearchableAutocompleteField(
+                    controller: _courseController,
+                    hintText: "Chọn hoặc nhập tên môn học",
+                    options: CourseTeacherData.hcmusCourses,
+                    prefixIcon: Icons.menu_book_rounded,
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Giảng viên"),
+                  SearchableAutocompleteField(
+                    controller: _teacherController,
+                    hintText: "Chọn hoặc nhập tên giảng viên",
+                    options: CourseTeacherData.hcmusTeachers,
+                    prefixIcon: Icons.person_search_rounded,
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Nội dung mô tả"),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    height: 214,
+                    child: TextField(
+                      controller: _contentController,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 15,
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E1E1E),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Nội dung",
+                        hintStyle: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 15,
+                          color: isDarkMode
+                              ? Colors.white30
+                              : const Color(0xFF8E8E93),
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDarkMode
+                                ? Colors.white24
+                                : const Color(0xFF8E8E93),
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF457EC0),
+                            width: 2,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  _buildSectionLabel(context, "Đính kèm tệp"),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: (_attachedFile == null && _existingFileData == null)
+                        ? _pickFile
+                        : null,
+                    child: CustomPaint(
+                      painter:
+                          (_attachedFile == null && _existingFileData == null)
+                          ? DashRectPainter(
+                              color: isDarkMode
+                                  ? Colors.white30
+                                  : figmaDashedColor,
+                            )
+                          : null,
+                      child: Container(
+                        width: 130,
+                        height: 130,
+                        decoration:
+                            (_attachedFile != null || _existingFileData != null)
+                            ? BoxDecoration(
+                                border: Border.all(
+                                  color: isDarkMode
+                                      ? Colors.white30
+                                      : figmaDashedColor,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              )
+                            : null,
+                        alignment: Alignment.center,
+                        child:
+                            (_attachedFile != null || _existingFileData != null)
+                            ? Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(18),
+                                    child: _buildFilePreview(context),
+                                  ),
+                                  Positioned(
+                                    top: 5,
+                                    right: 5,
+                                    child: GestureDetector(
+                                      onTap: () => setState(() {
+                                        _attachedFile = null;
+                                        _fileName = null;
+                                        _existingFileData = null;
+                                      }),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black54,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(
+                                          Icons.close,
+                                          color: Colors.white,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  "Nhấn để thêm\nẢnh/Tài liệu",
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontFamily: 'Encode Sans Expanded',
+                                    fontSize: 12,
+                                    color: isDarkMode
+                                        ? Colors.white38
+                                        : figmaDashedColor,
+                                  ),
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ],
               ),
-              _buildSemesterInput(context),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Khóa học"),
-              SearchableAutocompleteField(
-                controller: _courseController,
-                hintText: "Chọn hoặc nhập tên môn học",
-                options: CourseTeacherData.hcmusCourses,
-                prefixIcon: Icons.menu_book_rounded,
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Giảng viên"),
-              SearchableAutocompleteField(
-                controller: _teacherController,
-                hintText: "Chọn hoặc nhập tên giảng viên",
-                options: CourseTeacherData.hcmusTeachers,
-                prefixIcon: Icons.person_search_rounded,
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Nội dung mô tả"),
-              const SizedBox(height: 10),
-              SizedBox(
-                height: 214,
-                child: TextField(
-                  controller: _contentController,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: TextStyle(
-                    fontFamily: 'Encode Sans Expanded',
-                    fontSize: 15,
-                    color:
-                    isDarkMode ? Colors.white : const Color(0xFF1E1E1E),
-                  ),
-                  decoration: InputDecoration(
-                    hintText: "Nội dung",
-                    hintStyle: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 15,
-                      color: isDarkMode
-                          ? Colors.white30
-                          : const Color(0xFF8E8E93),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white24
-                            : const Color(0xFF8E8E93),
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF457EC0),
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              _buildSectionLabel(context, "Đính kèm tệp"),
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: (_attachedFile == null && _existingFileData == null)
-                    ? _pickFile
-                    : null,
-                child: CustomPaint(
-                  painter: (_attachedFile == null && _existingFileData == null)
-                      ? DashRectPainter(
-                    color:
-                    isDarkMode ? Colors.white30 : figmaDashedColor,
-                  )
-                      : null,
-                  child: Container(
-                    width: 130,
-                    height: 130,
-                    decoration:
-                    (_attachedFile != null || _existingFileData != null)
-                        ? BoxDecoration(
-                      border: Border.all(
-                        color: isDarkMode
-                            ? Colors.white30
-                            : figmaDashedColor,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                    )
-                        : null,
-                    alignment: Alignment.center,
-                    child: (_attachedFile != null || _existingFileData != null)
-                        ? Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(18),
-                          child: _buildFilePreview(context),
-                        ),
-                        Positioned(
-                          top: 5,
-                          right: 5,
-                          child: GestureDetector(
-                            onTap: () => setState(() {
-                              _attachedFile = null;
-                              _fileName = null;
-                              _existingFileData = null;
-                            }),
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: const BoxDecoration(
-                                color: Colors.black54,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                        : Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        "Nhấn để thêm\nẢnh/Tài liệu",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 12,
-                          color: isDarkMode
-                              ? Colors.white38
-                              : figmaDashedColor,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    )));
+    );
   }
 
   Widget _buildSectionLabel(BuildContext context, String text) {
@@ -589,8 +607,9 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
             padding: EdgeInsets.zero,
             child: DropdownButtonFormField<String>(
               value: _selectedSemester,
-              dropdownColor:
-              isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+              dropdownColor: isDarkMode
+                  ? const Color(0xFF1E1E1E)
+                  : Colors.white,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
@@ -699,10 +718,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       fillColor: isDarkMode
           ? Colors.white.withOpacity(0.04)
           : const Color(0xFFF8FAFC),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 10,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 4, vertical: 10),
       isDense: true,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
@@ -718,10 +734,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
-        borderSide: const BorderSide(
-          color: Color(0xFF6797E1),
-          width: 1.4,
-        ),
+        borderSide: const BorderSide(color: Color(0xFF6797E1), width: 1.4),
       ),
     );
   }
@@ -755,11 +768,7 @@ class _CreateMaterialPageState extends State<CreateMaterialPage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.description,
-            size: 40,
-            color: Color(0xFF457EC0),
-          ),
+          const Icon(Icons.description, size: 40, color: Color(0xFF457EC0)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text(

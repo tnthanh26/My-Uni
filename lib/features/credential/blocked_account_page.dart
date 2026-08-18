@@ -2,11 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class BlockedAccountPage extends StatelessWidget {
-  const BlockedAccountPage({
-    super.key,
-    this.reason,
-    this.status,
-  });
+  const BlockedAccountPage({super.key, this.reason, this.status});
 
   final String? reason;
   final String? status;
@@ -23,7 +19,11 @@ class BlockedAccountPage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.block_rounded, size: 82, color: Colors.redAccent),
+              const Icon(
+                Icons.block_rounded,
+                size: 82,
+                color: Colors.redAccent,
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Tài khoản đã bị khóa',
@@ -50,7 +50,7 @@ class BlockedAccountPage extends StatelessWidget {
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/login',
-                          (route) => false,
+                      (route) => false,
                     );
                   }
                 },

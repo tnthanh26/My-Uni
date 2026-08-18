@@ -28,8 +28,6 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _titleOpacity;
   late Animation<Offset> _titleSlide;
 
-
-
   bool _navigated = false;
 
   @override
@@ -70,17 +68,13 @@ class _SplashPageState extends State<SplashPage>
         curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
       ),
     );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.4),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
-      ),
-    );
-
-
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.35, 0.65, curve: Curves.easeOut),
+          ),
+        );
 
     _startAnimationsAndNavigate();
   }
@@ -144,7 +138,8 @@ class _SplashPageState extends State<SplashPage>
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => BlockedAccountPage(reason: banReason, status: 'suspended'),
+                builder: (context) =>
+                    BlockedAccountPage(reason: banReason, status: 'suspended'),
               ),
             );
             _navigated = true;
@@ -155,7 +150,8 @@ class _SplashPageState extends State<SplashPage>
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
-                builder: (context) => DeletingAccountPage(scheduledDeleteAt: deleteTime),
+                builder: (context) =>
+                    DeletingAccountPage(scheduledDeleteAt: deleteTime),
               ),
             );
             _navigated = true;
@@ -177,7 +173,10 @@ class _SplashPageState extends State<SplashPage>
           }
         } else {
           // Chưa có mốc thời gian (ví dụ: người dùng cũ nâng cấp app), lưu mốc hiện tại
-          await prefs.setInt('login_timestamp', DateTime.now().millisecondsSinceEpoch);
+          await prefs.setInt(
+            'login_timestamp',
+            DateTime.now().millisecondsSinceEpoch,
+          );
           route = '/home';
         }
       } catch (e) {

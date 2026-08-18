@@ -135,9 +135,7 @@ class FacultyDailyDigestCard extends StatelessWidget {
               : [const Color(0xFFEFF6FF), const Color(0xFFDBEAFE)],
         ),
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: const Color(0xFF3B82F6).withOpacity(0.3),
-        ),
+        border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
       ),
       child: Row(
         children: [
@@ -164,9 +162,7 @@ class FacultyDailyDigestCard extends StatelessWidget {
                     fontFamily: 'Encode Sans Expanded',
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
-                    color: isDarkMode
-                        ? Colors.white
-                        : const Color(0xFF1E3A8A),
+                    color: isDarkMode ? Colors.white : const Color(0xFF1E3A8A),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -188,21 +184,27 @@ class FacultyDailyDigestCard extends StatelessWidget {
     );
   }
 
-  Widget _buildDigestUI(BuildContext context, Map<String, dynamic> data, {required bool isFallback}) {
+  Widget _buildDigestUI(
+    BuildContext context,
+    Map<String, dynamic> data, {
+    required bool isFallback,
+  }) {
     final items = List<Map<String, dynamic>>.from(
       (data['items'] ?? []).map((e) => Map<String, dynamic>.from(e)),
     );
 
     final bool isEmpty = data['isEmpty'] == true;
-    final bool isLatestFallback = isFallback || (data['isLatestFallback'] == true);
-    final String displayDateKey = data['displayDateKey']?.toString() ??
+    final bool isLatestFallback =
+        isFallback || (data['isLatestFallback'] == true);
+    final String displayDateKey =
+        data['displayDateKey']?.toString() ??
         (data['dateKey']?.toString() ?? '');
 
     final String subtitle = isLatestFallback
         ? 'Tóm tắt gần nhất (${_formatDateKey(displayDateKey)})'
         : isEmpty
-            ? 'Hôm nay chưa có thông báo mới từ ${facultyInfo.shortName}'
-            : '${items.length} tin mới từ ${facultyInfo.shortName} hôm nay';
+        ? 'Hôm nay chưa có thông báo mới từ ${facultyInfo.shortName}'
+        : '${items.length} tin mới từ ${facultyInfo.shortName} hôm nay';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
@@ -212,18 +214,11 @@ class FacultyDailyDigestCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: isDarkMode
-              ? [
-                  const Color(0xFF182235),
-                  const Color(0xFF101418),
-                ]
-              : [
-                  const Color(0xFFEAF4FF),
-                  Colors.white,
-                ],
+              ? [const Color(0xFF182235), const Color(0xFF101418)]
+              : [const Color(0xFFEAF4FF), Colors.white],
         ),
         border: Border.all(
-          color: const Color(0xFF66ACFE)
-              .withOpacity(isDarkMode ? 0.22 : 0.30),
+          color: const Color(0xFF66ACFE).withOpacity(isDarkMode ? 0.22 : 0.30),
         ),
         boxShadow: isDarkMode
             ? []
@@ -308,7 +303,8 @@ class FacultyDailyDigestCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  if ((data['overallSummary']?.toString().trim() ?? '').isNotEmpty) ...[
+                  if ((data['overallSummary']?.toString().trim() ?? '')
+                      .isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
                       data['overallSummary']?.toString() ?? '',
@@ -328,8 +324,8 @@ class FacultyDailyDigestCard extends StatelessWidget {
                     const SizedBox(height: 14),
                     ...items.take(3).map((item) {
                       final postId = item['postId']?.toString() ?? '';
-                      final department = item['department']?.toString() ??
-                          facultyInfo.name;
+                      final department =
+                          item['department']?.toString() ?? facultyInfo.name;
                       final importance =
                           item['importance']?.toString() ?? 'normal';
 
@@ -337,8 +333,7 @@ class FacultyDailyDigestCard extends StatelessWidget {
                         padding: const EdgeInsets.only(bottom: 9),
                         child: InkWell(
                           borderRadius: BorderRadius.circular(15),
-                          onTap: () =>
-                              _openDigestPostDetail(context, postId),
+                          onTap: () => _openDigestPostDetail(context, postId),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -361,8 +356,9 @@ class FacultyDailyDigestCard extends StatelessWidget {
                                   width: 34,
                                   height: 34,
                                   decoration: BoxDecoration(
-                                    color: _getImportanceColor(importance)
-                                        .withOpacity(0.14),
+                                    color: _getImportanceColor(
+                                      importance,
+                                    ).withOpacity(0.14),
                                     borderRadius: BorderRadius.circular(11),
                                   ),
                                   child: Icon(
@@ -490,10 +486,7 @@ class FacultyDailyDigestCard extends StatelessWidget {
                   const SizedBox(height: 18),
                   Row(
                     children: [
-                      Icon(
-                        facultyInfo.icon,
-                        color: const Color(0xFF5893D8),
-                      ),
+                      Icon(facultyInfo.icon, color: const Color(0xFF5893D8)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -545,12 +538,14 @@ class FacultyDailyDigestCard extends StatelessWidget {
                           ),
                         ...items.map((item) {
                           final postId = item['postId']?.toString() ?? '';
-                          final department = item['department']?.toString() ??
+                          final department =
+                              item['department']?.toString() ??
                               facultyInfo.name;
                           final importance =
                               item['importance']?.toString() ?? 'normal';
-                          final importanceColor =
-                              _getImportanceColor(importance);
+                          final importanceColor = _getImportanceColor(
+                            importance,
+                          );
 
                           return InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -560,10 +555,7 @@ class FacultyDailyDigestCard extends StatelessWidget {
                               Future.delayed(
                                 const Duration(milliseconds: 180),
                                 () {
-                                  _openDigestPostDetail(
-                                    parentContext,
-                                    postId,
-                                  );
+                                  _openDigestPostDetail(parentContext, postId);
                                 },
                               );
                             },

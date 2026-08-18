@@ -11,9 +11,7 @@ class PostCardSkeleton extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(16)),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -36,7 +34,11 @@ class PostCardSkeleton extends StatelessWidget {
             ),
             const SizedBox(height: 14),
             // Nội dung bài viết (2 dòng text giả)
-            const SkeletonBox(width: double.infinity, height: 14, borderRadius: 4),
+            const SkeletonBox(
+              width: double.infinity,
+              height: 14,
+              borderRadius: 4,
+            ),
             const SizedBox(height: 6),
             const SkeletonBox(width: 220, height: 14, borderRadius: 4),
             const SizedBox(height: 12),
@@ -68,10 +70,7 @@ class PostCardSkeleton extends StatelessWidget {
 class PostCardSkeletonListView extends StatelessWidget {
   final int itemCount;
 
-  const PostCardSkeletonListView({
-    super.key,
-    this.itemCount = 4,
-  });
+  const PostCardSkeletonListView({super.key, this.itemCount = 4});
 
   @override
   Widget build(BuildContext context) {

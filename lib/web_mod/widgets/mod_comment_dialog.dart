@@ -38,19 +38,14 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
       title: const Row(
         children: [
           Icon(Icons.chat_bubble_outline, color: Colors.blueAccent),
           SizedBox(width: 12),
           Text(
             "Danh sách bình luận",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Nunito',
-            ),
+            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
           ),
         ],
       ),
@@ -81,15 +76,23 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
             final allDocs = snapshot.data!.docs;
             final List<QueryDocumentSnapshot> orderedComments = [];
 
-            void addRepliesRecursively(String parentId, List<QueryDocumentSnapshot> source, List<QueryDocumentSnapshot> target) {
+            void addRepliesRecursively(
+              String parentId,
+              List<QueryDocumentSnapshot> source,
+              List<QueryDocumentSnapshot> target,
+            ) {
               final directReplies = source.where((doc) {
                 final d = doc.data() as Map<String, dynamic>;
                 return d['parentCommentId'] == parentId;
               }).toList();
 
               directReplies.sort((a, b) {
-                final aT = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
-                final bT = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+                final aT =
+                    (a.data() as Map<String, dynamic>)['timestamp']
+                        as Timestamp?;
+                final bT =
+                    (b.data() as Map<String, dynamic>)['timestamp']
+                        as Timestamp?;
                 if (aT == null || bT == null) return 0;
                 return aT.compareTo(bT);
               });
@@ -119,13 +122,16 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                 final data = comment.data() as Map<String, dynamic>;
                 final avatarImage = _getAvatarImage(data['authorAvatar']);
                 final int reportCount = data['reportCount'] ?? 0;
-                final bool isReported = data['isReported'] == true && reportCount > 0;
+                final bool isReported =
+                    data['isReported'] == true && reportCount > 0;
 
                 int depth = 0;
                 String? currParent = data['parentCommentId'];
                 while (currParent != null) {
                   depth++;
-                  final matches = allDocs.where((d) => d.id == currParent).toList();
+                  final matches = allDocs
+                      .where((d) => d.id == currParent)
+                      .toList();
                   if (matches.isNotEmpty) {
                     final pData = matches.first.data() as Map<String, dynamic>;
                     currParent = pData['parentCommentId'];
@@ -133,7 +139,9 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                     currParent = null;
                   }
                 }
-                final double leftMargin = depth > 0 ? (depth * 24.0).clamp(0.0, 72.0) : 0.0;
+                final double leftMargin = depth > 0
+                    ? (depth * 24.0).clamp(0.0, 72.0)
+                    : 0.0;
                 final bool isReply = depth > 0;
 
                 return Column(
@@ -146,7 +154,10 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                       ),
                       padding: (isReply || isReported)
                           ? const EdgeInsets.all(12)
-                          : const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                          : const EdgeInsets.symmetric(
+                              vertical: 10,
+                              horizontal: 8,
+                            ),
                       decoration: (isReply || isReported)
                           ? BoxDecoration(
                               color: isReported
@@ -166,7 +177,11 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                           if (isReply)
                             Padding(
                               padding: const EdgeInsets.only(top: 8, right: 8),
-                              child: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey[400]),
+                              child: Icon(
+                                Icons.subdirectory_arrow_right,
+                                size: 16,
+                                color: Colors.grey[400],
+                              ),
                             ),
                           CircleAvatar(
                             radius: 16,
@@ -181,7 +196,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Row(
                                       children: [
@@ -195,11 +211,18 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                         ),
                                         if (isReply)
                                           Container(
-                                            margin: const EdgeInsets.only(left: 8),
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            margin: const EdgeInsets.only(
+                                              left: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
                                             decoration: BoxDecoration(
-                                              color: Colors.blueAccent.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              color: Colors.blueAccent
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                             child: const Text(
                                               "Phản hồi",
@@ -212,16 +235,27 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                           ),
                                         if (isReported)
                                           Container(
-                                            margin: const EdgeInsets.only(left: 8),
-                                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                            margin: const EdgeInsets.only(
+                                              left: 8,
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 2,
+                                            ),
                                             decoration: BoxDecoration(
-                                              color: Colors.redAccent.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(4),
+                                              color: Colors.redAccent
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                const Icon(Icons.report_problem, size: 10, color: Colors.redAccent),
+                                                const Icon(
+                                                  Icons.report_problem,
+                                                  size: 10,
+                                                  color: Colors.redAccent,
+                                                ),
                                                 const SizedBox(width: 4),
                                                 Text(
                                                   "Bị báo cáo ($reportCount)",
@@ -241,8 +275,15 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                       children: [
                                         if (isReported) ...[
                                           IconButton(
-                                            icon: const Icon(Icons.check_circle_outline, color: Colors.green, size: 18),
-                                            onPressed: () => _dismissCommentReport(comment.id),
+                                            icon: const Icon(
+                                              Icons.check_circle_outline,
+                                              color: Colors.green,
+                                              size: 18,
+                                            ),
+                                            onPressed: () =>
+                                                _dismissCommentReport(
+                                                  comment.id,
+                                                ),
                                             padding: EdgeInsets.zero,
                                             constraints: const BoxConstraints(),
                                             tooltip: "Bỏ qua báo cáo",
@@ -250,8 +291,16 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                           const SizedBox(width: 12),
                                         ],
                                         IconButton(
-                                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 18),
-                                          onPressed: () => _confirmDeleteComment(comment.id, isReply),
+                                          icon: const Icon(
+                                            Icons.delete_outline,
+                                            color: Colors.redAccent,
+                                            size: 18,
+                                          ),
+                                          onPressed: () =>
+                                              _confirmDeleteComment(
+                                                comment.id,
+                                                isReply,
+                                              ),
                                           padding: EdgeInsets.zero,
                                           constraints: const BoxConstraints(),
                                           tooltip: "Xóa bình luận",
@@ -282,7 +331,11 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                                 ],
                                 const SizedBox(height: 4),
                                 Text(
-                                  data['timestamp']?.toDate().toString().substring(0, 16) ?? "",
+                                  data['timestamp']
+                                          ?.toDate()
+                                          .toString()
+                                          .substring(0, 16) ??
+                                      "",
                                   style: TextStyle(
                                     color: Colors.grey[500],
                                     fontSize: 11,
@@ -295,7 +348,11 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
                         ],
                       ),
                     ),
-                    if (!isReply && index < orderedComments.length - 1 && (orderedComments[index + 1].data() as Map)['parentCommentId'] == null)
+                    if (!isReply &&
+                        index < orderedComments.length - 1 &&
+                        (orderedComments[index + 1].data()
+                                as Map)['parentCommentId'] ==
+                            null)
                       const Divider(height: 1),
                   ],
                 );
@@ -321,11 +378,16 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text("Xác nhận xóa"),
-          content: Text(isReply
-              ? "Bạn có chắc chắn muốn xóa phản hồi này?"
-              : "Bạn có chắc chắn muốn xóa bình luận này và tất cả phản hồi liên quan?"),
+          content: Text(
+            isReply
+                ? "Bạn có chắc chắn muốn xóa phản hồi này?"
+                : "Bạn có chắc chắn muốn xóa bình luận này và tất cả phản hồi liên quan?",
+          ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text("Hủy")),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text("Hủy"),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
               child: const Text("Xóa", style: TextStyle(color: Colors.red)),
@@ -367,7 +429,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
               await ModNotificationService.sendPostNotification(
                 userId: reporterId,
                 title: "Phản hồi báo cáo",
-                content: "Báo cáo của bạn đã được xử lý. Bình luận vi phạm đã bị xóa.",
+                content:
+                    "Báo cáo của bạn đã được xử lý. Bình luận vi phạm đã bị xóa.",
                 type: 'info',
                 postId: widget.postId,
                 collectionPath: widget.collection,
@@ -384,7 +447,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
             await ModNotificationService.sendPostNotification(
               userId: commentAuthorId,
               title: "Bình luận bị gỡ bỏ",
-              content: "Bình luận của bạn đã bị xóa do vi phạm tiêu chuẩn cộng đồng.",
+              content:
+                  "Bình luận của bạn đã bị xóa do vi phạm tiêu chuẩn cộng đồng.",
               type: 'warning',
               postId: widget.postId,
               collectionPath: widget.collection,
@@ -395,15 +459,17 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Đã xóa bình luận thành công và gửi thông báo.")),
+            const SnackBar(
+              content: Text("Đã xóa bình luận thành công và gửi thông báo."),
+            ),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi xóa bình luận: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi xóa bình luận: $e")));
       }
     } finally {
       _isActionInProgress = false;
@@ -446,7 +512,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
             await ModNotificationService.sendPostNotification(
               userId: reporterId,
               title: "Phản hồi báo cáo",
-              content: "Mod không phát hiện sai phạm đối với bình luận bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
+              content:
+                  "Mod không phát hiện sai phạm đối với bình luận bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
               type: 'info',
               postId: widget.postId,
               collectionPath: widget.collection,
@@ -463,7 +530,8 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
           await ModNotificationService.sendPostNotification(
             userId: commentAuthorId,
             title: "Báo cáo bình luận",
-            content: "Mod không phát hiện sai phạm đối với bình luận của bạn. Bình luận vẫn giữ nguyên.",
+            content:
+                "Mod không phát hiện sai phạm đối với bình luận của bạn. Bình luận vẫn giữ nguyên.",
             type: 'info',
             postId: widget.postId,
             collectionPath: widget.collection,
@@ -474,14 +542,16 @@ class _ModCommentDialogState extends State<ModCommentDialog> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã bỏ qua báo cáo bình luận và gửi thông báo.")),
+          const SnackBar(
+            content: Text("Đã bỏ qua báo cáo bình luận và gửi thông báo."),
+          ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi bỏ báo cáo: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi bỏ báo cáo: $e")));
       }
     } finally {
       _isActionInProgress = false;

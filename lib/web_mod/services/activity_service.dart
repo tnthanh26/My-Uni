@@ -13,7 +13,9 @@ class ActivityService {
   static CollectionReference<Map<String, dynamic>> get _facultyEvents =>
       _firestore.collection('faculty_events');
 
-  static CollectionReference<Map<String, dynamic>> attendanceRef(String activityId) {
+  static CollectionReference<Map<String, dynamic>> attendanceRef(
+    String activityId,
+  ) {
     return _activities.doc(activityId).collection('attendance');
   }
 
@@ -63,7 +65,9 @@ class ActivityService {
 
     // Verify ownership
     if (createdBy != user.uid && createdByEmail != user.email) {
-      throw Exception('Bạn không có quyền xóa hoạt động này vì bạn không phải là người tạo.');
+      throw Exception(
+        'Bạn không có quyền xóa hoạt động này vì bạn không phải là người tạo.',
+      );
     }
 
     // 1. Delete corresponding faculty_events doc if present
@@ -277,8 +281,9 @@ class ActivityService {
         final String uFac = (uData['faculty'] ?? '').toString().toLowerCase();
         final List<dynamic> uFollowed =
             uData['followedFaculties'] as List<dynamic>? ?? [];
-        final List<String> uFollowedStrs =
-            uFollowed.map((e) => e.toString().toLowerCase()).toList();
+        final List<String> uFollowedStrs = uFollowed
+            .map((e) => e.toString().toLowerCase())
+            .toList();
 
         bool isUserMatch = false;
         if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
@@ -291,8 +296,10 @@ class ActivityService {
               ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
                   (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
             isUserMatch = true;
-          } else if ((cleanFacId.isNotEmpty && uFollowedStrs.contains(cleanFacId)) ||
-              (cleanFacCode.isNotEmpty && uFollowedStrs.contains(cleanFacCode))) {
+          } else if ((cleanFacId.isNotEmpty &&
+                  uFollowedStrs.contains(cleanFacId)) ||
+              (cleanFacCode.isNotEmpty &&
+                  uFollowedStrs.contains(cleanFacCode))) {
             isUserMatch = true;
           }
         }
@@ -343,10 +350,12 @@ class ActivityService {
     });
   }
 
-  static Stream<QuerySnapshot<Map<String, dynamic>>> getAttendance(String activityId) {
-    return attendanceRef(activityId)
-        .orderBy('checkedInAt', descending: true)
-        .snapshots();
+  static Stream<QuerySnapshot<Map<String, dynamic>>> getAttendance(
+    String activityId,
+  ) {
+    return attendanceRef(
+      activityId,
+    ).orderBy('checkedInAt', descending: true).snapshots();
   }
 
   static Future<bool> addAttendanceFromQr({
@@ -359,7 +368,8 @@ class ActivityService {
     final uid = studentData['uid']?.toString();
     final studentId = studentData['studentId']?.toString();
 
-    if ((uid == null || uid.isEmpty) && (studentId == null || studentId.isEmpty)) {
+    if ((uid == null || uid.isEmpty) &&
+        (studentId == null || studentId.isEmpty)) {
       throw Exception('QR thiếu uid hoặc MSSV.');
     }
 
@@ -373,9 +383,11 @@ class ActivityService {
       if (!activitySnapshot.exists) throw Exception('Hoạt động không tồn tại.');
 
       final activityData = activitySnapshot.data()!;
-      final requiresRegistration = activityData['requiresRegistration'] ?? false;
-      final registeredStudentIds =
-          List<String>.from(activityData['registeredStudentIds'] ?? []);
+      final requiresRegistration =
+          activityData['requiresRegistration'] ?? false;
+      final registeredStudentIds = List<String>.from(
+        activityData['registeredStudentIds'] ?? [],
+      );
 
       if (requiresRegistration) {
         if (studentId == null || !registeredStudentIds.contains(studentId)) {
@@ -387,11 +399,13 @@ class ActivityService {
     return _firestore.runTransaction<bool>((transaction) async {
       final activitySnapshot = await transaction.get(activityDoc);
       if (!activitySnapshot.exists) throw Exception('Hoạt động không tồn tại.');
-      
+
       final activityData = activitySnapshot.data()!;
-      final requiresRegistration = activityData['requiresRegistration'] ?? false;
-      final registeredStudentIds =
-          List<String>.from(activityData['registeredStudentIds'] ?? []);
+      final requiresRegistration =
+          activityData['requiresRegistration'] ?? false;
+      final registeredStudentIds = List<String>.from(
+        activityData['registeredStudentIds'] ?? [],
+      );
 
       final attendanceSnapshot = await transaction.get(attendanceDoc);
 
@@ -411,7 +425,8 @@ class ActivityService {
         'checkedInBy': checker?.uid,
         'checkedInByEmail': checker?.email,
         'checkInMethod': 'student_qr',
-        'isExtra': requiresRegistration && !registeredStudentIds.contains(studentId),
+        'isExtra':
+            requiresRegistration && !registeredStudentIds.contains(studentId),
       });
 
       if (uid != null && uid.isNotEmpty) {
@@ -445,8 +460,12 @@ class ActivityService {
     required Map<String, dynamic> studentData,
   }) async {
     final studentId = studentData['studentId']?.toString();
-    if (studentId == null || studentId.isEmpty || studentId == 'Chưa cập nhật MSSV') {
-      throw Exception('Vui lòng cập nhật MSSV trong trang Cá nhân trước khi điểm danh.');
+    if (studentId == null ||
+        studentId.isEmpty ||
+        studentId == 'Chưa cập nhật MSSV') {
+      throw Exception(
+        'Vui lòng cập nhật MSSV trong trang Cá nhân trước khi điểm danh.',
+      );
     }
 
     final activityDoc = _activities.doc(activityId);
@@ -467,8 +486,9 @@ class ActivityService {
     }
 
     final requiresRegistration = activityData['requiresRegistration'] ?? false;
-    final registeredStudentIds =
-        List<String>.from(activityData['registeredStudentIds'] ?? []);
+    final registeredStudentIds = List<String>.from(
+      activityData['registeredStudentIds'] ?? [],
+    );
 
     if (requiresRegistration && !registeredStudentIds.contains(studentId)) {
       await attendanceDoc.set({
@@ -607,7 +627,9 @@ class ActivityService {
     final createdByEmail = data?['createdByEmail']?.toString();
 
     if (createdBy != user.uid && createdByEmail != user.email) {
-      throw Exception('Bạn không có quyền sửa hoạt động này vì bạn không phải là người tạo.');
+      throw Exception(
+        'Bạn không có quyền sửa hoạt động này vì bạn không phải là người tạo.',
+      );
     }
 
     final cleanImageUrl = imageUrl?.trim() ?? '';
@@ -675,9 +697,12 @@ class ActivityService {
         });
 
         // Gửi thông báo cập nhật tới sinh viên thuộc/theo dõi Khoa này
-        final String facultyId = (facultyEventData?['facultyId'] ?? '').toString();
-        final String facultyCode = (facultyEventData?['facultyCode'] ?? '').toString();
-        final String facultyName = (facultyEventData?['facultyName'] ?? '').toString();
+        final String facultyId = (facultyEventData?['facultyId'] ?? '')
+            .toString();
+        final String facultyCode = (facultyEventData?['facultyCode'] ?? '')
+            .toString();
+        final String facultyName = (facultyEventData?['facultyName'] ?? '')
+            .toString();
 
         final usersSnap = await _firestore.collection('users').get();
         WriteBatch batch = _firestore.batch();
@@ -689,8 +714,11 @@ class ActivityService {
         for (var uDoc in usersSnap.docs) {
           final uData = uDoc.data();
           final String uFac = (uData['faculty'] ?? '').toString().toLowerCase();
-          final List<dynamic> uFollowed = uData['followedFaculties'] as List<dynamic>? ?? [];
-          final List<String> uFollowedStrs = uFollowed.map((e) => e.toString().toLowerCase()).toList();
+          final List<dynamic> uFollowed =
+              uData['followedFaculties'] as List<dynamic>? ?? [];
+          final List<String> uFollowedStrs = uFollowed
+              .map((e) => e.toString().toLowerCase())
+              .toList();
 
           bool isUserMatch = false;
           if (cleanFacId.isNotEmpty || cleanFacCode.isNotEmpty) {
@@ -703,17 +731,24 @@ class ActivityService {
                 ((cleanFacId.isNotEmpty && uFac.contains(cleanFacId)) ||
                     (cleanFacCode.isNotEmpty && uFac.contains(cleanFacCode)))) {
               isUserMatch = true;
-            } else if ((cleanFacId.isNotEmpty && uFollowedStrs.contains(cleanFacId)) ||
-                (cleanFacCode.isNotEmpty && uFollowedStrs.contains(cleanFacCode))) {
+            } else if ((cleanFacId.isNotEmpty &&
+                    uFollowedStrs.contains(cleanFacId)) ||
+                (cleanFacCode.isNotEmpty &&
+                    uFollowedStrs.contains(cleanFacCode))) {
               isUserMatch = true;
             }
           }
 
           if (isUserMatch) {
             final notiRef = _firestore.collection('notifications').doc();
-            final String cleanFaculty = facultyName.toLowerCase().startsWith('khoa ') ? facultyName : 'Khoa $facultyName';
-            String bodyStr = 'Sự kiện "$title" từ $cleanFaculty vừa được Ban tổ chức cập nhật thông tin.';
-            if (eventDateTextStr.isNotEmpty) bodyStr += ' Thời gian: $eventDateTextStr';
+            final String cleanFaculty =
+                facultyName.toLowerCase().startsWith('khoa ')
+                ? facultyName
+                : 'Khoa $facultyName';
+            String bodyStr =
+                'Sự kiện "$title" từ $cleanFaculty vừa được Ban tổ chức cập nhật thông tin.';
+            if (eventDateTextStr.isNotEmpty)
+              bodyStr += ' Thời gian: $eventDateTextStr';
 
             batch.set(notiRef, {
               'userId': uDoc.id,

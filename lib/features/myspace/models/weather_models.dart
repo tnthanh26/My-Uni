@@ -49,12 +49,7 @@ class HourlyForecast {
       weatherCode == 95 || weatherCode == 96 || weatherCode == 99;
 }
 
-enum WeatherAlertLevel {
-  none,
-  lightRain,
-  heavyRain,
-  thunderstorm,
-}
+enum WeatherAlertLevel { none, lightRain, heavyRain, thunderstorm }
 
 class WeatherAlertResult {
   final bool shouldShow;

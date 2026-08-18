@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../file_helper_stub.dart'
-if (dart.library.html) '../file_helper_web.dart';
+    if (dart.library.html) '../file_helper_web.dart';
 import '../services/activity_service.dart';
 import '../student_qr_scanner_dialog.dart';
 import '../widgets/attendance_table.dart';
@@ -196,9 +196,9 @@ class AttendancePage extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: isActive
                           ? () => _openStudentQrScanner(
-                        context,
-                        selectedActivityId!,
-                      )
+                              context,
+                              selectedActivityId!,
+                            )
                           : null,
                       icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
                       label: Text(
@@ -319,9 +319,9 @@ class AttendancePage extends StatelessWidget {
   }
 
   Future<void> _openStudentQrScanner(
-      BuildContext context,
-      String activityId,
-      ) async {
+    BuildContext context,
+    String activityId,
+  ) async {
     final activitySnapshot = await FirebaseFirestore.instance
         .collection('student_activities')
         .doc(activityId)
@@ -348,21 +348,19 @@ class AttendancePage extends StatelessWidget {
     await showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => StudentQrScannerDialog(
-        activityId: activityId,
-      ),
+      builder: (_) => StudentQrScannerDialog(activityId: activityId),
     );
   }
 
   Future<void> _exportAttendanceCsv(
-      BuildContext context,
-      String activityId,
-      Map<String, dynamic> activityData,
-      ) async {
+    BuildContext context,
+    String activityId,
+    Map<String, dynamic> activityData,
+  ) async {
     try {
-      final snapshot = await ActivityService.attendanceRef(activityId)
-          .orderBy('checkedInAt', descending: false)
-          .get();
+      final snapshot = await ActivityService.attendanceRef(
+        activityId,
+      ).orderBy('checkedInAt', descending: false).get();
 
       final docs = snapshot.docs;
 
@@ -399,7 +397,7 @@ class AttendancePage extends StatelessWidget {
           final date = checkedInAt.toDate();
 
           checkedInText =
-          '${date.day.toString().padLeft(2, '0')}/'
+              '${date.day.toString().padLeft(2, '0')}/'
               '${date.month.toString().padLeft(2, '0')}/'
               '${date.year} '
               '${date.hour.toString().padLeft(2, '0')}:'
@@ -408,24 +406,23 @@ class AttendancePage extends StatelessWidget {
 
         final trainingPoint = activityData['trainingPoint'] ?? 0;
 
-        buffer.writeln([
-          i + 1,
-          _csvCell(data['displayName'] ?? ''),
-          _csvCell(data['studentId'] ?? ''),
-          _csvCell(data['faculty'] ?? ''),
-          _csvCell(data['cohort'] ?? ''),
-          _csvCell(checkedInText),
-          trainingPoint,
-        ].join(','));
+        buffer.writeln(
+          [
+            i + 1,
+            _csvCell(data['displayName'] ?? ''),
+            _csvCell(data['studentId'] ?? ''),
+            _csvCell(data['faculty'] ?? ''),
+            _csvCell(data['cohort'] ?? ''),
+            _csvCell(checkedInText),
+            trainingPoint,
+          ].join(','),
+        );
       }
 
       final csvContent = buffer.toString();
       final base64Data = base64Encode(utf8.encode(csvContent));
 
-      FileHelper.downloadFile(
-        base64Data,
-        'Danh_sach_diem_danh_$safeTitle.csv',
-      );
+      FileHelper.downloadFile(base64Data, 'Danh_sach_diem_danh_$safeTitle.csv');
 
       if (!context.mounted) return;
 
@@ -435,9 +432,9 @@ class AttendancePage extends StatelessWidget {
     } catch (e) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể xuất danh sách: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Không thể xuất danh sách: $e')));
     }
   }
 
@@ -447,10 +444,10 @@ class AttendancePage extends StatelessWidget {
   }
 
   void _showEventQrDialog(
-      BuildContext context,
-      String activityId,
-      Map<String, dynamic> activityData,
-      ) {
+    BuildContext context,
+    String activityId,
+    Map<String, dynamic> activityData,
+  ) {
     final title = activityData['title'] ?? 'Hoạt động';
     final point = activityData['trainingPoint'] ?? 0;
 
@@ -467,9 +464,7 @@ class AttendancePage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Container(
           constraints: const BoxConstraints(maxWidth: 760, maxHeight: 720),
           padding: const EdgeInsets.all(24),
@@ -505,9 +500,7 @@ class AttendancePage extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(24),
-                          border: Border.all(
-                            color: const Color(0xFFE5E7EB),
-                          ),
+                          border: Border.all(color: const Color(0xFFE5E7EB)),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.04),
@@ -538,7 +531,10 @@ class AttendancePage extends StatelessWidget {
                       const SizedBox(height: 8),
 
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.orangeAccent.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(999),
@@ -615,7 +611,10 @@ class AttendancePage extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.orangeAccent.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(999),
@@ -716,7 +715,9 @@ class AttendancePage extends StatelessWidget {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.redAccent,
                                 side: const BorderSide(color: Colors.redAccent),
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -749,7 +750,9 @@ class AttendancePage extends StatelessWidget {
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.blueAccent,
                                 foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),

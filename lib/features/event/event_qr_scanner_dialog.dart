@@ -59,15 +59,14 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
         _successMessage = null;
       });
 
-      final BarcodeCapture? capture =
-      await _controller.analyzeImage(image.path);
+      final BarcodeCapture? capture = await _controller.analyzeImage(
+        image.path,
+      );
 
       if (!mounted) return;
 
       if (capture == null || capture.barcodes.isEmpty) {
-        _showError(
-          'Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh rõ hơn.',
-        );
+        _showError('Không tìm thấy mã QR trong ảnh. Vui lòng chọn ảnh rõ hơn.');
         return;
       }
 
@@ -169,8 +168,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
       userData['email'] = user.email ?? '';
 
       // Call service to check-in
-      final isNewCheckIn =
-      await ActivityService.checkInToEventFromStudent(
+      final isNewCheckIn = await ActivityService.checkInToEventFromStudent(
         activityId: activityId,
         studentUid: user.uid,
         studentData: userData,
@@ -396,9 +394,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
                 label: const Text('Chọn ảnh QR từ thư viện'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF6C63FF),
-                  side: const BorderSide(
-                    color: Color(0xFF6C63FF),
-                  ),
+                  side: const BorderSide(color: Color(0xFF6C63FF)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -420,9 +416,7 @@ class _EventQrScannerDialogState extends State<EventQrScannerDialog> {
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 13,
-                color: isDarkMode
-                    ? Colors.white60
-                    : const Color(0xFF667085),
+                color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
                 fontWeight: FontWeight.w500,
               ),
             ),

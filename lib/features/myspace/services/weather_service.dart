@@ -10,18 +10,20 @@ class WeatherService {
   }) async {
     final uri = Uri.parse(
       'https://api.open-meteo.com/v1/forecast'
-          '?latitude=$latitude'
-          '&longitude=$longitude'
-          '&hourly=precipitation_probability,precipitation,weathercode'
-          '&timezone=auto'
-          '&forecast_days=1',
+      '?latitude=$latitude'
+      '&longitude=$longitude'
+      '&hourly=precipitation_probability,precipitation,weathercode'
+      '&timezone=auto'
+      '&forecast_days=1',
     );
 
     debugPrint('[WeatherService] Bắt đầu gọi API Open-Meteo: $uri');
     final response = await http.get(uri);
 
     if (response.statusCode != 200) {
-      debugPrint('[WeatherService] Lỗi gọi API: Mã phản hồi ${response.statusCode}');
+      debugPrint(
+        '[WeatherService] Lỗi gọi API: Mã phản hồi ${response.statusCode}',
+      );
       throw Exception('Failed to fetch weather forecast');
     }
 
@@ -47,7 +49,9 @@ class WeatherService {
       );
     }
 
-    debugPrint('[WeatherService] Tải thành công ${forecasts.length} dòng dữ liệu thời tiết theo giờ.');
+    debugPrint(
+      '[WeatherService] Tải thành công ${forecasts.length} dòng dữ liệu thời tiết theo giờ.',
+    );
     return forecasts;
   }
 }

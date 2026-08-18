@@ -6,15 +6,12 @@ import 'post_detail_page.dart';
 class DailyDigestCard extends StatelessWidget {
   final bool isDarkMode;
 
-  const DailyDigestCard({
-    super.key,
-    required this.isDarkMode,
-  });
+  const DailyDigestCard({super.key, required this.isDarkMode});
 
   Future<void> _openDigestPostDetail(
-      BuildContext context,
-      String postId,
-      ) async {
+    BuildContext context,
+    String postId,
+  ) async {
     if (postId.trim().isEmpty) return;
 
     final doc = await FirebaseFirestore.instance
@@ -34,10 +31,7 @@ class DailyDigestCard extends StatelessWidget {
       MaterialPageRoute(
         builder: (context) => PostDetailPage(
           docId: postId,
-          initialPostData: {
-            ...doc.data()!,
-            'collectionPath': 'official_news',
-          },
+          initialPostData: {...doc.data()!, 'collectionPath': 'official_news'},
           collectionPath: 'official_news',
         ),
       ),
@@ -99,28 +93,23 @@ class DailyDigestCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: isDarkMode
-                  ? [
-                const Color(0xFF182235),
-                const Color(0xFF101418),
-              ]
-                  : [
-                const Color(0xFFEAF4FF),
-                Colors.white,
-              ],
+                  ? [const Color(0xFF182235), const Color(0xFF101418)]
+                  : [const Color(0xFFEAF4FF), Colors.white],
             ),
             border: Border.all(
-              color: const Color(0xFF66ACFE)
-                  .withOpacity(isDarkMode ? 0.22 : 0.30),
+              color: const Color(
+                0xFF66ACFE,
+              ).withOpacity(isDarkMode ? 0.22 : 0.30),
             ),
             boxShadow: isDarkMode
                 ? []
                 : [
-              BoxShadow(
-                color: const Color(0xFF5893D8).withOpacity(0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+                    BoxShadow(
+                      color: const Color(0xFF5893D8).withOpacity(0.12),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
           ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(22),
@@ -248,22 +237,22 @@ class DailyDigestCard extends StatelessWidget {
                                       width: 34,
                                       height: 34,
                                       decoration: BoxDecoration(
-                                        color: _getImportanceColor(importance)
-                                            .withOpacity(0.14),
+                                        color: _getImportanceColor(
+                                          importance,
+                                        ).withOpacity(0.14),
                                         borderRadius: BorderRadius.circular(11),
                                       ),
                                       child: Icon(
                                         Icons.article_rounded,
                                         size: 18,
-                                        color:
-                                        _getImportanceColor(importance),
+                                        color: _getImportanceColor(importance),
                                       ),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             item['title']?.toString() ?? '',
@@ -271,7 +260,7 @@ class DailyDigestCard extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontFamily:
-                                              'Encode Sans Expanded',
+                                                  'Encode Sans Expanded',
                                               fontSize: 12.5,
                                               fontWeight: FontWeight.w700,
                                               color: isDarkMode
@@ -286,7 +275,7 @@ class DailyDigestCard extends StatelessWidget {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontFamily:
-                                              'Encode Sans Expanded',
+                                                  'Encode Sans Expanded',
                                               fontSize: 11,
                                               color: isDarkMode
                                                   ? Colors.white
@@ -308,14 +297,19 @@ class DailyDigestCard extends StatelessWidget {
                             ),
                           );
                         }),
-                        if (items.isNotEmpty || (data['overallSummary']?.toString().trim().isNotEmpty ?? false))
+                        if (items.isNotEmpty ||
+                            (data['overallSummary']
+                                    ?.toString()
+                                    .trim()
+                                    .isNotEmpty ??
+                                false))
                           InkWell(
                             borderRadius: BorderRadius.circular(10),
                             onTap: () => _showDigestBottomSheet(
                               context: context,
                               items: items,
                               overallSummary:
-                              data['overallSummary']?.toString() ?? '',
+                                  data['overallSummary']?.toString() ?? '',
                             ),
                             child: Padding(
                               padding: const EdgeInsets.only(top: 6, bottom: 2),
@@ -439,8 +433,9 @@ class DailyDigestCard extends StatelessWidget {
                               item['department']?.toString() ?? '';
                           final importance =
                               item['importance']?.toString() ?? 'normal';
-                          final importanceColor =
-                          _getImportanceColor(importance);
+                          final importanceColor = _getImportanceColor(
+                            importance,
+                          );
 
                           return InkWell(
                             borderRadius: BorderRadius.circular(16),
@@ -449,11 +444,8 @@ class DailyDigestCard extends StatelessWidget {
 
                               Future.delayed(
                                 const Duration(milliseconds: 180),
-                                    () {
-                                  _openDigestPostDetail(
-                                    parentContext,
-                                    postId,
-                                  );
+                                () {
+                                  _openDigestPostDetail(parentContext, postId);
                                 },
                               );
                             },
@@ -491,13 +483,12 @@ class DailyDigestCard extends StatelessWidget {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item['title']?.toString() ?? '',
                                           style: TextStyle(
-                                            fontFamily:
-                                            'Encode Sans Expanded',
+                                            fontFamily: 'Encode Sans Expanded',
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
                                             color: isDarkMode
@@ -509,8 +500,7 @@ class DailyDigestCard extends StatelessWidget {
                                         Text(
                                           department,
                                           style: TextStyle(
-                                            fontFamily:
-                                            'Encode Sans Expanded',
+                                            fontFamily: 'Encode Sans Expanded',
                                             fontSize: 11.5,
                                             color: isDarkMode
                                                 ? Colors.white54
@@ -524,8 +514,7 @@ class DailyDigestCard extends StatelessWidget {
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
                                           style: TextStyle(
-                                            fontFamily:
-                                            'Encode Sans Expanded',
+                                            fontFamily: 'Encode Sans Expanded',
                                             fontSize: 12,
                                             height: 1.45,
                                             color: isDarkMode

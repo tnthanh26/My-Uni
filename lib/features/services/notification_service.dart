@@ -12,7 +12,7 @@ import '../home/faculty_helper.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
-  FlutterLocalNotificationsPlugin();
+      FlutterLocalNotificationsPlugin();
 
   static const String _channelId = 'my_uni_urgent_channel_v3';
   static const String _channelName = 'MyUni Notifications';
@@ -30,7 +30,7 @@ class NotificationService {
     tz_data.initializeTimeZones();
 
     const AndroidInitializationSettings androidInit =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const DarwinInitializationSettings iosInit = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -55,7 +55,8 @@ class NotificationService {
     if (Platform.isAndroid) {
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
       const channel = AndroidNotificationChannel(
         _channelId,
@@ -69,8 +70,8 @@ class NotificationService {
       await androidPlugin?.createNotificationChannel(channel);
       await androidPlugin?.requestNotificationsPermission();
 
-      final bool? canSchedule =
-      await androidPlugin?.canScheduleExactNotifications();
+      final bool? canSchedule = await androidPlugin
+          ?.canScheduleExactNotifications();
 
       if (canSchedule == false) {
         await androidPlugin?.requestExactAlarmsPermission();
@@ -80,7 +81,8 @@ class NotificationService {
     if (Platform.isIOS) {
       final iosPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+            IOSFlutterLocalNotificationsPlugin
+          >();
 
       await iosPlugin?.requestPermissions(
         alert: true,
@@ -137,39 +139,40 @@ class NotificationService {
         .where('userId', isEqualTo: user.uid)
         .snapshots()
         .listen((snapshot) async {
-      final prefs = await SharedPreferences.getInstance();
-      final List<String> cachedNotified =
-          prefs.getStringList('notified_user_noti_ids') ?? [];
-      _notifiedDocIds.addAll(cachedNotified);
+          final prefs = await SharedPreferences.getInstance();
+          final List<String> cachedNotified =
+              prefs.getStringList('notified_user_noti_ids') ?? [];
+          _notifiedDocIds.addAll(cachedNotified);
 
-      for (var change in snapshot.docChanges) {
-        if (change.type == DocumentChangeType.added) {
-          final doc = change.doc;
-          final String notiDocId = doc.id;
-          final Map<String, dynamic>? data = doc.data();
+          for (var change in snapshot.docChanges) {
+            if (change.type == DocumentChangeType.added) {
+              final doc = change.doc;
+              final String notiDocId = doc.id;
+              final Map<String, dynamic>? data = doc.data();
 
-          if (data == null || data['isRead'] == true) continue;
-          if (_notifiedDocIds.contains(notiDocId)) continue;
+              if (data == null || data['isRead'] == true) continue;
+              if (_notifiedDocIds.contains(notiDocId)) continue;
 
-          _notifiedDocIds.add(notiDocId);
-          await prefs.setStringList(
-            'notified_user_noti_ids',
-            _notifiedDocIds.toList(),
-          );
+              _notifiedDocIds.add(notiDocId);
+              await prefs.setStringList(
+                'notified_user_noti_ids',
+                _notifiedDocIds.toList(),
+              );
 
-          final String title = (data['title'] ?? 'Thông báo mới').toString();
-          final String content = (data['content'] ?? '').toString();
+              final String title = (data['title'] ?? 'Thông báo mới')
+                  .toString();
+              final String content = (data['content'] ?? '').toString();
 
-          int notiId = notiDocId.hashCode.abs() % 1000000;
+              int notiId = notiDocId.hashCode.abs() % 1000000;
 
-          await showInstantNotification(
-            id: notiId,
-            title: title,
-            body: content,
-          );
-        }
-      }
-    });
+              await showInstantNotification(
+                id: notiId,
+                title: title,
+                body: content,
+              );
+            }
+          }
+        });
   }
 
   static void startFacultyEventListener() {
@@ -189,154 +192,159 @@ class NotificationService {
         .doc(user.uid)
         .snapshots()
         .listen((userDoc) {
-      if (userDoc.exists) {
-        final data = userDoc.data();
-        userFacultyStr = data?['faculty']?.toString();
-        followedFaculties = (data?['followedFaculties'] as List?)
-                ?.map((e) => e.toString())
-                .toList() ??
-            [];
-      }
-    });
+          if (userDoc.exists) {
+            final data = userDoc.data();
+            userFacultyStr = data?['faculty']?.toString();
+            followedFaculties =
+                (data?['followedFaculties'] as List?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                [];
+          }
+        });
 
     _facultyEventsSubscription = _db
         .collection('faculty_events')
         .snapshots()
         .listen((snapshot) async {
-      final prefs = await SharedPreferences.getInstance();
-      final List<String> cachedNotified =
-          prefs.getStringList('notified_faculty_event_ids') ?? [];
-      _notifiedEventIds.addAll(cachedNotified);
+          final prefs = await SharedPreferences.getInstance();
+          final List<String> cachedNotified =
+              prefs.getStringList('notified_faculty_event_ids') ?? [];
+          _notifiedEventIds.addAll(cachedNotified);
 
-      for (var change in snapshot.docChanges) {
-        final doc = change.doc;
-        final String docId = doc.id;
-        final Map<String, dynamic>? data = doc.data();
+          for (var change in snapshot.docChanges) {
+            final doc = change.doc;
+            final String docId = doc.id;
+            final Map<String, dynamic>? data = doc.data();
 
-        if (data == null || data['shouldPublish'] == false) {
-          continue;
-        }
-
-        final bool isMatch = _matchesUserFaculties(
-          data,
-          userFacultyStr,
-          followedFaculties,
-        );
-
-        if (!isMatch) continue;
-
-        if (change.type == DocumentChangeType.added) {
-          if (_notifiedEventIds.contains(docId)) continue;
-
-          final DateTime? createdTime = _extractEventCreatedTime(data);
-          if (createdTime != null &&
-              DateTime.now().difference(createdTime).inHours.abs() > 48) {
-            _notifiedEventIds.add(docId);
-            continue;
-          }
-
-          _notifiedEventIds.add(docId);
-          await prefs.setStringList(
-            'notified_faculty_event_ids',
-            _notifiedEventIds.toList(),
-          );
-
-          final String eventTitle =
-              (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên mới')
-                  .toString();
-          final String rawFaculty =
-              (data['facultyName'] ?? data['department'] ?? 'Khoa')
-                  .toString()
-                  .trim();
-          final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
-              ? rawFaculty
-              : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
-          final String eventDateText =
-              (data['eventDateText'] ?? data['date'] ?? '').toString();
-          final String locationName =
-              (data['locationName'] ?? '').toString();
-
-          String bodyStr = facultyName;
-          if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
-          if (locationName.isNotEmpty) bodyStr += ' • $locationName';
-
-          try {
-            final existing = await _db
-                .collection('notifications')
-                .where('userId', isEqualTo: user.uid)
-                .where('relatedPostId', isEqualTo: docId)
-                .limit(1)
-                .get();
-
-            if (existing.docs.isEmpty) {
-              await _db.collection('notifications').add({
-                'userId': user.uid,
-                'title': '📌 Sự kiện mới: $eventTitle',
-                'content': bodyStr,
-                'type': 'faculty_event',
-                'timestamp': FieldValue.serverTimestamp(),
-                'isRead': false,
-                'relatedPostId': docId,
-                'collectionPath': 'faculty_events',
-              });
+            if (data == null || data['shouldPublish'] == false) {
+              continue;
             }
-          } catch (e) {
-            debugPrint('Lỗi lưu in-app notification: $e');
-          }
-        } else if (change.type == DocumentChangeType.modified) {
-          // Kiểm tra thời gian sự kiện: Chỉ thông báo nếu sự kiện ở tương lai hoặc được gia hạn/đổi lịch sang tương lai
-          final DateTime? startTime = _extractEventStartTime(data);
-          final DateTime? endTime = _extractEventEndTime(data);
-          final now = DateTime.now();
 
-          bool isUpcomingOrRescheduled = false;
-          if (endTime != null && endTime.isAfter(now)) {
-            isUpcomingOrRescheduled = true;
-          } else if (startTime != null &&
-              startTime.isAfter(now.subtract(const Duration(hours: 2)))) {
-            isUpcomingOrRescheduled = true;
-          } else if (startTime == null && endTime == null) {
-            isUpcomingOrRescheduled = true;
-          }
+            final bool isMatch = _matchesUserFaculties(
+              data,
+              userFacultyStr,
+              followedFaculties,
+            );
 
-          if (!isUpcomingOrRescheduled) continue;
+            if (!isMatch) continue;
 
-          final String eventTitle =
-              (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên')
+            if (change.type == DocumentChangeType.added) {
+              if (_notifiedEventIds.contains(docId)) continue;
+
+              final DateTime? createdTime = _extractEventCreatedTime(data);
+              if (createdTime != null &&
+                  DateTime.now().difference(createdTime).inHours.abs() > 48) {
+                _notifiedEventIds.add(docId);
+                continue;
+              }
+
+              _notifiedEventIds.add(docId);
+              await prefs.setStringList(
+                'notified_faculty_event_ids',
+                _notifiedEventIds.toList(),
+              );
+
+              final String eventTitle =
+                  (data['eventName'] ??
+                          data['title'] ??
+                          'Sự kiện sinh viên mới')
+                      .toString();
+              final String rawFaculty =
+                  (data['facultyName'] ?? data['department'] ?? 'Khoa')
+                      .toString()
+                      .trim();
+              final String facultyName =
+                  rawFaculty.toLowerCase().startsWith('khoa ')
+                  ? rawFaculty
+                  : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
+              final String eventDateText =
+                  (data['eventDateText'] ?? data['date'] ?? '').toString();
+              final String locationName = (data['locationName'] ?? '')
                   .toString();
-          final String rawFaculty =
-              (data['facultyName'] ?? data['department'] ?? 'Khoa')
-                  .toString()
-                  .trim();
-          final String facultyName = rawFaculty.toLowerCase().startsWith('khoa ')
-              ? rawFaculty
-              : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
-          final String eventDateText =
-              (data['eventDateText'] ?? data['date'] ?? '').toString();
-          final String locationName =
-              (data['locationName'] ?? '').toString();
 
-          String bodyStr = '$facultyName • Vừa cập nhật thông tin';
-          if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
-          if (locationName.isNotEmpty) bodyStr += ' • $locationName';
+              String bodyStr = facultyName;
+              if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
+              if (locationName.isNotEmpty) bodyStr += ' • $locationName';
 
-          try {
-            await _db.collection('notifications').add({
-              'userId': user.uid,
-              'title': '🔄 Cập nhật sự kiện: $eventTitle',
-              'content': bodyStr,
-              'type': 'faculty_event',
-              'timestamp': FieldValue.serverTimestamp(),
-              'isRead': false,
-              'relatedPostId': docId,
-              'collectionPath': 'faculty_events',
-            });
-          } catch (e) {
-            debugPrint('Lỗi lưu notification khi update event: $e');
+              try {
+                final existing = await _db
+                    .collection('notifications')
+                    .where('userId', isEqualTo: user.uid)
+                    .where('relatedPostId', isEqualTo: docId)
+                    .limit(1)
+                    .get();
+
+                if (existing.docs.isEmpty) {
+                  await _db.collection('notifications').add({
+                    'userId': user.uid,
+                    'title': '📌 Sự kiện mới: $eventTitle',
+                    'content': bodyStr,
+                    'type': 'faculty_event',
+                    'timestamp': FieldValue.serverTimestamp(),
+                    'isRead': false,
+                    'relatedPostId': docId,
+                    'collectionPath': 'faculty_events',
+                  });
+                }
+              } catch (e) {
+                debugPrint('Lỗi lưu in-app notification: $e');
+              }
+            } else if (change.type == DocumentChangeType.modified) {
+              // Kiểm tra thời gian sự kiện: Chỉ thông báo nếu sự kiện ở tương lai hoặc được gia hạn/đổi lịch sang tương lai
+              final DateTime? startTime = _extractEventStartTime(data);
+              final DateTime? endTime = _extractEventEndTime(data);
+              final now = DateTime.now();
+
+              bool isUpcomingOrRescheduled = false;
+              if (endTime != null && endTime.isAfter(now)) {
+                isUpcomingOrRescheduled = true;
+              } else if (startTime != null &&
+                  startTime.isAfter(now.subtract(const Duration(hours: 2)))) {
+                isUpcomingOrRescheduled = true;
+              } else if (startTime == null && endTime == null) {
+                isUpcomingOrRescheduled = true;
+              }
+
+              if (!isUpcomingOrRescheduled) continue;
+
+              final String eventTitle =
+                  (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên')
+                      .toString();
+              final String rawFaculty =
+                  (data['facultyName'] ?? data['department'] ?? 'Khoa')
+                      .toString()
+                      .trim();
+              final String facultyName =
+                  rawFaculty.toLowerCase().startsWith('khoa ')
+                  ? rawFaculty
+                  : (rawFaculty.isNotEmpty ? 'Khoa $rawFaculty' : 'Khoa');
+              final String eventDateText =
+                  (data['eventDateText'] ?? data['date'] ?? '').toString();
+              final String locationName = (data['locationName'] ?? '')
+                  .toString();
+
+              String bodyStr = '$facultyName • Vừa cập nhật thông tin';
+              if (eventDateText.isNotEmpty) bodyStr += ' • $eventDateText';
+              if (locationName.isNotEmpty) bodyStr += ' • $locationName';
+
+              try {
+                await _db.collection('notifications').add({
+                  'userId': user.uid,
+                  'title': '🔄 Cập nhật sự kiện: $eventTitle',
+                  'content': bodyStr,
+                  'type': 'faculty_event',
+                  'timestamp': FieldValue.serverTimestamp(),
+                  'isRead': false,
+                  'relatedPostId': docId,
+                  'collectionPath': 'faculty_events',
+                });
+              } catch (e) {
+                debugPrint('Lỗi lưu notification khi update event: $e');
+              }
+            }
           }
-        }
-      }
-    });
+        });
   }
 
   static DateTime? _extractEventStartTime(Map<String, dynamic> data) {
@@ -380,25 +388,31 @@ class NotificationService {
     String? userFacultyStr,
     List<String> followedFaculties,
   ) {
-    final FacultyInfo? primaryFac =
-        FacultyHelper.findFacultyByAccountString(userFacultyStr);
+    final FacultyInfo? primaryFac = FacultyHelper.findFacultyByAccountString(
+      userFacultyStr,
+    );
     final List<FacultyInfo> followedFacs = followedFaculties
         .map((id) => FacultyHelper.findById(id))
         .whereType<FacultyInfo>()
         .toList();
 
-    final String eventFacId =
-        (data['facultyId'] ?? '').toString().toLowerCase();
-    final String eventFacCode =
-        (data['facultyCode'] ?? '').toString().toLowerCase();
+    final String eventFacId = (data['facultyId'] ?? '')
+        .toString()
+        .toLowerCase();
+    final String eventFacCode = (data['facultyCode'] ?? '')
+        .toString()
+        .toLowerCase();
     final String eventFacName =
-        (data['facultyName'] ?? data['department'] ?? '').toString().toLowerCase();
+        (data['facultyName'] ?? data['department'] ?? '')
+            .toString()
+            .toLowerCase();
 
     if (primaryFac != null) {
       if (eventFacId == primaryFac.id.toLowerCase() ||
           eventFacCode == primaryFac.code.toLowerCase() ||
-          primaryFac.matchKeywords.any((kw) =>
-              eventFacName.contains(kw) || eventFacId.contains(kw))) {
+          primaryFac.matchKeywords.any(
+            (kw) => eventFacName.contains(kw) || eventFacId.contains(kw),
+          )) {
         return true;
       }
     }
@@ -406,8 +420,9 @@ class NotificationService {
     for (final fac in followedFacs) {
       if (eventFacId == fac.id.toLowerCase() ||
           eventFacCode == fac.code.toLowerCase() ||
-          fac.matchKeywords.any((kw) =>
-              eventFacName.contains(kw) || eventFacId.contains(kw))) {
+          fac.matchKeywords.any(
+            (kw) => eventFacName.contains(kw) || eventFacId.contains(kw),
+          )) {
         return true;
       }
     }
@@ -439,10 +454,13 @@ class NotificationService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-          .map((doc) => MyUniNotification.fromFirestore(doc))
-          .where((n) => n.type != 'chat' && n.type != 'message' && n.roomId == null)
-          .toList(),
-    );
+              .map((doc) => MyUniNotification.fromFirestore(doc))
+              .where(
+                (n) =>
+                    n.type != 'chat' && n.type != 'message' && n.roomId == null,
+              )
+              .toList(),
+        );
   }
 
   static Stream<List<MyUniNotification>> getMessageNotifications() {
@@ -456,23 +474,24 @@ class NotificationService {
         .snapshots()
         .map(
           (snapshot) => snapshot.docs
-          .map((doc) => MyUniNotification.fromFirestore(doc))
-          .where((n) => n.type == 'chat' || n.roomId != null)
-          .toList(),
-    );
+              .map((doc) => MyUniNotification.fromFirestore(doc))
+              .where((n) => n.type == 'chat' || n.roomId != null)
+              .toList(),
+        );
   }
 
   static Future<void> markAsRead(String docId) async {
     try {
-      await _db.collection('notifications').doc(docId).update({
-        'isRead': true,
-      });
+      await _db.collection('notifications').doc(docId).update({'isRead': true});
     } catch (e) {
       debugPrint('Lỗi markAsRead: $e');
     }
   }
 
-  static Future<void> updateNotificationContent(String docId, String newContent) async {
+  static Future<void> updateNotificationContent(
+    String docId,
+    String newContent,
+  ) async {
     try {
       await _db.collection('notifications').doc(docId).update({
         'content': newContent,
@@ -520,9 +539,7 @@ class NotificationService {
     final batch = FirebaseFirestore.instance.batch();
 
     for (final doc in snapshot.docs) {
-      batch.update(doc.reference, {
-        'isRead': true,
-      });
+      batch.update(doc.reference, {'isRead': true});
     }
 
     await batch.commit();
@@ -545,9 +562,7 @@ class NotificationService {
       final type = data['type'];
       final roomId = data['roomId'];
       if (type == 'chat' || roomId != null) {
-        batch.update(doc.reference, {
-          'isRead': true,
-        });
+        batch.update(doc.reference, {'isRead': true});
       }
     }
 
@@ -656,10 +671,11 @@ class NotificationService {
     if (Platform.isAndroid) {
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
-      final bool? granted =
-      await androidPlugin?.requestNotificationsPermission();
+      final bool? granted = await androidPlugin
+          ?.requestNotificationsPermission();
 
       return granted ?? false;
     }
@@ -667,7 +683,8 @@ class NotificationService {
     if (Platform.isIOS) {
       final iosPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-          IOSFlutterLocalNotificationsPlugin>();
+            IOSFlutterLocalNotificationsPlugin
+          >();
 
       final bool? granted = await iosPlugin?.requestPermissions(
         alert: true,

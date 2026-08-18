@@ -87,8 +87,10 @@ class _ForumTabState extends State<ForumTab> {
                 right: 12,
                 bottom: 12,
                 child: Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.45),
                     borderRadius: BorderRadius.circular(20),
@@ -141,29 +143,18 @@ class _ForumTabState extends State<ForumTab> {
         }
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 10,
-          vertical: 6,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: isDarkMode
-              ? Colors.white10
-              : const Color(0xFFF1F5F9),
+          color: isDarkMode ? Colors.white10 : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isDarkMode
-                ? Colors.white10
-                : const Color(0xFFE2E8F0),
+            color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.tag_rounded,
-              size: 14,
-              color: Color(0xFF306CFE),
-            ),
+            const Icon(Icons.tag_rounded, size: 14, color: Color(0xFF306CFE)),
             const SizedBox(width: 5),
             Text(
               tagText,
@@ -171,9 +162,7 @@ class _ForumTabState extends State<ForumTab> {
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: isDarkMode
-                    ? Colors.white70
-                    : const Color(0xFF344054),
+                color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
               ),
             ),
           ],
@@ -196,7 +185,9 @@ class _ForumTabState extends State<ForumTab> {
       } catch (e) {
         return CircleAvatar(
           radius: 23,
-          backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
+          backgroundColor: isDarkMode
+              ? Colors.white10
+              : const Color(0xFFF0F0F0),
           child: Icon(
             Icons.person,
             color: isDarkMode ? Colors.white38 : Colors.grey,
@@ -292,8 +283,12 @@ class _ForumTabState extends State<ForumTab> {
             // Khi tải lần đầu hoặc khi refresh: Tính toán điểm xu hướng và sắp xếp
             final List<QueryDocumentSnapshot> sorted = List.from(posts);
             sorted.sort((a, b) {
-              final aScore = calculateTrendingScore(a.data() as Map<String, dynamic>);
-              final bScore = calculateTrendingScore(b.data() as Map<String, dynamic>);
+              final aScore = calculateTrendingScore(
+                a.data() as Map<String, dynamic>,
+              );
+              final bScore = calculateTrendingScore(
+                b.data() as Map<String, dynamic>,
+              );
               return bScore.compareTo(aScore);
             });
             _sortedPostIds = sorted.map((doc) => doc.id).toList();
@@ -307,7 +302,9 @@ class _ForumTabState extends State<ForumTab> {
             // 1. Tự động xóa bài viết khỏi UI nếu bài viết đó bị xóa khỏi Firestore (không cần trượt tay)
             final currentPostIds = posts.map((d) => d.id).toSet();
             _sortedPostIds!.removeWhere((id) => !currentPostIds.contains(id));
-            _cachedPostsMap.removeWhere((id, _) => !currentPostIds.contains(id));
+            _cachedPostsMap.removeWhere(
+              (id, _) => !currentPostIds.contains(id),
+            );
 
             // 2. Tự động reload feed nếu chính USER ĐÓ vừa đăng bài mới
             bool hasSelfNewPost = false;
@@ -325,8 +322,12 @@ class _ForumTabState extends State<ForumTab> {
             if (hasSelfNewPost) {
               final List<QueryDocumentSnapshot> sorted = List.from(posts);
               sorted.sort((a, b) {
-                final aScore = calculateTrendingScore(a.data() as Map<String, dynamic>);
-                final bScore = calculateTrendingScore(b.data() as Map<String, dynamic>);
+                final aScore = calculateTrendingScore(
+                  a.data() as Map<String, dynamic>,
+                );
+                final bScore = calculateTrendingScore(
+                  b.data() as Map<String, dynamic>,
+                );
                 return bScore.compareTo(aScore);
               });
               _sortedPostIds = sorted.map((doc) => doc.id).toList();
@@ -376,14 +377,22 @@ class _ForumTabState extends State<ForumTab> {
                     final bool isOwner = currentUser?.uid == data['authorId'];
                     final bool isAnonymous =
                         (data['isAnonymous'] == true) ||
-                            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-                            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+                        (data['authorName']?.toString().toLowerCase().contains(
+                              'vô danh',
+                            ) ??
+                            false) ||
+                        (data['authorName']?.toString().toLowerCase().contains(
+                              'ẩn danh',
+                            ) ??
+                            false);
                     final bool showOwnAnonymousBadge = isOwner && isAnonymous;
 
                     return Container(
                       margin: const EdgeInsets.only(bottom: 18),
                       decoration: BoxDecoration(
-                        color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+                        color: isDarkMode
+                            ? const Color(0xFF15171A)
+                            : Colors.white,
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
                           color: isDarkMode
@@ -393,12 +402,12 @@ class _ForumTabState extends State<ForumTab> {
                         boxShadow: isDarkMode
                             ? []
                             : [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 18,
-                            offset: const Offset(0, 6),
-                          ),
-                        ],
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 18,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(22),
@@ -426,33 +435,54 @@ class _ForumTabState extends State<ForumTab> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    14,
+                                    14,
+                                    14,
+                                    10,
+                                  ),
                                   child: Row(
                                     children: [
                                       GestureDetector(
                                         onTap: () async {
                                           if (isAnonymous) return;
-                                          final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
+                                          final authorId =
+                                              (data['authorId'] ??
+                                                      data['uploaderId'] ??
+                                                      data['userId'] ??
+                                                      data['uid'])
+                                                  ?.toString() ??
+                                              '';
                                           if (authorId.isEmpty) return;
-                                          final info = await ChatService().getStudentVerificationInfo(authorId);
+                                          final info = await ChatService()
+                                              .getStudentVerificationInfo(
+                                                authorId,
+                                              );
                                           if (context.mounted) {
                                             StudentIdentitySheet.show(
                                               context,
-                                              info ?? {
-                                                'uid': authorId,
-                                                'displayName': data['authorName'] ?? 'Sinh viên',
-                                                'photoURL': avatarData ?? '',
-                                              },
+                                              info ??
+                                                  {
+                                                    'uid': authorId,
+                                                    'displayName':
+                                                        data['authorName'] ??
+                                                        'Sinh viên',
+                                                    'photoURL':
+                                                        avatarData ?? '',
+                                                  },
                                             );
                                           }
                                         },
-                                        child: _buildAuthorAvatar(isAnonymous ? null : avatarData, isDarkMode),
+                                        child: _buildAuthorAvatar(
+                                          isAnonymous ? null : avatarData,
+                                          isDarkMode,
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -460,31 +490,56 @@ class _ForumTabState extends State<ForumTab> {
                                                   child: GestureDetector(
                                                     onTap: () async {
                                                       if (isAnonymous) return;
-                                                      final authorId = (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid'])?.toString() ?? '';
-                                                      if (authorId.isEmpty) return;
-                                                      final info = await ChatService().getStudentVerificationInfo(authorId);
+                                                      final authorId =
+                                                          (data['authorId'] ??
+                                                                  data['uploaderId'] ??
+                                                                  data['userId'] ??
+                                                                  data['uid'])
+                                                              ?.toString() ??
+                                                          '';
+                                                      if (authorId.isEmpty)
+                                                        return;
+                                                      final info =
+                                                          await ChatService()
+                                                              .getStudentVerificationInfo(
+                                                                authorId,
+                                                              );
                                                       if (context.mounted) {
                                                         StudentIdentitySheet.show(
                                                           context,
-                                                          info ?? {
-                                                            'uid': authorId,
-                                                            'displayName': data['authorName'] ?? 'Sinh viên',
-                                                            'photoURL': avatarData ?? '',
-                                                          },
+                                                          info ??
+                                                              {
+                                                                'uid': authorId,
+                                                                'displayName':
+                                                                    data['authorName'] ??
+                                                                    'Sinh viên',
+                                                                'photoURL':
+                                                                    avatarData ??
+                                                                    '',
+                                                              },
                                                         );
                                                       }
                                                     },
                                                     child: Text(
-                                                      isAnonymous ? AnonymousUtils.anonymousPostAuthorName : (data['authorName'] ?? 'Người dùng'),
+                                                      isAnonymous
+                                                          ? AnonymousUtils
+                                                                .anonymousPostAuthorName
+                                                          : (data['authorName'] ??
+                                                                'Người dùng'),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                       style: TextStyle(
-                                                        fontFamily: 'Encode Sans Expanded',
-                                                        fontWeight: FontWeight.w700,
+                                                        fontFamily:
+                                                            'Encode Sans Expanded',
+                                                        fontWeight:
+                                                            FontWeight.w700,
                                                         fontSize: 14,
                                                         color: isDarkMode
                                                             ? Colors.white
-                                                            : const Color(0xFF2C2C2C),
+                                                            : const Color(
+                                                                0xFF2C2C2C,
+                                                              ),
                                                       ),
                                                     ),
                                                   ),
@@ -492,18 +547,31 @@ class _ForumTabState extends State<ForumTab> {
                                                 if (showOwnAnonymousBadge) ...[
                                                   const SizedBox(width: 6),
                                                   Container(
-                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 8,
+                                                          vertical: 3,
+                                                        ),
                                                     decoration: BoxDecoration(
-                                                      color: const Color(0xFF5893D8).withOpacity(0.12),
-                                                      borderRadius: BorderRadius.circular(999),
+                                                      color: const Color(
+                                                        0xFF5893D8,
+                                                      ).withOpacity(0.12),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            999,
+                                                          ),
                                                     ),
                                                     child: const Text(
                                                       "Của bạn",
                                                       style: TextStyle(
-                                                        fontFamily: 'Encode Sans Expanded',
+                                                        fontFamily:
+                                                            'Encode Sans Expanded',
                                                         fontSize: 10,
-                                                        fontWeight: FontWeight.w700,
-                                                        color: Color(0xFF5893D8),
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        color: Color(
+                                                          0xFF5893D8,
+                                                        ),
                                                       ),
                                                     ),
                                                   ),
@@ -514,14 +582,15 @@ class _ForumTabState extends State<ForumTab> {
                                             Text(
                                               data['timestamp'] != null
                                                   ? timeago.format(
-                                                (data['timestamp'] as Timestamp)
-                                                    .toDate(),
-                                                locale: 'vi',
-                                              )
+                                                      (data['timestamp']
+                                                              as Timestamp)
+                                                          .toDate(),
+                                                      locale: 'vi',
+                                                    )
                                                   : 'Vừa xong',
                                               style: TextStyle(
                                                 fontFamily:
-                                                'Encode Sans Expanded',
+                                                    'Encode Sans Expanded',
                                                 fontSize: 12,
                                                 color: isDarkMode
                                                     ? Colors.white60
@@ -538,21 +607,32 @@ class _ForumTabState extends State<ForumTab> {
                                 if (data['hashtags'] != null &&
                                     (data['hashtags'] as List).isNotEmpty)
                                   Padding(
-                                    padding:
-                                    const EdgeInsets.fromLTRB(14, 0, 14, 10),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      0,
+                                      14,
+                                      10,
+                                    ),
                                     child: Wrap(
                                       spacing: 8,
                                       runSpacing: 8,
                                       children: (data['hashtags'] as List)
-                                          .map((tag) => _buildTagChip(tag, isDarkMode))
+                                          .map(
+                                            (tag) =>
+                                                _buildTagChip(tag, isDarkMode),
+                                          )
                                           .toList(),
                                     ),
                                   ),
 
                                 if (content.trim().isNotEmpty)
                                   Padding(
-                                    padding:
-                                    const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      0,
+                                      14,
+                                      14,
+                                    ),
                                     child: Text(
                                       content,
                                       style: TextStyle(
@@ -569,19 +649,36 @@ class _ForumTabState extends State<ForumTab> {
                                 if (data['imageUrl'] != null &&
                                     data['imageUrl'].toString().isNotEmpty)
                                   Padding(
-                                    padding:
-                                    const EdgeInsets.fromLTRB(14, 0, 14, 12),
-                                    child: _buildSafeImage(context, data['imageUrl']),
+                                    padding: const EdgeInsets.fromLTRB(
+                                      14,
+                                      0,
+                                      14,
+                                      12,
+                                    ),
+                                    child: _buildSafeImage(
+                                      context,
+                                      data['imageUrl'],
+                                    ),
                                   ),
 
                                 if (data['poll'] != null)
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                                    child: PollWidget(docId: docId, pollData: data['poll']),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                    ),
+                                    child: PollWidget(
+                                      docId: docId,
+                                      pollData: data['poll'],
+                                    ),
                                   ),
 
                                 Padding(
-                                  padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    10,
+                                    0,
+                                    10,
+                                    10,
+                                  ),
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: isDarkMode
@@ -614,29 +711,25 @@ class _ForumTabState extends State<ForumTab> {
           );
         },
       ),
-  floatingActionButton: FloatingActionButton(
-    heroTag: "fab_forum_tab",
-    onPressed: () async {
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const CreatePostPage()),
-      );
-      if (result == true || result != null) {
-        setState(() {
-          _sortedPostIds = null;
-          _cachedPostsMap.clear();
-        });
-      }
-    },
-    backgroundColor: const Color(0xFF5893D8),
-    elevation: 5,
-    shape: const CircleBorder(),
-    child: const Icon(
-      Icons.edit_outlined,
-      color: Colors.white,
-      size: 28,
-    ),
-  ),
-);
-}
+      floatingActionButton: FloatingActionButton(
+        heroTag: "fab_forum_tab",
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CreatePostPage()),
+          );
+          if (result == true || result != null) {
+            setState(() {
+              _sortedPostIds = null;
+              _cachedPostsMap.clear();
+            });
+          }
+        },
+        backgroundColor: const Color(0xFF5893D8),
+        elevation: 5,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
+      ),
+    );
+  }
 }

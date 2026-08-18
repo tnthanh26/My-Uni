@@ -73,8 +73,9 @@ class _ReviewTabState extends State<ReviewTab> {
     required bool isDarkMode,
     Color? iconColor,
   }) {
-    final Color textColor =
-    isDarkMode ? Colors.white70 : const Color(0xFF344054);
+    final Color textColor = isDarkMode
+        ? Colors.white70
+        : const Color(0xFF344054);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -90,11 +91,7 @@ class _ReviewTabState extends State<ReviewTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 13,
-            color: iconColor ?? textColor,
-          ),
+          Icon(icon, size: 13, color: iconColor ?? textColor),
           const SizedBox(width: 5),
           Text(
             label,
@@ -111,11 +108,11 @@ class _ReviewTabState extends State<ReviewTab> {
   }
 
   Widget _buildReviewCard(
-      BuildContext context,
-      Map<String, dynamic> data,
-      String docId,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> data,
+    String docId,
+    bool isDarkMode,
+  ) {
     final int rating = (data['rating'] ?? 0) is int
         ? data['rating'] ?? 0
         : ((data['rating'] ?? 0) as num).toInt();
@@ -136,12 +133,12 @@ class _ReviewTabState extends State<ReviewTab> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -401,12 +398,7 @@ class _ReviewTabState extends State<ReviewTab> {
                     var data = doc.data() as Map<String, dynamic>;
                     String docId = doc.id;
 
-                    return _buildReviewCard(
-                      context,
-                      data,
-                      docId,
-                      isDarkMode,
-                    );
+                    return _buildReviewCard(context, data, docId, isDarkMode);
                   },
                 ),
               ),
@@ -431,11 +423,7 @@ class _ReviewTabState extends State<ReviewTab> {
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,
         shape: const CircleBorder(),
-        child: const Icon(
-          Icons.edit_outlined,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
       ),
     );
   }

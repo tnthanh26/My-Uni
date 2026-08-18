@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ModErrorState extends StatelessWidget {
-  const ModErrorState({
-    super.key,
-    required this.error,
-  });
+  const ModErrorState({super.key, required this.error});
 
   final String error;
 

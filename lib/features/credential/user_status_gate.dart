@@ -5,10 +5,7 @@ import 'blocked_account_page.dart';
 import 'deleting_account_page.dart';
 
 class UserStatusGate extends StatelessWidget {
-  const UserStatusGate({
-    super.key,
-    required this.child,
-  });
+  const UserStatusGate({super.key, required this.child});
 
   final Widget child;
 
@@ -34,10 +31,7 @@ class UserStatusGate extends StatelessWidget {
         final reason = data?['banReason'] ?? '';
 
         if (status == 'suspended') {
-          return BlockedAccountPage(
-            reason: reason,
-            status: status,
-          );
+          return BlockedAccountPage(reason: reason, status: status);
         }
 
         if (status == 'deleting') {
@@ -46,9 +40,7 @@ class UserStatusGate extends StatelessWidget {
           if (scheduledDeleteAt is Timestamp) {
             deleteTime = scheduledDeleteAt.toDate();
           }
-          return DeletingAccountPage(
-            scheduledDeleteAt: deleteTime,
-          );
+          return DeletingAccountPage(scheduledDeleteAt: deleteTime);
         }
 
         return child;

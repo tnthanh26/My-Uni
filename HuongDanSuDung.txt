@@ -5,7 +5,14 @@ Tên đề tài: MyUni - Ứng dụng di động & Web hỗ trợ cộng đồng
             và Trợ lý học thuật AI
 
 ------------------------------------------------------------------------
-1. CÁCH BIÊN DỊCH VÀ CHẠY ỨNG DỤNG DI ĐỘNG (MOBILE APP - ANDROID/IOS)
+0. TẢI VÀ TRẢI NGHIỆM TRỰC TIẾP QUA GOOGLE PLAY (CH PLAY)
+------------------------------------------------------------------------
+Để trải nghiệm ứng dụng di động MyUni ngay lập tức trên thiết bị thật mà không cần biên dịch lại mã nguồn:
+
+ 👉 Link Google Play Store: https://play.google.com/store/apps/details?id=com.archondev.myuni
+
+------------------------------------------------------------------------
+1. CÁCH BIÊN DỊCH VÀ CHẠY ỨNG DỤNG DI ĐỘNG TỪ MÃ NGUỒN (MOBILE APP)
 ------------------------------------------------------------------------
 LƯU Ý VỀ MÔI TRƯỜNG BIÊN DỊCH:
 - Nền tảng Android: Có thể biên dịch và chạy trên mọi HĐH (Windows, macOS, Linux).

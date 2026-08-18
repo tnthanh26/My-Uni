@@ -40,12 +40,12 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
   List<BoxShadow> _cardShadow(bool isDark) => isDark
       ? []
       : [
-    BoxShadow(
-      color: Colors.black.withOpacity(0.05),
-      blurRadius: 14,
-      offset: const Offset(0, 6),
-    ),
-  ];
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ];
 
   @override
   Widget build(BuildContext context) {
@@ -111,8 +111,7 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
                   title: Text(
                     'Mới nhất',
                     style: TextStyle(
-                      color:
-                      isNewest ? Colors.blue : _primaryText(isDarkMode),
+                      color: isNewest ? Colors.blue : _primaryText(isDarkMode),
                       fontSize: 14,
                     ),
                   ),
@@ -132,8 +131,7 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
                   title: Text(
                     'Cũ nhất',
                     style: TextStyle(
-                      color:
-                      !isNewest ? Colors.blue : _primaryText(isDarkMode),
+                      color: !isNewest ? Colors.blue : _primaryText(isDarkMode),
                       fontSize: 14,
                     ),
                   ),
@@ -209,7 +207,7 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
           }
 
           final List<QueryDocumentSnapshot> reviewDocs =
-          List<QueryDocumentSnapshot>.from(snapshot.data!.docs);
+              List<QueryDocumentSnapshot>.from(snapshot.data!.docs);
 
           reviewDocs.sort((a, b) {
             final t1 = a['timestamp'] as Timestamp;
@@ -312,10 +310,15 @@ class _CourseReviewListPageState extends State<CourseReviewListPage> {
                         const SizedBox(height: 14),
                         Row(
                           children: List.generate(5, (i) {
-                            final double rawRating = (reviewData['rating'] is num)
+                            final double rawRating =
+                                (reviewData['rating'] is num)
                                 ? (reviewData['rating'] as num).toDouble()
-                                : double.tryParse(reviewData['rating']?.toString() ?? '5') ?? 5.0;
-                            final double roundedRating = (rawRating * 2).round() / 2;
+                                : double.tryParse(
+                                        reviewData['rating']?.toString() ?? '5',
+                                      ) ??
+                                      5.0;
+                            final double roundedRating =
+                                (rawRating * 2).round() / 2;
                             final double starValue = i + 1.0;
                             IconData icon;
                             if (roundedRating >= starValue) {

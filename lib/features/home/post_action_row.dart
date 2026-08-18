@@ -27,7 +27,7 @@ class PostActionRow extends StatefulWidget {
 
 class _PostActionRowState extends State<PostActionRow> {
   DateTime _lastLikeTapTime = DateTime.fromMillisecondsSinceEpoch(0);
-  
+
   // Trạng thái local tối ưu (Optimistic UI) để phản hồi tức thì
   bool? _localIsLiked;
   int? _localLikeCount;
@@ -38,7 +38,10 @@ class _PostActionRowState extends State<PostActionRow> {
     required String content,
   }) async {
     final currentUser = FirebaseAuth.instance.currentUser;
-    if (widget.collectionPath == 'official_news' || currentUser == null || currentUser.uid == targetUserId) return;
+    if (widget.collectionPath == 'official_news' ||
+        currentUser == null ||
+        currentUser.uid == targetUserId)
+      return;
 
     await FirebaseFirestore.instance.collection('notifications').add({
       'userId': targetUserId,
@@ -63,11 +66,15 @@ class _PostActionRowState extends State<PostActionRow> {
     if (await _isUserPending()) return;
 
     try {
-      final postRef = FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId);
+      final postRef = FirebaseFirestore.instance
+          .collection(widget.collectionPath)
+          .doc(widget.docId);
       final userLikeRef = postRef.collection('likes').doc(user.uid);
 
       if (isLiked) {
-        final newLikeCount = currentLikeCount > 0 ? FieldValue.increment(-1) : 0;
+        final newLikeCount = currentLikeCount > 0
+            ? FieldValue.increment(-1)
+            : 0;
         await postRef.update({'likeCount': newLikeCount});
         await userLikeRef.delete();
       } else {
@@ -83,16 +90,23 @@ class _PostActionRowState extends State<PostActionRow> {
         if (widget.onLike != null) {
           widget.onLike!();
         } else {
-          final String? ownerId = widget.data['authorId'] ?? widget.data['uploaderId'] ?? widget.data['uid'];
+          final String? ownerId =
+              widget.data['authorId'] ??
+              widget.data['uploaderId'] ??
+              widget.data['uid'];
           if (ownerId != null) {
-            final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+            final userDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .get();
             final userData = userDoc.data();
             final rawName = userData?['displayName']?.toString().trim();
             final senderName = (rawName != null && rawName.isNotEmpty)
                 ? rawName
-                : (user.displayName != null && user.displayName!.trim().isNotEmpty
-                    ? user.displayName!.trim()
-                    : "Ai đó");
+                : (user.displayName != null &&
+                          user.displayName!.trim().isNotEmpty
+                      ? user.displayName!.trim()
+                      : "Ai đó");
 
             await _sendNotification(
               targetUserId: ownerId,
@@ -116,39 +130,52 @@ class _PostActionRowState extends State<PostActionRow> {
     final Color defaultColor = isDarkMode ? Colors.white60 : Colors.grey[600]!;
 
     return StreamBuilder<DocumentSnapshot>(
-      stream: FirebaseFirestore.instance.collection(widget.collectionPath).doc(widget.docId).snapshots(),
-          builder: (context, postSnapshot) {
-            final postData = postSnapshot.hasData && postSnapshot.data!.exists
-                ? postSnapshot.data!.data() as Map<String, dynamic>
-                : widget.data;
+      stream: FirebaseFirestore.instance
+          .collection(widget.collectionPath)
+          .doc(widget.docId)
+          .snapshots(),
+      builder: (context, postSnapshot) {
+        final postData = postSnapshot.hasData && postSnapshot.data!.exists
+            ? postSnapshot.data!.data() as Map<String, dynamic>
+            : widget.data;
 
-            final int rawLikeCount = postData['likeCount'] ?? 0;
-            final int currentLikeCount = rawLikeCount < 0 ? 0 : rawLikeCount;
-            final int currentCommentCount = postData['commentCount'] ?? 0;
+        final int rawLikeCount = postData['likeCount'] ?? 0;
+        final int currentLikeCount = rawLikeCount < 0 ? 0 : rawLikeCount;
+        final int currentCommentCount = postData['commentCount'] ?? 0;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildLikeButton(user, isDarkMode, defaultColor, currentLikeCount),
-
-                  _buildActionButton(
-                    icon: Icons.chat_bubble_outline,
-                    label: '$currentCommentCount',
-                    color: defaultColor,
-                    onTap: () => _navigateToDetail(context),
-                  ),
-
-                  _buildSaveButton(user, isDarkMode, defaultColor),
-                ],
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildLikeButton(
+                user,
+                isDarkMode,
+                defaultColor,
+                currentLikeCount,
               ),
-            );
-          },
+
+              _buildActionButton(
+                icon: Icons.chat_bubble_outline,
+                label: '$currentCommentCount',
+                color: defaultColor,
+                onTap: () => _navigateToDetail(context),
+              ),
+
+              _buildSaveButton(user, isDarkMode, defaultColor),
+            ],
+          ),
         );
+      },
+    );
   }
 
-  Widget _buildLikeButton(User? user, bool isDarkMode, Color defaultColor, int likeCount) {
+  Widget _buildLikeButton(
+    User? user,
+    bool isDarkMode,
+    Color defaultColor,
+    int likeCount,
+  ) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection(widget.collectionPath)
@@ -183,7 +210,8 @@ class _PostActionRowState extends State<PostActionRow> {
           isLiked: displayLiked,
           onTap: () async {
             final now = DateTime.now();
-            if (now.difference(_lastLikeTapTime) < const Duration(milliseconds: 400)) {
+            if (now.difference(_lastLikeTapTime) <
+                const Duration(milliseconds: 400)) {
               return; // Chặn spam click
             }
             if (await _isUserPending()) return;
@@ -268,7 +296,14 @@ class _PostActionRowState extends State<PostActionRow> {
                   )
                 : Icon(icon, size: 20, color: color),
             const SizedBox(width: 6),
-            Text(label, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w500)),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       ),

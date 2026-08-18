@@ -59,9 +59,7 @@ class _CollaboratorDashboardState extends State<CollaboratorDashboard> {
                     ),
                   ),
                 ),
-                Expanded(
-                  child: _buildContent(),
-                ),
+                Expanded(child: _buildContent()),
               ],
             ),
           ),

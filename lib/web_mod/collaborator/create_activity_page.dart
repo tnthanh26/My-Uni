@@ -9,10 +9,7 @@ import '../services/activity_service.dart';
 import '../services/image_upload_helper.dart';
 
 class CreateActivityPage extends StatefulWidget {
-  const CreateActivityPage({
-    super.key,
-    required this.onCreated,
-  });
+  const CreateActivityPage({super.key, required this.onCreated});
 
   final VoidCallback onCreated;
 
@@ -80,18 +77,14 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
         _imageUrlController.text = url;
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tải hình ảnh lên thành công!'),
-          ),
+          const SnackBar(content: Text('Tải hình ảnh lên thành công!')),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Tải ảnh thất bại: $e'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Tải ảnh thất bại: $e')));
       }
     }
   }
@@ -109,9 +102,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
     if (fileBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Không đọc được nội dung file.'),
-        ),
+        const SnackBar(content: Text('Không đọc được nội dung file.')),
       );
       return;
     }
@@ -147,25 +138,18 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       if (newIds.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text(
-              'Tất cả MSSV trong file đã có trong danh sách.',
-            ),
+            content: Text('Tất cả MSSV trong file đã có trong danh sách.'),
           ),
         );
         return;
       }
 
       final separator = currentText.isEmpty ? '' : '\n';
-      _studentIdsController.text =
-      '$currentText$separator${newIds.join('\n')}';
+      _studentIdsController.text = '$currentText$separator${newIds.join('\n')}';
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Đã trích xuất thêm ${ids.length} MSSV từ file.',
-        ),
-      ),
+      SnackBar(content: Text('Đã trích xuất thêm ${ids.length} MSSV từ file.')),
     );
   }
 
@@ -190,9 +174,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
     if (pointText.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vui lòng nhập điểm rèn luyện.'),
-        ),
+        const SnackBar(content: Text('Vui lòng nhập điểm rèn luyện.')),
       );
       return;
     }
@@ -201,9 +183,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     if (point == null || point < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Điểm rèn luyện phải là số nguyên không âm.',
-          ),
+          content: Text('Điểm rèn luyện phải là số nguyên không âm.'),
         ),
       );
       return;
@@ -218,9 +198,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     if (_requiresRegistration && registeredIds.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Vui lòng nhập danh sách sinh viên đăng ký.',
-          ),
+          content: Text('Vui lòng nhập danh sách sinh viên đăng ký.'),
         ),
       );
       return;
@@ -229,15 +207,14 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
     if (_endTime.isBefore(_startTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Thời gian kết thúc phải sau thời gian bắt đầu.',
-          ),
+          content: Text('Thời gian kết thúc phải sau thời gian bắt đầu.'),
         ),
       );
       return;
     }
 
-    final selectedFac = FacultyHelper.findById(_selectedFacultyId) ??
+    final selectedFac =
+        FacultyHelper.findById(_selectedFacultyId) ??
         FacultyHelper.activeFaculties.first;
 
     setState(() => _isSubmitting = true);
@@ -267,21 +244,15 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Đã tạo sự kiện thành công ',
-          ),
-        ),
+        const SnackBar(content: Text('Đã tạo sự kiện thành công ')),
       );
 
       widget.onCreated();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Lỗi khi tạo sự kiện: $e'),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi khi tạo sự kiện: $e')));
       }
     } finally {
       if (mounted) {
@@ -296,8 +267,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       color: _pageBackground,
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final horizontalPadding =
-          constraints.maxWidth < 700 ? 16.0 : 32.0;
+          final horizontalPadding = constraints.maxWidth < 700 ? 16.0 : 32.0;
 
           return SingleChildScrollView(
             primary: false,
@@ -360,23 +330,13 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
           _buildFacultyDropdown(),
           const SizedBox(height: 16),
 
-          _input(
-            _titleController,
-            'Tên hoạt động / sự kiện *',
-          ),
+          _input(_titleController, 'Tên hoạt động / sự kiện *'),
           const SizedBox(height: 16),
 
-          _input(
-            _descriptionController,
-            'Mô tả chi tiết',
-            maxLines: 4,
-          ),
+          _input(_descriptionController, 'Mô tả chi tiết', maxLines: 4),
           const SizedBox(height: 16),
 
-          _input(
-            _organizerController,
-            'Đơn vị tổ chức *',
-          ),
+          _input(_organizerController, 'Đơn vị tổ chức *'),
           const SizedBox(height: 16),
 
           _input(
@@ -385,20 +345,13 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
           ),
           const SizedBox(height: 16),
 
-          _input(
-            _locationController,
-            'Địa điểm (tên phòng, địa chỉ) *',
-          ),
+          _input(_locationController, 'Địa điểm (tên phòng, địa chỉ) *'),
           const SizedBox(height: 16),
 
           _buildOnlineSection(),
           const SizedBox(height: 16),
 
-          _input(
-            _pointController,
-            'Điểm rèn luyện dự kiến *',
-            isNumber: true,
-          ),
+          _input(_pointController, 'Điểm rèn luyện dự kiến *', isNumber: true),
           const SizedBox(height: 24),
 
           _sectionTitle('Thời gian diễn ra'),
@@ -412,10 +365,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
           _buildImagePreview(),
           const SizedBox(height: 20),
 
-          _input(
-            _registrationUrlController,
-            'Đường dẫn đến bài viết gốc',
-          ),
+          _input(_registrationUrlController, 'Đường dẫn đến bài viết gốc'),
           const SizedBox(height: 24),
 
           _buildRegistrationSection(),
@@ -427,23 +377,19 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
               width: 245,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: _isSubmitting
-                    ? null
-                    : _handleCreateActivity,
+                onPressed: _isSubmitting ? null : _handleCreateActivity,
                 icon: _isSubmitting
                     ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Icon(Icons.add_rounded, size: 20),
                 label: Text(
-                  _isSubmitting
-                      ? 'Đang tạo...'
-                      : 'Tạo Hoạt động & Sự kiện',
+                  _isSubmitting ? 'Đang tạo...' : 'Tạo Hoạt động & Sự kiện',
                   style: const TextStyle(
                     fontFamily: 'Nunito',
                     fontWeight: FontWeight.w800,
@@ -453,13 +399,10 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _primaryOrange,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor:
-                  _primaryOrange.withOpacity(0.55),
+                  disabledBackgroundColor: _primaryOrange.withOpacity(0.55),
                   disabledForegroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 22,
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(13),
                   ),
@@ -519,10 +462,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
   Widget _buildOnlineSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
         color: _fieldBackground,
         borderRadius: BorderRadius.circular(14),
@@ -552,7 +492,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
             _input(
               _onlineUrlController,
               'Đường dẫn tham gia Online '
-                  '(Zoom, Google Meet, MS Teams...)',
+              '(Zoom, Google Meet, MS Teams...)',
             ),
             const SizedBox(height: 14),
           ],
@@ -590,11 +530,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
         if (useColumn) {
           return Column(
-            children: [
-              startBox,
-              const SizedBox(height: 12),
-              endBox,
-            ],
+            children: [startBox, const SizedBox(height: 12), endBox],
           );
         }
 
@@ -612,35 +548,25 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
   Widget _buildImageSection() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final urlField = _input(
-          _imageUrlController,
-          'Đường dẫn URL hình ảnh',
-        );
+        final urlField = _input(_imageUrlController, 'Đường dẫn URL hình ảnh');
 
         final uploadButton = SizedBox(
           width: 190,
           height: 50,
           child: ElevatedButton.icon(
-            onPressed: _isUploadingImage
-                ? null
-                : _handleUploadImage,
+            onPressed: _isUploadingImage ? null : _handleUploadImage,
             icon: _isUploadingImage
                 ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            )
-                : const Icon(
-              Icons.upload_file_rounded,
-              size: 20,
-            ),
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.upload_file_rounded, size: 20),
             label: Text(
-              _isUploadingImage
-                  ? 'Đang tải...'
-                  : 'Tải ảnh từ máy',
+              _isUploadingImage ? 'Đang tải...' : 'Tải ảnh từ máy',
               style: const TextStyle(
                 fontFamily: 'Nunito',
                 fontWeight: FontWeight.w700,
@@ -649,13 +575,10 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
             style: ElevatedButton.styleFrom(
               backgroundColor: _primaryBlue,
               foregroundColor: Colors.white,
-              disabledBackgroundColor:
-              _primaryBlue.withOpacity(0.55),
+              disabledBackgroundColor: _primaryBlue.withOpacity(0.55),
               disabledForegroundColor: Colors.white,
               elevation: 0,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 17,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 17),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(13),
               ),
@@ -671,10 +594,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
               const SizedBox(height: 10),
               Align(
                 alignment: Alignment.centerLeft,
-                child: SizedBox(
-                  width: 190,
-                  child: uploadButton,
-                ),
+                child: SizedBox(width: 190, child: uploadButton),
               ),
             ],
           );
@@ -769,10 +689,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
             ),
             subtitle: const Text(
               'Chỉ sinh viên trong danh sách mới được điểm danh tự động.',
-              style: TextStyle(
-                fontFamily: 'Nunito',
-                color: _secondaryText,
-              ),
+              style: TextStyle(fontFamily: 'Nunito', color: _secondaryText),
             ),
             value: _requiresRegistration,
             onChanged: (value) {
@@ -786,10 +703,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
               builder: (context, constraints) {
                 final button = TextButton.icon(
                   onPressed: _pickFile,
-                  icon: const Icon(
-                    Icons.upload_file_rounded,
-                    size: 18,
-                  ),
+                  icon: const Icon(Icons.upload_file_rounded, size: 18),
                   label: const Text(
                     'Chọn file (.txt, .csv)',
                     style: TextStyle(
@@ -839,8 +753,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
               controller: _studentIdsController,
               maxLines: 5,
               decoration: _inputDecoration(
-                hintText:
-                'Nhập hoặc dán danh sách MSSV, mỗi mã một dòng...',
+                hintText: 'Nhập hoặc dán danh sách MSSV, mỗi mã một dòng...',
                 fillColor: Colors.white,
               ),
             ),
@@ -878,12 +791,12 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
   }
 
   Widget _input(
-      TextEditingController controller,
-      String label, {
-        int maxLines = 1,
-        bool isNumber = false,
-        String? hintText,
-      }) {
+    TextEditingController controller,
+    String label, {
+    int maxLines = 1,
+    bool isNumber = false,
+    String? hintText,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -893,16 +806,14 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
           maxLines: maxLines,
           keyboardType: isNumber
               ? const TextInputType.numberWithOptions(
-            decimal: false,
-            signed: false,
-          )
+                  decimal: false,
+                  signed: false,
+                )
               : TextInputType.text,
           inputFormatters: isNumber
               ? [FilteringTextInputFormatter.digitsOnly]
               : null,
-          decoration: _inputDecoration(
-            hintText: hintText ?? label,
-          ),
+          decoration: _inputDecoration(hintText: hintText ?? label),
         ),
       ],
     );
@@ -921,31 +832,19 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       ),
       prefixIcon: prefixIcon == null
           ? null
-          : Icon(
-        prefixIcon,
-        size: 20,
-        color: _secondaryText,
-      ),
+          : Icon(prefixIcon, size: 20, color: _secondaryText),
       filled: true,
       fillColor: fillColor,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 15,
-        vertical: 15,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
         borderSide: const BorderSide(color: _cardBorder),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(13),
-        borderSide: const BorderSide(
-          color: _primaryBlue,
-          width: 1.5,
-        ),
+        borderSide: const BorderSide(color: _primaryBlue, width: 1.5),
       ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(13),
-      ),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(13)),
     );
   }
 
@@ -976,10 +875,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
           ),
           child: Row(
             children: [
-              const Icon(
-                Icons.schedule_rounded,
-                color: _primaryBlue,
-              ),
+              const Icon(Icons.schedule_rounded, color: _primaryBlue),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -1033,9 +929,7 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
       initialEntryMode: TimePickerEntryMode.inputOnly,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            alwaysUse24HourFormat: true,
-          ),
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
           child: child ?? const SizedBox.shrink(),
         );
       },
@@ -1043,12 +937,6 @@ class _CreateActivityPageState extends State<CreateActivityPage> {
 
     if (time == null) return null;
 
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 }

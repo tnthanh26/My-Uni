@@ -7,19 +7,18 @@ import '../services/image_upload_helper.dart';
 import '../widgets/activity_card.dart';
 
 class ActivitiesPage extends StatefulWidget {
-  const ActivitiesPage({
-    super.key,
-    required this.onOpenAttendance,
-  });
+  const ActivitiesPage({super.key, required this.onOpenAttendance});
 
-  final void Function(String activityId, Map<String, dynamic> data) onOpenAttendance;
+  final void Function(String activityId, Map<String, dynamic> data)
+  onOpenAttendance;
 
   @override
   State<ActivitiesPage> createState() => _ActivitiesPageState();
 }
 
 class _ActivitiesPageState extends State<ActivitiesPage> {
-  final TextEditingController _activitySearchController = TextEditingController();
+  final TextEditingController _activitySearchController =
+      TextEditingController();
   Timer? _activitySearchDebounce;
   String _activitySearchText = '';
 
@@ -31,10 +30,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _showDeleteActivityConfirmation(
-      BuildContext context,
-      String activityId,
-      String title,
-      ) async {
+    BuildContext context,
+    String activityId,
+    String title,
+  ) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -45,7 +44,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
             SizedBox(width: 10),
             Text(
               'Xóa hoạt động',
-              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -59,11 +61,15 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
               ),
               const TextSpan(
                 text:
-                '? \n\nHoạt động sẽ bị xóa vĩnh viển khỏi hệ thống và không thể khôi phục.',
+                    '? \n\nHoạt động sẽ bị xóa vĩnh viển khỏi hệ thống và không thể khôi phục.',
               ),
             ],
           ),
-          style: const TextStyle(fontFamily: 'Nunito', fontSize: 15, height: 1.5),
+          style: const TextStyle(
+            fontFamily: 'Nunito',
+            fontSize: 15,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
@@ -76,10 +82,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               minimumSize: const Size(90, 36),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -87,10 +90,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
             ),
             child: const Text(
               'Xác nhận xóa',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -101,21 +101,24 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
       try {
         await ActivityService.deleteActivity(activityId);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đã xóa hoạt động.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Đã xóa hoạt động.')));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi khi xóa hoạt động: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Lỗi khi xóa hoạt động: $e')));
         }
       }
     }
   }
 
-  Future<DateTime?> _pickDateTimeInDialog(BuildContext context, DateTime initial) async {
+  Future<DateTime?> _pickDateTimeInDialog(
+    BuildContext context,
+    DateTime initial,
+  ) async {
     final date = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -133,9 +136,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
       initialEntryMode: TimePickerEntryMode.inputOnly,
       builder: (context, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(
-            alwaysUse24HourFormat: true,
-          ),
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
           child: child ?? const SizedBox.shrink(),
         );
       },
@@ -143,13 +144,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
     if (time == null) return null;
 
-    return DateTime(
-      date.year,
-      date.month,
-      date.day,
-      time.hour,
-      time.minute,
-    );
+    return DateTime(date.year, date.month, date.day, time.hour, time.minute);
   }
 
   Widget _dateBox({
@@ -222,31 +217,38 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _showEditActivityDialog(
-      BuildContext context,
-      String activityId,
-      Map<String, dynamic> data,
-      ) async {
+    BuildContext context,
+    String activityId,
+    Map<String, dynamic> data,
+  ) async {
     final titleController = TextEditingController(text: data['title'] ?? '');
-    final descriptionController =
-    TextEditingController(text: data['description'] ?? '');
-    final locationController =
-    TextEditingController(text: data['location'] ?? '');
-    final organizerController =
-    TextEditingController(text: data['organizerName'] ?? '');
-    final contactController =
-    TextEditingController(text: data['contact'] ?? '');
+    final descriptionController = TextEditingController(
+      text: data['description'] ?? '',
+    );
+    final locationController = TextEditingController(
+      text: data['location'] ?? '',
+    );
+    final organizerController = TextEditingController(
+      text: data['organizerName'] ?? '',
+    );
+    final contactController = TextEditingController(
+      text: data['contact'] ?? '',
+    );
     final trainingPointController = TextEditingController(
       text: (data['trainingPoint'] ?? 0).toString(),
     );
-    final imageUrlController =
-    TextEditingController(text: data['imageUrl'] ?? '');
+    final imageUrlController = TextEditingController(
+      text: data['imageUrl'] ?? '',
+    );
 
     bool requiresRegistration = data['requiresRegistration'] == true;
     bool isOnline = data['isOnline'] == true;
-    final onlineUrlController =
-    TextEditingController(text: data['onlineUrl'] ?? '');
-    final registrationUrlController =
-    TextEditingController(text: data['registrationUrl'] ?? '');
+    final onlineUrlController = TextEditingController(
+      text: data['onlineUrl'] ?? '',
+    );
+    final registrationUrlController = TextEditingController(
+      text: data['registrationUrl'] ?? '',
+    );
 
     DateTime startTime = (data['startTime'] is Timestamp)
         ? (data['startTime'] as Timestamp).toDate()
@@ -352,9 +354,15 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       title: 'Thời gian bắt đầu *',
                                       value: startTime,
                                       onTap: () async {
-                                        final picked = await _pickDateTimeInDialog(context, startTime);
+                                        final picked =
+                                            await _pickDateTimeInDialog(
+                                              context,
+                                              startTime,
+                                            );
                                         if (picked != null) {
-                                          setDialogState(() => startTime = picked);
+                                          setDialogState(
+                                            () => startTime = picked,
+                                          );
                                         }
                                       },
                                     ),
@@ -365,9 +373,15 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       title: 'Thời gian kết thúc *',
                                       value: endTime,
                                       onTap: () async {
-                                        final picked = await _pickDateTimeInDialog(context, endTime);
+                                        final picked =
+                                            await _pickDateTimeInDialog(
+                                              context,
+                                              endTime,
+                                            );
                                         if (picked != null) {
-                                          setDialogState(() => endTime = picked);
+                                          setDialogState(
+                                            () => endTime = picked,
+                                          );
                                         }
                                       },
                                     ),
@@ -378,8 +392,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                               TextField(
                                 controller: contactController,
                                 decoration: InputDecoration(
-                                  labelText: 'Thông tin liên hệ (SĐT, Email BTC)',
-                                  hintText: 'Ví dụ: SĐT 0901234567, email btc@gmail.com',
+                                  labelText:
+                                      'Thông tin liên hệ (SĐT, Email BTC)',
+                                  hintText:
+                                      'Ví dụ: SĐT 0901234567, email btc@gmail.com',
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -394,7 +410,9 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       decoration: InputDecoration(
                                         labelText: 'Địa điểm / Phòng học',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -408,7 +426,9 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       decoration: InputDecoration(
                                         labelText: 'Điểm rèn luyện',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -445,7 +465,9 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       decoration: InputDecoration(
                                         labelText: 'URL Hình ảnh',
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -458,46 +480,47 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                       onPressed: isUploading
                                           ? null
                                           : () async {
-                                        setDialogState(
-                                              () => isUploading = true,
-                                        );
-                                        try {
-                                          final url = await ImageUploadHelper
-                                              .pickAndUploadImage(
-                                            folder: 'activity_images',
-                                          );
-                                          if (url != null) {
-                                            imageUrlController.text = url;
-                                          }
-                                        } catch (e) {
-                                          if (mounted) {
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
-                                              SnackBar(
-                                                content: Text(
-                                                  'Lỗi tải ảnh: $e',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        } finally {
-                                          setDialogState(
-                                                () => isUploading = false,
-                                          );
-                                        }
-                                      },
+                                              setDialogState(
+                                                () => isUploading = true,
+                                              );
+                                              try {
+                                                final url =
+                                                    await ImageUploadHelper.pickAndUploadImage(
+                                                      folder: 'activity_images',
+                                                    );
+                                                if (url != null) {
+                                                  imageUrlController.text = url;
+                                                }
+                                              } catch (e) {
+                                                if (mounted) {
+                                                  ScaffoldMessenger.of(
+                                                    context,
+                                                  ).showSnackBar(
+                                                    SnackBar(
+                                                      content: Text(
+                                                        'Lỗi tải ảnh: $e',
+                                                      ),
+                                                    ),
+                                                  );
+                                                }
+                                              } finally {
+                                                setDialogState(
+                                                  () => isUploading = false,
+                                                );
+                                              }
+                                            },
                                       icon: isUploading
                                           ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
+                                              width: 16,
+                                              height: 16,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                              ),
+                                            )
                                           : const Icon(
-                                        Icons.upload_file_rounded,
-                                        size: 18,
-                                      ),
+                                              Icons.upload_file_rounded,
+                                              size: 18,
+                                            ),
                                       label: const Text('Tải ảnh'),
                                       style: ElevatedButton.styleFrom(
                                         minimumSize: Size.zero,
@@ -507,7 +530,9 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                           vertical: 14,
                                         ),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -518,9 +543,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                               CheckboxListTile(
                                 value: isOnline,
                                 onChanged: (val) {
-                                  setDialogState(
-                                        () => isOnline = val ?? false,
-                                  );
+                                  setDialogState(() => isOnline = val ?? false);
                                 },
                                 title: const Text(
                                   'Sự kiện diễn ra Trực tuyến (Online)',
@@ -530,7 +553,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                                 contentPadding: EdgeInsets.zero,
                               ),
                               if (isOnline) ...[
@@ -538,7 +562,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                 TextField(
                                   controller: onlineUrlController,
                                   decoration: InputDecoration(
-                                    labelText: 'Đường dẫn tham gia Online (Google Meet, Zoom...)',
+                                    labelText:
+                                        'Đường dẫn tham gia Online (Google Meet, Zoom...)',
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -550,7 +575,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                 value: requiresRegistration,
                                 onChanged: (val) {
                                   setDialogState(
-                                        () => requiresRegistration = val ?? false,
+                                    () => requiresRegistration = val ?? false,
                                   );
                                 },
                                 title: const Text(
@@ -560,7 +585,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                     fontSize: 14,
                                   ),
                                 ),
-                                controlAffinity: ListTileControlAffinity.leading,
+                                controlAffinity:
+                                    ListTileControlAffinity.leading,
                                 contentPadding: EdgeInsets.zero,
                               ),
                             ],
@@ -590,59 +616,69 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                 onPressed: isSaving
                                     ? null
                                     : () async {
-                                  setDialogState(() => isSaving = true);
-                                  try {
-                                    await ActivityService.updateActivity(
-                                      activityId: activityId,
-                                      title: titleController.text.trim(),
-                                      description:
-                                      descriptionController.text.trim(),
-                                      location:
-                                      locationController.text.trim(),
-                                      organizerName:
-                                      organizerController.text.trim(),
-                                        trainingPoint: int.tryParse(
-                                        trainingPointController.text
-                                            .trim(),
-                                      ) ??
-                                          0,
-                                       startTime: startTime,
-                                       endTime: endTime,
-                                      requiresRegistration:
-                                      requiresRegistration,
-                                      imageUrl:
-                                      imageUrlController.text.trim(),
-                                      contact: contactController.text.trim(),
-                                      isOnline: isOnline,
-                                      onlineUrl:
-                                      onlineUrlController.text.trim(),
-                                      registrationUrl:
-                                      registrationUrlController.text
-                                          .trim(),
-                                    );
-                                    if (mounted) {
-                                      Navigator.pop(dialogCtx);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Đã cập nhật hoạt động thành công!',
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  } catch (e) {
-                                    setDialogState(() => isSaving = false);
-                                    if (mounted) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Lỗi cập nhật: $e'),
-                                        ),
-                                      );
-                                    }
-                                  }
-                                },
+                                        setDialogState(() => isSaving = true);
+                                        try {
+                                          await ActivityService.updateActivity(
+                                            activityId: activityId,
+                                            title: titleController.text.trim(),
+                                            description: descriptionController
+                                                .text
+                                                .trim(),
+                                            location: locationController.text
+                                                .trim(),
+                                            organizerName: organizerController
+                                                .text
+                                                .trim(),
+                                            trainingPoint:
+                                                int.tryParse(
+                                                  trainingPointController.text
+                                                      .trim(),
+                                                ) ??
+                                                0,
+                                            startTime: startTime,
+                                            endTime: endTime,
+                                            requiresRegistration:
+                                                requiresRegistration,
+                                            imageUrl: imageUrlController.text
+                                                .trim(),
+                                            contact: contactController.text
+                                                .trim(),
+                                            isOnline: isOnline,
+                                            onlineUrl: onlineUrlController.text
+                                                .trim(),
+                                            registrationUrl:
+                                                registrationUrlController.text
+                                                    .trim(),
+                                          );
+                                          if (mounted) {
+                                            Navigator.pop(dialogCtx);
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Đã cập nhật hoạt động thành công!',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        } catch (e) {
+                                          setDialogState(
+                                            () => isSaving = false,
+                                          );
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Lỗi cập nhật: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
+                                        }
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   minimumSize: Size.zero,
                                   maximumSize: const Size(170, 47),
@@ -654,13 +690,13 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                                 ),
                                 child: isSaving
                                     ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          color: Colors.white,
+                                          strokeWidth: 2,
+                                        ),
+                                      )
                                     : const Text('Lưu thay đổi'),
                               ),
                             ),
@@ -688,10 +724,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
   }
 
   Future<void> _showRegisteredList(
-      BuildContext context,
-      String title,
-      List<String> ids,
-      ) async {
+    BuildContext context,
+    String title,
+    List<String> ids,
+  ) async {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -701,7 +737,10 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
           children: [
             Text(
               'Danh sách đăng ký',
-              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -721,14 +760,21 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.blueAccent.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.people_outline_rounded, size: 18, color: Colors.blueAccent),
+                    Icon(
+                      Icons.people_outline_rounded,
+                      size: 18,
+                      color: Colors.blueAccent,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'Tổng cộng: ${ids.length} sinh viên',
@@ -747,24 +793,24 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                 child: ids.isEmpty
                     ? const Center(child: Text('Danh sách trống'))
                     : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: ids.length,
-                  itemBuilder: (context, index) => Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(color: Color(0xFFF1F4F9)),
+                        shrinkWrap: true,
+                        itemCount: ids.length,
+                        itemBuilder: (context, index) => Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(color: Color(0xFFF1F4F9)),
+                            ),
+                          ),
+                          child: Text(
+                            '${index + 1}. ${ids[index]}',
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 15,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '${index + 1}. ${ids[index]}',
-                      style: const TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
@@ -817,10 +863,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                   const SizedBox(height: 12),
                   SelectableText(
                     snapshot.error.toString(),
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black87,
-                    ),
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
                   ),
                 ],
               ),
@@ -839,16 +882,19 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
         final filteredDocs = keyword.isEmpty
             ? docs
             : docs.where((doc) {
-          final data = doc.data();
-          final title = (data['title'] ?? '').toString().toLowerCase();
-          final location = (data['location'] ?? '').toString().toLowerCase();
-          final organizer =
-          (data['organizerName'] ?? '').toString().toLowerCase();
+                final data = doc.data();
+                final title = (data['title'] ?? '').toString().toLowerCase();
+                final location = (data['location'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                final organizer = (data['organizerName'] ?? '')
+                    .toString()
+                    .toLowerCase();
 
-          return title.contains(keyword) ||
-              location.contains(keyword) ||
-              organizer.contains(keyword);
-        }).toList();
+                return title.contains(keyword) ||
+                    location.contains(keyword) ||
+                    organizer.contains(keyword);
+              }).toList();
 
         if (docs.isEmpty) {
           return const Center(
@@ -870,7 +916,7 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
 
                   _activitySearchDebounce = Timer(
                     const Duration(milliseconds: 450),
-                        () {
+                    () {
                       if (!mounted) return;
                       setState(() {
                         _activitySearchText = value;
@@ -880,20 +926,20 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                 },
                 decoration: InputDecoration(
                   hintText:
-                  'Tìm theo tên hoạt động, địa điểm hoặc đơn vị tổ chức...',
+                      'Tìm theo tên hoạt động, địa điểm hoặc đơn vị tổ chức...',
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: _activitySearchController.text.isEmpty
                       ? null
                       : IconButton(
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () {
-                      _activitySearchDebounce?.cancel();
-                      _activitySearchController.clear();
-                      setState(() {
-                        _activitySearchText = '';
-                      });
-                    },
-                  ),
+                          icon: const Icon(Icons.close_rounded),
+                          onPressed: () {
+                            _activitySearchDebounce?.cancel();
+                            _activitySearchController.clear();
+                            setState(() {
+                              _activitySearchText = '';
+                            });
+                          },
+                        ),
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -933,7 +979,8 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                       onReopen: () async {
                         await ActivityService.reopenActivity(doc.id);
                       },
-                      onEdit: () => _showEditActivityDialog(context, doc.id, data),
+                      onEdit: () =>
+                          _showEditActivityDialog(context, doc.id, data),
                       onDelete: () => _showDeleteActivityConfirmation(
                         context,
                         doc.id,
@@ -941,13 +988,13 @@ class _ActivitiesPageState extends State<ActivitiesPage> {
                       ),
                       onViewRegisteredList: data['requiresRegistration'] == true
                           ? () => _showRegisteredList(
-                        context,
-                        data['title'] ?? 'Hoạt động',
-                        (data['registeredStudentIds'] as List<dynamic>?)
-                            ?.map((e) => e.toString())
-                            .toList() ??
-                            [],
-                      )
+                              context,
+                              data['title'] ?? 'Hoạt động',
+                              (data['registeredStudentIds'] as List<dynamic>?)
+                                      ?.map((e) => e.toString())
+                                      .toList() ??
+                                  [],
+                            )
                           : null,
                     );
                   },

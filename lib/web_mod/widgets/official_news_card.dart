@@ -42,7 +42,7 @@ class OfficialNewsCard extends StatelessWidget {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
       ),
       child: Padding(
@@ -54,19 +54,16 @@ class OfficialNewsCard extends StatelessWidget {
             Row(
               children: [
                 avatarImage != null
-                    ? CircleAvatar(
-                  backgroundImage: avatarImage,
-                  radius: 16,
-                )
+                    ? CircleAvatar(backgroundImage: avatarImage, radius: 16)
                     : const CircleAvatar(
-                  backgroundColor: Color(0xFFEAF2FF),
-                  radius: 16,
-                  child: Icon(
-                    Icons.campaign_outlined,
-                    color: Colors.blueAccent,
-                    size: 18,
-                  ),
-                ),
+                        backgroundColor: Color(0xFFEAF2FF),
+                        radius: 16,
+                        child: Icon(
+                          Icons.campaign_outlined,
+                          color: Colors.blueAccent,
+                          size: 18,
+                        ),
+                      ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -92,7 +89,10 @@ class OfficialNewsCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.blueAccent.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(18),
@@ -151,7 +151,11 @@ class OfficialNewsCard extends StatelessWidget {
             if (date.toString().trim().isNotEmpty) ...[
               Row(
                 children: [
-                  const Icon(Icons.calendar_today_outlined, size: 14, color: Colors.grey),
+                  const Icon(
+                    Icons.calendar_today_outlined,
+                    size: 14,
+                    color: Colors.grey,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     date,
@@ -183,7 +187,10 @@ class OfficialNewsCard extends StatelessWidget {
             if (link.toString().trim().isNotEmpty) ...[
               const SizedBox(height: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
@@ -212,9 +219,15 @@ class OfficialNewsCard extends StatelessWidget {
             /// STATS
             Row(
               children: [
-                ModStatChip(icon: Icons.favorite_border, label: "$likeCount lượt thích"),
+                ModStatChip(
+                  icon: Icons.favorite_border,
+                  label: "$likeCount lượt thích",
+                ),
                 const SizedBox(width: 8),
-                ModStatChip(icon: Icons.chat_bubble_outline, label: "$commentCount bình luận"),
+                ModStatChip(
+                  icon: Icons.chat_bubble_outline,
+                  label: "$commentCount bình luận",
+                ),
               ],
             ),
 
@@ -252,7 +265,7 @@ class OfficialNewsCard extends StatelessWidget {
                   ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

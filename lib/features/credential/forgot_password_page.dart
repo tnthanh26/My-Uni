@@ -86,9 +86,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
         elevation: 0,
         leading: IconButton(
           icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: isDarkMode ? Colors.white : Colors.black,
-              size: 20
+            Icons.arrow_back_ios_new,
+            color: isDarkMode ? Colors.white : Colors.black,
+            size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -100,156 +100,170 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 30.0),
               child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                const SizedBox(height: 20),
-                // Icon minh họa với nền màu nhẹ thích ứng
-                Container(
-                  padding: const EdgeInsets.all(25),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF6797E1).withOpacity(isDarkMode ? 0.15 : 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                      Icons.lock_reset_rounded,
-                      size: 80,
-                      color: Color(0xFF6797E1)
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Text(
-                  'Quên mật khẩu?',
-                  style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
-                      color: isDarkMode ? Colors.white : Colors.black87
-                  ),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  'Nhập email sinh viên để xác thực tài khoản. Chúng tôi sẽ gửi mã khôi phục qua email này.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      fontSize: 15,
-                      color: isDarkMode ? Colors.white70 : Colors.black54,
-                      height: 1.5
-                  ),
-                ),
-                const SizedBox(height: 40),
+                key: _formKey,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 20),
+                    // Icon minh họa với nền màu nhẹ thích ứng
+                    Container(
+                      padding: const EdgeInsets.all(25),
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFF6797E1,
+                        ).withOpacity(isDarkMode ? 0.15 : 0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.lock_reset_rounded,
+                        size: 80,
+                        color: Color(0xFF6797E1),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    Text(
+                      'Quên mật khẩu?',
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: isDarkMode ? Colors.white : Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 15),
+                    Text(
+                      'Nhập email sinh viên để xác thực tài khoản. Chúng tôi sẽ gửi mã khôi phục qua email này.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: isDarkMode ? Colors.white70 : Colors.black54,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 40),
 
-                // Trường nhập Email
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDarkMode ? Colors.white : Colors.black,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Email sinh viên',
-                    labelStyle: TextStyle(
-                        color: isDarkMode ? Colors.white60 : Colors.grey[600]
-                    ),
-                    hintText: 'user@student.hcmus.edu.vn',
-                    hintStyle: TextStyle(
-                        color: isDarkMode ? Colors.white24 : Colors.black26
-                    ),
-                    prefixIcon: Icon(
-                      Icons.mail_outline_rounded,
-                      color: isDarkMode ? Colors.white60 : Colors.grey,
-                    ),
-                    filled: true,
-                    // Màu nền ô nhập liệu đổi theo Mode
-                    fillColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.grey[50],
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: isDarkMode
-                          ? BorderSide(color: Colors.white.withOpacity(0.1))
-                          : BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: isDarkMode
-                          ? BorderSide(color: Colors.white.withOpacity(0.1))
-                          : BorderSide.none,
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(15),
-                      borderSide: const BorderSide(color: Color(0xFF6797E1), width: 1.5),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Vui lòng nhập email';
-                    }
-                    final trimmedValue = value.trim().toLowerCase();
-                    final allowedEmails = [
-                      'nhatthanhtest2002@gmail.com',
-                      'testusermyuni@gmail.com',
-                      'akipikona@gmail.com',
-                      'xuanmai.vanhoc@gmail.com',
-                      'quoctientran145@gmail.com',
-                      'trangdangductin@gmail.com',
-                      'pphambuu@gmail.com',
-                      'huynhhuemy643@gmail.com',
-                      'lanphuong150404@gmail.com',
-                      'duthy1202@gmail.com',
-                      'huala1704@gmail.com',
-                      'bichchau2222004@gmail.com',
-                      'khiemduong0938@gmail.com',
-                      'duonghieu2907@gmail.com',
-                      'nphuongnguyen615@gmail.com',
-                      'vuongthai2004@gmail.com',
-                      'huynhhuuhau1704@gmail.com',
-                    ];
+                    // Trường nhập Email
+                    TextFormField(
+                      controller: _emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: isDarkMode ? Colors.white : Colors.black,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Email sinh viên',
+                        labelStyle: TextStyle(
+                          color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                        ),
+                        hintText: 'user@student.hcmus.edu.vn',
+                        hintStyle: TextStyle(
+                          color: isDarkMode ? Colors.white24 : Colors.black26,
+                        ),
+                        prefixIcon: Icon(
+                          Icons.mail_outline_rounded,
+                          color: isDarkMode ? Colors.white60 : Colors.grey,
+                        ),
+                        filled: true,
+                        // Màu nền ô nhập liệu đổi theo Mode
+                        fillColor: isDarkMode
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.grey[50],
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: isDarkMode
+                              ? BorderSide(color: Colors.white.withOpacity(0.1))
+                              : BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: isDarkMode
+                              ? BorderSide(color: Colors.white.withOpacity(0.1))
+                              : BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(15),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF6797E1),
+                            width: 1.5,
+                          ),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Vui lòng nhập email';
+                        }
+                        final trimmedValue = value.trim().toLowerCase();
+                        final allowedEmails = [
+                          'nhatthanhtest2002@gmail.com',
+                          'testusermyuni@gmail.com',
+                          'akipikona@gmail.com',
+                          'xuanmai.vanhoc@gmail.com',
+                          'quoctientran145@gmail.com',
+                          'trangdangductin@gmail.com',
+                          'pphambuu@gmail.com',
+                          'huynhhuemy643@gmail.com',
+                          'lanphuong150404@gmail.com',
+                          'duthy1202@gmail.com',
+                          'huala1704@gmail.com',
+                          'bichchau2222004@gmail.com',
+                          'khiemduong0938@gmail.com',
+                          'duonghieu2907@gmail.com',
+                          'nphuongnguyen615@gmail.com',
+                          'vuongthai2004@gmail.com',
+                          'huynhhuuhau1704@gmail.com',
+                        ];
 
-                    if (allowedEmails.contains(trimmedValue)) {
-                      return null;
-                    }
+                        if (allowedEmails.contains(trimmedValue)) {
+                          return null;
+                        }
 
-                    final RegExp emailRegex = RegExp(
-                      r'^[a-zA-Z0-9._%+-]+@(apcs\.fitus\.edu\.vn|student\.hcmus\.edu\.vn)$',
-                    );
+                        final RegExp emailRegex = RegExp(
+                          r'^[a-zA-Z0-9._%+-]+@(apcs\.fitus\.edu\.vn|student\.hcmus\.edu\.vn)$',
+                        );
 
-                    if (!emailRegex.hasMatch(trimmedValue)) {
-                      return 'Vui lòng sử dụng email sinh viên (@apcs.fitus.edu.vn hoặc @student.hcmus.edu.vn)';
-                    }
-                    return null;
-                  },
+                        if (!emailRegex.hasMatch(trimmedValue)) {
+                          return 'Vui lòng sử dụng email sinh viên (@apcs.fitus.edu.vn hoặc @student.hcmus.edu.vn)';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 40),
+
+                    // Nút Gửi
+                    ElevatedButton(
+                      onPressed: _isLoading ? null : _resetPassword,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6797E1),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        elevation: isDarkMode ? 0 : 2, // Phẳng hơn khi tối
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Text(
+                              'Gửi yêu cầu',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(height: 40),
-
-                // Nút Gửi
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _resetPassword,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF6797E1),
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                    elevation: isDarkMode ? 0 : 2, // Phẳng hơn khi tối
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2
-                    ),
-                  )
-                      : const Text(
-                    'Gửi yêu cầu',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),
       ),
-    )));
+    );
   }
 }

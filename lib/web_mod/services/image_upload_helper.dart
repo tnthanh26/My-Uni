@@ -28,8 +28,11 @@ class ImageUploadHelper {
         throw Exception('Không đọc được dữ liệu ảnh.');
       }
 
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(RegExp(r'[^\w\.\-]'), '_')}';
-      final storageRef = FirebaseStorage.instance.ref().child('$folder/$fileName');
+      final fileName =
+          '${DateTime.now().millisecondsSinceEpoch}_${file.name.replaceAll(RegExp(r'[^\w\.\-]'), '_')}';
+      final storageRef = FirebaseStorage.instance.ref().child(
+        '$folder/$fileName',
+      );
 
       final uploadTask = await storageRef.putData(
         bytes,
