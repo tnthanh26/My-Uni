@@ -51,7 +51,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   }
 
   Future<void> _loadTargetUserInfo() async {
-    final info = await _chatService.getStudentVerificationInfo(widget.targetUserId);
+    final info = await _chatService.getStudentVerificationInfo(
+      widget.targetUserId,
+    );
     if (mounted && info != null) {
       setState(() {
         _targetUserInfo = info;
@@ -63,7 +65,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
       title: 'Xóa cuộc trò chuyện?',
-      message: 'Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa. Bạn có chắc chắn không?',
+      message:
+          'Toàn bộ tin nhắn trong cuộc trò chuyện này sẽ bị xóa. Bạn có chắc chắn không?',
       confirmText: 'Xóa',
     );
     if (confirm == true) {
@@ -109,9 +112,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (bottomSheetContext) {
-        return _ReportUserBottomSheet(
-          onSubmitReport: _submitUserReport,
-        );
+        return _ReportUserBottomSheet(onSubmitReport: _submitUserReport);
       },
     );
   }
@@ -155,7 +156,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        final isDarkMode = Theme.of(dialogContext).brightness == Brightness.dark;
+        final isDarkMode =
+            Theme.of(dialogContext).brightness == Brightness.dark;
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -262,12 +264,16 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       debugPrint("Error sending message: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi khi gửi tin nhắn: ${e.toString().replaceAll('Exception: ', '')}')),
+          SnackBar(
+            content: Text(
+              'Lỗi khi gửi tin nhắn: ${e.toString().replaceAll('Exception: ', '')}',
+            ),
+          ),
         );
       }
     }
   }
-  
+
   Future<void> _pickAndSendImage() async {
     try {
       final pickedFile = await ImagePicker().pickImage(
@@ -297,28 +303,26 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
       // Tải hình ảnh lên Firebase Storage
       final fileName = 'chat_img_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = FirebaseStorage.instance.ref().child('chat_images/$fileName');
-      
+      final storageRef = FirebaseStorage.instance.ref().child(
+        'chat_images/$fileName',
+      );
+
       final uploadTask = storageRef.putData(
         compressedBytes,
         SettableMetadata(contentType: 'image/jpeg'),
       );
-      
+
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
-      await _chatService.sendMessage(
-        widget.roomId,
-        '',
-        imageUrl: downloadUrl,
-      );
+      await _chatService.sendMessage(widget.roomId, '', imageUrl: downloadUrl);
       _scrollToBottom();
     } catch (e) {
       debugPrint("Error picking/sending image: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Không thể gửi hình ảnh: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Không thể gửi hình ảnh: $e')));
       }
     }
   }
@@ -327,7 +331,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     try {
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'txt'],
+        allowedExtensions: [
+          'pdf',
+          'doc',
+          'docx',
+          'xls',
+          'xlsx',
+          'ppt',
+          'pptx',
+          'zip',
+          'rar',
+          'txt',
+        ],
       );
       if (result == null || result.files.isEmpty) return;
 
@@ -336,7 +351,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
       if (platformFile.size > 750 * 1024) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Vui lòng chọn tệp nhỏ hơn 750KB để gửi đính kèm')),
+            const SnackBar(
+              content: Text('Vui lòng chọn tệp nhỏ hơn 750KB để gửi đính kèm'),
+            ),
           );
         }
         return;
@@ -413,17 +430,27 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
         decoration: BoxDecoration(
           color: isSelected
               ? brandColor.withValues(alpha: isDark ? 0.25 : 0.12)
-              : (isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFF1F5F9)),
+              : (isDark
+                    ? Colors.white.withValues(alpha: 0.05)
+                    : const Color(0xFFF1F5F9)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? brandColor : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
+            color: isSelected
+                ? brandColor
+                : (isDark ? Colors.white10 : const Color(0xFFE2E8F0)),
             width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 16, color: isSelected ? brandColor : (isDark ? Colors.white60 : const Color(0xFF64748B))),
+            Icon(
+              icon,
+              size: 16,
+              color: isSelected
+                  ? brandColor
+                  : (isDark ? Colors.white60 : const Color(0xFF64748B)),
+            ),
             const SizedBox(width: 6),
             Text(
               label,
@@ -431,7 +458,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 12,
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                color: isSelected ? (isDark ? Colors.white : brandColor) : (isDark ? Colors.white70 : const Color(0xFF334155)),
+                color: isSelected
+                    ? (isDark ? Colors.white : brandColor)
+                    : (isDark ? Colors.white70 : const Color(0xFF334155)),
               ),
             ),
           ],
@@ -462,10 +491,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
     if (!mounted) return;
 
-    final zaloController = TextEditingController(text: savedContacts['zalo'] ?? '');
-    final fbController = TextEditingController(text: savedContacts['facebook'] ?? '');
-    final phoneController = TextEditingController(text: savedContacts['phone'] ?? '');
-    final discordController = TextEditingController(text: savedContacts['discord'] ?? '');
+    final zaloController = TextEditingController(
+      text: savedContacts['zalo'] ?? '',
+    );
+    final fbController = TextEditingController(
+      text: savedContacts['facebook'] ?? '',
+    );
+    final phoneController = TextEditingController(
+      text: savedContacts['phone'] ?? '',
+    );
+    final discordController = TextEditingController(
+      text: savedContacts['discord'] ?? '',
+    );
 
     String selectedType = 'facebook';
 
@@ -511,7 +548,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(24),
+                  ),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -536,7 +575,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
-                            color: isDark ? Colors.white : const Color(0xFF1F2937),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1F2937),
                           ),
                         ),
                       ],
@@ -547,13 +588,45 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _buildBrandChip('facebook', 'Facebook', Icons.facebook_rounded, const Color(0xFF1877F2), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          _buildBrandChip(
+                            'facebook',
+                            'Facebook',
+                            Icons.facebook_rounded,
+                            const Color(0xFF1877F2),
+                            selectedType,
+                            (type) => setDialogState(() => selectedType = type),
+                            isDark,
+                          ),
                           const SizedBox(width: 8),
-                          _buildBrandChip('zalo', 'Zalo', Icons.chat_bubble_rounded, const Color(0xFF0068FF), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          _buildBrandChip(
+                            'zalo',
+                            'Zalo',
+                            Icons.chat_bubble_rounded,
+                            const Color(0xFF0068FF),
+                            selectedType,
+                            (type) => setDialogState(() => selectedType = type),
+                            isDark,
+                          ),
                           const SizedBox(width: 8),
-                          _buildBrandChip('discord', 'Discord', Icons.headset_mic_rounded, const Color(0xFF5865F2), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          _buildBrandChip(
+                            'discord',
+                            'Discord',
+                            Icons.headset_mic_rounded,
+                            const Color(0xFF5865F2),
+                            selectedType,
+                            (type) => setDialogState(() => selectedType = type),
+                            isDark,
+                          ),
                           const SizedBox(width: 8),
-                          _buildBrandChip('phone', 'SĐT', Icons.phone_android_rounded, const Color(0xFF10B981), selectedType, (type) => setDialogState(() => selectedType = type), isDark),
+                          _buildBrandChip(
+                            'phone',
+                            'SĐT',
+                            Icons.phone_android_rounded,
+                            const Color(0xFF10B981),
+                            selectedType,
+                            (type) => setDialogState(() => selectedType = type),
+                            isDark,
+                          ),
                         ],
                       ),
                     ),
@@ -574,17 +647,23 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                           fontSize: 13,
                         ),
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
+                        fillColor: isDark
+                            ? const Color(0xFF0F172A)
+                            : const Color(0xFFF8FAFC),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? Colors.white10
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(14),
                           borderSide: BorderSide(
-                            color: isDark ? Colors.white10 : const Color(0xFFE2E8F0),
+                            color: isDark
+                                ? Colors.white10
+                                : const Color(0xFFE2E8F0),
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
@@ -603,7 +682,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                               'Hủy',
                               style: TextStyle(
                                 fontFamily: 'Encode Sans Expanded',
-                                color: isDark ? Colors.white60 : Colors.grey[600],
+                                color: isDark
+                                    ? Colors.white60
+                                    : Colors.grey[600],
                               ),
                             ),
                           ),
@@ -615,7 +696,9 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                               backgroundColor: typeColor,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                               elevation: 0,
                             ),
                             onPressed: () async {
@@ -686,24 +769,42 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   ),
                 ),
                 ListTile(
-                  leading: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.hcmusTeal),
-                  title: const Text('Gửi hình ảnh', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading: const Icon(
+                    Icons.add_photo_alternate_rounded,
+                    color: AppColors.hcmusTeal,
+                  ),
+                  title: const Text(
+                    'Gửi hình ảnh',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _pickAndSendImage();
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.attach_file_rounded, color: AppColors.hcmusTeal),
-                  title: const Text('Gửi tệp đính kèm', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading: const Icon(
+                    Icons.attach_file_rounded,
+                    color: AppColors.hcmusTeal,
+                  ),
+                  title: const Text(
+                    'Gửi tệp đính kèm',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _pickAndSendFile();
                   },
                 ),
                 ListTile(
-                  leading: const Icon(Icons.badge_rounded, color: AppColors.hcmusTeal),
-                  title: const Text('Chia sẻ thông tin liên hệ', style: TextStyle(fontWeight: FontWeight.w600)),
+                  leading: const Icon(
+                    Icons.badge_rounded,
+                    color: AppColors.hcmusTeal,
+                  ),
+                  title: const Text(
+                    'Chia sẻ thông tin liên hệ',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     _showShareContactDialog();
@@ -723,9 +824,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         elevation: 0.5,
         titleSpacing: 0,
         leading: IconButton(
@@ -745,17 +850,19 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 .snapshots(),
             builder: (context, userSnap) {
               String resolvedName = widget.targetUserName;
-              String resolvedPhoto = Base64ImageCache.getCachedUserAvatar(
-                      widget.targetUserId) ??
+              String resolvedPhoto =
+                  Base64ImageCache.getCachedUserAvatar(widget.targetUserId) ??
                   widget.targetUserPhoto;
 
               if (userSnap.hasData && userSnap.data?.data() != null) {
                 final uData = userSnap.data!.data() as Map<String, dynamic>;
-                resolvedName = uData['displayName'] ??
+                resolvedName =
+                    uData['displayName'] ??
                     uData['name'] ??
                     uData['fullName'] ??
                     widget.targetUserName;
-                resolvedPhoto = uData['photoURL'] ??
+                resolvedPhoto =
+                    uData['photoURL'] ??
                     uData['photoUrl'] ??
                     uData['avatar'] ??
                     uData['authorAvatar'] ??
@@ -763,29 +870,34 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                     uData['userAvatar'] ??
                     resolvedPhoto;
                 Base64ImageCache.updateUserAvatar(
-                    widget.targetUserId, resolvedPhoto);
+                  widget.targetUserId,
+                  resolvedPhoto,
+                );
               }
 
-              final avatarProvider =
-              Base64ImageCache.getAvatarProvider(resolvedPhoto);
+              final avatarProvider = Base64ImageCache.getAvatarProvider(
+                resolvedPhoto,
+              );
 
               return Row(
                 children: [
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
+                    backgroundColor: AppColors.hcmusTeal.withValues(
+                      alpha: 0.15,
+                    ),
                     backgroundImage: avatarProvider,
                     child: avatarProvider == null
                         ? Text(
-                      resolvedName.trim().isNotEmpty
-                          ? resolvedName.trim()[0].toUpperCase()
-                          : 'S',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.hcmusTeal,
-                      ),
-                    )
+                            resolvedName.trim().isNotEmpty
+                                ? resolvedName.trim()[0].toUpperCase()
+                                : 'S',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.hcmusTeal,
+                            ),
+                          )
                         : null,
                   ),
                   const SizedBox(width: 10),
@@ -940,7 +1052,9 @@ class _ChatInputBarState extends State<_ChatInputBar> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        12, 6, 12,
+        12,
+        6,
+        12,
         MediaQuery.of(context).padding.bottom + 8,
       ),
       child: Container(
@@ -978,7 +1092,11 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                           child: IconButton(
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.hcmusTeal, size: 22),
+                            icon: const Icon(
+                              Icons.add_circle_outline_rounded,
+                              color: AppColors.hcmusTeal,
+                              size: 22,
+                            ),
                             tooltip: 'Mở rộng tiện ích',
                             onPressed: widget.onShowAttachmentMenu,
                           ),
@@ -999,7 +1117,11 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.add_photo_alternate_rounded, color: AppColors.hcmusTeal, size: 20),
+                                    icon: const Icon(
+                                      Icons.add_photo_alternate_rounded,
+                                      color: AppColors.hcmusTeal,
+                                      size: 20,
+                                    ),
                                     tooltip: 'Gửi hình ảnh',
                                     onPressed: widget.onPickImage,
                                   ),
@@ -1010,7 +1132,11 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.attach_file_rounded, color: AppColors.hcmusTeal, size: 20),
+                                    icon: const Icon(
+                                      Icons.attach_file_rounded,
+                                      color: AppColors.hcmusTeal,
+                                      size: 20,
+                                    ),
                                     tooltip: 'Gửi tệp đính kèm',
                                     onPressed: widget.onPickFile,
                                   ),
@@ -1021,7 +1147,11 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                                   child: IconButton(
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
-                                    icon: const Icon(Icons.badge_rounded, color: AppColors.hcmusTeal, size: 20),
+                                    icon: const Icon(
+                                      Icons.badge_rounded,
+                                      color: AppColors.hcmusTeal,
+                                      size: 20,
+                                    ),
                                     tooltip: 'Chia sẻ thông tin liên hệ',
                                     onPressed: widget.onShareContact,
                                   ),
@@ -1052,7 +1182,10 @@ class _ChatInputBarState extends State<_ChatInputBar> {
                   hintStyle: TextStyle(fontSize: 14, color: Colors.grey),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 4,
+                  ),
                 ),
               ),
             ),
@@ -1124,7 +1257,8 @@ class _ChatMessageListState extends State<_ChatMessageList> {
     final now = DateTime.now();
     final timeStr = DateFormat('HH:mm').format(dt);
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(dt);
-    final isToday = dt.year == now.year && dt.month == now.month && dt.day == now.day;
+    final isToday =
+        dt.year == now.year && dt.month == now.month && dt.day == now.day;
     final displayStr = isToday ? timeStr : dateStr;
 
     return Padding(
@@ -1165,7 +1299,9 @@ class _ChatMessageListState extends State<_ChatMessageList> {
         final rawMessages = snapshot.data ?? [];
 
         // Tự động đánh dấu đã đọc khi nhận tin nhắn mới và đang ở trong màn hình này
-        final hasUnread = rawMessages.any((m) => m.senderId != widget.currentUid && !m.isRead);
+        final hasUnread = rawMessages.any(
+          (m) => m.senderId != widget.currentUid && !m.isRead,
+        );
         if (hasUnread) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             widget.chatService.markRoomAsRead(widget.roomId);
@@ -1224,7 +1360,10 @@ class _ChatMessageListState extends State<_ChatMessageList> {
                 showTimeHeader = true;
               } else {
                 final olderMsg = rawMessages[i - 1];
-                final diffInMinutes = msg.timestamp.difference(olderMsg.timestamp).inMinutes.abs();
+                final diffInMinutes = msg.timestamp
+                    .difference(olderMsg.timestamp)
+                    .inMinutes
+                    .abs();
                 if (diffInMinutes >= 10) {
                   showTimeHeader = true;
                 }
@@ -1243,11 +1382,16 @@ class _ChatMessageListState extends State<_ChatMessageList> {
                     showStatus: i == lastSentMsgIndex,
                     onRecall: () async {
                       try {
-                        await widget.chatService.recallMessage(widget.roomId, msg.id);
+                        await widget.chatService.recallMessage(
+                          widget.roomId,
+                          msg.id,
+                        );
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Không thể thu hồi tin nhắn: $e')),
+                            SnackBar(
+                              content: Text('Không thể thu hồi tin nhắn: $e'),
+                            ),
                           );
                         }
                       }
@@ -1263,7 +1407,10 @@ class _ChatMessageListState extends State<_ChatMessageList> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: (constraints.maxHeight - 24).clamp(0.0, double.infinity),
+                  minHeight: (constraints.maxHeight - 24).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -1317,12 +1464,24 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color sheetColor = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
-    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1F1F1F);
-    final Color secondaryTextColor = isDarkMode ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-    final Color surfaceColor = isDarkMode ? const Color(0xFF292A2D) : const Color(0xFFF5F6F7);
-    final Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFE4E6EB);
-    final Color accentColor = isDarkMode ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8);
+    final Color sheetColor = isDarkMode
+        ? const Color(0xFF1C1C1E)
+        : Colors.white;
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1F1F1F);
+    final Color secondaryTextColor = isDarkMode
+        ? const Color(0xFFB0B3B8)
+        : const Color(0xFF65676B);
+    final Color surfaceColor = isDarkMode
+        ? const Color(0xFF292A2D)
+        : const Color(0xFFF5F6F7);
+    final Color borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFE4E6EB);
+    final Color accentColor = isDarkMode
+        ? const Color(0xFF8AB4F8)
+        : const Color(0xFF1A73E8);
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
@@ -1338,9 +1497,7 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
           ),
           decoration: BoxDecoration(
             color: sheetColor,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1348,10 +1505,7 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(
-                  top: 10,
-                  bottom: 4,
-                ),
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(99),
@@ -1403,26 +1557,26 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                   ],
                 ),
               ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: borderColor,
-              ),
+              Divider(height: 1, thickness: 1, color: borderColor),
               Flexible(
                 child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ...reportReasons.map((reason) {
-                        final bool isSelected = reason == "Khác" && isOtherSelected;
+                        final bool isSelected =
+                            reason == "Khác" && isOtherSelected;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Material(
                             color: isSelected
-                                ? accentColor.withOpacity(isDarkMode ? 0.14 : 0.08)
+                                ? accentColor.withOpacity(
+                                    isDarkMode ? 0.14 : 0.08,
+                                  )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(14),
                             child: InkWell(
@@ -1450,14 +1604,20 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                                       height: 38,
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? accentColor.withOpacity(isDarkMode ? 0.18 : 0.10)
+                                            ? accentColor.withOpacity(
+                                                isDarkMode ? 0.18 : 0.10,
+                                              )
                                             : surfaceColor,
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        reason == "Khác" ? Icons.edit_outlined : Icons.report_problem_outlined,
+                                        reason == "Khác"
+                                            ? Icons.edit_outlined
+                                            : Icons.report_problem_outlined,
                                         size: 19,
-                                        color: isSelected ? accentColor : secondaryTextColor,
+                                        color: isSelected
+                                            ? accentColor
+                                            : secondaryTextColor,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -1468,15 +1628,21 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                                           fontFamily: 'Encode Sans Expanded',
                                           fontSize: 13,
                                           height: 1.35,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
                                           color: primaryTextColor,
                                         ),
                                       ),
                                     ),
                                     Icon(
-                                      isSelected ? Icons.expand_less_rounded : Icons.chevron_right_rounded,
+                                      isSelected
+                                          ? Icons.expand_less_rounded
+                                          : Icons.chevron_right_rounded,
                                       size: 21,
-                                      color: isSelected ? accentColor : secondaryTextColor.withOpacity(0.6),
+                                      color: isSelected
+                                          ? accentColor
+                                          : secondaryTextColor.withOpacity(0.6),
                                     ),
                                   ],
                                 ),
@@ -1494,9 +1660,7 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                             decoration: BoxDecoration(
                               color: surfaceColor,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: borderColor,
-                              ),
+                              border: Border.all(color: borderColor),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1547,7 +1711,8 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                                     color: primaryTextColor,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: "Nhập lý do báo cáo người dùng này...",
+                                    hintText:
+                                        "Nhập lý do báo cáo người dùng này...",
                                     hintStyle: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontSize: 12,
@@ -1588,17 +1753,23 @@ class _ReportUserBottomSheetState extends State<_ReportUserBottomSheet> {
                                   height: 46,
                                   child: FilledButton(
                                     onPressed: () {
-                                      String customReason = customReasonController.text.trim();
+                                      String customReason =
+                                          customReasonController.text.trim();
                                       if (customReason.isNotEmpty) {
                                         Navigator.pop(context);
-                                        widget.onSubmitReport("Khác: $customReason");
+                                        widget.onSubmitReport(
+                                          "Khác: $customReason",
+                                        );
                                       } else {
                                         ScaffoldMessenger.of(context)
                                           ..hideCurrentSnackBar()
                                           ..showSnackBar(
                                             const SnackBar(
-                                              content: Text("Vui lòng nhập lý do báo cáo"),
-                                              behavior: SnackBarBehavior.floating,
+                                              content: Text(
+                                                "Vui lòng nhập lý do báo cáo",
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
                                             ),
                                           );
                                       }

@@ -5,7 +5,15 @@ Tên đề tài: MyUni - Ứng dụng di động & Web hỗ trợ cộng đồng
             và Trợ lý học thuật AI
 
 ------------------------------------------------------------------------
-1. CÔNG CỤ VÀ MÔI TRƯỜNG PHÁT TRIỂN
+0. CÀI ĐẶT TRỰC TIẾP TRÊN ĐIỆN THOẠI (OPTION KHUYÊN DÙNG)
+------------------------------------------------------------------------
+Ứng dụng MyUni đã được phát hành chính thức trên Google Play Store (CH Play). 
+Hội đồng / Người dùng có thể cài đặt trực tiếp lên điện thoại Android theo đường dẫn:
+
+ 👉 Link CH Play: https://play.google.com/store/apps/details?id=com.archondev.myuni
+
+------------------------------------------------------------------------
+1. CÔNG CỤ VÀ MÔI TRƯỜNG PHÁT TRIỂN (DÀNH CHO BIÊN DỊCH MÃ NGUỒN)
 ------------------------------------------------------------------------
 - Môi trường phát triển (IDE): Android Studio (mới nhất) hoặc Visual Studio Code.
 - SDK Lập trình:

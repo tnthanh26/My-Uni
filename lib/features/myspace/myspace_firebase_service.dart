@@ -13,8 +13,11 @@ class MySpaceFirebaseService {
   CollectionReference get _scheduleRef =>
       _db.collection('users').doc(userId).collection('schedule');
 
-  DocumentReference get _autoDeadlineConfigRef =>
-      _db.collection('users').doc(userId).collection('settings').doc('auto_deadline_config');
+  DocumentReference get _autoDeadlineConfigRef => _db
+      .collection('users')
+      .doc(userId)
+      .collection('settings')
+      .doc('auto_deadline_config');
 
   // --- DEADLINES ---
   Future<void> saveDeadline(Deadline d) async {
@@ -191,10 +194,7 @@ class MySpaceFirebaseService {
 
   Stream<List<Deadline>> deadlineStream() {
     if (userId == null) return Stream.value([]);
-    return _deadlineRef
-        .orderBy('dueDate')
-        .snapshots()
-        .map((snapshot) {
+    return _deadlineRef.orderBy('dueDate').snapshots().map((snapshot) {
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         return _mapDataToDeadline(doc.id, data);

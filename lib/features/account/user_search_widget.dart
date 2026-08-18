@@ -43,8 +43,7 @@ Widget buildUserAvatar(
     if (cleanUrl.startsWith('http://') || cleanUrl.startsWith('https://')) {
       return CircleAvatar(
         radius: radius,
-        backgroundColor:
-            isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
+        backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
         backgroundImage: NetworkImage(cleanUrl),
       );
     }
@@ -52,8 +51,7 @@ Widget buildUserAvatar(
       final bytes = base64Decode(cleanUrl);
       return CircleAvatar(
         radius: radius,
-        backgroundColor:
-            isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
+        backgroundColor: isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
         backgroundImage: MemoryImage(bytes),
       );
     } catch (_) {
@@ -63,8 +61,9 @@ Widget buildUserAvatar(
 
   return CircleAvatar(
     radius: radius,
-    backgroundColor:
-        isDarkMode ? const Color(0xFF2A2E33) : const Color(0xFFEBF2FA),
+    backgroundColor: isDarkMode
+        ? const Color(0xFF2A2E33)
+        : const Color(0xFFEBF2FA),
     child: Icon(
       Icons.person_rounded,
       size: radius * 1.1,
@@ -105,7 +104,10 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
   }
 
   void _showUserDetailModal(
-      BuildContext context, Map<String, dynamic> userData, String docId) {
+    BuildContext context,
+    Map<String, dynamic> userData,
+    String docId,
+  ) {
     _focusNode.unfocus();
     FocusScope.of(context).unfocus();
     FocusManager.instance.primaryFocus?.unfocus();
@@ -117,19 +119,16 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
     final String name = userData['displayName'] ?? 'Người dùng MyUni';
     final String faculty = userData['faculty'] ?? 'Chưa cập nhật khoa';
     final String cohort = userData['cohort'] ?? 'Chưa cập nhật niên khóa';
-    final String? photoUrl = userData['photoUrl'] ?? userData['photoURL'] ?? userData['avatar'];
+    final String? photoUrl =
+        userData['photoUrl'] ?? userData['photoURL'] ?? userData['avatar'];
     final bool isVerified = userData['isVerified'] ?? false;
 
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor:
-            isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        insetPadding:
-            const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
+        backgroundColor: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Padding(
@@ -137,136 +136,146 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              // Avatar
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  buildUserAvatar(photoUrl, radius: 46, isDarkMode: isDarkMode),
-                  if (isCurrentUser)
-                    Positioned(
-                      right: 0,
-                      bottom: 0,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF6797E1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Text(
-                          'Bạn',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
+                // Avatar
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    buildUserAvatar(
+                      photoUrl,
+                      radius: 46,
+                      isDarkMode: isDarkMode,
+                    ),
+                    if (isCurrentUser)
+                      Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF6797E1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Text(
+                            'Bạn',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 14),
+                  ],
+                ),
+                const SizedBox(height: 14),
 
-              // Name & Verified Badge
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: Text(
-                      name,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                // Name & Verified Badge
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        name,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Encode Sans Expanded',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
+                        ),
                       ),
                     ),
-                  ),
-                  if (isVerified) ...[
-                    const SizedBox(width: 6),
-                    const Icon(
-                      Icons.verified_rounded,
-                      size: 18,
-                      color: Color(0xFF6797E1),
-                    ),
+                    if (isVerified) ...[
+                      const SizedBox(width: 6),
+                      const Icon(
+                        Icons.verified_rounded,
+                        size: 18,
+                        color: Color(0xFF6797E1),
+                      ),
+                    ],
                   ],
-                ],
-              ),
-              const SizedBox(height: 4),
-
-              // Faculty subtitle
-              Text(
-                faculty,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontFamily: 'Encode Sans Expanded',
-                  fontSize: 13,
-                  color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
                 ),
-              ),
+                const SizedBox(height: 4),
 
-              const SizedBox(height: 20),
-              Divider(
-                color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
-                height: 1,
-              ),
-              const SizedBox(height: 16),
+                // Faculty subtitle
+                Text(
+                  faculty,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Encode Sans Expanded',
+                    fontSize: 13,
+                    color: isDarkMode
+                        ? Colors.white60
+                        : const Color(0xFF667085),
+                  ),
+                ),
 
-              // Info Items
-              if (faculty.isNotEmpty && faculty != 'Chưa cập nhật khoa') ...[
+                const SizedBox(height: 20),
+                Divider(
+                  color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+                  height: 1,
+                ),
+                const SizedBox(height: 16),
+
+                // Info Items
+                if (faculty.isNotEmpty && faculty != 'Chưa cập nhật khoa') ...[
+                  _buildModalInfoRow(
+                    context: context,
+                    isDarkMode: isDarkMode,
+                    icon: Icons.school_outlined,
+                    label: 'Khoa',
+                    value: faculty,
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 _buildModalInfoRow(
                   context: context,
                   isDarkMode: isDarkMode,
-                  icon: Icons.school_outlined,
-                  label: 'Khoa',
-                  value: faculty,
+                  icon: Icons.calendar_today_outlined,
+                  label: 'Niên khóa',
+                  value: cohort,
                 ),
-                const SizedBox(height: 12),
+
+                const SizedBox(height: 22),
+
+                // Close Button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(
+                        0xFF6797E1,
+                      ).withValues(alpha: 0.12),
+                      foregroundColor: const Color(0xFF6797E1),
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      'Đóng',
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
               ],
-              _buildModalInfoRow(
-                context: context,
-                isDarkMode: isDarkMode,
-                icon: Icons.calendar_today_outlined,
-                label: 'Niên khóa',
-                value: cohort,
-              ),
-
-              const SizedBox(height: 22),
-
-              // Close Button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        const Color(0xFF6797E1).withValues(alpha: 0.12),
-                    foregroundColor: const Color(0xFF6797E1),
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: const Text(
-                    'Đóng',
-                    style: TextStyle(
-                      fontFamily: 'Encode Sans Expanded',
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildModalInfoRow({
     required BuildContext context,
@@ -285,11 +294,7 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
             color: const Color(0xFF6797E1).withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            icon,
-            size: 18,
-            color: const Color(0xFF6797E1),
-          ),
+          child: Icon(icon, size: 18, color: const Color(0xFF6797E1)),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -461,8 +466,9 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
             ),
             const SizedBox(height: 8),
             StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance.collection('users').snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('users')
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Padding(
@@ -509,8 +515,7 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                   if (cleanQuery.isEmpty) return true;
 
                   final normName = removeVietnameseDiacritics(displayName);
-                  final normStudentId =
-                      removeVietnameseDiacritics(studentId);
+                  final normStudentId = removeVietnameseDiacritics(studentId);
                   final normFaculty = removeVietnameseDiacritics(faculty);
                   final normUniv = removeVietnameseDiacritics(university);
                   final normEmail = removeVietnameseDiacritics(email);
@@ -542,7 +547,9 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                   return Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        vertical: 20, horizontal: 16),
+                      vertical: 20,
+                      horizontal: 16,
+                    ),
                     child: Column(
                       children: [
                         Icon(
@@ -587,7 +594,9 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 6),
+                        horizontal: 4,
+                        vertical: 6,
+                      ),
                       child: Text(
                         _query.isEmpty
                             ? 'Danh sách người dùng (${matchingDocs.length})'
@@ -625,12 +634,19 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                               data['displayName'] ?? 'Người dùng MyUni';
                           final String faculty = data['faculty'] ?? '';
                           final String cohort = data['cohort'] ?? '';
-                          final String? photoUrl = data['photoUrl'] ?? data['photoURL'] ?? data['avatar'];
+                          final String? photoUrl =
+                              data['photoUrl'] ??
+                              data['photoURL'] ??
+                              data['avatar'];
                           final bool isVerified = data['isVerified'] ?? false;
 
                           final String subtitleText = [
                             if (faculty.isNotEmpty) faculty,
-                            if (cohort.isNotEmpty) (cohort.startsWith('Niên khóa') || cohort.startsWith('NK') ? cohort : 'Niên khóa: $cohort'),
+                            if (cohort.isNotEmpty)
+                              (cohort.startsWith('Niên khóa') ||
+                                      cohort.startsWith('NK')
+                                  ? cohort
+                                  : 'Niên khóa: $cohort'),
                           ].join(' • ');
 
                           return InkWell(
@@ -642,7 +658,9 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                             borderRadius: BorderRadius.circular(12),
                             child: Padding(
                               padding: const EdgeInsets.symmetric(
-                                  vertical: 10, horizontal: 6),
+                                vertical: 10,
+                                horizontal: 6,
+                              ),
                               child: Row(
                                 children: [
                                   buildUserAvatar(
@@ -687,12 +705,13 @@ class _UserSearchWidgetState extends State<UserSearchWidget> {
                                               Container(
                                                 padding:
                                                     const EdgeInsets.symmetric(
-                                                  horizontal: 6,
-                                                  vertical: 1.5,
-                                                ),
+                                                      horizontal: 6,
+                                                      vertical: 1.5,
+                                                    ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFF6797E1)
-                                                      .withValues(alpha: 0.15),
+                                                  color: const Color(
+                                                    0xFF6797E1,
+                                                  ).withValues(alpha: 0.15),
                                                   borderRadius:
                                                       BorderRadius.circular(6),
                                                 ),

@@ -12,14 +12,16 @@ class MoodleService {
     try {
       final cleanedUrl = moodleUrl.trim().replaceAll(RegExp(r'/$'), '');
 
-      final response = await http.post(
-        Uri.parse('$cleanedUrl/login/token.php'),
-        body: {
-          'username': username,
-          'password': password,
-          'service': 'moodle_mobile_app',
-        },
-      ).timeout(const Duration(seconds: 15));
+      final response = await http
+          .post(
+            Uri.parse('$cleanedUrl/login/token.php'),
+            body: {
+              'username': username,
+              'password': password,
+              'service': 'moodle_mobile_app',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
         debugPrint('MOODLE CONNECT ERROR: status code ${response.statusCode}');
@@ -27,8 +29,11 @@ class MoodleService {
       }
 
       final bodyText = response.body.trim();
-      if (bodyText.startsWith('<') || bodyText.toLowerCase().contains('<html')) {
-        debugPrint('MOODLE CONNECT ERROR: Moodle returned HTML instead of JSON token (likely using SSO/Outlook login).');
+      if (bodyText.startsWith('<') ||
+          bodyText.toLowerCase().contains('<html')) {
+        debugPrint(
+          'MOODLE CONNECT ERROR: Moodle returned HTML instead of JSON token (likely using SSO/Outlook login).',
+        );
         return null;
       }
 
@@ -64,7 +69,9 @@ class MoodleService {
       );
 
       if (response.statusCode != 200) {
-        debugPrint('FETCH MOODLE EVENTS ERROR: status code ${response.statusCode}');
+        debugPrint(
+          'FETCH MOODLE EVENTS ERROR: status code ${response.statusCode}',
+        );
         return null;
       }
 
@@ -129,7 +136,10 @@ class MoodleService {
       final hexMatch = hexRegExp.firstMatch(url);
       if (hexMatch != null && hexMatch.groupCount >= 1) {
         // Tránh khớp nhầm chuỗi commit hash hoặc ID không phải token nếu có từ khóa token/key quanh đó
-        if (url.contains('token') || url.contains('key') || url.contains('managetokens') || url.contains('wstoken')) {
+        if (url.contains('token') ||
+            url.contains('key') ||
+            url.contains('managetokens') ||
+            url.contains('wstoken')) {
           return hexMatch.group(1);
         }
       }

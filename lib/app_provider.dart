@@ -20,9 +20,12 @@ class AppProvider extends ChangeNotifier {
 
     // Load Theme
     String? theme = prefs.getString('theme');
-    if (theme == 'dark') _themeMode = ThemeMode.dark;
-    else if (theme == 'light') _themeMode = ThemeMode.light;
-    else _themeMode = ThemeMode.system;
+    if (theme == 'dark')
+      _themeMode = ThemeMode.dark;
+    else if (theme == 'light')
+      _themeMode = ThemeMode.light;
+    else
+      _themeMode = ThemeMode.system;
 
     // Load Ngôn ngữ
     String? lang = prefs.getString('lang');

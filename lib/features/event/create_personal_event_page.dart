@@ -12,11 +12,9 @@ class ReminderControllerGroup {
   final FocusNode focusNode;
   String unit;
 
-  ReminderControllerGroup({
-    required String value,
-    required this.unit,
-  })  : controller = TextEditingController(text: value),
-        focusNode = FocusNode();
+  ReminderControllerGroup({required String value, required this.unit})
+    : controller = TextEditingController(text: value),
+      focusNode = FocusNode();
 
   void dispose() {
     controller.dispose();
@@ -70,10 +68,7 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
           oldReminder != 'Đặt lời nhắc') {
         final parsed = _parseOldReminder(oldReminder);
         _reminderGroups.add(
-          ReminderControllerGroup(
-            value: parsed.$1,
-            unit: parsed.$2,
-          ),
+          ReminderControllerGroup(value: parsed.$1, unit: parsed.$2),
         );
       } else {
         _reminderGroups.add(ReminderControllerGroup(value: '30', unit: 'phút'));
@@ -174,7 +169,10 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                       ),
                     ),
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -228,7 +226,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                 Expanded(
                   child: CupertinoTheme(
                     data: CupertinoThemeData(
-                      brightness: isDarkMode ? Brightness.dark : Brightness.light,
+                      brightness: isDarkMode
+                          ? Brightness.dark
+                          : Brightness.light,
                     ),
                     child: CupertinoDatePicker(
                       mode: CupertinoDatePickerMode.time,
@@ -347,8 +347,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
 
         if (notificationTime.isAfter(DateTime.now())) {
           final int notificationId =
-          (finalDateTime.millisecondsSinceEpoch + minutesBefore)
-              .remainder(100000000);
+              (finalDateTime.millisecondsSinceEpoch + minutesBefore).remainder(
+                100000000,
+              );
 
           await NotificationService.scheduleNotification(
             id: notificationId,
@@ -380,26 +381,26 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
         'reminder': reminderStrings.isNotEmpty
             ? '${reminderStrings.first} trước'
             : 'Không',
-        'notificationId':
-        notificationIds.isNotEmpty ? notificationIds.first : null,
+        'notificationId': notificationIds.isNotEmpty
+            ? notificationIds.first
+            : null,
 
         if (widget.event?.sourceArticleUrl != null)
           'sourceArticleUrl': widget.event!.sourceArticleUrl,
         if (widget.event?.onlineUrl != null)
           'onlineUrl': widget.event!.onlineUrl,
-        if (widget.event?.isOnline != null)
-          'isOnline': widget.event!.isOnline,
+        if (widget.event?.isOnline != null) 'isOnline': widget.event!.isOnline,
         if (widget.event?.facultyName != null)
           'facultyName': widget.event!.facultyName,
-        if (widget.event?.imageUrl != null)
-          'imageUrl': widget.event!.imageUrl,
+        if (widget.event?.imageUrl != null) 'imageUrl': widget.event!.imageUrl,
 
         'updatedAt': FieldValue.serverTimestamp(),
       };
 
       final String? targetDocId = widget.event?.id;
       final String? existingFacultyId = widget.event?.facultyEventId;
-      final bool isFromFaculty = widget.event?.isFromFacultyEvent == true &&
+      final bool isFromFaculty =
+          widget.event?.isFromFacultyEvent == true &&
           (existingFacultyId != null && existingFacultyId.trim().isNotEmpty);
       final String? facultyEventId = isFromFaculty ? existingFacultyId : null;
 
@@ -407,35 +408,42 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       eventData['isFromFacultyEvent'] = isFromFaculty;
 
       if (targetDocId != null && targetDocId.isNotEmpty) {
-        await collection.doc(targetDocId).set(eventData, SetOptions(merge: true));
+        await collection
+            .doc(targetDocId)
+            .set(eventData, SetOptions(merge: true));
       } else {
         eventData['createdAt'] = FieldValue.serverTimestamp();
         await collection.add(eventData);
       }
 
-      if (isFromFaculty && facultyEventId != null && facultyEventId.isNotEmpty) {
+      if (isFromFaculty &&
+          facultyEventId != null &&
+          facultyEventId.isNotEmpty) {
         await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .collection('interested_events')
             .doc(facultyEventId)
             .set({
-          'docId': facultyEventId,
-          'facultyEventId': facultyEventId,
-          'eventName': _titleController.text.trim(),
-          'title': _titleController.text.trim(),
-          'description': _descController.text.trim(),
-          'eventDateText': DateFormat('HH:mm, dd/MM/yyyy').format(finalDateTime),
-          'date': DateFormat('HH:mm, dd/MM/yyyy').format(finalDateTime),
-          'locationName': _locationController.text.trim(),
-          'sourceArticleUrl': widget.event?.sourceArticleUrl,
-          'onlineUrl': widget.event?.onlineUrl,
-          'isOnline': widget.event?.isOnline ?? false,
-          if (widget.event?.contact != null) 'contact': widget.event!.contact,
-          'startAt': Timestamp.fromDate(finalDateTime),
-          'timestamp': FieldValue.serverTimestamp(),
-          'isFacultyEvent': true,
-        }, SetOptions(merge: true));
+              'docId': facultyEventId,
+              'facultyEventId': facultyEventId,
+              'eventName': _titleController.text.trim(),
+              'title': _titleController.text.trim(),
+              'description': _descController.text.trim(),
+              'eventDateText': DateFormat(
+                'HH:mm, dd/MM/yyyy',
+              ).format(finalDateTime),
+              'date': DateFormat('HH:mm, dd/MM/yyyy').format(finalDateTime),
+              'locationName': _locationController.text.trim(),
+              'sourceArticleUrl': widget.event?.sourceArticleUrl,
+              'onlineUrl': widget.event?.onlineUrl,
+              'isOnline': widget.event?.isOnline ?? false,
+              if (widget.event?.contact != null)
+                'contact': widget.event!.contact,
+              'startAt': Timestamp.fromDate(finalDateTime),
+              'timestamp': FieldValue.serverTimestamp(),
+              'isFacultyEvent': true,
+            }, SetOptions(merge: true));
       }
 
       if (mounted) Navigator.pop(context, true);
@@ -443,9 +451,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
       debugPrint("Firebase Error: $e");
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -506,8 +514,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                           : Colors.black.withOpacity(0.03),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
-                        color:
-                        hasFocus ? accentBlue : borderColor.withOpacity(0.1),
+                        color: hasFocus
+                            ? accentBlue
+                            : borderColor.withOpacity(0.1),
                         width: hasFocus ? 1.5 : 1,
                       ),
                     ),
@@ -567,8 +576,9 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
                           fontFamily: 'Urbanist',
                           fontWeight: FontWeight.w500,
                         ),
-                        dropdownColor:
-                        isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                        dropdownColor: isDarkMode
+                            ? const Color(0xFF1C1C1E)
+                            : Colors.white,
                         items: ['phút', 'giờ', 'ngày', 'tuần'].map((val) {
                           return DropdownMenuItem<String>(
                             value: val,
@@ -644,11 +654,11 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   }
 
   Widget _buildInputRow(
-      Color bg,
-      IconData icon, {
-        required Widget child,
-        VoidCallback? onTap,
-      }) {
+    Color bg,
+    IconData icon, {
+    required Widget child,
+    VoidCallback? onTap,
+  }) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(15),
@@ -673,19 +683,20 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color bgColor =
-    isDarkMode ? const Color(0xFF121212) : Colors.white;
-    final Color inputBg =
-    isDarkMode ? const Color(0xFF1C1C1E) : const Color(0xFFF0F5FF);
+    final Color bgColor = isDarkMode ? const Color(0xFF121212) : Colors.white;
+    final Color inputBg = isDarkMode
+        ? const Color(0xFF1C1C1E)
+        : const Color(0xFFF0F5FF);
     final Color textColor = isDarkMode ? Colors.white : Colors.black87;
     final Color secondaryText = isDarkMode ? Colors.white70 : borderGrey;
-    final Color borderColor =
-    isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
+    final Color borderColor = isDarkMode ? const Color(0xFF3A3A3C) : borderGrey;
 
     return Scaffold(
       backgroundColor: bgColor,
       appBar: AppBar(
-        backgroundColor: isDarkMode ? const Color(0xFF15171A) : const Color(0xFF5893D8),
+        backgroundColor: isDarkMode
+            ? const Color(0xFF15171A)
+            : const Color(0xFF5893D8),
         elevation: 0,
         leadingWidth: 70,
         leading: TextButton(
@@ -708,21 +719,21 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
             onPressed: _isLoading ? null : _saveEvent,
             child: _isLoading
                 ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                color: Colors.white,
-                strokeWidth: 2,
-              ),
-            )
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
                 : const Text(
-              'Lưu',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+                    'Lưu',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
           ),
         ],
       ),
@@ -734,220 +745,232 @@ class _CreatePersonalEventPageState extends State<CreatePersonalEventPage> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _titleController,
-              autofocus: widget.event == null,
-              style: TextStyle(
-                fontSize: 20,
-                color: textColor,
-                fontWeight: FontWeight.bold,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Tên sự kiện',
-                hintStyle: TextStyle(color: Colors.grey.shade400),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: Colors.grey.shade300),
-                ),
-                focusedBorder: const UnderlineInputBorder(
-                  borderSide: BorderSide(color: primaryBrown),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 30),
-
-            _buildInputRow(
-              inputBg,
-              Icons.calendar_today_outlined,
-              onTap: _selectDate,
-              child: Row(
-                children: [
-                  Text(
-                    DateFormat('EEEE, dd/MM/yyyy', 'vi_VN').format(_selectedDate),
-                    style: TextStyle(color: textColor),
+              children: [
+                TextField(
+                  controller: _titleController,
+                  autofocus: widget.event == null,
+                  style: TextStyle(
+                    fontSize: 20,
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const Spacer(),
-                  InkWell(
-                    onTap: _selectTime,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                  decoration: InputDecoration(
+                    hintText: 'Tên sự kiện',
+                    hintStyle: TextStyle(color: Colors.grey.shade400),
+                    enabledBorder: UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: primaryBrown),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 30),
+
+                _buildInputRow(
+                  inputBg,
+                  Icons.calendar_today_outlined,
+                  onTap: _selectDate,
+                  child: Row(
+                    children: [
+                      Text(
+                        DateFormat(
+                          'EEEE, dd/MM/yyyy',
+                          'vi_VN',
+                        ).format(_selectedDate),
+                        style: TextStyle(color: textColor),
                       ),
-                      decoration: BoxDecoration(
-                        color: Colors.black12,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 18,
-                            color: Colors.grey,
+                      const Spacer(),
+                      InkWell(
+                        onTap: _selectTime,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
                           ),
-                          const SizedBox(width: 6),
-                          Text(
-                            _selectedTime.format(context),
-                            style: TextStyle(
-                              color: textColor,
-                              fontWeight: FontWeight.bold,
+                          decoration: BoxDecoration(
+                            color: Colors.black12,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 18,
+                                color: Colors.grey,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                _selectedTime.format(context),
+                                style: TextStyle(
+                                  color: textColor,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildInputRow(
+                  inputBg,
+                  Icons.location_on_outlined,
+                  child: TextField(
+                    controller: _locationController,
+                    style: TextStyle(color: textColor),
+                    decoration: const InputDecoration(
+                      hintText: 'Địa điểm',
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                _buildInputRow(
+                  inputBg,
+                  Icons.contact_phone_outlined,
+                  child: TextField(
+                    controller: _contactController,
+                    style: TextStyle(color: textColor),
+                    decoration: const InputDecoration(
+                      hintText: 'Thông tin liên hệ / BTC (tùy chọn)',
+                      border: InputBorder.none,
+                      isDense: true,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                _buildReminderSection(
+                  isDarkMode: isDarkMode,
+                  cardBg: inputBg,
+                  textColor: textColor,
+                  secondaryText: secondaryText,
+                  borderColor: borderColor,
+                ),
+
+                const SizedBox(height: 30),
+
+                Text(
+                  'Nội dung',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: textColor,
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: inputBg,
+                  ),
+                  child: TextField(
+                    controller: _descController,
+                    maxLines: 6,
+                    style: TextStyle(color: textColor),
+                    decoration: const InputDecoration(
+                      hintText: 'Chi tiết về sự kiện',
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+
+                if ((widget.event?.sourceArticleUrl != null &&
+                        widget.event!.sourceArticleUrl!.trim().isNotEmpty) ||
+                    (widget.event?.onlineUrl != null &&
+                        widget.event!.onlineUrl!.trim().isNotEmpty)) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Nguồn & Liên kết',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: textColor,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      if (widget.event?.onlineUrl != null &&
+                          widget.event!.onlineUrl!.trim().isNotEmpty) ...[
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _launchURL(widget.event!.onlineUrl!),
+                            icon: const Icon(Icons.videocam_rounded, size: 18),
+                            label: const Text(
+                              'Tham gia Online',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF8B5CF6),
+                              side: const BorderSide(color: Color(0xFF8B5CF6)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                        if (widget.event?.sourceArticleUrl != null &&
+                            widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
+                            widget.event!.sourceArticleUrl!.trim() !=
+                                widget.event?.onlineUrl?.trim())
+                          const SizedBox(width: 10),
+                      ],
+                      if (widget.event?.sourceArticleUrl != null &&
+                          widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
+                          widget.event!.sourceArticleUrl!.trim() !=
+                              widget.event?.onlineUrl?.trim())
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () =>
+                                _launchURL(widget.event!.sourceArticleUrl!),
+                            icon: const Icon(
+                              Icons.open_in_new_rounded,
+                              size: 18,
+                            ),
+                            label: const Text(
+                              'Xem bài viết gốc',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: const Color(0xFF5794F3),
+                              side: const BorderSide(color: Color(0xFF5794F3)),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ],
-              ),
+              ],
             ),
-
-            const SizedBox(height: 16),
-
-            _buildInputRow(
-              inputBg,
-              Icons.location_on_outlined,
-              child: TextField(
-                controller: _locationController,
-                style: TextStyle(color: textColor),
-                decoration: const InputDecoration(
-                  hintText: 'Địa điểm',
-                  border: InputBorder.none,
-                  isDense: true,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            _buildInputRow(
-              inputBg,
-              Icons.contact_phone_outlined,
-              child: TextField(
-                controller: _contactController,
-                style: TextStyle(color: textColor),
-                decoration: const InputDecoration(
-                  hintText: 'Thông tin liên hệ / BTC (tùy chọn)',
-                  border: InputBorder.none,
-                  isDense: true,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            _buildReminderSection(
-              isDarkMode: isDarkMode,
-              cardBg: inputBg,
-              textColor: textColor,
-              secondaryText: secondaryText,
-              borderColor: borderColor,
-            ),
-
-            const SizedBox(height: 30),
-
-            Text(
-              'Nội dung',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: textColor,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: inputBg,
-              ),
-              child: TextField(
-                controller: _descController,
-                maxLines: 6,
-                style: TextStyle(color: textColor),
-                decoration: const InputDecoration(
-                  hintText: 'Chi tiết về sự kiện',
-                  border: InputBorder.none,
-                ),
-              ),
-            ),
-
-            if ((widget.event?.sourceArticleUrl != null &&
-                    widget.event!.sourceArticleUrl!.trim().isNotEmpty) ||
-                (widget.event?.onlineUrl != null &&
-                    widget.event!.onlineUrl!.trim().isNotEmpty)) ...[
-              const SizedBox(height: 24),
-              Text(
-                'Nguồn & Liên kết',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: textColor,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (widget.event?.onlineUrl != null &&
-                      widget.event!.onlineUrl!.trim().isNotEmpty) ...[
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _launchURL(widget.event!.onlineUrl!),
-                        icon: const Icon(Icons.videocam_rounded, size: 18),
-                        label: const Text(
-                          'Tham gia Online',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF8B5CF6),
-                          side: const BorderSide(color: Color(0xFF8B5CF6)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                    if (widget.event?.sourceArticleUrl != null &&
-                        widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
-                        widget.event!.sourceArticleUrl!.trim() != widget.event?.onlineUrl?.trim())
-                      const SizedBox(width: 10),
-                  ],
-                  if (widget.event?.sourceArticleUrl != null &&
-                      widget.event!.sourceArticleUrl!.trim().isNotEmpty &&
-                      widget.event!.sourceArticleUrl!.trim() != widget.event?.onlineUrl?.trim())
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: () => _launchURL(widget.event!.sourceArticleUrl!),
-                        icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                        label: const Text(
-                          'Xem bài viết gốc',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF5794F3),
-                          side: const BorderSide(color: Color(0xFF5794F3)),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
-    )));
+    );
   }
 }

@@ -46,9 +46,9 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
   Future<void> _copyText(String value) async {
     await Clipboard.setData(ClipboardData(text: value));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Đã sao chép')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Đã sao chép')));
   }
 
   IconData _departmentIcon(String id) {
@@ -110,7 +110,9 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
         decoration: BoxDecoration(
-          color: isDarkMode ? Colors.white.withOpacity(0.06) : const Color(0xFFF1F5F9),
+          color: isDarkMode
+              ? Colors.white.withOpacity(0.06)
+              : const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
@@ -174,8 +176,10 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
             ),
           ),
           const SizedBox(height: 8),
-          if (address.trim().isNotEmpty) _infoLine(Icons.location_on_outlined, address, isDarkMode),
-          if (room.trim().isNotEmpty) _infoLine(Icons.meeting_room_outlined, room, isDarkMode),
+          if (address.trim().isNotEmpty)
+            _infoLine(Icons.location_on_outlined, address, isDarkMode),
+          if (room.trim().isNotEmpty)
+            _infoLine(Icons.meeting_room_outlined, room, isDarkMode),
           if (phone.trim().isNotEmpty)
             InkWell(
               onTap: () => _openLink(phone),
@@ -223,7 +227,10 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
     final campus2Address = data['campus2Address']?.toString() ?? '';
     final campus2Room = data['campus2Room']?.toString() ?? '';
     final campus2Phone = data['campus2Phone']?.toString() ?? '';
-    final links = (data['links'] as List<dynamic>? ?? []).map((e) => e.toString()).where((e) => e.trim().isNotEmpty).toList();
+    final links = (data['links'] as List<dynamic>? ?? [])
+        .map((e) => e.toString())
+        .where((e) => e.trim().isNotEmpty)
+        .toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -236,12 +243,12 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.045),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.045),
+                  blurRadius: 18,
+                  offset: const Offset(0, 8),
+                ),
+              ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -258,7 +265,11 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                     color: const Color(0xFF6797E1).withOpacity(0.14),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(_departmentIcon(id), color: const Color(0xFF6797E1), size: 26),
+                  child: Icon(
+                    _departmentIcon(id),
+                    color: const Color(0xFF6797E1),
+                    size: 26,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -272,7 +283,9 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                           fontSize: 15.5,
                           height: 1.35,
                           fontWeight: FontWeight.w800,
-                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -282,7 +295,9 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                          color: isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                       ),
                     ],
@@ -295,11 +310,27 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                _contactChip(icon: Icons.email_outlined, text: email, isDarkMode: isDarkMode),
-                _contactChip(icon: Icons.language_outlined, text: website, isDarkMode: isDarkMode),
-                _contactChip(icon: Icons.phone_outlined, text: phone, isDarkMode: isDarkMode),
+                _contactChip(
+                  icon: Icons.email_outlined,
+                  text: email,
+                  isDarkMode: isDarkMode,
+                ),
+                _contactChip(
+                  icon: Icons.language_outlined,
+                  text: website,
+                  isDarkMode: isDarkMode,
+                ),
+                _contactChip(
+                  icon: Icons.phone_outlined,
+                  text: phone,
+                  isDarkMode: isDarkMode,
+                ),
                 for (final link in links)
-                  _contactChip(icon: Icons.link_outlined, text: link, isDarkMode: isDarkMode),
+                  _contactChip(
+                    icon: Icons.link_outlined,
+                    text: link,
+                    isDarkMode: isDarkMode,
+                  ),
               ],
             ),
             const SizedBox(height: 14),
@@ -329,7 +360,9 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           'Liên hệ phòng ban',
@@ -363,34 +396,47 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                   fontSize: 13,
                   color: isDarkMode ? Colors.white38 : const Color(0xFF94A3B8),
                 ),
-                prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF6797E1)),
+                prefixIcon: const Icon(
+                  Icons.search_rounded,
+                  color: Color(0xFF6797E1),
+                ),
                 suffixIcon: _keyword.isEmpty
                     ? null
                     : IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () {
-                    _searchController.clear();
-                    setState(() => _keyword = '');
-                  },
-                ),
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _keyword = '');
+                        },
+                      ),
                 filled: true,
                 fillColor: isDarkMode ? const Color(0xFF15171A) : Colors.white,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 14,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide(
-                    color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFE9EEF3),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
                   borderSide: BorderSide(
-                    color: isDarkMode ? Colors.white10 : const Color(0xFFE9EEF3),
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFE9EEF3),
                   ),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
-                  borderSide: const BorderSide(color: Color(0xFF6797E1), width: 1.4),
+                  borderSide: const BorderSide(
+                    color: Color(0xFF6797E1),
+                    width: 1.4,
+                  ),
                 ),
               ),
             ),
@@ -406,24 +452,36 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                   return const Center(child: Text('Đã có lỗi xảy ra'));
                 }
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: Color(0xFF6797E1)));
+                  return const Center(
+                    child: CircularProgressIndicator(color: Color(0xFF6797E1)),
+                  );
                 }
 
-                final rawDepartments = snapshot.data?.data()?['departments'] as List<dynamic>? ?? [];
-                final departments = rawDepartments
-                    .whereType<Map>()
-                    .map((e) => Map<String, dynamic>.from(e))
-                    .where(_matchesKeyword)
-                    .toList()
-                  ..sort((a, b) => (a['index'] ?? 999).compareTo(b['index'] ?? 999));
+                final rawDepartments =
+                    snapshot.data?.data()?['departments'] as List<dynamic>? ??
+                    [];
+                final departments =
+                    rawDepartments
+                        .whereType<Map>()
+                        .map((e) => Map<String, dynamic>.from(e))
+                        .where(_matchesKeyword)
+                        .toList()
+                      ..sort(
+                        (a, b) =>
+                            (a['index'] ?? 999).compareTo(b['index'] ?? 999),
+                      );
 
                 if (departments.isEmpty) {
                   return Center(
                     child: Text(
-                      _keyword.isEmpty ? 'Chưa có dữ liệu liên hệ.' : 'Không tìm thấy phòng ban phù hợp.',
+                      _keyword.isEmpty
+                          ? 'Chưa có dữ liệu liên hệ.'
+                          : 'Không tìm thấy phòng ban phù hợp.',
                       style: TextStyle(
                         fontFamily: 'Encode Sans Expanded',
-                        color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
+                        color: isDarkMode
+                            ? Colors.white60
+                            : const Color(0xFF667085),
                       ),
                     ),
                   );
@@ -432,7 +490,8 @@ class _DepartmentContactsPageState extends State<DepartmentContactsPage> {
                 return ListView.builder(
                   padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                   itemCount: departments.length,
-                  itemBuilder: (context, index) => _departmentCard(departments[index], isDarkMode),
+                  itemBuilder: (context, index) =>
+                      _departmentCard(departments[index], isDarkMode),
                 );
               },
             ),

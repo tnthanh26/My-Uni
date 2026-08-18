@@ -19,7 +19,10 @@ class OfficialContentHelper {
         text.contains('hội thao');
   }
 
-  static String getOfficialImageByContent(dynamic titleData, dynamic summaryData) {
+  static String getOfficialImageByContent(
+    dynamic titleData,
+    dynamic summaryData,
+  ) {
     final String title = titleData?.toString().toLowerCase() ?? "";
     final String summary = summaryData?.toString().toLowerCase() ?? "";
     final String text = "$title $summary";
@@ -113,9 +116,18 @@ class OfficialContentHelper {
     return null;
   }
 
-  static String getOfficialCategoryTag(dynamic titleData, dynamic summaryData, dynamic hashtagsData) {
-    if (hashtagsData != null && hashtagsData is List && hashtagsData.isNotEmpty) {
-      final String firstTag = hashtagsData.first.toString().replaceAll('#', '').trim();
+  static String getOfficialCategoryTag(
+    dynamic titleData,
+    dynamic summaryData,
+    dynamic hashtagsData,
+  ) {
+    if (hashtagsData != null &&
+        hashtagsData is List &&
+        hashtagsData.isNotEmpty) {
+      final String firstTag = hashtagsData.first
+          .toString()
+          .replaceAll('#', '')
+          .trim();
       if (firstTag.isNotEmpty) return firstTag;
     }
 

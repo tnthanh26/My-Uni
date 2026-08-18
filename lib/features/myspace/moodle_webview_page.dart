@@ -6,10 +6,7 @@ import 'package:my_uni/utils/app_feedback.dart';
 
 class MoodleWebviewPage extends StatefulWidget {
   final String moodleUrl;
-  const MoodleWebviewPage({
-    super.key,
-    required this.moodleUrl,
-  });
+  const MoodleWebviewPage({super.key, required this.moodleUrl});
 
   @override
   State<MoodleWebviewPage> createState() => _MoodleWebviewPageState();
@@ -73,17 +70,21 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
                     }
                   }
                   return document.body ? document.body.innerText : '';
-                })()'''
+                })()''',
               );
               final jsStr = jsResult.toString();
               if (jsStr.contains('authtoken=') || jsStr.contains('wstoken=')) {
                 debugPrint('🔎 [AUTO JS INSPECT] Found token link: $jsStr');
                 _checkAndExtractToken(jsStr);
               } else {
-                final hexMatch = RegExp(r'\b([a-f0-9]{32})\b').firstMatch(jsStr);
+                final hexMatch = RegExp(
+                  r'\b([a-f0-9]{32})\b',
+                ).firstMatch(jsStr);
                 if (hexMatch != null) {
                   final token = hexMatch.group(1)!;
-                  debugPrint('🎯 [MANAGETOKEN SUCCESS MATCH] Found 32-char Moodle mobile wstoken: $token');
+                  debugPrint(
+                    '🎯 [MANAGETOKEN SUCCESS MATCH] Found 32-char Moodle mobile wstoken: $token',
+                  );
                   _hasTokenFound = true;
                   _saveTokenAndComplete(token);
                 }
@@ -124,9 +125,13 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
     debugPrint('🧐 [CHECK TOKEN] Inspecting URL: $url');
 
     // 1. Nhận diện khi Microsoft OAuth vừa xác thực thành công
-    if (url.contains('oauth2callback.php') || url.contains('/auth/oauth2/login.php') || url.contains('/auth/oidc/')) {
+    if (url.contains('oauth2callback.php') ||
+        url.contains('/auth/oauth2/login.php') ||
+        url.contains('/auth/oidc/')) {
       _isOauthCompleted = true;
-      debugPrint('⚡ [OAUTH DETECTED] User successfully authenticated via Microsoft OAuth!');
+      debugPrint(
+        '⚡ [OAUTH DETECTED] User successfully authenticated via Microsoft OAuth!',
+      );
     }
 
     // 2. Trích xuất token từ URL nếu có
@@ -141,21 +146,30 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
     // 3. Khi người dùng hoàn tất đăng nhập Outlook và đáp xuống trang chủ Moodle,
     // tự động điều hướng ngầm tới user/managetoken.php hoặc calendar/export.php để bóc tách wstoken 32 ký tự hex!
     final cleanedUrl = widget.moodleUrl.trim().replaceAll(RegExp(r'/$'), '');
-    final isDashboardOrRoot = url.contains('/my') || 
-                              url == '$cleanedUrl/' || 
-                              url == cleanedUrl || 
-                              url.contains('/user/profile.php');
+    final isDashboardOrRoot =
+        url.contains('/my') ||
+        url == '$cleanedUrl/' ||
+        url == cleanedUrl ||
+        url.contains('/user/profile.php');
 
-    final isOAuthProcessingPage = url.contains('oauth2callback.php') || 
-                                  url.contains('/auth/oauth2/login.php') || 
-                                  url.contains('/auth/oidc/') || 
-                                  url.contains('/login/') || 
-                                  url.contains('login.microsoftonline.com');
+    final isOAuthProcessingPage =
+        url.contains('oauth2callback.php') ||
+        url.contains('/auth/oauth2/login.php') ||
+        url.contains('/auth/oidc/') ||
+        url.contains('/login/') ||
+        url.contains('login.microsoftonline.com');
 
-    if ((_isOauthCompleted || isDashboardOrRoot) && !isOAuthProcessingPage && !_isTriggeringAutoToken && !_hasTokenFound && !url.contains('managetoken') && !url.contains('calendar/export.php')) {
+    if ((_isOauthCompleted || isDashboardOrRoot) &&
+        !isOAuthProcessingPage &&
+        !_isTriggeringAutoToken &&
+        !_hasTokenFound &&
+        !url.contains('managetoken') &&
+        !url.contains('calendar/export.php')) {
       _isTriggeringAutoToken = true;
       final targetUrl = '$cleanedUrl/user/managetoken.php';
-      debugPrint('🚀 [AUTO TOKEN FETCH] User logged in! Navigating to managetoken URL: $targetUrl');
+      debugPrint(
+        '🚀 [AUTO TOKEN FETCH] User logged in! Navigating to managetoken URL: $targetUrl',
+      );
       Future.microtask(() async {
         await Future.delayed(const Duration(milliseconds: 500));
         if (mounted && !_hasTokenFound) {
@@ -171,7 +185,10 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
     debugPrint('🎉 MOODLE WSTOKEN ACQUIRED SUCCESSFULLY: $token');
     await MoodleTokenStorage.saveToken(token);
     if (!mounted) return;
-    AppFeedback.showSuccess(context, 'Đăng nhập Moodle qua Outlook thành công!');
+    AppFeedback.showSuccess(
+      context,
+      'Đăng nhập Moodle qua Outlook thành công!',
+    );
     FocusManager.instance.primaryFocus?.unfocus();
     Navigator.pop(context, true);
   }
@@ -182,13 +199,18 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
     const Color primaryColor = Color(0xFF5893D8);
 
     return Scaffold(
-      backgroundColor: isDarkMode ? const Color(0xFF121212) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF121212)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
         elevation: 1,
         titleSpacing: 0,
         leading: IconButton(
-          icon: Icon(Icons.close_rounded, color: isDarkMode ? Colors.white : Colors.black87),
+          icon: Icon(
+            Icons.close_rounded,
+            color: isDarkMode ? Colors.white : Colors.black87,
+          ),
           onPressed: () {
             FocusManager.instance.primaryFocus?.unfocus();
             Navigator.pop(context, false);
@@ -222,7 +244,10 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
         actions: [
           IconButton(
             tooltip: 'Làm mới',
-            icon: Icon(Icons.refresh_rounded, color: isDarkMode ? Colors.white70 : Colors.black87),
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: isDarkMode ? Colors.white70 : Colors.black87,
+            ),
             onPressed: _isPlatformAvailable
                 ? () async {
                     try {
@@ -243,7 +268,11 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.build_circle_rounded, size: 56, color: Color(0xFF5893D8)),
+                      const Icon(
+                        Icons.build_circle_rounded,
+                        size: 56,
+                        color: Color(0xFF5893D8),
+                      ),
                       const SizedBox(height: 16),
                       Text(
                         'Cần khởi động lại ứng dụng',
@@ -262,7 +291,9 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
                           fontSize: 13,
                           height: 1.5,
                           fontFamily: 'Encode Sans Expanded',
-                          color: isDarkMode ? Colors.white70 : Colors.grey.shade700,
+                          color: isDarkMode
+                              ? Colors.white70
+                              : Colors.grey.shade700,
                         ),
                       ),
                     ],
@@ -278,9 +309,7 @@ class _MoodleWebviewPageState extends State<MoodleWebviewPage> {
                       color: primaryColor,
                       minHeight: 3,
                     ),
-                  Expanded(
-                    child: WebViewWidget(controller: _controller),
-                  ),
+                  Expanded(child: WebViewWidget(controller: _controller)),
                 ],
               ),
       ),

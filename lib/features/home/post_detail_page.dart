@@ -64,16 +64,21 @@ class _PostDetailPageState extends State<PostDetailPage> {
   String _commentSortMode = 'newest'; // 'newest' hoặc 'top'
 
   Future<void> _pickCommentImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
     if (pickedFile != null) {
       setState(() => _commentImageFile = File(pickedFile.path));
     }
   }
-  
+
   Future<String?> _processImageToBase64(File file) async {
     final bytes = await file.readAsBytes();
     var compressedBytes = await FlutterImageCompress.compressWithList(
-      bytes, quality: 20, minWidth: 500, minHeight: 500,
+      bytes,
+      quality: 20,
+      minWidth: 500,
+      minHeight: 500,
     );
     return base64Encode(compressedBytes);
   }
@@ -131,7 +136,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
       return 'official_news';
     }
     if (widget.initialPostData.containsKey('rating')) return 'course_reviews';
-    if (widget.initialPostData.containsKey('fileData')) return 'study_materials';
+    if (widget.initialPostData.containsKey('fileData'))
+      return 'study_materials';
     return 'forum_posts';
   }
 
@@ -158,29 +164,31 @@ class _PostDetailPageState extends State<PostDetailPage> {
         .doc(widget.docId)
         .snapshots()
         .listen(
-      (doc) {
-        if (!mounted) return;
-        if (doc.exists && doc.data() != null) {
-          setState(() {
-            _postData = doc.data() as Map<String, dynamic>;
-          });
-        } else if (!_hasBeenDeleted) {
-          _hasBeenDeleted = true;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Bài viết này đã bị xóa hoặc không còn tồn tại'),
-              duration: Duration(seconds: 2),
-            ),
-          );
-          if (Navigator.of(context).canPop()) {
-            Navigator.of(context).pop();
-          }
-        }
-      },
-      onError: (error) {
-        debugPrint("Post realtime stream error (handled): $error");
-      },
-    );
+          (doc) {
+            if (!mounted) return;
+            if (doc.exists && doc.data() != null) {
+              setState(() {
+                _postData = doc.data() as Map<String, dynamic>;
+              });
+            } else if (!_hasBeenDeleted) {
+              _hasBeenDeleted = true;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Bài viết này đã bị xóa hoặc không còn tồn tại',
+                  ),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              if (Navigator.of(context).canPop()) {
+                Navigator.of(context).pop();
+              }
+            }
+          },
+          onError: (error) {
+            debugPrint("Post realtime stream error (handled): $error");
+          },
+        );
   }
 
   @override
@@ -191,10 +199,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _handleOpenFile(
-      BuildContext context,
-      String base64Data,
-      String fileName,
-      ) async {
+    BuildContext context,
+    String base64Data,
+    String fileName,
+  ) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -221,12 +229,13 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     }
   }
+
   Future<void> _showReportOptions() async {
     await showModalBottomSheet(
       context: context,
@@ -243,6 +252,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       },
     );
   }
+
   Future<void> _submitReport(String reason) async {
     if (_user == null) return;
 
@@ -261,15 +271,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
         'status': 'pending',
       });
 
-      final authorId =
-          _postData['authorId'] ?? _postData['uploaderId'];
+      final authorId = _postData['authorId'] ?? _postData['uploaderId'];
       if (authorId != null) {
         await _firestore.collection('notifications').add({
           'userId': authorId,
           'type': 'warning',
           'title': 'Cảnh báo nội dung',
           'content':
-          'Bài viết của bạn đang bị cộng đồng báo cáo vì lý do: $reason. Mod sẽ tiến hành kiểm tra.',
+              'Bài viết của bạn đang bị cộng đồng báo cáo vì lý do: $reason. Mod sẽ tiến hành kiểm tra.',
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'relatedPostId': widget.docId,
@@ -292,7 +301,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
     showDialog(
       context: context,
       builder: (dialogContext) {
-        final isDarkMode = Theme.of(dialogContext).brightness == Brightness.dark;
+        final isDarkMode =
+            Theme.of(dialogContext).brightness == Brightness.dark;
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -371,8 +381,6 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _showReportCommentOptions(Map<String, dynamic> comment) async {
-
-
     final List<String> reportReasons = [
       "Nội dung thô tục, nhạy cảm",
       "Spam, quảng cáo không phép",
@@ -452,9 +460,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           "Lý do báo cáo khác",
           style: TextStyle(
@@ -476,9 +482,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
             hintStyle: TextStyle(
               color: isDarkMode ? Colors.white38 : Colors.grey,
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF5893D8)),
@@ -512,9 +516,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _submitCommentReport(
-      Map<String, dynamic> comment,
-      String reason,
-      ) async {
+    Map<String, dynamic> comment,
+    String reason,
+  ) async {
     if (_user == null) return;
 
     final commentId = comment['id'];
@@ -526,16 +530,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
           .doc(widget.docId)
           .collection('comments')
           .doc(commentId)
-          .update({
-        'isReported': true,
-        'reportCount': FieldValue.increment(1),
-      });
+          .update({'isReported': true, 'reportCount': FieldValue.increment(1)});
 
       // Đánh dấu bài viết có comment bị báo cáo
-      await _firestore
-          .collection(_collectionPath)
-          .doc(widget.docId)
-          .update({
+      await _firestore.collection(_collectionPath).doc(widget.docId).update({
         'hasReportedComments': true,
         'reportedCommentCount': FieldValue.increment(1),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -563,16 +561,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
         }
 
         if (shortCommentText.length > 30) {
-          shortCommentText =
-          "${shortCommentText.substring(0, 30)}...";
+          shortCommentText = "${shortCommentText.substring(0, 30)}...";
         }
 
         await _firestore.collection('notifications').add({
           'userId': commentAuthorId,
           'type': 'warning',
           'title': 'Cảnh báo bình luận',
-          'content':
-          'Bình luận "$shortCommentText" bị báo cáo: $reason.',
+          'content': 'Bình luận "$shortCommentText" bị báo cáo: $reason.',
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'relatedPostId': widget.docId,
@@ -625,22 +621,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
       int totalToDelete = 1 + descendantRefs.length;
 
-      DocumentReference postRef =
-          _firestore.collection(_collectionPath).doc(widget.docId);
+      DocumentReference postRef = _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId);
       batch.update(postRef, {
-        'commentCount': FieldValue.increment(-totalToDelete)
+        'commentCount': FieldValue.increment(-totalToDelete),
       });
 
       await batch.commit();
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              "Đã xóa bình luận",
-            ),
-          ),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Đã xóa bình luận")));
       }
     } catch (e) {
       debugPrint("Lỗi khi xóa bình luận: $e");
@@ -661,15 +654,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   void _showEditCommentDialog(Map<String, dynamic> comment) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final TextEditingController editController = TextEditingController(text: comment['content']);
+    final TextEditingController editController = TextEditingController(
+      text: comment['content'],
+    );
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           "Sửa bình luận",
           style: TextStyle(
@@ -688,10 +681,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
           ),
           decoration: InputDecoration(
             hintText: "Nhập nội dung mới...",
-            hintStyle: TextStyle(color: isDarkMode ? Colors.white38 : Colors.grey),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
+            hintStyle: TextStyle(
+              color: isDarkMode ? Colors.white38 : Colors.grey,
             ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: const BorderSide(color: Color(0xFF5893D8)),
@@ -709,14 +702,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
               if (newContent.isEmpty) return;
 
               // Check for violated words (Blacklist & Sensitive)
-              List<String> blacklistViolations = ContentService.getBlacklistedWords(newContent);
+              List<String> blacklistViolations =
+                  ContentService.getBlacklistedWords(newContent);
               if (blacklistViolations.isNotEmpty) {
                 await showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (context) => AlertDialog(
                     title: const Text("Yêu cầu sửa nội dung"),
-                    content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+                    content: Text(
+                      "Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục.",
+                    ),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(context),
@@ -729,26 +725,31 @@ class _PostDetailPageState extends State<PostDetailPage> {
               }
 
               bool isSensitive = false;
-              List<String> sensitiveViolations = ContentService.getSensitiveWords(newContent);
+              List<String> sensitiveViolations =
+                  ContentService.getSensitiveWords(newContent);
               if (sensitiveViolations.isNotEmpty) {
-                bool shouldSubmit = await showDialog<bool>(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => AlertDialog(
-                    title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-                    content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục sửa, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text("Quay lại sửa"),
+                bool shouldSubmit =
+                    await showDialog<bool>(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+                        content: Text(
+                          "Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục sửa, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text("Quay lại sửa"),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text("Vẫn đăng"),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text("Vẫn đăng"),
-                      ),
-                    ],
-                  ),
-                ) ?? false;
+                    ) ??
+                    false;
 
                 if (!shouldSubmit) {
                   return;
@@ -763,10 +764,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     .collection('comments')
                     .doc(comment['id'])
                     .update({
-                  'content': newContent,
-                  'status': isSensitive ? 'pending' : 'approved',
-                });
-                
+                      'content': newContent,
+                      'status': isSensitive ? 'pending' : 'approved',
+                    });
+
                 if (mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -775,15 +776,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("Lỗi: $e")),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
                 }
               }
             },
             child: const Text(
               "Lưu",
-              style: TextStyle(color: Color(0xFF5893D8), fontWeight: FontWeight.bold),
+              style: TextStyle(
+                color: Color(0xFF5893D8),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -791,10 +795,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
     );
   }
 
-  Future<void> _sendCommentNotification(String content, String senderName) async {
-    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return;
-    final authorId =
-        _postData['authorId'] ?? _postData['uploaderId'];
+  Future<void> _sendCommentNotification(
+    String content,
+    String senderName,
+  ) async {
+    if (_collectionPath == 'official_news' ||
+        _collectionPath == 'faculty_official_news')
+      return;
+    final authorId = _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     await _firestore.collection('notifications').add({
@@ -810,9 +818,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Future<void> _sendLikeNotification() async {
-    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return;
-    final authorId =
-        _postData['authorId'] ?? _postData['uploaderId'];
+    if (_collectionPath == 'official_news' ||
+        _collectionPath == 'faculty_official_news')
+      return;
+    final authorId = _postData['authorId'] ?? _postData['uploaderId'];
     if (_user == null || authorId == null || _user!.uid == authorId) return;
 
     final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
@@ -821,8 +830,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final senderName = (rawName != null && rawName.isNotEmpty)
         ? rawName
         : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
-            ? _user!.displayName!.trim()
-            : "Ai đó");
+              ? _user!.displayName!.trim()
+              : "Ai đó");
 
     await _firestore.collection('notifications').add({
       'userId': authorId,
@@ -841,18 +850,20 @@ class _PostDetailPageState extends State<PostDetailPage> {
     if (_user == null || (content.isEmpty && _commentImageFile == null)) return;
     if (_isSubmittingComment) return;
 
-
-
     // 1. Kiểm tra từ cấm
     if (content.isNotEmpty) {
-      List<String> blacklistViolations = ContentService.getBlacklistedWords(content);
+      List<String> blacklistViolations = ContentService.getBlacklistedWords(
+        content,
+      );
       if (blacklistViolations.isNotEmpty) {
         await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: const Text("Yêu cầu sửa nội dung"),
-            content: Text("Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+            content: Text(
+              "Bình luận chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục.",
+            ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
@@ -868,26 +879,32 @@ class _PostDetailPageState extends State<PostDetailPage> {
     // 2. Kiểm tra từ nhạy cảm
     bool isSensitive = false;
     if (content.isNotEmpty) {
-      List<String> sensitiveViolations = ContentService.getSensitiveWords(content);
+      List<String> sensitiveViolations = ContentService.getSensitiveWords(
+        content,
+      );
       if (sensitiveViolations.isNotEmpty) {
-        bool shouldSubmit = await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-            content: Text("Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text("Quay lại sửa"),
+        bool shouldSubmit =
+            await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => AlertDialog(
+                title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+                content: Text(
+                  "Bình luận chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bình luận sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text("Quay lại sửa"),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text("Vẫn đăng"),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text("Vẫn đăng"),
-              ),
-            ],
-          ),
-        ) ?? false;
+            ) ??
+            false;
 
         if (!shouldSubmit) {
           return;
@@ -916,14 +933,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
         _commentImageFile = null;
       });
 
-      final userDoc = await _firestore.collection('users').doc(_user!.uid).get();
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(_user!.uid)
+          .get();
       final userData = userDoc.data();
       final rawName = userData?['displayName']?.toString().trim();
       final senderName = (rawName != null && rawName.isNotEmpty)
           ? rawName
           : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
-              ? _user!.displayName!.trim()
-              : "Ai đó");
+                ? _user!.displayName!.trim()
+                : "Ai đó");
 
       final String commentSenderName = _isCommentAnonymous
           ? 'Sinh viên ẩn danh'
@@ -948,15 +968,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
           rootAuthorId =
               parentData['rootAuthorId']?.toString() ??
-                  parentData['authorId']?.toString() ??
-                  _user!.uid;
+              parentData['authorId']?.toString() ??
+              _user!.uid;
         }
       }
 
       Map<String, dynamic> commentData = {
         'authorId': _user!.uid,
         'authorName': commentSenderName,
-        'authorAvatar': _isCommentAnonymous ? '' : (userData?['photoUrl'] ?? ''),
+        'authorAvatar': _isCommentAnonymous
+            ? ''
+            : (userData?['photoUrl'] ?? ''),
         'isAnonymous': _isCommentAnonymous,
         'content': content,
         'timestamp': FieldValue.serverTimestamp(),
@@ -989,7 +1011,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       // 2. Cập nhật số lượng bình luận bài viết (Bọc riêng để không chặn luồng chính nếu lỗi phân quyền bài viết)
       try {
         await _firestore.collection(_collectionPath).doc(widget.docId).update({
-          'commentCount': FieldValue.increment(1)
+          'commentCount': FieldValue.increment(1),
         });
       } catch (e) {
         debugPrint("Lỗi cập nhật commentCount của bài viết: $e");
@@ -1012,17 +1034,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
               .collection('comments')
               .doc(parentId)
               .get();
-          
+
           if (parentDoc.exists) {
             final parentData = parentDoc.data();
             final parentAuthorId = parentData?['authorId'];
-            
+
             if (parentAuthorId != null && parentAuthorId != _user!.uid) {
               await _firestore.collection('notifications').add({
                 'userId': parentAuthorId,
                 'type': 'comment',
                 'title': 'Phản hồi mới',
-                'content': '$commentSenderName đã phản hồi bình luận của bạn: "$notificationContent"',
+                'content':
+                    '$commentSenderName đã phản hồi bình luận của bạn: "$notificationContent"',
                 'timestamp': FieldValue.serverTimestamp(),
                 'isRead': false,
                 'relatedPostId': widget.docId,
@@ -1037,9 +1060,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } catch (e) {
       debugPrint("Lỗi thêm bình luận: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi thêm bình luận: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi thêm bình luận: $e")));
       }
     } finally {
       if (mounted) {
@@ -1055,7 +1078,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final uid = _user!.uid;
     final commentId = comment['id'];
     final List<dynamic> likes = comment['likes'] ?? [];
-    
+
     final docRef = _firestore
         .collection(_collectionPath)
         .doc(widget.docId)
@@ -1064,11 +1087,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     if (likes.contains(uid)) {
       await docRef.update({
-        'likes': FieldValue.arrayRemove([uid])
+        'likes': FieldValue.arrayRemove([uid]),
       });
     } else {
       await docRef.update({
-        'likes': FieldValue.arrayUnion([uid])
+        'likes': FieldValue.arrayUnion([uid]),
       });
 
       // Send notification to comment author
@@ -1079,15 +1102,17 @@ class _PostDetailPageState extends State<PostDetailPage> {
         final rawLikeName = userData?['displayName']?.toString().trim();
         final senderLikeName = (rawLikeName != null && rawLikeName.isNotEmpty)
             ? rawLikeName
-            : (_user!.displayName != null && _user!.displayName!.trim().isNotEmpty
-                ? _user!.displayName!.trim()
-                : "Ai đó");
+            : (_user!.displayName != null &&
+                      _user!.displayName!.trim().isNotEmpty
+                  ? _user!.displayName!.trim()
+                  : "Ai đó");
 
         await _firestore.collection('notifications').add({
           'userId': commentAuthorId,
           'type': 'like',
           'title': 'Lượt thích mới',
-          'content': '$senderLikeName đã thích bình luận của bạn: "${comment['content']}"',
+          'content':
+              '$senderLikeName đã thích bình luận của bạn: "${comment['content']}"',
           'timestamp': FieldValue.serverTimestamp(),
           'isRead': false,
           'relatedPostId': widget.docId,
@@ -1117,9 +1142,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     if (docSnapshot.exists) {
       await docRef.delete();
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Đã bỏ quan tâm")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Đã bỏ quan tâm")));
     } else {
       await docRef.set({
         'title': data['title'] ?? 'Sự kiện sinh viên',
@@ -1153,24 +1178,28 @@ class _PostDetailPageState extends State<PostDetailPage> {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: isInterested
-                ? (isDarkMode ? Colors.white.withOpacity(0.1) : const Color(0xFFF1F5F9))
+                ? (isDarkMode
+                      ? Colors.white.withOpacity(0.1)
+                      : const Color(0xFFF1F5F9))
                 : const Color(0xFF5893D8),
             borderRadius: BorderRadius.circular(20),
             boxShadow: isInterested || isDarkMode
                 ? []
                 : [
-              BoxShadow(
-                color: const Color(0xFF5893D8).withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: const Color(0xFF5893D8).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                isInterested ? Icons.check_circle_rounded : Icons.add_circle_outline_rounded,
+                isInterested
+                    ? Icons.check_circle_rounded
+                    : Icons.add_circle_outline_rounded,
                 size: 16,
                 color: isInterested
                     ? (isDarkMode ? Colors.white70 : const Color(0xFF64748B))
@@ -1231,8 +1260,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
       }
     }
   }
@@ -1256,7 +1286,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Future<void> _refreshPostData() async {
     try {
-      final doc = await _firestore.collection(_collectionPath).doc(widget.docId).get();
+      final doc = await _firestore
+          .collection(_collectionPath)
+          .doc(widget.docId)
+          .get();
       if (doc.exists && doc.data() != null && mounted) {
         setState(() {
           _postData = doc.data() as Map<String, dynamic>;
@@ -1289,13 +1322,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
       if (facultyEventId != null && facultyEventId.isNotEmpty) {
         try {
-          await _firestore.collection('faculty_events').doc(facultyEventId).delete();
+          await _firestore
+              .collection('faculty_events')
+              .doc(facultyEventId)
+              .delete();
         } catch (_) {}
       }
 
       if (activityId != null && activityId.isNotEmpty) {
         try {
-          await _firestore.collection('collaborator_activities').doc(activityId).delete();
+          await _firestore
+              .collection('collaborator_activities')
+              .doc(activityId)
+              .delete();
         } catch (_) {}
       }
 
@@ -1305,9 +1344,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
     } catch (e) {
       _hasBeenDeleted = false;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi xóa: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi xóa: $e")));
       }
     }
   }
@@ -1315,7 +1354,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final bool isOwner = _user?.uid != null &&
+    final bool isOwner =
+        _user?.uid != null &&
         (_user!.uid == _postData['authorId'] ||
             _user!.uid == _postData['uploaderId'] ||
             _user!.uid == _postData['createdBy']);
@@ -1382,7 +1422,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
               onPressed: _showReportOptions,
               tooltip: "Báo cáo bài viết vi phạm",
-            )
+            ),
         ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -1419,7 +1459,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   Divider(
                     height: 24,
                     thickness: 1,
-                    color: isDarkMode ? Colors.white10 : const Color(0xFFEDF2F7),
+                    color: isDarkMode
+                        ? Colors.white10
+                        : const Color(0xFFEDF2F7),
                   ),
                   _buildCommentSection(),
                   const SizedBox(height: 24),
@@ -1434,7 +1476,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String _getAppBarTitle() {
-    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return "Chi tiết bài viết";
+    if (_collectionPath == 'official_news' ||
+        _collectionPath == 'faculty_official_news')
+      return "Chi tiết bài viết";
     if (_collectionPath == 'course_reviews') return "Review môn học";
     if (_collectionPath == 'study_materials') return "Tài liệu học tập";
     return "Chi tiết bài đăng";
@@ -1442,7 +1486,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
   Widget _buildDynamicHeader() {
     final data = _postData;
-    if (_collectionPath == 'official_news' || _collectionPath == 'faculty_official_news') return _buildOfficialUI(data);
+    if (_collectionPath == 'official_news' ||
+        _collectionPath == 'faculty_official_news')
+      return _buildOfficialUI(data);
     if (_collectionPath == 'course_reviews') return _buildReviewUI(data);
     if (_collectionPath == 'study_materials') return _buildMaterialUI(data);
     return _buildForumUI(data);
@@ -1476,20 +1522,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
       return '';
     }();
 
-    final String link = (data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])?.toString().trim() ?? '';
+    final String link =
+        (data['link'] ?? data['sourceUrl'] ?? data['sourceArticleUrl'])
+            ?.toString()
+            .trim() ??
+        '';
     final bool hasLink = link.isNotEmpty;
     final String summaryStr = (data['summary'] ?? '').toString().trim();
     final String contentStr = (data['content'] ?? '').toString().trim();
 
-    final String authorName = data['department']?.toString().trim().isNotEmpty == true
+    final String authorName =
+        data['department']?.toString().trim().isNotEmpty == true
         ? data['department'].toString().trim()
         : (data['facultyName']?.toString().trim().isNotEmpty == true
-            ? data['facultyName'].toString().trim()
-            : (data['sourceName']?.toString().trim().isNotEmpty == true
-                ? data['sourceName'].toString().trim()
-                : (data['authorName']?.toString().trim().isNotEmpty == true
-                    ? data['authorName'].toString().trim()
-                    : 'Trường ĐH Khoa học Tự nhiên')));
+              ? data['facultyName'].toString().trim()
+              : (data['sourceName']?.toString().trim().isNotEmpty == true
+                    ? data['sourceName'].toString().trim()
+                    : (data['authorName']?.toString().trim().isNotEmpty == true
+                          ? data['authorName'].toString().trim()
+                          : 'Trường ĐH Khoa học Tự nhiên')));
 
     final String dateText = _getFormattedDate(data);
 
@@ -1506,23 +1557,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
-            child: _buildAuthorRow(
-              authorName,
-              dateText,
-              isOfficial: true,
-            ),
+            child: _buildAuthorRow(authorName, dateText, isOfficial: true),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1566,7 +1613,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 4),
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
                           colors: [Color(0xFF3B82F6), Color(0xFF2563EB)],
@@ -1576,8 +1625,11 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.stars_rounded,
-                              size: 13, color: Colors.white),
+                          Icon(
+                            Icons.stars_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'Sự kiện nổi bật',
@@ -1605,7 +1657,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     .map(
                       (t) => GestureDetector(
                         onTap: () {
-                          final cleanTag = t.toString().replaceAll('#', '').trim();
+                          final cleanTag = t
+                              .toString()
+                              .replaceAll('#', '')
+                              .trim();
                           if (cleanTag.isNotEmpty) {
                             showSearch(
                               context: context,
@@ -1675,7 +1730,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ),
-          if (summaryStr.isNotEmpty && (hasLink || summaryStr != contentStr)) ...[
+          if (summaryStr.isNotEmpty &&
+              (hasLink || summaryStr != contentStr)) ...[
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1685,9 +1741,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 14.5,
                   height: 1.55,
-                  color: isDarkMode
-                      ? Colors.white70
-                      : const Color(0xFF475569),
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF475569),
                 ),
               ),
             ),
@@ -1723,7 +1777,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
               ),
             ),
           ),
-          if (!hasLink && (contentStr.isNotEmpty ? contentStr : summaryStr).isNotEmpty) ...[
+          if (!hasLink &&
+              (contentStr.isNotEmpty ? contentStr : summaryStr).isNotEmpty) ...[
             const SizedBox(height: 18),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -1876,11 +1931,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       icon = Icons.star_outline_rounded;
                     }
 
-                    return Icon(
-                      icon,
-                      color: const Color(0xFFFFCB45),
-                      size: 30,
-                    );
+                    return Icon(icon, color: const Color(0xFFFFCB45), size: 30);
                   }),
                   const SizedBox(width: 10),
                   Text(
@@ -1889,8 +1940,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       fontFamily: 'Encode Sans Expanded',
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
-                      color:
-                      isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF1F2937),
                     ),
                   ),
                 ],
@@ -1904,9 +1956,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 15,
                   height: 1.7,
-                  color: isDarkMode
-                      ? Colors.white70
-                      : const Color(0xFF4B5563),
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
                 ),
               ),
             ],
@@ -1930,12 +1980,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
@@ -1974,9 +2024,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 15,
                   height: 1.7,
-                  color: isDarkMode
-                      ? Colors.white70
-                      : const Color(0xFF4B5563),
+                  color: isDarkMode ? Colors.white70 : const Color(0xFF4B5563),
                 ),
               ),
             if (data['fileData'] != null) ...[
@@ -1985,55 +2033,56 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 onTap: () => _handleOpenFile(
                   context,
                   data['fileData'],
-                  data['fileName'] ?? (data['isImage'] == true ? 'image.png' : 'document.pdf'),
+                  data['fileName'] ??
+                      (data['isImage'] == true ? 'image.png' : 'document.pdf'),
                 ),
                 child: data['isImage'] == true
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(18),
-                  child: Image.memory(
-                    Base64ImageCache.decode(data['fileData']),
-                    width: double.infinity,
-                    fit: BoxFit.contain,
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.memory(
+                          Base64ImageCache.decode(data['fileData']),
+                          width: double.infinity,
+                          fit: BoxFit.contain,
+                        ),
+                      )
                     : Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDarkMode
-                        ? Colors.white.withOpacity(0.04)
-                        : const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDarkMode
-                          ? Colors.white10
-                          : const Color(0xFFEAEFF5),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.description_rounded,
-                        color: Color(0xFF5893D8),
-                        size: 34,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          data['fileName'] ?? 'document.pdf',
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontWeight: FontWeight.w600,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDarkMode
+                              ? Colors.white.withOpacity(0.04)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
                             color: isDarkMode
-                                ? Colors.white
-                                : Colors.black87,
+                                ? Colors.white10
+                                : const Color(0xFFEAEFF5),
                           ),
                         ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.description_rounded,
+                              color: Color(0xFF5893D8),
+                              size: 34,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                data['fileName'] ?? 'document.pdf',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontWeight: FontWeight.w600,
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ],
@@ -2047,14 +2096,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
     final bool isOwner = _user?.uid == data['authorId'];
     final bool isAnonymous =
         (data['isAnonymous'] == true) ||
-            (data['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-            (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+        (data['authorName']?.toString().toLowerCase().contains('vô danh') ??
+            false) ||
+        (data['authorName']?.toString().toLowerCase().contains('ẩn danh') ??
+            false);
     final bool showOwnAnonymousBadge = isOwner && isAnonymous;
     final String timeText = data['timestamp'] != null
         ? timeago.format(
-      (data['timestamp'] as Timestamp).toDate(),
-      locale: 'vi',
-    )
+            (data['timestamp'] as Timestamp).toDate(),
+            locale: 'vi',
+          )
         : 'Vừa xong';
 
     return Container(
@@ -2068,10 +2119,22 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 child: _buildAuthorRow(
                   isAnonymous
                       ? AnonymousUtils.anonymousPostAuthorName
-                      : (data['authorName'] ?? data['uploaderName'] ?? data['userName'] ?? 'Sinh viên'),
+                      : (data['authorName'] ??
+                            data['uploaderName'] ??
+                            data['userName'] ??
+                            'Sinh viên'),
                   timeText,
-                  avatarBase64: isAnonymous ? null : (data['authorAvatar'] ?? data['uploaderAvatar'] ?? data['userAvatar']),
-                  authorId: isAnonymous ? null : (data['authorId'] ?? data['uploaderId'] ?? data['userId'] ?? data['uid']),
+                  avatarBase64: isAnonymous
+                      ? null
+                      : (data['authorAvatar'] ??
+                            data['uploaderAvatar'] ??
+                            data['userAvatar']),
+                  authorId: isAnonymous
+                      ? null
+                      : (data['authorId'] ??
+                            data['uploaderId'] ??
+                            data['userId'] ??
+                            data['uid']),
                 ),
               ),
 
@@ -2107,7 +2170,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   .map(
                     (t) => GestureDetector(
                       onTap: () {
-                        final cleanTag = t.toString().replaceAll('#', '').trim();
+                        final cleanTag = t
+                            .toString()
+                            .replaceAll('#', '')
+                            .trim();
                         if (cleanTag.isNotEmpty) {
                           showSearch(
                             context: context,
@@ -2169,9 +2235,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
               fontFamily: 'Encode Sans Expanded',
               fontSize: 15,
               height: 1.7,
-              color: isDarkMode
-                  ? Colors.white
-                  : const Color(0xFF1F2937),
+              color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
             ),
           ),
           if (data['imageUrl'] != null && data['imageUrl'] != '') ...[
@@ -2220,11 +2284,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            Icons.tag_rounded,
-            size: 14,
-            color: Color(0xFF306CFE),
-          ),
+          const Icon(Icons.tag_rounded, size: 14, color: Color(0xFF306CFE)),
           const SizedBox(width: 5),
           Text(
             label,
@@ -2246,10 +2306,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   String _getFormattedDate(Map<String, dynamic> data) {
-    final String dateText = (data['publishedDateText'] ?? data['date'])?.toString().trim() ?? '';
+    final String dateText =
+        (data['publishedDateText'] ?? data['date'])?.toString().trim() ?? '';
     if (dateText.isNotEmpty) return dateText;
 
-    final dynamic ts = data['publishedAt'] ?? data['createdAt'] ?? data['timestamp'];
+    final dynamic ts =
+        data['publishedAt'] ?? data['createdAt'] ?? data['timestamp'];
     if (ts is Timestamp) {
       return timeago.format(ts.toDate(), locale: 'vi');
     }
@@ -2260,25 +2322,29 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildAuthorRow(
-      String name,
-      String sub, {
-        String? avatarBase64,
-        String? authorId,
-        bool isOfficial = false,
-      }) {
+    String name,
+    String sub, {
+    String? avatarBase64,
+    String? authorId,
+    bool isOfficial = false,
+  }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     void handleAuthorTap() async {
-      if (authorId != null && authorId.isNotEmpty && !isOfficial && !name.contains('ẩn danh')) {
+      if (authorId != null &&
+          authorId.isNotEmpty &&
+          !isOfficial &&
+          !name.contains('ẩn danh')) {
         final info = await ChatService().getStudentVerificationInfo(authorId);
         if (mounted) {
           StudentIdentitySheet.show(
             context,
-            info ?? {
-              'uid': authorId,
-              'displayName': name,
-              'photoURL': avatarBase64 ?? '',
-            },
+            info ??
+                {
+                  'uid': authorId,
+                  'displayName': name,
+                  'photoURL': avatarBase64 ?? '',
+                },
           );
         }
       }
@@ -2291,19 +2357,31 @@ class _PostDetailPageState extends State<PostDetailPage> {
           onTap: handleAuthorTap,
           child: CircleAvatar(
             radius: 23,
-            backgroundColor:
-            isDarkMode ? Colors.white10 : const Color(0xFFF0F0F0),
-            child: avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
+            backgroundColor: isDarkMode
+                ? Colors.white10
+                : const Color(0xFFF0F0F0),
+            child:
+                avatarBase64 != null && avatarBase64.isNotEmpty && !isOfficial
                 ? CircleAvatar(
-              radius: 21,
-              backgroundImage: MemoryImage(Base64ImageCache.decode(avatarBase64)),
-            )
+                    radius: 21,
+                    backgroundImage: MemoryImage(
+                      Base64ImageCache.decode(avatarBase64),
+                    ),
+                  )
                 : Padding(
-              padding: const EdgeInsets.all(2.0),
-              child: isOfficial
-                  ? Image.asset('assets/images/logo.png', width: 46, height: 46)
-                  : Icon(Icons.person, color: isDarkMode ? Colors.white38 : Colors.grey, size: 28),
-            ),
+                    padding: const EdgeInsets.all(2.0),
+                    child: isOfficial
+                        ? Image.asset(
+                            'assets/images/logo.png',
+                            width: 46,
+                            height: 46,
+                          )
+                        : Icon(
+                            Icons.person,
+                            color: isDarkMode ? Colors.white38 : Colors.grey,
+                            size: 28,
+                          ),
+                  ),
           ),
         ),
         const SizedBox(width: 12),
@@ -2325,7 +2403,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           fontFamily: 'Encode Sans Expanded',
                           fontWeight: FontWeight.w700,
                           fontSize: 15,
-                          color: isDarkMode ? Colors.white : const Color(0xFF2C2C2C),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF2C2C2C),
                         ),
                       ),
                     ),
@@ -2348,7 +2428,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     Icon(
                       Icons.schedule_rounded,
                       size: 13,
-                      color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                      color: isDarkMode
+                          ? Colors.white54
+                          : const Color(0xFF64748B),
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -2357,7 +2439,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         fontFamily: 'Encode Sans Expanded',
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: isDarkMode ? Colors.white54 : const Color(0xFF64748B),
+                        color: isDarkMode
+                            ? Colors.white54
+                            : const Color(0xFF64748B),
                       ),
                     ),
                   ],
@@ -2404,8 +2488,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
               return true;
             })
             .toList();
-        var rootComments =
-        allComments.where((c) => c['parentCommentId'] == null).toList();
+        var rootComments = allComments
+            .where((c) => c['parentCommentId'] == null)
+            .toList();
 
         if (_commentSortMode == 'top') {
           rootComments.sort((a, b) {
@@ -2425,7 +2510,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
             final Timestamp? aTime = a['timestamp'] as Timestamp?;
             final Timestamp? bTime = b['timestamp'] as Timestamp?;
             if (aTime == null && bTime == null) return 0;
-            if (aTime == null) return -1; // Bình luận mới tạo (đang chờ serverTimestamp) nằm ngay ĐẦU
+            if (aTime == null)
+              return -1; // Bình luận mới tạo (đang chờ serverTimestamp) nằm ngay ĐẦU
             if (bTime == null) return 1;
             return bTime.compareTo(aTime); // Mới nhất lên đầu
           });
@@ -2445,7 +2531,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                      color: isDarkMode
+                          ? Colors.white
+                          : const Color(0xFF1F2937),
                     ),
                   ),
                   PopupMenuButton<String>(
@@ -2455,21 +2543,30 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                       side: BorderSide(
-                        color: isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0),
+                        color: isDarkMode
+                            ? Colors.white10
+                            : const Color(0xFFE2E8F0),
                         width: 1,
                       ),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 4,
+                      ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            _commentSortMode == 'newest' ? "Mới nhất" : "Nổi bật nhất",
+                            _commentSortMode == 'newest'
+                                ? "Mới nhất"
+                                : "Nổi bật nhất",
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : const Color(0xFF344054),
                               fontFamily: 'Encode Sans Expanded',
                             ),
                           ),
@@ -2477,7 +2574,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           Icon(
                             Icons.sort_rounded,
                             size: 18,
-                            color: isDarkMode ? Colors.white60 : Colors.grey[600],
+                            color: isDarkMode
+                                ? Colors.white60
+                                : Colors.grey[600],
                           ),
                         ],
                       ),
@@ -2495,8 +2594,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           "Mới nhất",
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: _commentSortMode == 'newest' ? FontWeight.w700 : FontWeight.w500,
-                            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                            fontWeight: _commentSortMode == 'newest'
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF344054),
                             fontFamily: 'Encode Sans Expanded',
                           ),
                         ),
@@ -2508,8 +2611,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           "Nổi bật nhất",
                           style: TextStyle(
                             fontSize: 12,
-                            fontWeight: _commentSortMode == 'top' ? FontWeight.w700 : FontWeight.w500,
-                            color: isDarkMode ? Colors.white70 : const Color(0xFF344054),
+                            fontWeight: _commentSortMode == 'top'
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isDarkMode
+                                ? Colors.white70
+                                : const Color(0xFF344054),
                             fontFamily: 'Encode Sans Expanded',
                           ),
                         ),
@@ -2542,7 +2649,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
-                            color: isDarkMode ? Colors.white30 : Color(0xFF545454),
+                            color: isDarkMode
+                                ? Colors.white30
+                                : Color(0xFF545454),
                           ),
                         ),
                       ],
@@ -2552,7 +2661,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
               else
                 Column(
                   children: rootComments
-                      .map((comment) => _buildCommentTree(comment, allComments, 0, false))
+                      .map(
+                        (comment) =>
+                            _buildCommentTree(comment, allComments, 0, false),
+                      )
                       .toList(),
                 ),
             ],
@@ -2563,19 +2675,26 @@ class _PostDetailPageState extends State<PostDetailPage> {
   }
 
   Widget _buildCommentTree(
-      Map<String, dynamic> comment,
-      List<Map<String, dynamic>> allComments,
-      int depth,
-      bool isLast,
-      ) {
-    var replies =
-    allComments.where((c) => c['parentCommentId'] == comment['id']).toList();
+    Map<String, dynamic> comment,
+    List<Map<String, dynamic>> allComments,
+    int depth,
+    bool isLast,
+  ) {
+    var replies = allComments
+        .where((c) => c['parentCommentId'] == comment['id'])
+        .toList();
     bool isExpanded = _expandedComments.contains(comment['id']);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSingleCommentWidget(comment, depth, replies.isNotEmpty, isLast, allComments),
+        _buildSingleCommentWidget(
+          comment,
+          depth,
+          replies.isNotEmpty,
+          isLast,
+          allComments,
+        ),
         if (replies.isNotEmpty) ...[
           if (depth == 0) ...[
             // Root level: Handle expansion toggle
@@ -2583,7 +2702,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: GestureDetector(
-                  onTap: () => setState(() => _expandedComments.add(comment['id'])),
+                  onTap: () =>
+                      setState(() => _expandedComments.add(comment['id'])),
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 6),
                     child: Text(
@@ -2604,10 +2724,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                 child: Column(
                   children: replies.asMap().entries.map((entry) {
                     return _buildCommentTree(
-                        entry.value,
-                        allComments,
-                        depth + 1,
-                        entry.key == replies.length - 1
+                      entry.value,
+                      allComments,
+                      depth + 1,
+                      entry.key == replies.length - 1,
                     );
                   }).toList(),
                 ),
@@ -2615,7 +2735,8 @@ class _PostDetailPageState extends State<PostDetailPage> {
               Padding(
                 padding: const EdgeInsets.only(left: 48),
                 child: GestureDetector(
-                  onTap: () => setState(() => _expandedComments.remove(comment['id'])),
+                  onTap: () =>
+                      setState(() => _expandedComments.remove(comment['id'])),
                   child: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 6),
                     child: Text(
@@ -2630,7 +2751,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   ),
                 ),
               ),
-            ]
+            ],
           ] else ...[
             // Depth > 0: Always show sub-replies directly to avoid button clutter
             Padding(
@@ -2638,22 +2759,24 @@ class _PostDetailPageState extends State<PostDetailPage> {
               child: Column(
                 children: replies.asMap().entries.map((entry) {
                   return _buildCommentTree(
-                      entry.value,
-                      allComments,
-                      depth + 1,
-                      entry.key == replies.length - 1
+                    entry.value,
+                    allComments,
+                    depth + 1,
+                    entry.key == replies.length - 1,
                   );
                 }).toList(),
               ),
             ),
-          ]
+          ],
         ],
       ],
     );
   }
 
   String _getParentAuthorName(
-      String? parentId, List<Map<String, dynamic>> allComments) {
+    String? parentId,
+    List<Map<String, dynamic>> allComments,
+  ) {
     if (parentId == null) return "";
     try {
       final parent = allComments.firstWhere((c) => c['id'] == parentId);
@@ -2663,15 +2786,19 @@ class _PostDetailPageState extends State<PostDetailPage> {
     }
   }
 
-  Widget _buildSingleCommentWidget(Map<String, dynamic> comment, int depth,
-      bool hasReplies, bool isLast, List<Map<String, dynamic>> allComments) {
+  Widget _buildSingleCommentWidget(
+    Map<String, dynamic> comment,
+    int depth,
+    bool hasReplies,
+    bool isLast,
+    List<Map<String, dynamic>> allComments,
+  ) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final String? commentAuthorId = comment['authorId'];
 
     final bool isCommentOwner = _user?.uid == comment['authorId'];
-    final bool isPostOwner = _user?.uid ==
-        (_postData['authorId'] ??
-            _postData['uploaderId']);
+    final bool isPostOwner =
+        _user?.uid == (_postData['authorId'] ?? _postData['uploaderId']);
     final bool canDelete = isCommentOwner || isPostOwner;
     bool canEdit = isCommentOwner;
 
@@ -2689,29 +2816,37 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
     final bool isPostAnonymous =
         (_postData['isAnonymous'] == true) ||
-        (_postData['authorName']?.toString().toLowerCase().contains('vô danh') ?? false) ||
-        (_postData['authorName']?.toString().toLowerCase().contains('ẩn danh') ?? false);
+        (_postData['authorName']?.toString().toLowerCase().contains(
+              'vô danh',
+            ) ??
+            false) ||
+        (_postData['authorName']?.toString().toLowerCase().contains(
+              'ẩn danh',
+            ) ??
+            false);
 
     final bool isCommentAnonymous = (comment['isAnonymous'] == true);
 
-    final bool isAuthor = !isPostAnonymous &&
+    final bool isAuthor =
+        !isPostAnonymous &&
         !isCommentAnonymous &&
         comment['authorId'] ==
-            (_postData['authorId'] ??
-                _postData['uploaderId']);
+            (_postData['authorId'] ?? _postData['uploaderId']);
 
     final List<dynamic> likes = comment['likes'] ?? [];
     final bool isLiked = _user != null && likes.contains(_user!.uid);
     final String timeStr = comment['timestamp'] != null
         ? timeago.format(
-      (comment['timestamp'] as Timestamp).toDate(),
-      locale: 'vi',
-    )
+            (comment['timestamp'] as Timestamp).toDate(),
+            locale: 'vi',
+          )
         : 'Vừa xong';
 
     final String contentText = comment['content']?.toString().trim() ?? '';
     final bool hasContent = contentText.isNotEmpty;
-    final bool hasImage = comment['imageUrl'] != null && comment['imageUrl'].toString().isNotEmpty;
+    final bool hasImage =
+        comment['imageUrl'] != null &&
+        comment['imageUrl'].toString().isNotEmpty;
 
     return StreamBuilder<DocumentSnapshot>(
       stream: (commentAuthorId == null || isCommentAnonymous)
@@ -2722,23 +2857,30 @@ class _PostDetailPageState extends State<PostDetailPage> {
 
         final String liveName = isCommentAnonymous
             ? AnonymousUtils.getAnonymousName(commentAuthorId, widget.docId)
-            : (userData?['displayName'] ?? comment['authorName'] ?? 'Người dùng');
+            : (userData?['displayName'] ??
+                  comment['authorName'] ??
+                  'Người dùng');
 
         final String? liveAvatar = isCommentAnonymous
             ? null
             : (userData?['photoUrl'] ?? comment['authorAvatar']);
 
         void handleCommentUserTap() async {
-          if (commentAuthorId != null && commentAuthorId.isNotEmpty && !isCommentAnonymous) {
-            final info = await ChatService().getStudentVerificationInfo(commentAuthorId);
+          if (commentAuthorId != null &&
+              commentAuthorId.isNotEmpty &&
+              !isCommentAnonymous) {
+            final info = await ChatService().getStudentVerificationInfo(
+              commentAuthorId,
+            );
             if (mounted) {
               StudentIdentitySheet.show(
                 context,
-                info ?? {
-                  'uid': commentAuthorId,
-                  'displayName': liveName,
-                  'photoURL': liveAvatar ?? '',
-                },
+                info ??
+                    {
+                      'uid': commentAuthorId,
+                      'displayName': liveName,
+                      'photoURL': liveAvatar ?? '',
+                    },
               );
             }
           }
@@ -2757,11 +2899,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   decoration: BoxDecoration(
                     border: Border(
                       left: BorderSide(
-                        color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.06),
+                        color: isDarkMode
+                            ? Colors.white10
+                            : Colors.black.withOpacity(0.06),
                         width: 1.5,
                       ),
                       bottom: BorderSide(
-                        color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.06),
+                        color: isDarkMode
+                            ? Colors.white10
+                            : Colors.black.withOpacity(0.06),
                         width: 1.5,
                       ),
                     ),
@@ -2780,22 +2926,23 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     onTap: handleCommentUserTap,
                     child: CircleAvatar(
                       radius: 18,
-                      backgroundColor:
-                      isDarkMode ? Colors.white10 : const Color(0xFFF1F2F6),
+                      backgroundColor: isDarkMode
+                          ? Colors.white10
+                          : const Color(0xFFF1F2F6),
                       child: (liveAvatar == null || liveAvatar.isEmpty)
                           ? Icon(
-                        Icons.person,
-                        size: 20,
-                        color: isDarkMode ? Colors.white38 : Colors.grey,
-                      )
+                              Icons.person,
+                              size: 20,
+                              color: isDarkMode ? Colors.white38 : Colors.grey,
+                            )
                           : ClipOval(
-                        child: Image.memory(
-                          Base64ImageCache.decode(liveAvatar),
-                          fit: BoxFit.cover,
-                          width: 36,
-                          height: 36,
-                        ),
-                      ),
+                              child: Image.memory(
+                                Base64ImageCache.decode(liveAvatar),
+                                fit: BoxFit.cover,
+                                width: 36,
+                                height: 36,
+                              ),
+                            ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2820,7 +2967,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                           fontFamily: 'Encode Sans Expanded',
                                           fontWeight: FontWeight.w700,
                                           fontSize: 13,
-                                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                          color: isDarkMode
+                                              ? Colors.white
+                                              : const Color(0xFF1F2937),
                                         ),
                                       ),
                                     ),
@@ -2828,9 +2977,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   if (isCommentAnonymous && isCommentOwner) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 1.5,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF5893D8).withOpacity(0.12),
+                                        color: const Color(
+                                          0xFF5893D8,
+                                        ).withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text(
@@ -2847,9 +3001,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   if (isAuthor) ...[
                                     const SizedBox(width: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 1.5,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: const Color(0xFF5893D8).withOpacity(0.12),
+                                        color: const Color(
+                                          0xFF5893D8,
+                                        ).withOpacity(0.12),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: const Text(
@@ -2867,7 +3026,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   Text(
                                     "•",
                                     style: TextStyle(
-                                      color: isDarkMode ? Colors.white30 : Colors.black26,
+                                      color: isDarkMode
+                                          ? Colors.white30
+                                          : Colors.black26,
                                       fontSize: 11,
                                     ),
                                   ),
@@ -2877,7 +3038,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     style: TextStyle(
                                       fontFamily: 'Encode Sans Expanded',
                                       fontSize: 11,
-                                      color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                                      color: isDarkMode
+                                          ? Colors.white38
+                                          : Colors.grey[500],
                                     ),
                                   ),
                                 ],
@@ -2892,17 +3055,42 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   icon: Icon(
                                     Icons.more_horiz,
                                     size: 16,
-                                    color: isDarkMode ? Colors.white38 : const Color(0xFF777777),
+                                    color: isDarkMode
+                                        ? Colors.white38
+                                        : const Color(0xFF777777),
                                   ),
                                   onSelected: (val) async {
-                                    if (val == 'delete') _showDeleteConfirmation(comment['id']);
-                                    if (val == 'edit') _showEditCommentDialog(comment);
-                                    if (val == 'report') _showReportCommentOptions(comment);
+                                    if (val == 'delete')
+                                      _showDeleteConfirmation(comment['id']);
+                                    if (val == 'edit')
+                                      _showEditCommentDialog(comment);
+                                    if (val == 'report')
+                                      _showReportCommentOptions(comment);
                                   },
                                   itemBuilder: (context) => [
-                                    if (canEdit) const PopupMenuItem(value: 'edit', child: Text("Sửa bình luận")),
-                                    if (canDelete) const PopupMenuItem(value: 'delete', child: Text("Xóa", style: TextStyle(color: Colors.red))),
-                                    if (!isCommentOwner) const PopupMenuItem(value: 'report', child: Text("Báo cáo bình luận", style: TextStyle(color: Colors.redAccent))),
+                                    if (canEdit)
+                                      const PopupMenuItem(
+                                        value: 'edit',
+                                        child: Text("Sửa bình luận"),
+                                      ),
+                                    if (canDelete)
+                                      const PopupMenuItem(
+                                        value: 'delete',
+                                        child: Text(
+                                          "Xóa",
+                                          style: TextStyle(color: Colors.red),
+                                        ),
+                                      ),
+                                    if (!isCommentOwner)
+                                      const PopupMenuItem(
+                                        value: 'report',
+                                        child: Text(
+                                          "Báo cáo bình luận",
+                                          style: TextStyle(
+                                            color: Colors.redAccent,
+                                          ),
+                                        ),
+                                      ),
                                   ],
                                 ),
                               ),
@@ -2916,12 +3104,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 fontFamily: 'Encode Sans Expanded',
                                 fontSize: 14,
                                 height: 1.4,
-                                color: isDarkMode ? Colors.white70 : const Color(0xFF333333),
+                                color: isDarkMode
+                                    ? Colors.white70
+                                    : const Color(0xFF333333),
                               ),
                               children: [
                                 if (depth > 1)
                                   TextSpan(
-                                    text: "@${_getParentAuthorName(comment['parentCommentId'], allComments)} ",
+                                    text:
+                                        "@${_getParentAuthorName(comment['parentCommentId'], allComments)} ",
                                     style: const TextStyle(
                                       color: Color(0xFF5893D8),
                                       fontWeight: FontWeight.bold,
@@ -2935,7 +3126,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         if (hasImage) ...[
                           SizedBox(height: hasContent ? 8 : 6),
                           GestureDetector(
-                            onTap: () => _showFullScreenImage(context, comment['imageUrl']),
+                            onTap: () => _showFullScreenImage(
+                              context,
+                              comment['imageUrl'],
+                            ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(10),
                               child: Image.memory(
@@ -2953,9 +3147,15 @@ class _PostDetailPageState extends State<PostDetailPage> {
                             GestureDetector(
                               onTap: () => _toggleCommentLike(comment),
                               child: Icon(
-                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                isLiked
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
                                 size: 16,
-                                color: isLiked ? Colors.redAccent : (isDarkMode ? Colors.white38 : Colors.grey[500]),
+                                color: isLiked
+                                    ? Colors.redAccent
+                                    : (isDarkMode
+                                          ? Colors.white38
+                                          : Colors.grey[500]),
                               ),
                             ),
                             if (likes.isNotEmpty) ...[
@@ -2965,7 +3165,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                 style: TextStyle(
                                   fontFamily: 'Encode Sans Expanded',
                                   fontSize: 11,
-                                  color: isDarkMode ? Colors.white38 : Colors.grey[600],
+                                  color: isDarkMode
+                                      ? Colors.white38
+                                      : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -2978,14 +3180,16 @@ class _PostDetailPageState extends State<PostDetailPage> {
                               child: Icon(
                                 Icons.chat_bubble_outline_rounded,
                                 size: 15,
-                                color: isDarkMode ? Colors.white38 : Colors.grey[500],
+                                color: isDarkMode
+                                    ? Colors.white38
+                                    : Colors.grey[500],
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
             ),
@@ -3029,7 +3233,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(24),
+                ),
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -3054,7 +3260,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 17,
                           fontWeight: FontWeight.w700,
-                          color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1F2937),
                         ),
                       ),
                     ],
@@ -3065,7 +3273,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 12,
-                      color: isDarkMode ? Colors.white60 : const Color(0xFF6B7280),
+                      color: isDarkMode
+                          ? Colors.white60
+                          : const Color(0xFF6B7280),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -3078,16 +3288,27 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: !_isCommentAnonymous
-                            ? (isDarkMode ? const Color(0xFF5893D8).withValues(alpha: 0.15) : const Color(0xFFEBF5FF))
-                            : (isDarkMode ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC)),
+                            ? (isDarkMode
+                                  ? const Color(
+                                      0xFF5893D8,
+                                    ).withValues(alpha: 0.15)
+                                  : const Color(0xFFEBF5FF))
+                            : (isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.03)
+                                  : const Color(0xFFF8FAFC)),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: !_isCommentAnonymous
                               ? const Color(0xFF5893D8)
-                              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                              : (isDarkMode
+                                    ? Colors.white10
+                                    : const Color(0xFFE2E8F0)),
                           width: !_isCommentAnonymous ? 1.5 : 1,
                         ),
                       ),
@@ -3095,12 +3316,25 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundColor: isDarkMode ? Colors.white10 : Colors.grey[200],
-                            backgroundImage: (userPhotoBase64 != null && userPhotoBase64.isNotEmpty)
-                                ? MemoryImage(Base64ImageCache.decode(userPhotoBase64))
+                            backgroundColor: isDarkMode
+                                ? Colors.white10
+                                : Colors.grey[200],
+                            backgroundImage:
+                                (userPhotoBase64 != null &&
+                                    userPhotoBase64.isNotEmpty)
+                                ? MemoryImage(
+                                    Base64ImageCache.decode(userPhotoBase64),
+                                  )
                                 : null,
-                            child: (userPhotoBase64 == null || userPhotoBase64.isEmpty)
-                                ? Icon(Icons.person, color: isDarkMode ? Colors.white54 : Colors.grey[600])
+                            child:
+                                (userPhotoBase64 == null ||
+                                    userPhotoBase64.isEmpty)
+                                ? Icon(
+                                    Icons.person,
+                                    color: isDarkMode
+                                        ? Colors.white54
+                                        : Colors.grey[600],
+                                  )
                                 : null,
                           ),
                           const SizedBox(width: 12),
@@ -3114,7 +3348,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     fontFamily: 'Encode Sans Expanded',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
-                                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF1F2937),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -3123,7 +3359,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   style: TextStyle(
                                     fontFamily: 'Encode Sans Expanded',
                                     fontSize: 12,
-                                    color: isDarkMode ? Colors.white54 : const Color(0xFF6B7280),
+                                    color: isDarkMode
+                                        ? Colors.white54
+                                        : const Color(0xFF6B7280),
                                   ),
                                 ),
                               ],
@@ -3153,16 +3391,27 @@ class _PostDetailPageState extends State<PostDetailPage> {
                     },
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
                       decoration: BoxDecoration(
                         color: _isCommentAnonymous
-                            ? (isDarkMode ? const Color(0xFF5893D8).withValues(alpha: 0.15) : const Color(0xFFEBF5FF))
-                            : (isDarkMode ? Colors.white.withValues(alpha: 0.03) : const Color(0xFFF8FAFC)),
+                            ? (isDarkMode
+                                  ? const Color(
+                                      0xFF5893D8,
+                                    ).withValues(alpha: 0.15)
+                                  : const Color(0xFFEBF5FF))
+                            : (isDarkMode
+                                  ? Colors.white.withValues(alpha: 0.03)
+                                  : const Color(0xFFF8FAFC)),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: _isCommentAnonymous
                               ? const Color(0xFF5893D8)
-                              : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                              : (isDarkMode
+                                    ? Colors.white10
+                                    : const Color(0xFFE2E8F0)),
                           width: _isCommentAnonymous ? 1.5 : 1,
                         ),
                       ),
@@ -3170,8 +3419,14 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         children: [
                           CircleAvatar(
                             radius: 20,
-                            backgroundColor: isDarkMode ? const Color(0xFF334155) : const Color(0xFF475569),
-                            child: const Icon(Icons.person_outline, color: Colors.white, size: 22),
+                            backgroundColor: isDarkMode
+                                ? const Color(0xFF334155)
+                                : const Color(0xFF475569),
+                            child: const Icon(
+                              Icons.person_outline,
+                              color: Colors.white,
+                              size: 22,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -3184,7 +3439,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                     fontFamily: 'Encode Sans Expanded',
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
-                                    color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                    color: isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF1F2937),
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -3193,7 +3450,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                                   style: TextStyle(
                                     fontFamily: 'Encode Sans Expanded',
                                     fontSize: 12,
-                                    color: isDarkMode ? Colors.white54 : const Color(0xFF6B7280),
+                                    color: isDarkMode
+                                        ? Colors.white54
+                                        : const Color(0xFF6B7280),
                                   ),
                                 ),
                               ],
@@ -3244,12 +3503,12 @@ class _PostDetailPageState extends State<PostDetailPage> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2),
+                ),
+              ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -3270,8 +3529,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         style: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
-                          color:
-                          isDarkMode ? Colors.white70 : Colors.black87,
+                          color: isDarkMode ? Colors.white70 : Colors.black87,
                         ),
                         children: [
                           const TextSpan(text: "Đang trả lời "),
@@ -3343,7 +3601,10 @@ class _PostDetailPageState extends State<PostDetailPage> {
               onTap: _showCommentIdentitySelector,
               child: Container(
                 margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: isDarkMode
                       ? const Color(0xFF5893D8).withValues(alpha: 0.15)
@@ -3386,19 +3647,32 @@ class _PostDetailPageState extends State<PostDetailPage> {
               GestureDetector(
                 onTap: _showCommentIdentitySelector,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   child: Stack(
                     clipBehavior: Clip.none,
                     children: [
                       CircleAvatar(
                         radius: 15,
                         backgroundColor: _isCommentAnonymous
-                            ? (isDarkMode ? const Color(0xFF334155) : const Color(0xFF475569))
-                            : (isDarkMode ? Colors.white10 : const Color(0xFFE2E8F0)),
+                            ? (isDarkMode
+                                  ? const Color(0xFF334155)
+                                  : const Color(0xFF475569))
+                            : (isDarkMode
+                                  ? Colors.white10
+                                  : const Color(0xFFE2E8F0)),
                         child: Icon(
-                          _isCommentAnonymous ? Icons.person_outline : Icons.person,
+                          _isCommentAnonymous
+                              ? Icons.person_outline
+                              : Icons.person,
                           size: 18,
-                          color: _isCommentAnonymous ? Colors.white : (isDarkMode ? Colors.white70 : const Color(0xFF5893D8)),
+                          color: _isCommentAnonymous
+                              ? Colors.white
+                              : (isDarkMode
+                                    ? Colors.white70
+                                    : const Color(0xFF5893D8)),
                         ),
                       ),
                       Positioned(
@@ -3407,7 +3681,9 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         child: Container(
                           padding: const EdgeInsets.all(1),
                           decoration: BoxDecoration(
-                            color: isDarkMode ? const Color(0xFF111315) : Colors.white,
+                            color: isDarkMode
+                                ? const Color(0xFF111315)
+                                : Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: Container(
@@ -3444,9 +3720,7 @@ class _PostDetailPageState extends State<PostDetailPage> {
                         : const Color(0xFFF1F2F6),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                      color: isDarkMode
-                          ? Colors.white10
-                          : Colors.transparent,
+                      color: isDarkMode ? Colors.white10 : Colors.transparent,
                     ),
                   ),
                   child: TextField(
@@ -3493,14 +3767,18 @@ class _PostDetailPageState extends State<PostDetailPage> {
                   child: IconButton(
                     onPressed: _addComment,
                     icon: Padding(
-                      padding: EdgeInsets.only(left: _isSubmittingComment ? 0 : 3),
+                      padding: EdgeInsets.only(
+                        left: _isSubmittingComment ? 0 : 3,
+                      ),
                       child: _isSubmittingComment
                           ? const SizedBox(
                               width: 18,
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Icon(
@@ -3543,7 +3821,7 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
     "Thông tin sai lệch",
     "Spam/Quảng cáo trái phép",
     "Nội dung không phù hợp với sinh viên",
-    "Khác"
+    "Khác",
   ];
 
   bool isOtherSelected = false;
@@ -3565,12 +3843,24 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
-    final Color sheetColor = isDarkMode ? const Color(0xFF1C1C1E) : Colors.white;
-    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1F1F1F);
-    final Color secondaryTextColor = isDarkMode ? const Color(0xFFB0B3B8) : const Color(0xFF65676B);
-    final Color surfaceColor = isDarkMode ? const Color(0xFF292A2D) : const Color(0xFFF5F6F7);
-    final Color borderColor = isDarkMode ? Colors.white.withOpacity(0.08) : const Color(0xFFE4E6EB);
-    final Color accentColor = isDarkMode ? const Color(0xFF8AB4F8) : const Color(0xFF1A73E8);
+    final Color sheetColor = isDarkMode
+        ? const Color(0xFF1C1C1E)
+        : Colors.white;
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1F1F1F);
+    final Color secondaryTextColor = isDarkMode
+        ? const Color(0xFFB0B3B8)
+        : const Color(0xFF65676B);
+    final Color surfaceColor = isDarkMode
+        ? const Color(0xFF292A2D)
+        : const Color(0xFFF5F6F7);
+    final Color borderColor = isDarkMode
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFE4E6EB);
+    final Color accentColor = isDarkMode
+        ? const Color(0xFF8AB4F8)
+        : const Color(0xFF1A73E8);
 
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
@@ -3586,9 +3876,7 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
           ),
           decoration: BoxDecoration(
             color: sheetColor,
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(24),
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -3596,10 +3884,7 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
               Container(
                 width: 36,
                 height: 4,
-                margin: const EdgeInsets.only(
-                  top: 10,
-                  bottom: 4,
-                ),
+                margin: const EdgeInsets.only(top: 10, bottom: 4),
                 decoration: BoxDecoration(
                   color: isDarkMode ? Colors.white24 : Colors.black12,
                   borderRadius: BorderRadius.circular(99),
@@ -3651,26 +3936,26 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
                   ],
                 ),
               ),
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: borderColor,
-              ),
+              Divider(height: 1, thickness: 1, color: borderColor),
               Flexible(
                 child: SingleChildScrollView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       ...reportReasons.map((reason) {
-                        final bool isSelected = reason == "Khác" && isOtherSelected;
+                        final bool isSelected =
+                            reason == "Khác" && isOtherSelected;
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Material(
                             color: isSelected
-                                ? accentColor.withOpacity(isDarkMode ? 0.14 : 0.08)
+                                ? accentColor.withOpacity(
+                                    isDarkMode ? 0.14 : 0.08,
+                                  )
                                 : Colors.transparent,
                             borderRadius: BorderRadius.circular(14),
                             child: InkWell(
@@ -3698,14 +3983,20 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
                                       height: 38,
                                       decoration: BoxDecoration(
                                         color: isSelected
-                                            ? accentColor.withOpacity(isDarkMode ? 0.18 : 0.10)
+                                            ? accentColor.withOpacity(
+                                                isDarkMode ? 0.18 : 0.10,
+                                              )
                                             : surfaceColor,
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
-                                        reason == "Khác" ? Icons.edit_outlined : Icons.flag_outlined,
+                                        reason == "Khác"
+                                            ? Icons.edit_outlined
+                                            : Icons.flag_outlined,
                                         size: 19,
-                                        color: isSelected ? accentColor : secondaryTextColor,
+                                        color: isSelected
+                                            ? accentColor
+                                            : secondaryTextColor,
                                       ),
                                     ),
                                     const SizedBox(width: 12),
@@ -3716,15 +4007,21 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
                                           fontFamily: 'Encode Sans Expanded',
                                           fontSize: 13,
                                           height: 1.35,
-                                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                          fontWeight: isSelected
+                                              ? FontWeight.w600
+                                              : FontWeight.w500,
                                           color: primaryTextColor,
                                         ),
                                       ),
                                     ),
                                     Icon(
-                                      isSelected ? Icons.expand_less_rounded : Icons.chevron_right_rounded,
+                                      isSelected
+                                          ? Icons.expand_less_rounded
+                                          : Icons.chevron_right_rounded,
                                       size: 21,
-                                      color: isSelected ? accentColor : secondaryTextColor.withOpacity(0.6),
+                                      color: isSelected
+                                          ? accentColor
+                                          : secondaryTextColor.withOpacity(0.6),
                                     ),
                                   ],
                                 ),
@@ -3742,9 +4039,7 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
                             decoration: BoxDecoration(
                               color: surfaceColor,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: borderColor,
-                              ),
+                              border: Border.all(color: borderColor),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -3836,17 +4131,23 @@ class _ReportPostBottomSheetState extends State<_ReportPostBottomSheet> {
                                   height: 46,
                                   child: FilledButton(
                                     onPressed: () {
-                                      String customReason = customReasonController.text.trim();
+                                      String customReason =
+                                          customReasonController.text.trim();
                                       if (customReason.isNotEmpty) {
                                         Navigator.pop(context);
-                                        widget.onSubmitReport("Khác: $customReason");
+                                        widget.onSubmitReport(
+                                          "Khác: $customReason",
+                                        );
                                       } else {
                                         ScaffoldMessenger.of(context)
                                           ..hideCurrentSnackBar()
                                           ..showSnackBar(
                                             const SnackBar(
-                                              content: Text("Vui lòng nhập lý do báo cáo"),
-                                              behavior: SnackBarBehavior.floating,
+                                              content: Text(
+                                                "Vui lòng nhập lý do báo cáo",
+                                              ),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
                                             ),
                                           );
                                       }

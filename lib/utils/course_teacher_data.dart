@@ -153,7 +153,9 @@ class CourseTeacherData {
         }
       }
     } catch (e) {
-      debugPrint("Error syncing dynamic courses and teachers from Firebase: $e");
+      debugPrint(
+        "Error syncing dynamic courses and teachers from Firebase: $e",
+      );
     }
   }
 
@@ -163,14 +165,22 @@ class CourseTeacherData {
     String? newTeacher,
   }) async {
     try {
-      final String? c = (newCourse != null && newCourse.trim().isNotEmpty) ? newCourse.trim() : null;
-      final String? t = (newTeacher != null && newTeacher.trim().isNotEmpty) ? newTeacher.trim() : null;
+      final String? c = (newCourse != null && newCourse.trim().isNotEmpty)
+          ? newCourse.trim()
+          : null;
+      final String? t = (newTeacher != null && newTeacher.trim().isNotEmpty)
+          ? newTeacher.trim()
+          : null;
 
       // Cập nhật bộ nhớ tạm cục bộ trước để giao diện sinh viên mượt mà lập tức
-      if (c != null && !_customCourses.contains(c) && !defaultCourses.contains(c)) {
+      if (c != null &&
+          !_customCourses.contains(c) &&
+          !defaultCourses.contains(c)) {
         _customCourses.add(c);
       }
-      if (t != null && !_customTeachers.contains(t) && !defaultTeachers.contains(t)) {
+      if (t != null &&
+          !_customTeachers.contains(t) &&
+          !defaultTeachers.contains(t)) {
         _customTeachers.add(t);
       }
 

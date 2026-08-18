@@ -53,11 +53,9 @@ class WeatherAlertService {
         .map((e) => e.rainProbability)
         .reduce((a, b) => a > b ? a : b);
 
-    final bool hasThunderstorm =
-    slotForecasts.any((e) => e.isThunderstorm);
+    final bool hasThunderstorm = slotForecasts.any((e) => e.isThunderstorm);
 
-    final bool hasHeavyRain =
-    slotForecasts.any((e) => e.isHeavyRain);
+    final bool hasHeavyRain = slotForecasts.any((e) => e.isHeavyRain);
 
     final String timeRange =
         '${_formatHour(schedule.startTime)}–${_formatHour(schedule.endTime)}';
@@ -109,10 +107,10 @@ class WeatherAlertService {
   }
 
   bool _isHourRelevantToClass(
-      DateTime hourlyTime,
-      DateTime classStart,
-      DateTime classEnd,
-      ) {
+    DateTime hourlyTime,
+    DateTime classStart,
+    DateTime classEnd,
+  ) {
     final hourly = DateTime(
       hourlyTime.year,
       hourlyTime.month,

@@ -8,10 +8,7 @@ import '../pages/chat_detail_page.dart';
 class StudentIdentitySheet extends StatefulWidget {
   final Map<String, dynamic> userInfo;
 
-  const StudentIdentitySheet({
-    super.key,
-    required this.userInfo,
-  });
+  const StudentIdentitySheet({super.key, required this.userInfo});
 
   static void show(BuildContext context, Map<String, dynamic> userInfo) {
     showModalBottomSheet(
@@ -35,10 +32,28 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     final userInfo = widget.userInfo;
-    final String name = userInfo['displayName'] ?? userInfo['name'] ?? userInfo['authorName'] ?? 'Sinh viên';
-    final String photoURL = userInfo['photoURL'] ?? userInfo['avatar'] ?? userInfo['authorAvatar'] ?? '';
-    final String targetUid = userInfo['uid'] ?? userInfo['userId'] ?? userInfo['id'] ?? userInfo['authorId'] ?? userInfo['uploaderId'] ?? userInfo['targetUserId'] ?? '';
-    final bool isSelf = currentUid.isNotEmpty && targetUid.isNotEmpty && currentUid == targetUid;
+    final String name =
+        userInfo['displayName'] ??
+        userInfo['name'] ??
+        userInfo['authorName'] ??
+        'Sinh viên';
+    final String photoURL =
+        userInfo['photoURL'] ??
+        userInfo['avatar'] ??
+        userInfo['authorAvatar'] ??
+        '';
+    final String targetUid =
+        userInfo['uid'] ??
+        userInfo['userId'] ??
+        userInfo['id'] ??
+        userInfo['authorId'] ??
+        userInfo['uploaderId'] ??
+        userInfo['targetUserId'] ??
+        '';
+    final bool isSelf =
+        currentUid.isNotEmpty &&
+        targetUid.isNotEmpty &&
+        currentUid == targetUid;
 
     ImageProvider? avatarProvider;
     if (photoURL.isNotEmpty) {
@@ -96,7 +111,9 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                         ),
                         child: CircleAvatar(
                           radius: 26,
-                          backgroundColor: AppColors.hcmusTeal.withValues(alpha: 0.15),
+                          backgroundColor: AppColors.hcmusTeal.withValues(
+                            alpha: 0.15,
+                          ),
                           backgroundImage: avatarProvider,
                           child: avatarProvider == null
                               ? Text(
@@ -116,7 +133,9 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                         child: Container(
                           padding: const EdgeInsets.all(2),
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E2430) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF1E2430)
+                                : Colors.white,
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -144,7 +163,9 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
                             letterSpacing: -0.2,
-                            color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            color: isDark
+                                ? Colors.white
+                                : const Color(0xFF1E293B),
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -164,7 +185,9 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.hcmusTeal.withValues(alpha: 0.9),
+                                  color: AppColors.hcmusTeal.withValues(
+                                    alpha: 0.9,
+                                  ),
                                 ),
                               ),
                             ),
@@ -192,21 +215,18 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                         onPressed: _isLoading
                             ? null
                             : () async {
-                          // Giữ nguyên toàn bộ logic hiện tại
-                        },
+                                // Giữ nguyên toàn bộ logic hiện tại
+                              },
                         child: _isLoading
                             ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                            : const Icon(
-                          Icons.chat_bubble_rounded,
-                          size: 20,
-                        ),
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.chat_bubble_rounded, size: 20),
                       ),
                     ),
                   ],

@@ -23,10 +23,10 @@ class _MaterialTabState extends State<MaterialTab> {
   final Map<String, QueryDocumentSnapshot> _cachedMaterialDocsMap = {};
 
   Future<void> _handleOpenFile(
-      BuildContext context,
-      String base64Data,
-      String fileName,
-      ) async {
+    BuildContext context,
+    String base64Data,
+    String fileName,
+  ) async {
     try {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -53,9 +53,9 @@ class _MaterialTabState extends State<MaterialTab> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: $e")));
       }
     }
   }
@@ -66,8 +66,9 @@ class _MaterialTabState extends State<MaterialTab> {
     required bool isDarkMode,
     Color? iconColor,
   }) {
-    final Color textColor =
-    isDarkMode ? Colors.white70 : const Color(0xFF344054);
+    final Color textColor = isDarkMode
+        ? Colors.white70
+        : const Color(0xFF344054);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -83,11 +84,7 @@ class _MaterialTabState extends State<MaterialTab> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 13,
-            color: iconColor ?? textColor,
-          ),
+          Icon(icon, size: 13, color: iconColor ?? textColor),
           const SizedBox(width: 5),
           Text(
             label,
@@ -154,7 +151,9 @@ class _MaterialTabState extends State<MaterialTab> {
                   style: TextStyle(
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 12,
-                    color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                    color: isDarkMode
+                        ? Colors.white54
+                        : const Color(0xFF667085),
                   ),
                 ),
               ],
@@ -231,11 +230,11 @@ class _MaterialTabState extends State<MaterialTab> {
   }
 
   Widget _buildMaterialCard(
-      BuildContext context,
-      Map<String, dynamic> data,
-      String docId,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    Map<String, dynamic> data,
+    String docId,
+    bool isDarkMode,
+  ) {
     String? fileData = data['fileData'];
     String? fileName = data['fileName'];
     bool isImage = data['isImage'] ?? false;
@@ -256,12 +255,12 @@ class _MaterialTabState extends State<MaterialTab> {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(22),
@@ -527,12 +526,7 @@ class _MaterialTabState extends State<MaterialTab> {
                     var data = doc.data() as Map<String, dynamic>;
                     String docId = doc.id;
 
-                    return _buildMaterialCard(
-                      context,
-                      data,
-                      docId,
-                      isDarkMode,
-                    );
+                    return _buildMaterialCard(context, data, docId, isDarkMode);
                   },
                 ),
               ),
@@ -557,11 +551,7 @@ class _MaterialTabState extends State<MaterialTab> {
         backgroundColor: const Color(0xFF5893D8),
         elevation: 5,
         shape: const CircleBorder(),
-        child: const Icon(
-          Icons.edit_outlined,
-          color: Colors.white,
-          size: 28,
-        ),
+        child: const Icon(Icons.edit_outlined, color: Colors.white, size: 28),
       ),
     );
   }

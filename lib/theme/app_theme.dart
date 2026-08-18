@@ -20,8 +20,16 @@ class AppTheme {
       ),
       fontFamily: 'Poppins',
       textTheme: const TextTheme(
-        displayLarge: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: AppColors.greyDark),
-        displayMedium: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: AppColors.greyDark),
+        displayLarge: TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.bold,
+          color: AppColors.greyDark,
+        ),
+        displayMedium: TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.bold,
+          color: AppColors.greyDark,
+        ),
         bodyLarge: TextStyle(fontFamily: 'Poppins', color: AppColors.greyDark),
         bodyMedium: TextStyle(fontFamily: 'Poppins', color: AppColors.greyDark),
         labelLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
@@ -42,8 +50,14 @@ class AppTheme {
           backgroundColor: AppColors.hcmusBlue,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -51,14 +65,23 @@ class AppTheme {
           foregroundColor: AppColors.hcmusBlue,
           side: const BorderSide(color: AppColors.hcmusBlue, width: 2),
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFFF8FAFD),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFFD7E1F3)),
@@ -97,8 +120,16 @@ class AppTheme {
       ),
       fontFamily: 'Poppins',
       textTheme: const TextTheme(
-        displayLarge: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Colors.white),
-        displayMedium: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.bold, color: Colors.white),
+        displayLarge: TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        displayMedium: TextStyle(
+          fontFamily: 'Poppins',
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
         bodyLarge: TextStyle(fontFamily: 'Poppins', color: Colors.white70),
         bodyMedium: TextStyle(fontFamily: 'Poppins', color: Colors.white70),
         labelLarge: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w600),
@@ -119,8 +150,14 @@ class AppTheme {
           backgroundColor: AppColors.hcmusBlue,
           foregroundColor: Colors.white,
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -128,14 +165,23 @@ class AppTheme {
           foregroundColor: AppColors.hcmusBlue,
           side: const BorderSide(color: AppColors.hcmusBlue, width: 2),
           minimumSize: const Size(double.infinity, 55),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Poppins'),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            fontFamily: 'Poppins',
+          ),
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: const Color(0xFF23262B),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: Color(0xFF3A3F47)),

@@ -40,10 +40,7 @@ String removeVietnameseDiacritics(String str) {
 class DiscoverEventTab extends StatefulWidget {
   final bool useNestedScrollOverlap;
 
-  const DiscoverEventTab({
-    super.key,
-    this.useNestedScrollOverlap = true,
-  });
+  const DiscoverEventTab({super.key, this.useNestedScrollOverlap = true});
 
   @override
   State<DiscoverEventTab> createState() => _DiscoverEventTabState();
@@ -84,9 +81,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
   List<Widget> _buildOverlapSliver(BuildContext context) {
     if (!widget.useNestedScrollOverlap) {
-      return const [
-        SliverToBoxAdapter(child: SizedBox(height: 8)),
-      ];
+      return const [SliverToBoxAdapter(child: SizedBox(height: 8))];
     }
 
     return [
@@ -148,22 +143,34 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       }
 
       // 2. Mở màn hình tạo / chỉnh sửa sự kiện cá nhân với nội dung điền sẵn từ bài viết
-      final String eventName = (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
+      final String eventName =
+          (data['eventName'] ?? data['title'] ?? 'Sự kiện Khoa').toString();
       final String description = (data['description'] ?? '').toString();
       final String locationName = (data['locationName'] ?? '').toString();
       final String locationAddress = (data['locationAddress'] ?? '').toString();
-      final String facultyName = (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
-      final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '').toString().trim();
+      final String facultyName =
+          (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS')
+              .toString();
+      final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '')
+          .toString()
+          .trim();
       final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
-      final String sourceArticleUrl = (data['sourceArticleUrl'] ?? data['registrationUrl'] ?? data['link'] ?? onlineUrl).toString();
+      final String sourceArticleUrl =
+          (data['sourceArticleUrl'] ??
+                  data['registrationUrl'] ??
+                  data['link'] ??
+                  onlineUrl)
+              .toString();
 
       DateTime parsedDateTime = DateTime.now();
       if (data['startAt'] != null && data['startAt'] is Timestamp) {
         parsedDateTime = (data['startAt'] as Timestamp).toDate();
-      } else if (data['startDateTime'] != null && data['startDateTime'] is String) {
+      } else if (data['startDateTime'] != null &&
+          data['startDateTime'] is String) {
         final parsed = DateTime.tryParse(data['startDateTime']);
         if (parsed != null) parsedDateTime = parsed;
-      } else if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+      } else if (data['registrationDeadlineAt'] != null &&
+          data['registrationDeadlineAt'] is Timestamp) {
         parsedDateTime = (data['registrationDeadlineAt'] as Timestamp).toDate();
       }
 
@@ -171,13 +178,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       final String trimmedLocName = locationName.trim();
       final String trimmedLocAddr = locationAddress.trim();
       if (trimmedLocName.isNotEmpty) locParts.add(trimmedLocName);
-      if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) locParts.add(trimmedLocAddr);
+      if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName)
+        locParts.add(trimmedLocAddr);
       String locStr = locParts.join(' - ');
       if (locStr.trim().isEmpty) {
-        locStr = isOnline ? 'Online' : (facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm');
+        locStr = isOnline
+            ? 'Online'
+            : (facultyName.isNotEmpty ? facultyName : 'Chưa cập nhật địa điểm');
       }
 
-      final String contactStr = (data['contact'] ?? data['organizer'] ?? '').toString().trim();
+      final String contactStr = (data['contact'] ?? data['organizer'] ?? '')
+          .toString()
+          .trim();
 
       final noteEvent = EventModel(
         id: docId,
@@ -193,7 +205,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         isFromFacultyEvent: true,
         contact: contactStr.isNotEmpty ? contactStr : null,
         facultyName: facultyName,
-        imageUrl: (data['thumbnailUrl'] ?? data['imageUrl'] ?? data['bannerUrl'])?.toString(),
+        imageUrl:
+            (data['thumbnailUrl'] ?? data['imageUrl'] ?? data['bannerUrl'])
+                ?.toString(),
       );
 
       if (!context.mounted) return;
@@ -216,7 +230,8 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
   /// Dialog / BottomSheet cập nhật Khoa nhanh nếu người dùng chưa chọn Khoa
   void _showQuickFacultyPicker(BuildContext context, String? currentFaculty) {
-    String? selected = (currentFaculty != null &&
+    String? selected =
+        (currentFaculty != null &&
             currentFaculty.isNotEmpty &&
             currentFaculty != 'Chưa cập nhật khoa')
         ? currentFaculty
@@ -235,14 +250,15 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: isDarkMode ? const Color(0xFF1E222B) : Colors.white,
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(28)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.2),
                     blurRadius: 20,
                     offset: const Offset(0, -6),
-                  )
+                  ),
                 ],
               ),
               child: Column(
@@ -265,7 +281,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF5893D8).withValues(alpha: 0.15),
+                          color: const Color(
+                            0xFF5893D8,
+                          ).withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -319,17 +337,19 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
                             color: isSelected
-                                ? const Color(0xFF5893D8).withValues(alpha: 0.12)
+                                ? const Color(
+                                    0xFF5893D8,
+                                  ).withValues(alpha: 0.12)
                                 : (isDarkMode
-                                    ? Colors.white.withValues(alpha: 0.04)
-                                    : const Color(0xFFF8FAFC)),
+                                      ? Colors.white.withValues(alpha: 0.04)
+                                      : const Color(0xFFF8FAFC)),
                             borderRadius: BorderRadius.circular(14),
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF5893D8)
                                   : (isDarkMode
-                                      ? Colors.white10
-                                      : const Color(0xFFE2E8F0)),
+                                        ? Colors.white10
+                                        : const Color(0xFFE2E8F0)),
                             ),
                           ),
                           child: RadioListTile<String>(
@@ -347,8 +367,8 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                 color: isSelected
                                     ? const Color(0xFF5893D8)
                                     : (isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF334155)),
+                                          ? Colors.white
+                                          : const Color(0xFF334155)),
                               ),
                             ),
                             onChanged: (val) {
@@ -368,16 +388,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                         final user = FirebaseAuth.instance.currentUser;
                         if (user != null && selected != null) {
                           final newPrimary =
-                              FacultyHelper.findFacultyByAccountString(selected);
+                              FacultyHelper.findFacultyByAccountString(
+                                selected,
+                              );
                           final userDoc = await FirebaseFirestore.instance
                               .collection('users')
                               .doc(user.uid)
                               .get();
                           List<String> followed =
                               (userDoc.data()?['followedFaculties'] as List?)
-                                      ?.map((e) => e.toString())
-                                      .toList() ??
-                                  [];
+                                  ?.map((e) => e.toString())
+                                  .toList() ??
+                              [];
                           if (newPrimary != null) {
                             followed.remove(newPrimary.id);
                           }
@@ -385,9 +407,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               .collection('users')
                               .doc(user.uid)
                               .update({
-                            'faculty': selected,
-                            'followedFaculties': followed,
-                          });
+                                'faculty': selected,
+                                'followedFaculties': followed,
+                              });
                           if (ctx.mounted) Navigator.pop(ctx);
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
@@ -443,8 +465,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         final bool isDarkMode = Theme.of(ctx).brightness == Brightness.dark;
         const Color primaryColor = Color(0xFF5893D8);
 
-        final Color sheetColor =
-            isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+        final Color sheetColor = isDarkMode
+            ? const Color(0xFF1C1E21)
+            : Colors.white;
 
         final Color surfaceColor = isDarkMode
             ? Colors.white.withValues(alpha: 0.04)
@@ -460,11 +483,13 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
         final Color selectedBorderColor = primaryColor.withValues(alpha: 0.38);
 
-        final Color primaryTextColor =
-            isDarkMode ? Colors.white : const Color(0xFF1D2939);
+        final Color primaryTextColor = isDarkMode
+            ? Colors.white
+            : const Color(0xFF1D2939);
 
-        final Color secondaryTextColor =
-            isDarkMode ? Colors.white60 : const Color(0xFF667085);
+        final Color secondaryTextColor = isDarkMode
+            ? Colors.white60
+            : const Color(0xFF667085);
 
         return StatefulBuilder(
           builder: (context, setModalState) {
@@ -486,10 +511,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     Container(
                       width: 40,
                       height: 4,
-                      margin: const EdgeInsets.only(
-                        top: 10,
-                        bottom: 18,
-                      ),
+                      margin: const EdgeInsets.only(top: 10, bottom: 18),
                       decoration: BoxDecoration(
                         color: isDarkMode
                             ? Colors.white24
@@ -555,8 +577,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           children: FacultyHelper.activeFaculties.map((fac) {
                             final bool isPrimary =
                                 primaryFacultyInfo?.id == fac.id;
-                            final bool isFollowed =
-                                tempFollowed.contains(fac.id);
+                            final bool isFollowed = tempFollowed.contains(
+                              fac.id,
+                            );
                             final bool isSelected = isPrimary || isFollowed;
 
                             return Padding(
@@ -622,15 +645,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                           decoration: BoxDecoration(
                                             color: isSelected
                                                 ? primaryColor.withValues(
-                                                    alpha: isDarkMode ? 0.18 : 0.10,
+                                                    alpha: isDarkMode
+                                                        ? 0.18
+                                                        : 0.10,
                                                   )
                                                 : (isDarkMode
-                                                    ? Colors.white.withValues(
-                                                        alpha: 0.05,
-                                                      )
-                                                    : Colors.white),
-                                            borderRadius:
-                                                BorderRadius.circular(12),
+                                                      ? Colors.white.withValues(
+                                                          alpha: 0.05,
+                                                        )
+                                                      : Colors.white),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                           ),
                                           child: Icon(
                                             fac.icon,
@@ -674,8 +700,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                         ),
                                         const SizedBox(width: 10),
                                         AnimatedContainer(
-                                          duration:
-                                              const Duration(milliseconds: 160),
+                                          duration: const Duration(
+                                            milliseconds: 160,
+                                          ),
                                           width: 22,
                                           height: 22,
                                           alignment: Alignment.center,
@@ -755,7 +782,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                   await FirebaseFirestore.instance
                                       .collection('users')
                                       .doc(user.uid)
-                                      .update({'followedFaculties': tempFollowed});
+                                      .update({
+                                        'followedFaculties': tempFollowed,
+                                      });
                                   if (ctx.mounted) Navigator.pop(ctx);
                                   if (mounted) {
                                     ScaffoldMessenger.of(context)
@@ -837,7 +866,10 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
     return StreamBuilder<DocumentSnapshot>(
       stream: user != null
-          ? FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots()
+          ? FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .snapshots()
           : null,
       builder: (context, userSnapshot) {
         final Map<String, dynamic>? userData =
@@ -846,7 +878,8 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
         final FacultyInfo? primaryFacultyInfo =
             FacultyHelper.findFacultyByAccountString(userFacultyStr);
 
-        final List<String> followedFaculties = (userData?['followedFaculties'] as List?)
+        final List<String> followedFaculties =
+            (userData?['followedFaculties'] as List?)
                 ?.map((e) => e.toString())
                 .toList() ??
             [];
@@ -876,12 +909,16 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 12.5,
                           fontWeight: FontWeight.w400,
-                          color: isDark ? Colors.white38 : const Color(0xFF98A2B3),
+                          color: isDark
+                              ? Colors.white38
+                              : const Color(0xFF98A2B3),
                         ),
                         prefixIcon: Icon(
                           Icons.search_rounded,
                           size: 21,
-                          color: isDark ? Colors.white54 : const Color(0xFF667085),
+                          color: isDark
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
@@ -896,12 +933,16 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                 icon: Icon(
                                   Icons.close_rounded,
                                   size: 19,
-                                  color: isDark ? Colors.white54 : const Color(0xFF667085),
+                                  color: isDark
+                                      ? Colors.white54
+                                      : const Color(0xFF667085),
                                 ),
                               )
                             : null,
                         filled: true,
-                        fillColor: isDark ? const Color(0xFF1C1E21) : Colors.white,
+                        fillColor: isDark
+                            ? const Color(0xFF1C1E21)
+                            : Colors.white,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 12,
@@ -939,14 +980,17 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                     child: StreamBuilder<QuerySnapshot>(
                       stream: user != null
                           ? FirebaseFirestore.instance
-                              .collection('users')
-                              .doc(user.uid)
-                              .collection('interested_events')
-                              .snapshots()
+                                .collection('users')
+                                .doc(user.uid)
+                                .collection('interested_events')
+                                .snapshots()
                           : null,
                       builder: (context, interestedSnapshot) {
                         final Set<String> interestedDocIds =
-                            interestedSnapshot.data?.docs.map((d) => d.id).toSet() ?? {};
+                            interestedSnapshot.data?.docs
+                                .map((d) => d.id)
+                                .toSet() ??
+                            {};
 
                         return StreamBuilder<QuerySnapshot>(
                           stream: FirebaseFirestore.instance
@@ -957,42 +1001,60 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               return Center(
                                 child: Text(
                                   'Đã xảy ra lỗi dữ liệu sự kiện Khoa',
-                                  style: TextStyle(color: _secondaryText(isDark)),
+                                  style: TextStyle(
+                                    color: _secondaryText(isDark),
+                                  ),
                                 ),
                               );
                             }
 
                             if (!snapshot.hasData) {
                               return const Center(
-                                child: CircularProgressIndicator(color: primaryBlue),
+                                child: CircularProgressIndicator(
+                                  color: primaryBlue,
+                                ),
                               );
                             }
 
                             final allEventDocs = snapshot.data!.docs;
 
                             // Tải trước ảnh sự kiện vào bộ nhớ đệm RAM để tránh nhảy ảnh mặc định
-                            final urlsToPreload = allEventDocs.map((doc) {
-                              final data = doc.data() as Map<String, dynamic>;
-                              return data['thumbnailUrl'] ??
-                                  (data['imageUrls'] != null &&
-                                          (data['imageUrls'] as List).isNotEmpty
-                                      ? data['imageUrls'][0]
-                                      : null);
-                            }).map((e) => e?.toString()).whereType<String>().toList();
+                            final urlsToPreload = allEventDocs
+                                .map((doc) {
+                                  final data =
+                                      doc.data() as Map<String, dynamic>;
+                                  return data['thumbnailUrl'] ??
+                                      (data['imageUrls'] != null &&
+                                              (data['imageUrls'] as List)
+                                                  .isNotEmpty
+                                          ? data['imageUrls'][0]
+                                          : null);
+                                })
+                                .map((e) => e?.toString())
+                                .whereType<String>()
+                                .toList();
                             Base64ImageCache.preloadImages(urlsToPreload);
 
                             // Lọc tài liệu theo Khoa đang chọn & từ khóa tìm kiếm
-                            final cleanQuery = removeVietnameseDiacritics(_searchQuery);
+                            final cleanQuery = removeVietnameseDiacritics(
+                              _searchQuery,
+                            );
                             final nowForFilter = DateTime.now();
-                            final threeDaysAgoForFilter = nowForFilter.subtract(const Duration(days: 3));
+                            final threeDaysAgoForFilter = nowForFilter.subtract(
+                              const Duration(days: 3),
+                            );
 
                             final filteredDocs = allEventDocs.where((doc) {
                               final data = doc.data() as Map<String, dynamic>;
                               if (data['shouldPublish'] == false) return false;
 
                               // 0. Lọc sự kiện đã diễn ra quá 3 ngày (chỉ lưu/hiển thị tối đa 3 ngày sau khi diễn ra)
-                              final DateTime? eventDateTime = _extractEventDateTime(data);
-                              if (eventDateTime != null && eventDateTime.isBefore(threeDaysAgoForFilter)) {
+                              final DateTime? eventDateTime =
+                                  _extractEventDateTime(data);
+                              if (eventDateTime != null &&
+                                  eventDateTime.isBefore(
+                                    threeDaysAgoForFilter,
+                                  )) {
                                 return false;
                               }
 
@@ -1002,12 +1064,20 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                                 if (primaryFacultyInfo == null) {
                                   matchesFac = true;
                                 } else {
-                                  matchesFac = _matchesFaculty(data, primaryFacultyInfo);
+                                  matchesFac = _matchesFaculty(
+                                    data,
+                                    primaryFacultyInfo,
+                                  );
                                 }
                               } else {
-                                final targetFacInfo = FacultyHelper.findById(activeSubTab);
+                                final targetFacInfo = FacultyHelper.findById(
+                                  activeSubTab,
+                                );
                                 if (targetFacInfo != null) {
-                                  matchesFac = _matchesFaculty(data, targetFacInfo);
+                                  matchesFac = _matchesFaculty(
+                                    data,
+                                    targetFacInfo,
+                                  );
                                 } else {
                                   matchesFac = true;
                                 }
@@ -1017,14 +1087,28 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
                               // 2. Kiểm tra từ khóa tìm kiếm
                               if (cleanQuery.isNotEmpty) {
-                                final eventName = removeVietnameseDiacritics((data['eventName'] ?? data['title'] ?? '').toString());
-                                final desc = removeVietnameseDiacritics((data['description'] ?? '').toString());
-                                final locName = removeVietnameseDiacritics((data['locationName'] ?? '').toString());
-                                final locAddr = removeVietnameseDiacritics((data['locationAddress'] ?? '').toString());
-                                final facName = removeVietnameseDiacritics((data['facultyName'] ?? '').toString());
-                                final facCode = removeVietnameseDiacritics((data['facultyCode'] ?? '').toString());
+                                final eventName = removeVietnameseDiacritics(
+                                  (data['eventName'] ?? data['title'] ?? '')
+                                      .toString(),
+                                );
+                                final desc = removeVietnameseDiacritics(
+                                  (data['description'] ?? '').toString(),
+                                );
+                                final locName = removeVietnameseDiacritics(
+                                  (data['locationName'] ?? '').toString(),
+                                );
+                                final locAddr = removeVietnameseDiacritics(
+                                  (data['locationAddress'] ?? '').toString(),
+                                );
+                                final facName = removeVietnameseDiacritics(
+                                  (data['facultyName'] ?? '').toString(),
+                                );
+                                final facCode = removeVietnameseDiacritics(
+                                  (data['facultyCode'] ?? '').toString(),
+                                );
 
-                                final matchesSearch = eventName.contains(cleanQuery) ||
+                                final matchesSearch =
+                                    eventName.contains(cleanQuery) ||
                                     desc.contains(cleanQuery) ||
                                     locName.contains(cleanQuery) ||
                                     locAddr.contains(cleanQuery) ||
@@ -1044,8 +1128,16 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                             // 4. Event đã diễn ra
                             final now = DateTime.now();
                             filteredDocs.sort((a, b) {
-                              final priorityA = _getEventPriority(a, interestedDocIds, now);
-                              final priorityB = _getEventPriority(b, interestedDocIds, now);
+                              final priorityA = _getEventPriority(
+                                a,
+                                interestedDocIds,
+                                now,
+                              );
+                              final priorityB = _getEventPriority(
+                                b,
+                                interestedDocIds,
+                                now,
+                              );
 
                               if (priorityA != priorityB) {
                                 return priorityA.compareTo(priorityB);
@@ -1077,8 +1169,13 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               return tsB.compareTo(tsA);
                             });
 
-                            if (activeSubTab == 'my_faculty' && primaryFacultyInfo == null) {
-                              return _buildEmptyFacultySetupCard(context, isDark, userFacultyStr);
+                            if (activeSubTab == 'my_faculty' &&
+                                primaryFacultyInfo == null) {
+                              return _buildEmptyFacultySetupCard(
+                                context,
+                                isDark,
+                                userFacultyStr,
+                              );
                             }
 
                             if (filteredDocs.isEmpty) {
@@ -1129,24 +1226,30 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               slivers: [
                                 ..._buildOverlapSliver(context),
                                 SliverPadding(
-                                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 20),
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    6,
+                                    16,
+                                    20,
+                                  ),
                                   sliver: SliverList(
-                                    delegate: SliverChildBuilderDelegate(
-                                      (context, index) {
-                                        final doc = filteredDocs[index];
-                                        final data = doc.data() as Map<String, dynamic>;
-                                        final String docId = doc.id;
+                                    delegate: SliverChildBuilderDelegate((
+                                      context,
+                                      index,
+                                    ) {
+                                      final doc = filteredDocs[index];
+                                      final data =
+                                          doc.data() as Map<String, dynamic>;
+                                      final String docId = doc.id;
 
-                                        return _buildEventCard(
-                                          context,
-                                          docId,
-                                          data,
-                                          user,
-                                          isDark,
-                                        );
-                                      },
-                                      childCount: filteredDocs.length,
-                                    ),
+                                      return _buildEventCard(
+                                        context,
+                                        docId,
+                                        data,
+                                        user,
+                                        isDark,
+                                      );
+                                    }, childCount: filteredDocs.length),
                                   ),
                                 ),
                               ],
@@ -1172,7 +1275,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
 
     if (facId == facInfo.id.toLowerCase()) return true;
     if (facCode == facInfo.code.toLowerCase()) return true;
-    return facInfo.matchKeywords.any((kw) => facName.contains(kw) || facId.contains(kw));
+    return facInfo.matchKeywords.any(
+      (kw) => facName.contains(kw) || facId.contains(kw),
+    );
   }
 
   int _extractMillis(Map<String, dynamic> data) {
@@ -1203,13 +1308,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
       final parsed = DateTime.tryParse(data['startDateTime']);
       if (parsed != null) return parsed;
     }
-    if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+    if (data['registrationDeadlineAt'] != null &&
+        data['registrationDeadlineAt'] is Timestamp) {
       return (data['registrationDeadlineAt'] as Timestamp).toDate();
     }
     return null;
   }
 
-  int _getEventPriority(DocumentSnapshot doc, Set<String> interestedDocIds, DateTime now) {
+  int _getEventPriority(
+    DocumentSnapshot doc,
+    Set<String> interestedDocIds,
+    DateTime now,
+  ) {
     final data = doc.data() as Map<String, dynamic>;
     final bool isInterested = interestedDocIds.contains(doc.id);
     final DateTime? eventTime = _extractEventDateTime(data);
@@ -1236,18 +1346,19 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     bool isDarkMode,
     String? currentFaculty,
   ) {
-    final Color cardColor =
-        isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
+    final Color cardColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
 
     final Color borderColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.08)
         : const Color(0xFFE4E7EC);
 
-    final Color primaryTextColor =
-        isDarkMode ? Colors.white : const Color(0xFF1D2939);
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
 
-    final Color secondaryTextColor =
-        isDarkMode ? Colors.white60 : const Color(0xFF667085);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
 
     return Center(
       child: Padding(
@@ -1314,7 +1425,8 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                 width: double.infinity,
                 height: 44,
                 child: FilledButton.icon(
-                  onPressed: () => _showQuickFacultyPicker(context, currentFaculty),
+                  onPressed: () =>
+                      _showQuickFacultyPicker(context, currentFaculty),
                   icon: const Icon(Icons.edit_outlined, size: 18),
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF5893D8),
@@ -1518,8 +1630,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 11.5,
-                  fontWeight:
-                      isSelected ? FontWeight.w700 : FontWeight.w600,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                   color: isSelected ? Colors.white : inactiveTextColor,
                 ),
               ),
@@ -1557,167 +1668,117 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
   }
 
   Widget _buildEventCard(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      User? user,
-      bool isDark,
-      ) {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+    User? user,
+    bool isDark,
+  ) {
     final String eventName =
-    (data['eventName'] ??
-        data['title'] ??
-        'Sự kiện sinh viên')
-        .toString();
+        (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
 
     final String eventDateText =
-    (data['eventDateText'] ??
-        data['date'] ??
-        'Xem chi tiết bài viết')
-        .toString();
+        (data['eventDateText'] ?? data['date'] ?? 'Xem chi tiết bài viết')
+            .toString();
 
-    final String locationName =
-    (data['locationName'] ?? '').toString();
+    final String locationName = (data['locationName'] ?? '').toString();
 
-    final String locationAddress =
-    (data['locationAddress'] ?? '').toString();
+    final String locationAddress = (data['locationAddress'] ?? '').toString();
 
     final List<String> locDisplayParts = [];
 
-    final String trimmedLocName =
-    locationName.trim();
+    final String trimmedLocName = locationName.trim();
 
-    final String trimmedLocAddr =
-    locationAddress.trim();
+    final String trimmedLocAddr = locationAddress.trim();
 
     if (trimmedLocName.isNotEmpty) {
       locDisplayParts.add(trimmedLocName);
     }
 
-    if (trimmedLocAddr.isNotEmpty &&
-        trimmedLocAddr != trimmedLocName) {
+    if (trimmedLocAddr.isNotEmpty && trimmedLocAddr != trimmedLocName) {
       locDisplayParts.add(trimmedLocAddr);
     }
 
-    final String locationDisplay =
-    locDisplayParts.join(' - ');
+    final String locationDisplay = locDisplayParts.join(' - ');
 
     final String facultyDisplay =
-    (data['facultyName'] ??
-        data['department'] ??
-        'Khoa HCMUS')
-        .toString();
+        (data['facultyName'] ?? data['department'] ?? 'Khoa HCMUS').toString();
 
     final String? thumbnailUrl =
         data['thumbnailUrl'] ??
-            (
-                data['imageUrls'] != null &&
-                    (data['imageUrls'] as List).isNotEmpty
-                    ? data['imageUrls'][0]
-                    : null
-            );
+        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty
+            ? data['imageUrls'][0]
+            : null);
 
-    final String onlineUrl =
-    (data['onlineUrl'] ??
-        data['onlineLink'] ??
-        '')
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '')
         .toString()
         .trim();
 
-    final bool isOnline =
-        data['isOnline'] == true ||
-            onlineUrl.isNotEmpty;
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
 
     final String link =
-    (data['sourceArticleUrl'] ??
-        data['registrationUrl'] ??
-        data['link'] ??
-        onlineUrl)
-        .toString();
+        (data['sourceArticleUrl'] ??
+                data['registrationUrl'] ??
+                data['link'] ??
+                onlineUrl)
+            .toString();
 
-    final String rawContact =
-    (data['contact'] ??
-        data['contactInfo'] ??
-        '')
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '')
         .toString()
         .trim();
 
     final String rawOrganizer =
-    (data['organizer'] ??
-        data['organizerName'] ??
-        '')
-        .toString()
-        .trim();
+        (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
 
-    String displayContact =
-    rawContact.isNotEmpty
-        ? rawContact
-        : rawOrganizer;
+    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
 
     if (displayContact.isNotEmpty &&
-        !displayContact
-            .toLowerCase()
-            .startsWith('liên hệ')) {
-      displayContact =
-      'Liên hệ: $displayContact';
+        !displayContact.toLowerCase().startsWith('liên hệ')) {
+      displayContact = 'Liên hệ: $displayContact';
     }
 
     final DateTime? eventDateTime = _extractEventDateTime(data);
-    final bool isPast = eventDateTime != null && eventDateTime.isBefore(DateTime.now());
+    final bool isPast =
+        eventDateTime != null && eventDateTime.isBefore(DateTime.now());
 
-    final String effectiveLink =
-    onlineUrl.isNotEmpty
-        ? onlineUrl
-        : link;
+    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
 
-    final Color cardColor =
-    _surfaceColor(isDark);
+    final Color cardColor = _surfaceColor(isDark);
 
-    final Color borderColor =
-    _borderColor(isDark);
+    final Color borderColor = _borderColor(isDark);
 
-    final Color primaryTextColor =
-    _primaryText(isDark);
+    final Color primaryTextColor = _primaryText(isDark);
 
-    final Color secondaryTextColor =
-    _secondaryText(isDark);
+    final Color secondaryTextColor = _secondaryText(isDark);
 
     return Container(
-      margin: const EdgeInsets.only(
-        bottom: 14,
-      ),
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: cardColor,
-        borderRadius:
-        BorderRadius.circular(18),
-        border: Border.all(
-          color: borderColor,
-        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: borderColor),
         boxShadow: isDark
             ? const []
             : [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.035,
-            ),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.035),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: ClipRRect(
-        borderRadius:
-        BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: effectiveLink.isNotEmpty
                 ? () {
-              _launchURL(effectiveLink);
-            }
+                    _launchURL(effectiveLink);
+                  }
                 : null,
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Stack(
                   children: [
@@ -1735,15 +1796,11 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                       child: DecoratedBox(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            begin:
-                            Alignment.topCenter,
-                            end:
-                            Alignment.bottomCenter,
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(
-                                alpha: 0.34,
-                              ),
+                              Colors.black.withValues(alpha: 0.34),
                             ],
                           ),
                         ),
@@ -1760,7 +1817,9 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF344054).withValues(alpha: 0.88),
+                            color: const Color(
+                              0xFF344054,
+                            ).withValues(alpha: 0.88),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: Colors.white.withValues(alpha: 0.25),
@@ -1794,34 +1853,22 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                         top: 12,
                         right: 12,
                         child: Container(
-                          padding:
-                          const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 9,
                             vertical: 5,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.black
-                                .withValues(
-                              alpha: 0.48,
-                            ),
-                            borderRadius:
-                            BorderRadius.circular(
-                              10,
-                            ),
+                            color: Colors.black.withValues(alpha: 0.48),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: Colors.white
-                                  .withValues(
-                                alpha: 0.22,
-                              ),
+                              color: Colors.white.withValues(alpha: 0.22),
                             ),
                           ),
                           child: const Row(
-                            mainAxisSize:
-                            MainAxisSize.min,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                Icons
-                                    .videocam_outlined,
+                                Icons.videocam_outlined,
                                 size: 13,
                                 color: Colors.white,
                               ),
@@ -1829,12 +1876,10 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               Text(
                                 'Online',
                                 style: TextStyle(
-                                  fontFamily:
-                                  'Encode Sans Expanded',
+                                  fontFamily: 'Encode Sans Expanded',
                                   color: Colors.white,
                                   fontSize: 10,
-                                  fontWeight:
-                                  FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -1845,26 +1890,17 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                 ),
 
                 Padding(
-                  padding:
-                  const EdgeInsets.fromLTRB(
-                    16,
-                    15,
-                    16,
-                    15,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
                   child: Column(
-                    crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         eventName,
                         maxLines: 2,
-                        overflow:
-                        TextOverflow.ellipsis,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontFamily: 'Nunito',
-                          fontWeight:
-                          FontWeight.w700,
+                          fontWeight: FontWeight.w700,
                           fontSize: 17,
                           height: 1.3,
                           color: primaryTextColor,
@@ -1874,58 +1910,43 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                       const SizedBox(height: 13),
 
                       _buildEventInfoRow(
-                        icon:
-                        Icons.school_outlined,
+                        icon: Icons.school_outlined,
                         text: facultyDisplay,
                         iconColor: primaryBlue,
-                        textColor:
-                        secondaryTextColor,
+                        textColor: secondaryTextColor,
                       ),
 
                       const SizedBox(height: 9),
 
                       _buildEventInfoRow(
-                        icon:
-                        Icons.access_time_rounded,
+                        icon: Icons.access_time_rounded,
                         text: eventDateText,
                         iconColor: primaryBlue,
-                        textColor:
-                        primaryTextColor,
-                        fontWeight:
-                        FontWeight.w600,
+                        textColor: primaryTextColor,
+                        fontWeight: FontWeight.w600,
                       ),
 
-                      if (locationDisplay.isNotEmpty ||
-                          isOnline) ...[
+                      if (locationDisplay.isNotEmpty || isOnline) ...[
                         const SizedBox(height: 9),
                         _buildEventInfoRow(
                           icon: isOnline
-                              ? Icons
-                              .videocam_outlined
-                              : Icons
-                              .location_on_outlined,
-                          text: locationDisplay
-                              .isNotEmpty
+                              ? Icons.videocam_outlined
+                              : Icons.location_on_outlined,
+                          text: locationDisplay.isNotEmpty
                               ? locationDisplay
                               : 'Trực tuyến',
-                          iconColor:
-                          primaryBlue,
-                          textColor:
-                          secondaryTextColor,
+                          iconColor: primaryBlue,
+                          textColor: secondaryTextColor,
                         ),
                       ],
 
-                      if (displayContact
-                          .isNotEmpty) ...[
+                      if (displayContact.isNotEmpty) ...[
                         const SizedBox(height: 9),
                         _buildEventInfoRow(
-                          icon: Icons
-                              .contact_phone_outlined,
+                          icon: Icons.contact_phone_outlined,
                           text: displayContact,
-                          iconColor:
-                          primaryBlue,
-                          textColor:
-                          secondaryTextColor,
+                          iconColor: primaryBlue,
+                          textColor: secondaryTextColor,
                         ),
                       ],
 
@@ -1934,129 +1955,94 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                       Row(
                         children: [
                           Expanded(
-                            child: StreamBuilder<
-                                DocumentSnapshot>(
+                            child: StreamBuilder<DocumentSnapshot>(
                               stream: user != null
-                                  ? FirebaseFirestore
-                                  .instance
-                                  .collection(
-                                'users',
-                              )
-                                  .doc(user.uid)
-                                  .collection(
-                                'interested_events',
-                              )
-                                  .doc(docId)
-                                  .snapshots()
+                                  ? FirebaseFirestore.instance
+                                        .collection('users')
+                                        .doc(user.uid)
+                                        .collection('interested_events')
+                                        .doc(docId)
+                                        .snapshots()
                                   : null,
-                              builder:
-                                  (context, favSnapshot) {
-                                final bool
-                                isInterested =
+                              builder: (context, favSnapshot) {
+                                final bool isInterested =
                                     favSnapshot.hasData &&
-                                        favSnapshot
-                                            .data!
-                                            .exists;
+                                    favSnapshot.data!.exists;
 
-                                 if (isPast) {
-                                   return FilledButton.icon(
-                                     onPressed: () {
-                                       _toggleInterest(
-                                         context,
-                                         docId,
-                                         data,
-                                       );
-                                     },
-                                     icon: Icon(
-                                       isInterested
-                                           ? Icons.check_circle_outline_rounded
-                                           : Icons.event_busy_rounded,
-                                       size: 16,
-                                     ),
-                                     label: Text(
-                                       isInterested
-                                           ? 'Đã quan tâm (Đã kết thúc)'
-                                           : 'Sự kiện đã kết thúc',
-                                       style: const TextStyle(
-                                         fontFamily: 'Encode Sans Expanded',
-                                         fontSize: 12,
-                                         fontWeight: FontWeight.w600,
-                                       ),
-                                     ),
-                                     style: FilledButton.styleFrom(
-                                       backgroundColor: isDark
-                                           ? const Color(0xFF2C2F33)
-                                           : const Color(0xFFF2F4F7),
-                                       foregroundColor: isDark
-                                           ? Colors.white54
-                                           : const Color(0xFF667085),
-                                       elevation: 0,
-                                       minimumSize: const Size(double.infinity, 42),
-                                       shape: RoundedRectangleBorder(
-                                         borderRadius: BorderRadius.circular(12),
-                                       ),
-                                     ),
-                                   );
-                                 }
+                                if (isPast) {
+                                  return FilledButton.icon(
+                                    onPressed: () {
+                                      _toggleInterest(context, docId, data);
+                                    },
+                                    icon: Icon(
+                                      isInterested
+                                          ? Icons.check_circle_outline_rounded
+                                          : Icons.event_busy_rounded,
+                                      size: 16,
+                                    ),
+                                    label: Text(
+                                      isInterested
+                                          ? 'Đã quan tâm (Đã kết thúc)'
+                                          : 'Sự kiện đã kết thúc',
+                                      style: const TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: isDark
+                                          ? const Color(0xFF2C2F33)
+                                          : const Color(0xFFF2F4F7),
+                                      foregroundColor: isDark
+                                          ? Colors.white54
+                                          : const Color(0xFF667085),
+                                      elevation: 0,
+                                      minimumSize: const Size(
+                                        double.infinity,
+                                        42,
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                }
 
                                 return FilledButton.icon(
                                   onPressed: () {
-                                    _toggleInterest(
-                                      context,
-                                      docId,
-                                      data,
-                                    );
+                                    _toggleInterest(context, docId, data);
                                   },
                                   icon: Icon(
                                     isInterested
-                                        ? Icons
-                                        .favorite_rounded
-                                        : Icons
-                                        .favorite_border_rounded,
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
                                     size: 17,
                                   ),
                                   label: Text(
-                                    isInterested
-                                        ? 'Đã quan tâm'
-                                        : 'Quan tâm',
-                                    style:
-                                    const TextStyle(
-                                      fontFamily:
-                                      'Encode Sans Expanded',
+                                    isInterested ? 'Đã quan tâm' : 'Quan tâm',
+                                    style: const TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
                                       fontSize: 12.5,
-                                      fontWeight:
-                                      FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  style:
-                                  FilledButton.styleFrom(
-                                    backgroundColor:
-                                    isInterested
-                                        ? primaryBlue
-                                        .withValues(
-                                      alpha:
-                                      isDark
-                                          ? 0.20
-                                          : 0.12,
-                                    )
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: isInterested
+                                        ? primaryBlue.withValues(
+                                            alpha: isDark ? 0.20 : 0.12,
+                                          )
                                         : primaryBlue,
-                                    foregroundColor:
-                                    isInterested
+                                    foregroundColor: isInterested
                                         ? primaryBlue
                                         : Colors.white,
                                     elevation: 0,
-                                    minimumSize:
-                                    const Size(
+                                    minimumSize: const Size(
                                       double.infinity,
                                       42,
                                     ),
-                                    shape:
-                                    RoundedRectangleBorder(
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        12,
-                                      ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
                                 );
@@ -2065,101 +2051,66 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                           ),
 
                           if (onlineUrl.isNotEmpty ||
-                              (
-                                  link.isNotEmpty &&
-                                      link != onlineUrl
-                              )) ...[
+                              (link.isNotEmpty && link != onlineUrl)) ...[
                             const SizedBox(width: 9),
 
                             PopupMenuButton<String>(
-                              tooltip:
-                              'Thêm tùy chọn',
-                              color:
-                              _surfaceColor(isDark),
-                              surfaceTintColor:
-                              Colors.transparent,
-                              shape:
-                              RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(
-                                  14,
-                                ),
+                              tooltip: 'Thêm tùy chọn',
+                              color: _surfaceColor(isDark),
+                              surfaceTintColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               onSelected: (value) {
-                                if (value ==
-                                    'join_online') {
-                                  _launchURL(
-                                    onlineUrl,
-                                  );
-                                } else if (value ==
-                                    'open_source') {
+                                if (value == 'join_online') {
+                                  _launchURL(onlineUrl);
+                                } else if (value == 'open_source') {
                                   _launchURL(link);
                                 }
                               },
-                              itemBuilder:
-                                  (context) => [
-                                if (onlineUrl
-                                    .isNotEmpty)
-                                  PopupMenuItem<
-                                      String>(
-                                    value:
-                                    'join_online',
+                              itemBuilder: (context) => [
+                                if (onlineUrl.isNotEmpty)
+                                  PopupMenuItem<String>(
+                                    value: 'join_online',
                                     height: 42,
                                     child: Row(
                                       children: [
                                         Icon(
-                                          Icons
-                                              .videocam_outlined,
+                                          Icons.videocam_outlined,
                                           size: 18,
-                                          color:
-                                          secondaryTextColor,
+                                          color: secondaryTextColor,
                                         ),
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
+                                        const SizedBox(width: 10),
                                         Text(
                                           'Tham gia trực tuyến',
-                                          style:
-                                          TextStyle(
-                                            fontFamily:
-                                            'Encode Sans Expanded',
+                                          style: TextStyle(
+                                            fontFamily: 'Encode Sans Expanded',
                                             fontSize: 12,
-                                            color:
-                                            primaryTextColor,
+                                            color: primaryTextColor,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
 
-                                if (link.isNotEmpty &&
-                                    link != onlineUrl)
-                                  PopupMenuItem<
-                                      String>(
-                                    value:
-                                    'open_source',
+                                if (link.isNotEmpty && link != onlineUrl)
+                                  PopupMenuItem<String>(
+                                    value: 'open_source',
                                     height: 42,
                                     child: Row(
                                       children: [
                                         Icon(
-                                          Icons
-                                              .open_in_new_rounded,
+                                          Icons.open_in_new_rounded,
                                           size: 18,
-                                          color:
-                                          secondaryTextColor,
+                                          color: secondaryTextColor,
                                         ),
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
+                                        const SizedBox(width: 10),
                                         Text(
                                           'Xem bài gốc',
-                                          style:
-                                          TextStyle(
-                                            fontFamily:
-                                            'Encode Sans Expanded',
+                                          style: TextStyle(
+                                            fontFamily: 'Encode Sans Expanded',
                                             fontSize: 12,
-                                            color:
-                                            primaryTextColor,
+                                            color: primaryTextColor,
                                           ),
                                         ),
                                       ],
@@ -2169,33 +2120,18 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
                               child: Container(
                                 width: 42,
                                 height: 42,
-                                alignment:
-                                Alignment.center,
-                                decoration:
-                                BoxDecoration(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
                                   color: isDark
-                                      ? Colors.white
-                                      .withValues(
-                                    alpha: 0.06,
-                                  )
-                                      : const Color(
-                                    0xFFF5F7FA,
-                                  ),
-                                  borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                    12,
-                                  ),
-                                  border: Border.all(
-                                    color: borderColor,
-                                  ),
+                                      ? Colors.white.withValues(alpha: 0.06)
+                                      : const Color(0xFFF5F7FA),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: borderColor),
                                 ),
                                 child: Icon(
-                                  Icons
-                                      .more_horiz_rounded,
+                                  Icons.more_horiz_rounded,
                                   size: 21,
-                                  color:
-                                  secondaryTextColor,
+                                  color: secondaryTextColor,
                                 ),
                               ),
                             ),
@@ -2221,18 +2157,11 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
     FontWeight fontWeight = FontWeight.w400,
   }) {
     return Row(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(
-            top: 1,
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: iconColor,
-          ),
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -2241,8 +2170,7 @@ class _DiscoverEventTabState extends State<DiscoverEventTab> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily:
-              'Encode Sans Expanded',
+              fontFamily: 'Encode Sans Expanded',
               fontSize: 12.5,
               height: 1.4,
               fontWeight: fontWeight,

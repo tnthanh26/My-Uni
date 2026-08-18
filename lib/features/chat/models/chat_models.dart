@@ -33,7 +33,10 @@ class ChatRoom {
       return {};
     }
 
-    Map<String, int> parseIntMap(dynamic mapData, Map<String, dynamic> rawData) {
+    Map<String, int> parseIntMap(
+      dynamic mapData,
+      Map<String, dynamic> rawData,
+    ) {
       final Map<String, int> result = {};
       // 1. Đọc các key dính dấu chấm cấp cao cũ (nếu có)
       rawData.forEach((k, v) {
@@ -73,14 +76,21 @@ class ChatRoom {
       'participantPhotos': participantPhotos,
       'lastMessage': lastMessage,
       'lastMessageSenderId': lastMessageSenderId,
-      'lastMessageTime': lastMessageTime != null ? Timestamp.fromDate(lastMessageTime!) : FieldValue.serverTimestamp(),
+      'lastMessageTime': lastMessageTime != null
+          ? Timestamp.fromDate(lastMessageTime!)
+          : FieldValue.serverTimestamp(),
       'unreadCounts': unreadCounts,
-      'updatedAt': updatedAt != null ? Timestamp.fromDate(updatedAt!) : FieldValue.serverTimestamp(),
+      'updatedAt': updatedAt != null
+          ? Timestamp.fromDate(updatedAt!)
+          : FieldValue.serverTimestamp(),
     };
   }
 
   String getOtherUserId(String currentUserId) {
-    return participants.firstWhere((id) => id != currentUserId, orElse: () => '');
+    return participants.firstWhere(
+      (id) => id != currentUserId,
+      orElse: () => '',
+    );
   }
 
   String getOtherUserName(String currentUserId) {
@@ -103,8 +113,10 @@ class ChatMessage {
   final String senderId;
   final String text;
   final String? imageUrl;
-  final Map<String, String>? contactShare; // e.g. {'type': 'zalo'|'facebook'|'phone', 'value': '...', 'name': '...'}
-  final Map<String, String>? fileShare; // e.g. {'fileName': '...', 'fileSize': '...', 'base64': '...', 'extension': '...'}
+  final Map<String, String>?
+  contactShare; // e.g. {'type': 'zalo'|'facebook'|'phone', 'value': '...', 'name': '...'}
+  final Map<String, String>?
+  fileShare; // e.g. {'fileName': '...', 'fileSize': '...', 'base64': '...', 'extension': '...'}
   final DateTime timestamp;
   final bool isRead;
   final bool isRecalled;
@@ -128,12 +140,16 @@ class ChatMessage {
 
     Map<String, String>? contactMap;
     if (data['contactShare'] is Map) {
-      contactMap = (data['contactShare'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+      contactMap = (data['contactShare'] as Map).map(
+        (k, v) => MapEntry(k.toString(), v.toString()),
+      );
     }
 
     Map<String, String>? fileMap;
     if (data['fileShare'] is Map) {
-      fileMap = (data['fileShare'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+      fileMap = (data['fileShare'] as Map).map(
+        (k, v) => MapEntry(k.toString(), v.toString()),
+      );
     }
 
     return ChatMessage(

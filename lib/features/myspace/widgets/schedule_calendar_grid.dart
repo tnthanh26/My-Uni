@@ -148,17 +148,22 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
 
     const double hourHeight = 64.0;
     const int startHourGrid = 0; // Từ 00:00 sáng
-    const int totalHours = 24;   // 00:00 đến 23:00 (đủ 24 tiếng)
+    const int totalHours = 24; // 00:00 đến 23:00 (đủ 24 tiếng)
     const double gridTopOffset = 8.0;
 
     final now = DateTime.now();
     final String currentTimeText = DateFormat('HH:mm').format(now);
-    final isTodaySelected = widget.focusedDate.year == now.year &&
+    final isTodaySelected =
+        widget.focusedDate.year == now.year &&
         widget.focusedDate.month == now.month &&
         widget.focusedDate.day == now.day;
     final currentHourFraction = now.hour + (now.minute / 60.0);
-    final showNowLine = isTodaySelected && currentHourFraction >= 0.0 && currentHourFraction <= 24.0;
-    final double nowTop = (currentHourFraction - startHourGrid) * hourHeight + gridTopOffset;
+    final showNowLine =
+        isTodaySelected &&
+        currentHourFraction >= 0.0 &&
+        currentHourFraction <= 24.0;
+    final double nowTop =
+        (currentHourFraction - startHourGrid) * hourHeight + gridTopOffset;
 
     // Build timeline items
     final List<_TimelineItem> items = [];
@@ -179,7 +184,9 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
           startHourFraction: startH,
           endHourFraction: endH,
           timeRangeText: '${c.start} - ${c.end}',
-          location: c.room.isNotEmpty ? (c.room.startsWith('Phòng') ? c.room : 'Phòng ${c.room}') : '',
+          location: c.room.isNotEmpty
+              ? (c.room.startsWith('Phòng') ? c.room : 'Phòng ${c.room}')
+              : '',
           color: cardColor,
           type: _TimelineItemType.studyClass,
           rawClass: c,
@@ -191,7 +198,8 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
       final startH = ev.dateTime.hour + (ev.dateTime.minute / 60.0);
       var endH = startH + 1.5;
       if (ev.endDateTime != null) {
-        final parsedEndH = ev.endDateTime!.hour + (ev.endDateTime!.minute / 60.0);
+        final parsedEndH =
+            ev.endDateTime!.hour + (ev.endDateTime!.minute / 60.0);
         if (parsedEndH > startH) endH = parsedEndH;
       }
 
@@ -213,7 +221,9 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
           timeRangeText: timeText,
           location: ev.location,
           color: cardColor,
-          type: isPersonal ? _TimelineItemType.personalEvent : _TimelineItemType.interestedEvent,
+          type: isPersonal
+              ? _TimelineItemType.personalEvent
+              : _TimelineItemType.interestedEvent,
           rawEvent: ev,
         ),
       );
@@ -238,7 +248,7 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
       for (final cluster in clusters) {
         final bool overlaps = cluster.any((cItem) {
           return item.startHourFraction < cItem.endHourFraction &&
-                 item.endHourFraction > cItem.startHourFraction;
+              item.endHourFraction > cItem.startHourFraction;
         });
 
         if (overlaps) {
@@ -258,10 +268,18 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
         controller: _activeController,
         physics: const ClampingScrollPhysics(),
         child: Container(
-          padding: const EdgeInsets.only(top: 12, bottom: 24, left: 12, right: 16),
+          padding: const EdgeInsets.only(
+            top: 12,
+            bottom: 24,
+            left: 12,
+            right: 16,
+          ),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final double availableWidth = math.max(0.0, constraints.maxWidth - 56.0);
+              final double availableWidth = math.max(
+                0.0,
+                constraints.maxWidth - 56.0,
+              );
 
               final List<Widget> positionedCards = [];
 
@@ -278,16 +296,30 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                 });
 
                 final int count = cluster.length;
-                final double minStartH = cluster.map((e) => e.startHourFraction).reduce(math.min);
-                final double maxEndH = cluster.map((e) => e.endHourFraction).reduce(math.max);
+                final double minStartH = cluster
+                    .map((e) => e.startHourFraction)
+                    .reduce(math.min);
+                final double maxEndH = cluster
+                    .map((e) => e.endHourFraction)
+                    .reduce(math.max);
 
                 if (count <= 2) {
-                  final double colWidth = math.max(0.0, (availableWidth - (count - 1) * 4.0) / count);
+                  final double colWidth = math.max(
+                    0.0,
+                    (availableWidth - (count - 1) * 4.0) / count,
+                  );
 
                   for (int i = 0; i < count; i++) {
                     final item = cluster[i];
-                    final double topPos = (item.startHourFraction - startHourGrid) * hourHeight + gridTopOffset;
-                    final double blockHeight = math.max(48.0, (item.endHourFraction - item.startHourFraction) * hourHeight - 4);
+                    final double topPos =
+                        (item.startHourFraction - startHourGrid) * hourHeight +
+                        gridTopOffset;
+                    final double blockHeight = math.max(
+                      48.0,
+                      (item.endHourFraction - item.startHourFraction) *
+                              hourHeight -
+                          4,
+                    );
                     final double leftPos = 56.0 + i * (colWidth + 4.0);
 
                     positionedCards.add(
@@ -296,19 +328,35 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                         left: leftPos,
                         width: colWidth,
                         height: blockHeight,
-                        child: _buildItemCard(context, item, isDarkMode, blockHeight),
+                        child: _buildItemCard(
+                          context,
+                          item,
+                          isDarkMode,
+                          blockHeight,
+                        ),
                       ),
                     );
                   }
                 } else {
                   // 3+ items: 1 priority item + 1 summary overflow card (+ (count - 1) mục khác)
                   const int maxVisibleCols = 2;
-                  final double colWidth = math.max(0.0, (availableWidth - (maxVisibleCols - 1) * 4.0) / maxVisibleCols);
+                  final double colWidth = math.max(
+                    0.0,
+                    (availableWidth - (maxVisibleCols - 1) * 4.0) /
+                        maxVisibleCols,
+                  );
 
                   // Col 0: 1 priority item
                   final item = cluster[0];
-                  final double topPos = (item.startHourFraction - startHourGrid) * hourHeight + gridTopOffset;
-                  final double blockHeight = math.max(48.0, (item.endHourFraction - item.startHourFraction) * hourHeight - 4);
+                  final double topPos =
+                      (item.startHourFraction - startHourGrid) * hourHeight +
+                      gridTopOffset;
+                  final double blockHeight = math.max(
+                    48.0,
+                    (item.endHourFraction - item.startHourFraction) *
+                            hourHeight -
+                        4,
+                  );
                   final double leftPos = 56.0;
 
                   positionedCards.add(
@@ -317,13 +365,22 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                       left: leftPos,
                       width: colWidth,
                       height: blockHeight,
-                      child: _buildItemCard(context, item, isDarkMode, blockHeight),
+                      child: _buildItemCard(
+                        context,
+                        item,
+                        isDarkMode,
+                        blockHeight,
+                      ),
                     ),
                   );
 
                   // Col 1: Overflow card (+ (count - 1) mục khác)
-                  final double overflowTopPos = (minStartH - startHourGrid) * hourHeight + gridTopOffset;
-                  final double overflowBlockHeight = math.max(52.0, (maxEndH - minStartH) * hourHeight - 4);
+                  final double overflowTopPos =
+                      (minStartH - startHourGrid) * hourHeight + gridTopOffset;
+                  final double overflowBlockHeight = math.max(
+                    52.0,
+                    (maxEndH - minStartH) * hourHeight - 4,
+                  );
                   final double overflowLeftPos = 56.0 + 1 * (colWidth + 4.0);
                   final int overflowCount = count - 1;
 
@@ -333,7 +390,12 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                       left: overflowLeftPos,
                       width: colWidth,
                       height: overflowBlockHeight,
-                      child: _buildOverflowCard(context, cluster, overflowCount, isDarkMode),
+                      child: _buildOverflowCard(
+                        context,
+                        cluster,
+                        overflowCount,
+                        isDarkMode,
+                      ),
                     ),
                   );
                 }
@@ -358,7 +420,9 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
-                                  color: isDarkMode ? Colors.white38 : Colors.black45,
+                                  color: isDarkMode
+                                      ? Colors.white38
+                                      : Colors.black45,
                                 ),
                               ),
                             ),
@@ -366,7 +430,9 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                               child: Container(
                                 margin: const EdgeInsets.only(top: 8),
                                 height: 1,
-                                color: isDarkMode ? Colors.white12 : Colors.black12,
+                                color: isDarkMode
+                                    ? Colors.white12
+                                    : Colors.black12,
                               ),
                             ),
                           ],
@@ -487,13 +553,18 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                 if (item.type != _TimelineItemType.studyClass)
                   Container(
                     margin: const EdgeInsets.only(left: 2),
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 1,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white24,
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      item.type == _TimelineItemType.interestedEvent ? 'QUAN TÂM' : 'SỰ KIỆN',
+                      item.type == _TimelineItemType.interestedEvent
+                          ? 'QUAN TÂM'
+                          : 'SỰ KIỆN',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 7.5,
@@ -560,23 +631,15 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
       borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: () {
-          _showClusterOverflowBottomSheet(
-            context,
-            clusterItems,
-          );
+          _showClusterOverflowBottomSheet(context, clusterItems);
         },
         borderRadius: BorderRadius.circular(10),
         child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 7,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 7),
           decoration: BoxDecoration(
             color: surfaceColor,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: borderColor,
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -627,8 +690,12 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
   ) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     const Color primaryColor = Color(0xFF5893D8);
-    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1D2939);
-    final Color secondaryTextColor = isDarkMode ? Colors.white60 : const Color(0xFF667085);
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
 
     showModalBottomSheet(
       context: context,
@@ -659,12 +726,7 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  18,
-                  0,
-                  10,
-                  12,
-                ),
+                padding: const EdgeInsets.fromLTRB(18, 0, 10, 12),
                 child: Row(
                   children: [
                     Container(
@@ -686,8 +748,7 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                     const SizedBox(width: 11),
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Lịch trùng thời gian',
@@ -704,8 +765,7 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontFamily:
-                                  'Encode Sans Expanded',
+                              fontFamily: 'Encode Sans Expanded',
                               fontSize: 11.5,
                               height: 1.35,
                               color: secondaryTextColor,
@@ -734,7 +794,8 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                   shrinkWrap: true,
                   padding: const EdgeInsets.all(16),
                   itemCount: clusterItems.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 10),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final item = clusterItems[index];
                     return GestureDetector(
@@ -747,7 +808,10 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                         }
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
                         decoration: BoxDecoration(
                           color: item.color,
                           borderRadius: BorderRadius.circular(10),
@@ -788,7 +852,9 @@ class _ScheduleCalendarGridState extends State<ScheduleCalendarGrid> {
                                         : item.timeRangeText,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.white.withValues(alpha: 0.9),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.9,
+                                      ),
                                     ),
                                   ),
                                 ],

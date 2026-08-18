@@ -19,7 +19,11 @@ import '../chat/pages/search_user_page.dart';
 class AccountPage extends StatelessWidget {
   const AccountPage({super.key});
 
-  void _navigateIfAllowed(BuildContext context, String? verificationStatus, Widget page) {
+  void _navigateIfAllowed(
+    BuildContext context,
+    String? verificationStatus,
+    Widget page,
+  ) {
     Navigator.push(context, MaterialPageRoute(builder: (context) => page));
   }
 
@@ -29,11 +33,8 @@ class AccountPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor:
-        isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
+        backgroundColor: isDarkMode ? const Color(0xFF1E1E1E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
         title: Text(
           "Đăng xuất",
           style: TextStyle(
@@ -52,10 +53,7 @@ class AccountPage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text(
-              "Hủy",
-              style: TextStyle(color: Colors.grey),
-            ),
+            child: const Text("Hủy", style: TextStyle(color: Colors.grey)),
           ),
           TextButton(
             onPressed: () async {
@@ -66,10 +64,7 @@ class AccountPage extends StatelessWidget {
             },
             child: const Text(
               "Đăng xuất",
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -107,12 +102,12 @@ class AccountPage extends StatelessWidget {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 14,
-            offset: const Offset(0, 4),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(children: children),
     );
@@ -129,13 +124,13 @@ class AccountPage extends StatelessWidget {
   }
 
   Widget _buildAccountItem(
-      BuildContext context, {
-        required IconData icon,
-        required String title,
-        required VoidCallback onTap,
-        Color iconColor = const Color(0xFF6797E1),
-        Widget? trailing,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    Color iconColor = const Color(0xFF6797E1),
+    Widget? trailing,
+  }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
@@ -170,11 +165,12 @@ class AccountPage extends StatelessWidget {
                   ),
                 ),
               ),
-              trailing ?? Icon(
-                Icons.chevron_right_rounded,
-                color: isDarkMode ? Colors.white24 : Colors.black26,
-                size: 20,
-              ),
+              trailing ??
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: isDarkMode ? Colors.white24 : Colors.black26,
+                    size: 20,
+                  ),
             ],
           ),
         ),
@@ -189,8 +185,7 @@ class AccountPage extends StatelessWidget {
     Color color = const Color(0xFF6797E1),
     required VoidCallback onTap,
   }) {
-    final bool isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Expanded(
       child: Material(
@@ -200,17 +195,10 @@ class AccountPage extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            constraints: const BoxConstraints(
-              minHeight: 82,
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 8,
-              vertical: 12,
-            ),
+            constraints: const BoxConstraints(minHeight: 82),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             decoration: BoxDecoration(
-              color: isDarkMode
-                  ? const Color(0xFF15171A)
-                  : Colors.white,
+              color: isDarkMode ? const Color(0xFF15171A) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isDarkMode
@@ -221,9 +209,7 @@ class AccountPage extends StatelessWidget {
                   ? const []
                   : [
                       BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: 0.025,
-                        ),
+                        color: Colors.black.withValues(alpha: 0.025),
                         blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
@@ -237,16 +223,10 @@ class AccountPage extends StatelessWidget {
                   height: 42,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: color.withValues(
-                      alpha: isDarkMode ? 0.18 : 0.11,
-                    ),
+                    color: color.withValues(alpha: isDarkMode ? 0.18 : 0.11),
                     borderRadius: BorderRadius.circular(13),
                   ),
-                  child: Icon(
-                    icon,
-                    size: 22,
-                    color: color,
-                  ),
+                  child: Icon(icon, size: 22, color: color),
                 ),
 
                 const SizedBox(height: 9),
@@ -260,9 +240,7 @@ class AccountPage extends StatelessWidget {
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
-                    color: isDarkMode
-                        ? Colors.white
-                        : const Color(0xFF1D2939),
+                    color: isDarkMode ? Colors.white : const Color(0xFF1D2939),
                   ),
                 ),
               ],
@@ -315,12 +293,12 @@ class AccountPage extends StatelessWidget {
         boxShadow: isDarkMode
             ? []
             : [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
       ),
       child: Column(
         children: [
@@ -328,8 +306,9 @@ class AccountPage extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 52,
-                backgroundColor:
-                isDarkMode ? Colors.white10 : const Color(0xFFF3F4F6),
+                backgroundColor: isDarkMode
+                    ? Colors.white10
+                    : const Color(0xFFF3F4F6),
                 backgroundImage: avatarProvider,
                 child: avatarChild,
               ),
@@ -338,7 +317,11 @@ class AccountPage extends StatelessWidget {
                 bottom: 0,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(99),
-                  onTap: () => _navigateIfAllowed(context, verificationStatus, const EditProfilePage()),
+                  onTap: () => _navigateIfAllowed(
+                    context,
+                    verificationStatus,
+                    const EditProfilePage(),
+                  ),
                   child: Container(
                     width: 34,
                     height: 34,
@@ -427,23 +410,20 @@ class AccountPage extends StatelessWidget {
   }
 
   void _showStudentQrDialog(
-      BuildContext context, {
-        required bool isDarkMode,
-        required String qrData,
-        required String name,
-        required String studentId,
-        required String faculty,
-        required String cohort,
-        required String university,
-      }) {
+    BuildContext context, {
+    required bool isDarkMode,
+    required String qrData,
+    required String name,
+    required String studentId,
+    required String faculty,
+    required String cohort,
+    required String university,
+  }) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor:
-        isDarkMode ? const Color(0xFF15171A) : Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(28),
-        ),
+        backgroundColor: isDarkMode ? const Color(0xFF15171A) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
           child: Column(
@@ -472,8 +452,7 @@ class AccountPage extends StatelessWidget {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color:
-                  isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                  color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
                 ),
               ),
 
@@ -484,9 +463,7 @@ class AccountPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: const Color(0xFFE5E7EB),
-                  ),
+                  border: Border.all(color: const Color(0xFFE5E7EB)),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.04),
@@ -512,8 +489,7 @@ class AccountPage extends StatelessWidget {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  color:
-                  isDarkMode ? Colors.white : const Color(0xFF111827),
+                  color: isDarkMode ? Colors.white : const Color(0xFF111827),
                 ),
               ),
 
@@ -539,9 +515,7 @@ class AccountPage extends StatelessWidget {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: isDarkMode
-                      ? Colors.white60
-                      : const Color(0xFF667085),
+                  color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
                 ),
               ),
 
@@ -553,9 +527,7 @@ class AccountPage extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 12,
-                  color: isDarkMode
-                      ? Colors.white38
-                      : const Color(0xFF98A2B3),
+                  color: isDarkMode ? Colors.white38 : const Color(0xFF98A2B3),
                 ),
               ),
 
@@ -595,8 +567,9 @@ class AccountPage extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(
@@ -669,227 +642,235 @@ class AccountPage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                    children: [
+                      _buildProfileHeader(
+                        context: context,
+                        isDarkMode: isDarkMode,
+                        name: name,
+                        faculty: faculty,
+                        photoBase64: photoBase64,
+                        isVerified: isVerified,
+                        verificationStatus: verificationStatus,
+                      ),
 
+                      const SizedBox(height: 16),
 
-                  _buildProfileHeader(
-                    context: context,
-                    isDarkMode: isDarkMode,
-                    name: name,
-                    faculty: faculty,
-                    photoBase64: photoBase64,
-                    isVerified: isVerified,
-                    verificationStatus: verificationStatus,
-                  ),
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _buildQuickAction(
+                              context: context,
+                              icon: Icons.badge_outlined,
+                              label: 'Thẻ MyUni',
+                              color: const Color(0xFF6797E1),
+                              onTap: () {
+                                _showStudentQrDialog(
+                                  context,
+                                  isDarkMode: isDarkMode,
+                                  qrData: qrData,
+                                  name: name,
+                                  studentId: studentId,
+                                  faculty: faculty,
+                                  cohort: cohort,
+                                  university: university,
+                                );
+                              },
+                            ),
 
-                  const SizedBox(height: 16),
+                            const SizedBox(width: 10),
 
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        _buildQuickAction(
-                          context: context,
-                          icon: Icons.badge_outlined,
-                          label: 'Thẻ MyUni',
-                          color: const Color(0xFF6797E1),
-                          onTap: () {
-                            _showStudentQrDialog(
-                              context,
-                              isDarkMode: isDarkMode,
-                              qrData: qrData,
-                              name: name,
-                              studentId: studentId,
-                              faculty: faculty,
-                              cohort: cohort,
-                              university: university,
-                            );
-                          },
+                            _buildQuickAction(
+                              context: context,
+                              icon: Icons.chat_bubble_outline_rounded,
+                              label: 'Đoạn chat',
+                              color: const Color(0xFF6797E1),
+                              onTap: () {
+                                _navigateIfAllowed(
+                                  context,
+                                  verificationStatus,
+                                  const ChatListPage(),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(width: 10),
+
+                            _buildQuickAction(
+                              context: context,
+                              icon: Icons.person_search_rounded,
+                              label: 'Tìm sinh viên',
+                              color: const Color(0xFF6797E1),
+                              onTap: () {
+                                _navigateIfAllowed(
+                                  context,
+                                  verificationStatus,
+                                  const SearchUserPage(),
+                                );
+                              },
+                            ),
+                          ],
                         ),
+                      ),
 
-                        const SizedBox(width: 10),
+                      const SizedBox(height: 22),
 
-                        _buildQuickAction(
-                          context: context,
-                          icon: Icons.chat_bubble_outline_rounded,
-                          label: 'Đoạn chat',
-                          color: const Color(0xFF6797E1),
-                          onTap: () {
-                            _navigateIfAllowed(
+                      _buildSectionTitle('Tài khoản', isDarkMode),
+                      _buildSettingsGroup(
+                        isDarkMode: isDarkMode,
+                        children: [
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.contact_phone_outlined,
+                            title: 'Thông tin liên hệ của tôi',
+                            onTap: () {
+                              _navigateIfAllowed(
+                                context,
+                                verificationStatus,
+                                const SocialContactsPage(),
+                              );
+                            },
+                          ),
+
+                          _buildDivider(isDarkMode),
+
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.key_outlined,
+                            title: 'Đổi mật khẩu',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ChangePasswordPage(),
+                                ),
+                              );
+                            },
+                          ),
+
+                          _buildDivider(isDarkMode),
+
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.settings_outlined,
+                            title: 'Cài đặt',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const SettingsPage(),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      _buildSectionTitle('Nội dung của bạn', isDarkMode),
+                      _buildSettingsGroup(
+                        isDarkMode: isDarkMode,
+                        children: [
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.article_outlined,
+                            title: 'Bài đăng của tôi',
+                            onTap: () => _navigateIfAllowed(
                               context,
                               verificationStatus,
-                              const ChatListPage(),
-                            );
-                          },
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        _buildQuickAction(
-                          context: context,
-                          icon: Icons.person_search_rounded,
-                          label: 'Tìm sinh viên',
-                          color: const Color(0xFF6797E1),
-                          onTap: () {
-                            _navigateIfAllowed(
+                              const MyPostsPage(),
+                            ),
+                          ),
+                          _buildDivider(isDarkMode),
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.rate_review_outlined,
+                            title: 'Đánh giá của tôi',
+                            onTap: () => _navigateIfAllowed(
                               context,
                               verificationStatus,
-                              const SearchUserPage(),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  _buildSectionTitle(
-                    'Tài khoản',
-                    isDarkMode,
-                  ),
-                  _buildSettingsGroup(
-                    isDarkMode: isDarkMode,
-                    children: [
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.contact_phone_outlined,
-                        title: 'Thông tin liên hệ của tôi',
-                        onTap: () {
-                          _navigateIfAllowed(
-                            context,
-                            verificationStatus,
-                            const SocialContactsPage(),
-                          );
-                        },
-                      ),
-
-                      _buildDivider(isDarkMode),
-
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.key_outlined,
-                        title: 'Đổi mật khẩu',
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const ChangePasswordPage(),
+                              const MyReviewsPage(),
                             ),
-                          );
-                        },
-                      ),
-
-                      _buildDivider(isDarkMode),
-
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.settings_outlined,
-                        title: 'Cài đặt',
-                        onTap: () {
-                          Navigator.push(
+                          ),
+                          _buildDivider(isDarkMode),
+                          _buildAccountItem(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const SettingsPage(),
+                            icon: Icons.bookmark_outline_rounded,
+                            title: 'Bài đã lưu',
+                            onTap: () => _navigateIfAllowed(
+                              context,
+                              verificationStatus,
+                              const SavedPostsPage(),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 22),
+                      const SizedBox(height: 22),
 
-                  _buildSectionTitle('Nội dung của bạn', isDarkMode),
-                  _buildSettingsGroup(
-                    isDarkMode: isDarkMode,
-                    children: [
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.article_outlined,
-                        title: 'Bài đăng của tôi',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const MyPostsPage()),
-                      ),
-                      _buildDivider(isDarkMode),
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.rate_review_outlined,
-                        title: 'Đánh giá của tôi',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const MyReviewsPage()),
-                      ),
-                      _buildDivider(isDarkMode),
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.bookmark_outline_rounded,
-                        title: 'Bài đã lưu',
-                        onTap: () => _navigateIfAllowed(context, verificationStatus, const SavedPostsPage()),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 22),
-
-                  _buildSectionTitle('Khác', isDarkMode),
-                  _buildSettingsGroup(
-                    isDarkMode: isDarkMode,
-                    children: [
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.grid_view_outlined,
-                        title: 'Tiện ích',
-                        onTap: () {
-                          Navigator.push(
+                      _buildSectionTitle('Khác', isDarkMode),
+                      _buildSettingsGroup(
+                        isDarkMode: isDarkMode,
+                        children: [
+                          _buildAccountItem(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const UtilitiesPage(),
+                            icon: Icons.grid_view_outlined,
+                            title: 'Tiện ích',
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const UtilitiesPage(),
+                                ),
+                              );
+                            },
+                          ),
+                          _buildDivider(isDarkMode),
+                          _buildAccountItem(
+                            context,
+                            icon: Icons.explore_outlined,
+                            title: 'Hướng dẫn sử dụng',
+                            onTap: () {
+                              showOnboardingDialog(context);
+                            },
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showLogoutDialog(context),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE57373),
+                            foregroundColor: Colors.white,
+                            minimumSize: const Size(double.infinity, 54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
                             ),
-                          );
-                        },
-                      ),
-                      _buildDivider(isDarkMode),
-                      _buildAccountItem(
-                        context,
-                        icon: Icons.explore_outlined,
-                        title: 'Hướng dẫn sử dụng',
-                        onTap: () {
-                          showOnboardingDialog(context);
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () => _showLogoutDialog(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE57373),
-                        foregroundColor: Colors.white,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        elevation: 0,
-                      ),
-                      icon: const Icon(Icons.logout_rounded, size: 20),
-                      label: const Text(
-                        'Đăng xuất',
-                        style: TextStyle(
-                          fontFamily: 'Encode Sans Expanded',
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.logout_rounded, size: 20),
+                          label: const Text(
+                            'Đăng xuất',
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(height: 10),
+                    ],
                   ),
-                  const SizedBox(height: 10),
-                ],
+                ),
               ),
-            )));
+            );
           },
         ),
       ),

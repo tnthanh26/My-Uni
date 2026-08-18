@@ -26,9 +26,7 @@ void main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   // Web demo chủ yếu để test flow student.
   // Nếu NotificationService không support web thì không nên để nó làm crash demo.
@@ -65,9 +63,7 @@ class MyUniStudentWebDemoApp extends StatelessWidget {
         '/otp': (context) => const OtpPage(),
         '/forgot_password': (context) => const ForgotPasswordPage(),
         '/blocked': (context) => const BlockedAccountPage(),
-        '/home': (context) => const UserStatusGate(
-          child: HomePage(),
-        ),
+        '/home': (context) => const UserStatusGate(child: HomePage()),
       },
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
@@ -77,9 +73,7 @@ class MyUniStudentWebDemoApp extends StatelessWidget {
 
       // Quan trọng: bọc toàn bộ app student trong frame điện thoại.
       builder: (context, child) {
-        return MobileWebFrame(
-          child: child ?? const SizedBox.shrink(),
-        );
+        return MobileWebFrame(child: child ?? const SizedBox.shrink());
       },
     );
   }
@@ -156,7 +150,7 @@ class MyUniHomePage extends StatelessWidget {
                   context,
                   'Đăng nhập',
                   primaryColor,
-                      () => Navigator.pushNamed(context, '/login'),
+                  () => Navigator.pushNamed(context, '/login'),
                   isOutlined: false,
                 ),
 
@@ -166,7 +160,7 @@ class MyUniHomePage extends StatelessWidget {
                   context,
                   'Đăng ký tài khoản',
                   primaryColor,
-                      () => Navigator.pushNamed(context, '/signup'),
+                  () => Navigator.pushNamed(context, '/signup'),
                   isOutlined: true,
                 ),
 
@@ -180,70 +174,70 @@ class MyUniHomePage extends StatelessWidget {
   }
 
   Widget _buildButton(
-      BuildContext context,
-      String text,
-      Color color,
-      VoidCallback onPressed, {
-        required bool isOutlined,
-        IconData? icon,
-      }) {
+    BuildContext context,
+    String text,
+    Color color,
+    VoidCallback onPressed, {
+    required bool isOutlined,
+    IconData? icon,
+  }) {
     return SizedBox(
       width: double.infinity,
       height: 56,
       child: isOutlined
           ? OutlinedButton(
-        onPressed: onPressed,
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          foregroundColor: color,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 22),
-              const SizedBox(width: 10),
-            ],
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              onPressed: onPressed,
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: color.withOpacity(0.5), width: 1.5),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                foregroundColor: color,
               ),
-            ),
-          ],
-        ),
-      )
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 22),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            )
           : ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: color,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 22),
-              const SizedBox(width: 10),
-            ],
-            Text(
-              text,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (icon != null) ...[
+                    Icon(icon, size: 22),
+                    const SizedBox(width: 10),
+                  ],
+                  Text(
+                    text,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -22,12 +22,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool get _isNewPasswordSameAsCurrent =>
       _currentPasswordController.text.isNotEmpty &&
       _newPasswordController.text.isNotEmpty &&
-      _currentPasswordController.text.trim() == _newPasswordController.text.trim();
+      _currentPasswordController.text.trim() ==
+          _newPasswordController.text.trim();
 
   bool get _isConfirmPasswordInvalid =>
       _newPasswordController.text.isNotEmpty &&
       _confirmPasswordController.text.isNotEmpty &&
-      _confirmPasswordController.text.trim() != _newPasswordController.text.trim();
+      _confirmPasswordController.text.trim() !=
+          _newPasswordController.text.trim();
 
   @override
   void initState() {
@@ -69,7 +71,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null || user.email == null) {
-      _showSnackBar('Không tìm thấy thông tin đăng nhập. Vui lòng thử lại.', isError: true);
+      _showSnackBar(
+        'Không tìm thấy thông tin đăng nhập. Vui lòng thử lại.',
+        isError: true,
+      );
       setState(() => _isLoading = false);
       return;
     }
@@ -81,24 +86,33 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       );
 
       // Thêm timeout 10 giây để tránh việc xoay quá lâu nếu mạng chậm hoặc Firebase treo
-      await user.reauthenticateWithCredential(credential).timeout(
-        const Duration(seconds: 10),
-        onTimeout: () => throw FirebaseAuthException(
-          code: 'timeout',
-          message: 'Hết thời gian yêu cầu. Vui lòng kiểm tra lại mạng.',
-        ),
-      );
+      await user
+          .reauthenticateWithCredential(credential)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () => throw FirebaseAuthException(
+              code: 'timeout',
+              message: 'Hết thời gian yêu cầu. Vui lòng kiểm tra lại mạng.',
+            ),
+          );
       await user.updatePassword(_newPasswordController.text.trim());
 
       if (mounted) {
-        _showSnackBar('Cập nhật mật khẩu thành công! Vui lòng đăng nhập lại.', isError: false);
-        
+        _showSnackBar(
+          'Cập nhật mật khẩu thành công! Vui lòng đăng nhập lại.',
+          isError: false,
+        );
+
         // Đăng xuất để đảm bảo an toàn
         await FirebaseAuth.instance.signOut();
-        
+
         if (mounted) {
           // Điều hướng về trang login và xóa toàn bộ stack cũ
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/login',
+            (route) => false,
+          );
         }
       }
     } on FirebaseAuthException catch (e) {
@@ -144,7 +158,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDarkMode ? Colors.white : Colors.black),
+          icon: Icon(
+            Icons.arrow_back,
+            color: isDarkMode ? Colors.white : Colors.black,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         backgroundColor: Colors.transparent,
@@ -163,7 +180,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: isDarkMode ? Colors.white : Colors.black, // Chữ trắng khi tối
+                  color: isDarkMode
+                      ? Colors.white
+                      : Colors.black, // Chữ trắng khi tối
                 ),
               ),
               const SizedBox(height: 15),
@@ -171,7 +190,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 'Tạo mật khẩu mới. Vui lòng đảm bảo mật khẩu này khác với mật khẩu trước để tăng cường bảo mật.',
                 style: TextStyle(
                   fontSize: 15,
-                  color: isDarkMode ? Colors.white70 : Colors.black54, // Chữ mờ hơn khi tối
+                  color: isDarkMode
+                      ? Colors.white70
+                      : Colors.black54, // Chữ mờ hơn khi tối
                   height: 1.4,
                 ),
               ),
@@ -182,7 +203,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 controller: _currentPasswordController,
                 hint: 'Nhập mật khẩu hiện tại',
                 obscure: _isObscureCurrent,
-                onToggle: () => setState(() => _isObscureCurrent = !_isObscureCurrent),
+                onToggle: () =>
+                    setState(() => _isObscureCurrent = !_isObscureCurrent),
               ),
               const SizedBox(height: 20),
 
@@ -197,7 +219,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ? 'Mật khẩu mới không được trùng với mật khẩu hiện tại'
                     : null,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Vui lòng không để trống';
+                  if (val == null || val.isEmpty)
+                    return 'Vui lòng không để trống';
                   if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
                   if (val.trim() == _currentPasswordController.text.trim()) {
                     return 'Mật khẩu mới không được trùng với mật khẩu hiện tại';
@@ -212,11 +235,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 controller: _confirmPasswordController,
                 hint: 'Nhập lại mật khẩu mới',
                 obscure: _isObscureConfirm,
-                onToggle: () => setState(() => _isObscureConfirm = !_isObscureConfirm),
+                onToggle: () =>
+                    setState(() => _isObscureConfirm = !_isObscureConfirm),
                 hasError: _isConfirmPasswordInvalid,
-                errorText: _isConfirmPasswordInvalid ? 'Mật khẩu nhập lại không khớp' : null,
+                errorText: _isConfirmPasswordInvalid
+                    ? 'Mật khẩu nhập lại không khớp'
+                    : null,
                 validator: (val) {
-                  if (val == null || val.isEmpty) return 'Vui lòng xác nhận mật khẩu';
+                  if (val == null || val.isEmpty)
+                    return 'Vui lòng xác nhận mật khẩu';
                   if (val.trim() != _newPasswordController.text.trim()) {
                     return 'Mật khẩu nhập lại không khớp';
                   }
@@ -228,27 +255,40 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
               Center(
                 child: ElevatedButton(
-                  onPressed: (_isLoading || _isNewPasswordSameAsCurrent || _isConfirmPasswordInvalid)
+                  onPressed:
+                      (_isLoading ||
+                          _isNewPasswordSameAsCurrent ||
+                          _isConfirmPasswordInvalid)
                       ? null
                       : _updatePassword,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF6797E1),
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 55),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-                    elevation: isDarkMode ? 0 : 4, // Tắt elevation khi tối để nhìn phẳng hơn
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    elevation: isDarkMode
+                        ? 0
+                        : 4, // Tắt elevation khi tối để nhìn phẳng hơn
                     shadowColor: const Color(0xFF6797E1).withOpacity(0.4),
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text(
-                    'Cập nhật mật khẩu',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
+                          'Cập nhật mật khẩu',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 20),
@@ -273,11 +313,13 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
     return FormField<String>(
       initialValue: controller.text,
-      validator: validator ?? (val) {
-        if (val == null || val.isEmpty) return 'Vui lòng không để trống';
-        if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
-        return null;
-      },
+      validator:
+          validator ??
+          (val) {
+            if (val == null || val.isEmpty) return 'Vui lòng không để trống';
+            if (val.length < 6) return 'Mật khẩu phải có ít nhất 6 ký tự';
+            return null;
+          },
       builder: (FormFieldState<String> state) {
         final displayError = errorText ?? state.errorText;
         final fieldHasError = hasError || state.hasError;
@@ -288,12 +330,16 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
             Container(
               decoration: BoxDecoration(
                 // Ô nhập liệu màu xám trắng mờ khi ở Dark Mode
-                color: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
+                color: isDarkMode
+                    ? Colors.white.withOpacity(0.05)
+                    : Colors.white,
                 borderRadius: BorderRadius.circular(30),
                 boxShadow: [
                   BoxShadow(
                     // Bóng đổ nhẹ hơn ở Dark Mode để không bị thô
-                    color: isDarkMode ? Colors.black26 : Colors.black.withOpacity(0.06),
+                    color: isDarkMode
+                        ? Colors.black26
+                        : Colors.black.withOpacity(0.06),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -311,7 +357,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                 obscureText: obscure,
                 style: TextStyle(
                   fontSize: 16,
-                  color: isDarkMode ? Colors.white : Colors.black, // Chữ nhập vào
+                  color: isDarkMode
+                      ? Colors.white
+                      : Colors.black, // Chữ nhập vào
                 ),
                 onChanged: (val) {
                   state.didChange(val);
@@ -324,7 +372,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     color: isDarkMode ? Colors.white38 : Colors.black26,
                     fontSize: 15,
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 25, vertical: 18),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 25,
+                    vertical: 18,
+                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -335,7 +386,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     padding: const EdgeInsets.only(right: 10),
                     child: IconButton(
                       icon: Icon(
-                        obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        obscure
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
                         color: const Color(0xFF6797E1),
                         size: 22,
                       ),

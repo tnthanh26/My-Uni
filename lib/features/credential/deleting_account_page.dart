@@ -6,10 +6,7 @@ import 'package:intl/intl.dart';
 class DeletingAccountPage extends StatefulWidget {
   final DateTime? scheduledDeleteAt;
 
-  const DeletingAccountPage({
-    super.key,
-    this.scheduledDeleteAt,
-  });
+  const DeletingAccountPage({super.key, this.scheduledDeleteAt});
 
   @override
   State<DeletingAccountPage> createState() => _DeletingAccountPageState();
@@ -25,13 +22,9 @@ class _DeletingAccountPageState extends State<DeletingAccountPage> {
     setState(() => _isCancelling = true);
 
     try {
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update({
-        'status': 'active',
-        'scheduledDeleteAt': FieldValue.delete(),
-      });
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'status': 'active', 'scheduledDeleteAt': FieldValue.delete()},
+      );
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Đã khôi phục tài khoản thành công!")),
@@ -40,7 +33,9 @@ class _DeletingAccountPageState extends State<DeletingAccountPage> {
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi khôi phục tài khoản: ${e.toString()}")),
+          SnackBar(
+            content: Text("Lỗi khi khôi phục tài khoản: ${e.toString()}"),
+          ),
         );
       }
     } finally {
@@ -65,7 +60,11 @@ class _DeletingAccountPageState extends State<DeletingAccountPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.delete_forever_rounded, size: 82, color: Colors.orangeAccent),
+              const Icon(
+                Icons.delete_forever_rounded,
+                size: 82,
+                color: Colors.orangeAccent,
+              ),
               const SizedBox(height: 20),
               const Text(
                 'Tài khoản đang chờ xóa',
@@ -89,7 +88,10 @@ class _DeletingAccountPageState extends State<DeletingAccountPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF6797E1),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),

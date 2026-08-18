@@ -43,10 +43,8 @@ class _CreatePostPageState extends State<CreatePostPage> {
     "Tìm việc",
     "Thanh Lý",
     "Nghỉ lễ",
-    "Nghỉ hè"
+    "Nghỉ hè",
   ];
-
-
 
   File? _newImageFile;
   String? _existingImageUrl;
@@ -63,10 +61,14 @@ class _CreatePostPageState extends State<CreatePostPage> {
   void initState() {
     super.initState();
     _isAnonymous = widget.existingData?['isAnonymous'] ?? false;
-    _contentController = TextEditingController(text: widget.existingData?['content'] ?? '');
-    _selectedHashtags = List<String>.from(widget.existingData?['hashtags'] ?? []);
+    _contentController = TextEditingController(
+      text: widget.existingData?['content'] ?? '',
+    );
+    _selectedHashtags = List<String>.from(
+      widget.existingData?['hashtags'] ?? [],
+    );
     _existingImageUrl = widget.existingData?['imageUrl'];
-    
+
     // Load existing poll if editing
     if (widget.existingData?['poll'] != null) {
       _isPollEnabled = true;
@@ -81,7 +83,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
         }
       }
     }
-    
+
     _loadUserData();
   }
 
@@ -97,7 +99,10 @@ class _CreatePostPageState extends State<CreatePostPage> {
   Future<void> _loadUserData() async {
     try {
       String uid = FirebaseAuth.instance.currentUser!.uid;
-      var doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+      var doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .get();
       if (doc.exists) {
         var data = doc.data()!;
         setState(() {
@@ -109,14 +114,20 @@ class _CreatePostPageState extends State<CreatePostPage> {
   }
 
   Future<void> _pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) setState(() => _newImageFile = File(pickedFile.path));
+    final pickedFile = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (pickedFile != null)
+      setState(() => _newImageFile = File(pickedFile.path));
   }
 
   Future<String?> _processImageToBase64(File file) async {
     final bytes = await file.readAsBytes();
     var compressedBytes = await FlutterImageCompress.compressWithList(
-      bytes, quality: 20, minWidth: 500, minHeight: 500,
+      bytes,
+      quality: 20,
+      minWidth: 500,
+      minHeight: 500,
     );
     return base64Encode(compressedBytes);
   }
@@ -142,9 +153,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
     final content = _contentController.text.trim();
 
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Vui lòng nhập nội dung"))
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Vui lòng nhập nội dung")));
       return;
     }
 
@@ -157,7 +168,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
 
       if (options.length < 2) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Vui lòng nhập ít nhất 2 tùy chọn khảo sát"))
+          const SnackBar(
+            content: Text("Vui lòng nhập ít nhất 2 tùy chọn khảo sát"),
+          ),
         );
         return;
       }
@@ -174,14 +187,18 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
 
     // 1. Kiểm tra từ cấm (Blacklist) - Bắt buộc sửa
-    List<String> blacklistViolations = ContentService.getBlacklistedWords(combinedText);
+    List<String> blacklistViolations = ContentService.getBlacklistedWords(
+      combinedText,
+    );
     if (blacklistViolations.isNotEmpty) {
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text("Yêu cầu sửa nội dung"),
-          content: Text("Nội dung hoặc lựa chọn khảo sát chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục."),
+          content: Text(
+            "Nội dung hoặc lựa chọn khảo sát chứa từ ngữ không phù hợp: (${blacklistViolations.join(', ')}). Vui lòng xóa hoặc sửa lại để tiếp tục.",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -194,26 +211,32 @@ class _CreatePostPageState extends State<CreatePostPage> {
     }
 
     // 2. Kiểm tra từ nhạy cảm (Sensitive List) - Cảnh báo trước khi đăng
-    List<String> sensitiveViolations = ContentService.getSensitiveWords(combinedText);
+    List<String> sensitiveViolations = ContentService.getSensitiveWords(
+      combinedText,
+    );
     if (sensitiveViolations.isNotEmpty) {
-      bool shouldSubmit = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => AlertDialog(
-          title: const Text("Cảnh báo từ ngữ nhạy cảm"),
-          content: Text("Nội dung chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bài viết sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text("Quay lại sửa"),
+      bool shouldSubmit =
+          await showDialog<bool>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => AlertDialog(
+              title: const Text("Cảnh báo từ ngữ nhạy cảm"),
+              content: Text(
+                "Nội dung chứa từ ngữ nhạy cảm: (${sensitiveViolations.join(', ')}). Nếu tiếp tục đăng, bài viết sẽ ở trạng thái chờ duyệt bởi Quản trị viên. Bạn có muốn tiếp tục?",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text("Quay lại sửa"),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text("Vẫn đăng"),
+                ),
+              ],
             ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text("Vẫn đăng"),
-            ),
-          ],
-        ),
-      ) ?? false;
+          ) ??
+          false;
 
       if (!shouldSubmit) {
         return;
@@ -248,7 +271,6 @@ class _CreatePostPageState extends State<CreatePostPage> {
             .collection('forum_posts')
             .doc(widget.docId)
             .update(commonData);
-
       } else {
         // Copy commonData và bổ sung các trường khởi tạo ban đầu
         final postData = Map<String, dynamic>.from(commonData);
@@ -262,7 +284,9 @@ class _CreatePostPageState extends State<CreatePostPage> {
         postData['likeCount'] = 0;
         postData['commentCount'] = 0;
 
-        await FirebaseFirestore.instance.collection('forum_posts').add(postData);
+        await FirebaseFirestore.instance
+            .collection('forum_posts')
+            .add(postData);
       }
 
       if (mounted) Navigator.pop(context, true);
@@ -270,7 +294,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
       if (mounted) {
         setState(() => _isSubmitting = false);
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}"))
+          SnackBar(content: Text("Có lỗi xảy ra: ${e.toString()}")),
         );
       }
     }
@@ -293,8 +317,12 @@ class _CreatePostPageState extends State<CreatePostPage> {
             const Color figmaHeaderBlue = Color(0xFF457EC0);
 
             final orderedHashtags = [
-              ..._suggestedHashtags.where((tag) => _selectedHashtags.contains(tag)),
-              ..._suggestedHashtags.where((tag) => !_selectedHashtags.contains(tag)),
+              ..._suggestedHashtags.where(
+                (tag) => _selectedHashtags.contains(tag),
+              ),
+              ..._suggestedHashtags.where(
+                (tag) => !_selectedHashtags.contains(tag),
+              ),
             ];
 
             return Padding(
@@ -356,18 +384,40 @@ class _CreatePostPageState extends State<CreatePostPage> {
                           setState(() {});
                         },
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
-                            color: isSelected ? figmaHeaderBlue.withOpacity(0.2) : (isDarkMode ? Colors.white10 : const Color(0xEBEDEDED)),
+                            color: isSelected
+                                ? figmaHeaderBlue.withOpacity(0.2)
+                                : (isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xEBEDEDED)),
                             borderRadius: BorderRadius.circular(16),
-                            border: isSelected ? Border.all(color: figmaHeaderBlue) : null,
+                            border: isSelected
+                                ? Border.all(color: figmaHeaderBlue)
+                                : null,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.tag, size: 13, color: Color(0xFF306CFE)),
+                              const Icon(
+                                Icons.tag,
+                                size: 13,
+                                color: Color(0xFF306CFE),
+                              ),
                               const SizedBox(width: 2),
-                              Text(tag, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 11, color: isDarkMode ? Colors.white70 : Colors.black)),
+                              Text(
+                                tag,
+                                style: TextStyle(
+                                  fontFamily: 'Encode Sans Expanded',
+                                  fontSize: 11,
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : Colors.black,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -430,7 +480,7 @@ class _CreatePostPageState extends State<CreatePostPage> {
                 color: Color.fromRGBO(0, 0, 0, 0.25),
                 offset: Offset(0, 1),
                 blurRadius: 4,
-              )
+              ),
             ],
           ),
           child: AppBar(
@@ -467,16 +517,23 @@ class _CreatePostPageState extends State<CreatePostPage> {
                   GestureDetector(
                     onTap: _isSubmitting ? null : _submitPost,
                     child: _isSubmitting
-                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : Text(
-                      "Đăng",
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 17,
-                        color: Color(0xFFFFFDFD),
-                      ),
-                    ),
+                            "Đăng",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontWeight: FontWeight.w600,
+                              fontSize: 17,
+                              color: Color(0xFFFFFDFD),
+                            ),
+                          ),
                   ),
                 ],
               ),
@@ -502,311 +559,451 @@ class _CreatePostPageState extends State<CreatePostPage> {
               padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Card (Figma style)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFEEEEEE),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 22.5,
-                      backgroundColor: isDarkMode ? Colors.white10 : Colors.grey[300],
-                      backgroundImage: (!_isAnonymous && _userPhotoBase64 != null) ? MemoryImage(base64Decode(_userPhotoBase64!)) : null,
-                      child: (_isAnonymous || _userPhotoBase64 == null) ? const Icon(Icons.person, color: Colors.white) : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _isAnonymous ? 'Sinh viên ẩn danh' : _realUserName,
-                      style: TextStyle(
-                        fontFamily: 'Encode Sans Expanded',
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: isDarkMode ? Colors.white : Colors.black,
-                      ),
-                    ),
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () => setState(() => _isAnonymous = !_isAnonymous),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.white10 : Colors.white,
-                            shape: BoxShape.circle
-                        ),
-                        child: Icon(
-                          _isAnonymous ? Icons.visibility_off : Icons.visibility,
-                          size: 24,
-                          color: isDarkMode ? Colors.white70 : Colors.black,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              // Hashtags
-              Row(
                 children: [
-                  Text("Chọn chủ đề", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E))),
-                  const SizedBox(width: 8),
-                  Text("(${_selectedHashtags.length}/5)", style: TextStyle(fontFamily: 'Lato', fontSize: 15, color: isDarkMode ? Colors.white38 : const Color(0xFF1E1E1E).withOpacity(0.5))),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 36,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8.0),
-                        child: GestureDetector(
-                          onTap: _showAllHashtagsBottomSheet,
+                  // User Card (Figma style)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isDarkMode
+                          ? Colors.white.withOpacity(0.05)
+                          : const Color(0xFFEEEEEE),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 22.5,
+                          backgroundColor: isDarkMode
+                              ? Colors.white10
+                              : Colors.grey[300],
+                          backgroundImage:
+                              (!_isAnonymous && _userPhotoBase64 != null)
+                              ? MemoryImage(base64Decode(_userPhotoBase64!))
+                              : null,
+                          child: (_isAnonymous || _userPhotoBase64 == null)
+                              ? const Icon(Icons.person, color: Colors.white)
+                              : null,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          _isAnonymous ? 'Sinh viên ẩn danh' : _realUserName,
+                          style: TextStyle(
+                            fontFamily: 'Encode Sans Expanded',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15,
+                            color: isDarkMode ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () =>
+                              setState(() => _isAnonymous = !_isAnonymous),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            width: 36,
+                            height: 36,
                             decoration: BoxDecoration(
-                              color: isDarkMode ? Colors.white10 : const Color(0xEBEDEDED),
-                              borderRadius: BorderRadius.circular(16),
-                              border: null,
+                              color: isDarkMode ? Colors.white10 : Colors.white,
+                              shape: BoxShape.circle,
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "Tất cả",
-                                  style: TextStyle(
-                                    fontFamily: 'Encode Sans Expanded',
-                                    fontSize: 11,
-                                    color: isDarkMode ? Colors.white70 : Colors.black,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Icon(Icons.arrow_forward_ios_outlined, size: 10, color: Color(0xFF306CFE))
-                              ],
+                            child: Icon(
+                              _isAnonymous
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              size: 24,
+                              color: isDarkMode ? Colors.white70 : Colors.black,
                             ),
                           ),
                         ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Hashtags
+                  Row(
+                    children: [
+                      Text(
+                        "Chọn chủ đề",
+                        style: TextStyle(
+                          fontFamily: 'Lato',
+                          fontSize: 15,
+                          color: isDarkMode
+                              ? Colors.white
+                              : const Color(0xFF1E1E1E),
+                        ),
                       ),
-                      ...orderedHashtags.map((tag) {
-                        bool isSelected = _selectedHashtags.contains(tag);
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
-                          child: GestureDetector(
-                            onTap: () => setState(() => isSelected ? _selectedHashtags.remove(tag) : (_selectedHashtags.length < 5 ? _selectedHashtags.add(tag) : null)),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: isSelected ? figmaHeaderBlue.withOpacity(0.2) : (isDarkMode ? Colors.white10 : const Color(0xEBEDEDED)),
-                                borderRadius: BorderRadius.circular(16),
-                                border: isSelected ? Border.all(color: figmaHeaderBlue) : null,
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.tag, size: 13, color: Color(0xFF306CFE)),
-                                  const SizedBox(width: 2),
-                                  Text(tag, style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 10, color: isDarkMode ? Colors.white70 : Colors.black)),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                      const SizedBox(width: 8),
+                      Text(
+                        "(${_selectedHashtags.length}/5)",
+                        style: TextStyle(
+                          fontFamily: 'Lato',
+                          fontSize: 15,
+                          color: isDarkMode
+                              ? Colors.white38
+                              : const Color(0xFF1E1E1E).withOpacity(0.5),
+                        ),
+                      ),
                     ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Content Area
-              Text("Nội dung", style: TextStyle(fontFamily: 'Encode Sans Expanded', fontSize: 15, color: isDarkMode ? Colors.white : const Color(0xFF1E1E1E))),
-              const SizedBox(height: 8),
-              SizedBox(
-                height: 219,
-                child: TextField(
-                  controller: _contentController,
-                  maxLines: null,
-                  expands: true,
-                  textAlignVertical: TextAlignVertical.top,
-                  style: TextStyle(
-                    fontFamily: 'Encode Sans Expanded',
-                    fontSize: 15,
-                    color: isDarkMode
-                        ? Colors.white
-                        : const Color(0xFF1E1E1E),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    height: 36,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: GestureDetector(
+                              onTap: _showAllHashtagsBottomSheet,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDarkMode
+                                      ? Colors.white10
+                                      : const Color(0xEBEDEDED),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: null,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "Tất cả",
+                                      style: TextStyle(
+                                        fontFamily: 'Encode Sans Expanded',
+                                        fontSize: 11,
+                                        color: isDarkMode
+                                            ? Colors.white70
+                                            : Colors.black,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.arrow_forward_ios_outlined,
+                                      size: 10,
+                                      color: Color(0xFF306CFE),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          ...orderedHashtags.map((tag) {
+                            bool isSelected = _selectedHashtags.contains(tag);
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8.0),
+                              child: GestureDetector(
+                                onTap: () => setState(
+                                  () => isSelected
+                                      ? _selectedHashtags.remove(tag)
+                                      : (_selectedHashtags.length < 5
+                                            ? _selectedHashtags.add(tag)
+                                            : null),
+                                ),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? figmaHeaderBlue.withOpacity(0.2)
+                                        : (isDarkMode
+                                              ? Colors.white10
+                                              : const Color(0xEBEDEDED)),
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: isSelected
+                                        ? Border.all(color: figmaHeaderBlue)
+                                        : null,
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.tag,
+                                        size: 13,
+                                        color: Color(0xFF306CFE),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        tag,
+                                        style: TextStyle(
+                                          fontFamily: 'Encode Sans Expanded',
+                                          fontSize: 10,
+                                          color: isDarkMode
+                                              ? Colors.white70
+                                              : Colors.black,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
                   ),
-                  decoration: InputDecoration(
-                    hintText: "Vui lòng nhập văn bản",
-                    hintStyle: TextStyle(
+                  const SizedBox(height: 24),
+
+                  // Content Area
+                  Text(
+                    "Nội dung",
+                    style: TextStyle(
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 15,
                       color: isDarkMode
-                          ? Colors.white30
-                          : const Color(0xFF8E8E93),
-                    ),
-                    contentPadding: const EdgeInsets.all(16),
-
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide(
-                        color: isDarkMode
-                            ? Colors.white24
-                            : const Color(0xFF8E8E93),
-                      ),
-                    ),
-
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: const BorderSide(
-                        color: Color(0xFF457EC0),
-                        width: 2,
-                      ),
+                          ? Colors.white
+                          : const Color(0xFF1E1E1E),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 24),
-
-              // Poll Section Toggle
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.poll_outlined, color: figmaHeaderBlue),
-                      const SizedBox(width: 8),
-                      Text(
-                        "Tạo cuộc khảo sát",
-                        style: TextStyle(
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 219,
+                    child: TextField(
+                      controller: _contentController,
+                      maxLines: null,
+                      expands: true,
+                      textAlignVertical: TextAlignVertical.top,
+                      style: TextStyle(
+                        fontFamily: 'Encode Sans Expanded',
+                        fontSize: 15,
+                        color: isDarkMode
+                            ? Colors.white
+                            : const Color(0xFF1E1E1E),
+                      ),
+                      decoration: InputDecoration(
+                        hintText: "Vui lòng nhập văn bản",
+                        hintStyle: TextStyle(
                           fontFamily: 'Encode Sans Expanded',
                           fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: isDarkMode ? Colors.white : Colors.black,
+                          color: isDarkMode
+                              ? Colors.white30
+                              : const Color(0xFF8E8E93),
+                        ),
+                        contentPadding: const EdgeInsets.all(16),
+
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(
+                            color: isDarkMode
+                                ? Colors.white24
+                                : const Color(0xFF8E8E93),
+                          ),
+                        ),
+
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: const BorderSide(
+                            color: Color(0xFF457EC0),
+                            width: 2,
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                  Switch(
-                    value: _isPollEnabled,
-                    onChanged: (val) => setState(() => _isPollEnabled = val),
-                    activeColor: figmaHeaderBlue,
-                  ),
-                ],
-              ),
+                  const SizedBox(height: 24),
 
-              if (_isPollEnabled) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.white.withOpacity(0.05) : const Color(0xFFF5F5F5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: isDarkMode ? Colors.white12 : Colors.black12),
-                  ),
-                  child: Column(
+                  // Poll Section Toggle
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      ..._pollOptionControllers.asMap().entries.map((entry) {
-                        int idx = entry.key;
-                        TextEditingController controller = entry.value;
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: controller,
-                                  style: TextStyle(fontSize: 14, color: isDarkMode ? Colors.white : Colors.black),
-                                  decoration: InputDecoration(
-                                    hintText: "Lựa chọn ${idx + 1}",
-                                    hintStyle: TextStyle(fontSize: 13, color: isDarkMode ? Colors.white30 : Colors.grey),
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                                  ),
-                                ),
-                              ),
-                              if (_pollOptionControllers.length > 2)
-                                IconButton(
-                                  icon: const Icon(Icons.remove_circle_outline, color: Colors.redAccent),
-                                  onPressed: () => _removePollOption(idx),
-                                ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                      if (_pollOptionControllers.length < 5)
-                        TextButton.icon(
-                          onPressed: _addPollOption,
-                          icon: const Icon(Icons.add_circle_outline, size: 18),
-                          label: const Text("Thêm lựa chọn"),
-                          style: TextButton.styleFrom(foregroundColor: figmaHeaderBlue),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-
-              // Upload Image
-              if (!_isPollEnabled) // Hide image upload if poll is enabled (optional, or keep both)
-                GestureDetector(
-                  onTap: _pickImage,
-                  child: CustomPaint(
-                    painter: DashRectPainter(color: isDarkMode ? Colors.white30 : figmaDashedColor),
-                    child: Container(
-                      width: 130,
-                      height: 130,
-                      alignment: Alignment.center,
-                      child: (_newImageFile != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty))
-                          ? Stack(
+                      Row(
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(18),
-                            child: _newImageFile != null
-                                ? Image.file(_newImageFile!, width: 120, height: 120, fit: BoxFit.cover)
-                                : Image.memory(base64Decode(_existingImageUrl!), width: 120, height: 120, fit: BoxFit.cover),
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () => setState(() { _newImageFile = null; _existingImageUrl = null; }),
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-                                child: const Icon(Icons.close, color: Colors.white, size: 14),
-                              ),
+                          Icon(Icons.poll_outlined, color: figmaHeaderBlue),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Tạo cuộc khảo sát",
+                            style: TextStyle(
+                              fontFamily: 'Encode Sans Expanded',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: isDarkMode ? Colors.white : Colors.black,
                             ),
                           ),
                         ],
-                      )
-                          : Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          "Nhấn để thêm Ảnh",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontFamily: 'Encode Sans Expanded',
-                            fontSize: 12,
-                            color: isDarkMode ? Colors.white38 : figmaDashedColor,
-                          ),
+                      ),
+                      Switch(
+                        value: _isPollEnabled,
+                        onChanged: (val) =>
+                            setState(() => _isPollEnabled = val),
+                        activeColor: figmaHeaderBlue,
+                      ),
+                    ],
+                  ),
+
+                  if (_isPollEnabled) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isDarkMode
+                            ? Colors.white.withOpacity(0.05)
+                            : const Color(0xFFF5F5F5),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isDarkMode ? Colors.white12 : Colors.black12,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          ..._pollOptionControllers.asMap().entries.map((
+                            entry,
+                          ) {
+                            int idx = entry.key;
+                            TextEditingController controller = entry.value;
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      controller: controller,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: isDarkMode
+                                            ? Colors.white
+                                            : Colors.black,
+                                      ),
+                                      decoration: InputDecoration(
+                                        hintText: "Lựa chọn ${idx + 1}",
+                                        hintStyle: TextStyle(
+                                          fontSize: 13,
+                                          color: isDarkMode
+                                              ? Colors.white30
+                                              : Colors.grey,
+                                        ),
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 12,
+                                              vertical: 8,
+                                            ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            8,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  if (_pollOptionControllers.length > 2)
+                                    IconButton(
+                                      icon: const Icon(
+                                        Icons.remove_circle_outline,
+                                        color: Colors.redAccent,
+                                      ),
+                                      onPressed: () => _removePollOption(idx),
+                                    ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                          if (_pollOptionControllers.length < 5)
+                            TextButton.icon(
+                              onPressed: _addPollOption,
+                              icon: const Icon(
+                                Icons.add_circle_outline,
+                                size: 18,
+                              ),
+                              label: const Text("Thêm lựa chọn"),
+                              style: TextButton.styleFrom(
+                                foregroundColor: figmaHeaderBlue,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+
+                  // Upload Image
+                  if (!_isPollEnabled) // Hide image upload if poll is enabled (optional, or keep both)
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CustomPaint(
+                        painter: DashRectPainter(
+                          color: isDarkMode ? Colors.white30 : figmaDashedColor,
+                        ),
+                        child: Container(
+                          width: 130,
+                          height: 130,
+                          alignment: Alignment.center,
+                          child:
+                              (_newImageFile != null ||
+                                  (_existingImageUrl != null &&
+                                      _existingImageUrl!.isNotEmpty))
+                              ? Stack(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(18),
+                                      child: _newImageFile != null
+                                          ? Image.file(
+                                              _newImageFile!,
+                                              width: 120,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Image.memory(
+                                              base64Decode(_existingImageUrl!),
+                                              width: 120,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                            ),
+                                    ),
+                                    Positioned(
+                                      top: 0,
+                                      right: 0,
+                                      child: GestureDetector(
+                                        onTap: () => setState(() {
+                                          _newImageFile = null;
+                                          _existingImageUrl = null;
+                                        }),
+                                        child: Container(
+                                          padding: const EdgeInsets.all(2),
+                                          decoration: const BoxDecoration(
+                                            color: Colors.black54,
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.all(8.0),
+                                  child: Text(
+                                    "Nhấn để thêm Ảnh",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontFamily: 'Encode Sans Expanded',
+                                      fontSize: 12,
+                                      color: isDarkMode
+                                          ? Colors.white38
+                                          : figmaDashedColor,
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ),
-    )));
+    );
   }
 }
 

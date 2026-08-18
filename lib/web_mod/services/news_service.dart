@@ -13,17 +13,13 @@ class NewsService {
     final user = _auth.currentUser;
     if (user == null) return Stream.value([]);
 
-    final controller =
-    StreamController<List<Map<String, dynamic>>>.broadcast();
+    final controller = StreamController<List<Map<String, dynamic>>>.broadcast();
 
     List<Map<String, dynamic>> officialItems = [];
     List<Map<String, dynamic>> facultyItems = [];
 
     void emitCombined() {
-      final results = <Map<String, dynamic>>[
-        ...officialItems,
-        ...facultyItems,
-      ];
+      final results = <Map<String, dynamic>>[...officialItems, ...facultyItems];
 
       results.sort((a, b) {
         DateTime getDateTime(Map<String, dynamic> item) {
@@ -53,12 +49,14 @@ class NewsService {
             .where('createdBy', isEqualTo: user.uid);
       }
 
-      return _firestore.collection(collectionPath).where(
-        Filter.or(
-          Filter('createdBy', isEqualTo: user.uid),
-          Filter('createdByEmail', isEqualTo: email),
-        ),
-      );
+      return _firestore
+          .collection(collectionPath)
+          .where(
+            Filter.or(
+              Filter('createdBy', isEqualTo: user.uid),
+              Filter('createdByEmail', isEqualTo: email),
+            ),
+          );
     }
 
     late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
@@ -66,21 +64,23 @@ class NewsService {
     late final StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
     facultySubscription;
 
-    officialSubscription =
-        ownedQuery('official_news').snapshots().listen((snapshot) {
-          officialItems = snapshot.docs.map((doc) {
-            return {
-              ...doc.data(),
-              'docId': doc.id,
-              'collectionPath': 'official_news',
-            };
-          }).toList();
+    officialSubscription = ownedQuery('official_news').snapshots().listen((
+      snapshot,
+    ) {
+      officialItems = snapshot.docs.map((doc) {
+        return {
+          ...doc.data(),
+          'docId': doc.id,
+          'collectionPath': 'official_news',
+        };
+      }).toList();
 
-          emitCombined();
-        }, onError: controller.addError);
+      emitCombined();
+    }, onError: controller.addError);
 
-    facultySubscription =
-        ownedQuery('faculty_official_news').snapshots().listen((snapshot) {
+    facultySubscription = ownedQuery('faculty_official_news')
+        .snapshots()
+        .listen((snapshot) {
           facultyItems = snapshot.docs.map((doc) {
             return {
               ...doc.data(),
@@ -151,8 +151,9 @@ class NewsService {
     final publishedDateKey = DateFormat('yyyy-MM-dd').format(now);
     final publishedDateText = DateFormat('dd/MM/yyyy').format(now);
 
-    final targetCollection =
-    isFacultyNews ? 'faculty_official_news' : 'official_news';
+    final targetCollection = isFacultyNews
+        ? 'faculty_official_news'
+        : 'official_news';
 
     final cleanFacultyId = facultyId?.trim();
     final cleanFacultyCode = facultyCode?.trim();
@@ -174,8 +175,9 @@ class NewsService {
         .toSet()
         .toList();
 
-    final normalizedImageSource =
-    cleanImageUrl.isEmpty ? 'none' : imageSource.trim();
+    final normalizedImageSource = cleanImageUrl.isEmpty
+        ? 'none'
+        : imageSource.trim();
 
     final docData = <String, dynamic>{
       'authorAvatar': authorAvatar,

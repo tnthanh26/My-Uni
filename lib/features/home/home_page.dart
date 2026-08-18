@@ -73,7 +73,8 @@ class WeatherAlertTheme {
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  static final ValueNotifier<bool> showWalkthroughNotifier = ValueNotifier<bool>(false);
+  static final ValueNotifier<bool> showWalkthroughNotifier =
+      ValueNotifier<bool>(false);
   static final ValueNotifier<int> activeTabNotifier = ValueNotifier<int>(0);
 
   @override
@@ -121,40 +122,55 @@ class HomePageState extends State<HomePage> {
         .doc(user.uid)
         .snapshots()
         .listen((snapshot) async {
-      if (snapshot.exists) return;
+          if (snapshot.exists) return;
 
-      // User document was deleted from Firestore (e.g. by Mod)
-      _userDocSubscription?.cancel();
+          // User document was deleted from Firestore (e.g. by Mod)
+          _userDocSubscription?.cancel();
 
-      if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => AlertDialog(
-            title: const Text('Tài khoản đã bị xóa', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
-            content: const Text(
-              'Tài khoản của bạn đã bị xóa khỏi hệ thống bởi kiểm duyệt viên.\n\nBạn sẽ được tự động đăng xuất để có thể đăng ký tài khoản mới.',
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () => Navigator.pop(ctx),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
-                child: const Text('Đồng ý', style: TextStyle(color: Colors.white)),
+          if (mounted) {
+            await showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (ctx) => AlertDialog(
+                title: const Text(
+                  'Tài khoản đã bị xóa',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
+                content: const Text(
+                  'Tài khoản của bạn đã bị xóa khỏi hệ thống bởi kiểm duyệt viên.\n\nBạn sẽ được tự động đăng xuất để có thể đăng ký tài khoản mới.',
+                ),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                    ),
+                    child: const Text(
+                      'Đồng ý',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
+            );
 
-        await FirebaseAuth.instance.signOut();
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.remove('user_token');
-        await prefs.remove('saved_user');
+            await FirebaseAuth.instance.signOut();
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove('user_token');
+            await prefs.remove('saved_user');
 
-        if (mounted) {
-          Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-        }
-      }
-    });
+            if (mounted) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                '/login',
+                (route) => false,
+              );
+            }
+          }
+        });
   }
 
   DateTime _combineTodayAndTime(String time) {
@@ -167,13 +183,7 @@ class HomePageState extends State<HomePage> {
       } else {
         parsed = DateFormat('HH:mm').parse(input);
       }
-      return DateTime(
-        now.year,
-        now.month,
-        now.day,
-        parsed.hour,
-        parsed.minute,
-      );
+      return DateTime(now.year, now.month, now.day, parsed.hour, parsed.minute);
     } catch (e) {
       debugPrint('Cannot parse schedule time: $time, error: $e');
       return DateTime(now.year, now.month, now.day, 7, 30);
@@ -215,21 +225,28 @@ class HomePageState extends State<HomePage> {
 
       final localSchedule = await MySpaceFirebaseService().getSchedule();
       final todayWeekday = DateTime.now().weekday + 1; // T2=2, T3=3... CN=8
-      final todayClasses = localSchedule.where((c) => c.weekday == todayWeekday).toList();
+      final todayClasses = localSchedule
+          .where((c) => c.weekday == todayWeekday)
+          .toList();
       if (todayClasses.isEmpty) return;
 
-      final defaultCampusId = CampusData.mapUniversityToCampusId(userUniversity);
-      final scheduleItems = todayClasses.map((c) {
-        final classCampusId = c.campusId ?? defaultCampusId ?? '';
-        return ScheduleItem(
-          id: c.id,
-          title: c.name,
-          startTime: _combineTodayAndTime(c.start),
-          endTime: _combineTodayAndTime(c.end),
-          campusId: classCampusId,
-          room: c.room,
-        );
-      }).where((item) => item.campusId.isNotEmpty).toList();
+      final defaultCampusId = CampusData.mapUniversityToCampusId(
+        userUniversity,
+      );
+      final scheduleItems = todayClasses
+          .map((c) {
+            final classCampusId = c.campusId ?? defaultCampusId ?? '';
+            return ScheduleItem(
+              id: c.id,
+              title: c.name,
+              startTime: _combineTodayAndTime(c.start),
+              endTime: _combineTodayAndTime(c.end),
+              campusId: classCampusId,
+              room: c.room,
+            );
+          })
+          .where((item) => item.campusId.isNotEmpty)
+          .toList();
 
       if (scheduleItems.isEmpty) return;
 
@@ -403,8 +420,9 @@ class HomePageState extends State<HomePage> {
                                     fontFamily: 'Inter',
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w600,
-                                    color:
-                                        const Color(0xFFE6EEF4).withOpacity(0.8),
+                                    color: const Color(
+                                      0xFFE6EEF4,
+                                    ).withOpacity(0.8),
                                     height: 1.4,
                                   ),
                                 ),
@@ -450,6 +468,7 @@ class HomePageState extends State<HomePage> {
       },
     );
   }
+
   Future<void> _syncExistingProfileData() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -662,7 +681,9 @@ class HomePageState extends State<HomePage> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi: ${e.toString()}")));
       }
     }
   }
@@ -694,15 +715,9 @@ class HomePageState extends State<HomePage> {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.16),
-              ),
+              border: Border.all(color: Colors.white.withOpacity(0.16)),
             ),
-            child: Icon(
-              icon,
-              color: Colors.white,
-              size: 20,
-            ),
+            child: Icon(icon, color: Colors.white, size: 20),
           ),
         ),
       ),
@@ -729,11 +744,7 @@ class HomePageState extends State<HomePage> {
               clipBehavior: Clip.none,
               alignment: Alignment.center,
               children: [
-                Icon(
-                  icon,
-                  color: Colors.white,
-                  size: 22,
-                ),
+                Icon(icon, color: Colors.white, size: 22),
                 if (unreadCount > 0)
                   Positioned(
                     right: 1,
@@ -743,9 +754,7 @@ class HomePageState extends State<HomePage> {
                         minWidth: 14,
                         minHeight: 14,
                       ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 3,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: const Color(0xFFF04438),
@@ -756,9 +765,7 @@ class HomePageState extends State<HomePage> {
                         ),
                       ),
                       child: Text(
-                        unreadCount > 9
-                            ? '9+'
-                            : unreadCount.toString(),
+                        unreadCount > 9 ? '9+' : unreadCount.toString(),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 8,
@@ -794,7 +801,12 @@ class HomePageState extends State<HomePage> {
   Widget _buildHeaderForeground(BuildContext context) {
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.only(left: 20, right: 20, top: 10, bottom: 35),
+        padding: const EdgeInsets.only(
+          left: 20,
+          right: 20,
+          top: 10,
+          bottom: 35,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -806,7 +818,10 @@ class HomePageState extends State<HomePage> {
                   backgroundColor: Colors.white,
                   child: Padding(
                     padding: const EdgeInsets.all(4.0),
-                    child: Image.asset('assets/images/logoAppName.png', fit: BoxFit.contain),
+                    child: Image.asset(
+                      'assets/images/logoAppName.png',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -825,16 +840,11 @@ class HomePageState extends State<HomePage> {
 
             // Cụm phải: Search + Chat + Notification trong cùng pill
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 6,
-                vertical: 5,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
               decoration: BoxDecoration(
                 color: Colors.black.withOpacity(0.32),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.16),
-                ),
+                border: Border.all(color: Colors.white.withOpacity(0.16)),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -853,7 +863,7 @@ class HomePageState extends State<HomePage> {
                             SearchScope.official,
                             SearchScope.forum,
                             SearchScope.review,
-                            SearchScope.material
+                            SearchScope.material,
                           ][tabIndex],
                         ),
                       );
@@ -868,9 +878,8 @@ class HomePageState extends State<HomePage> {
                   StreamBuilder<List<MyUniNotification>>(
                     stream: NotificationService.getMessageNotifications(),
                     builder: (context, snapshot) {
-                      final int unreadChatCount = snapshot.data
-                          ?.where((noti) => !noti.isRead)
-                          .length ??
+                      final int unreadChatCount =
+                          snapshot.data?.where((noti) => !noti.isRead).length ??
                           0;
 
                       return _buildHeaderNotificationButton(
@@ -882,7 +891,7 @@ class HomePageState extends State<HomePage> {
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                              const MessageNotificationScreen(),
+                                  const MessageNotificationScreen(),
                             ),
                           );
                         },
@@ -898,9 +907,8 @@ class HomePageState extends State<HomePage> {
                   StreamBuilder<List<MyUniNotification>>(
                     stream: NotificationService.getNotifications(),
                     builder: (context, snapshot) {
-                      final int unreadCount = snapshot.data
-                          ?.where((noti) => !noti.isRead)
-                          .length ??
+                      final int unreadCount =
+                          snapshot.data?.where((noti) => !noti.isRead).length ??
                           0;
 
                       return _buildHeaderNotificationButton(
@@ -911,8 +919,7 @@ class HomePageState extends State<HomePage> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                              const NotificationScreen(),
+                              builder: (context) => const NotificationScreen(),
                             ),
                           );
                         },
@@ -957,14 +964,14 @@ class HomePageState extends State<HomePage> {
                   ),
                   child: Column(
                     children: [
-
-
                       // TabBar được đặt ngay đầu Container nội dung
                       Container(
                         width: double.infinity,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+                          color: isDarkMode
+                              ? const Color(0xFF1C1C1E)
+                              : Colors.white,
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(20),
                             topRight: Radius.circular(20),
@@ -974,8 +981,13 @@ class HomePageState extends State<HomePage> {
                           isScrollable: true,
                           tabAlignment: TabAlignment.center,
                           indicatorSize: TabBarIndicatorSize.tab,
-                          labelPadding: const EdgeInsets.symmetric(horizontal: 20),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          labelPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                           indicator: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             gradient: const LinearGradient(
@@ -985,9 +997,19 @@ class HomePageState extends State<HomePage> {
                             ),
                           ),
                           labelColor: Colors.white,
-                          unselectedLabelColor: isDarkMode ? Colors.white70 : Colors.black87,
-                          labelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w600, fontSize: 16),
-                          unselectedLabelStyle: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.w400, fontSize: 12),
+                          unselectedLabelColor: isDarkMode
+                              ? Colors.white70
+                              : Colors.black87,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                          unselectedLabelStyle: const TextStyle(
+                            fontFamily: 'Nunito',
+                            fontWeight: FontWeight.w400,
+                            fontSize: 12,
+                          ),
                           dividerColor: Colors.transparent,
                           tabs: const [
                             Tab(text: 'Chính thức'),
@@ -1002,10 +1024,38 @@ class HomePageState extends State<HomePage> {
                       Expanded(
                         child: TabBarView(
                           children: [
-                            OfficialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-                            ForumTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'general')),
-                            ReviewTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
-                            MaterialTab(onSave: (id, data) => _toggleSavePost(context: context, docId: id, data: data, saveType: 'course')),
+                            OfficialTab(
+                              onSave: (id, data) => _toggleSavePost(
+                                context: context,
+                                docId: id,
+                                data: data,
+                                saveType: 'general',
+                              ),
+                            ),
+                            ForumTab(
+                              onSave: (id, data) => _toggleSavePost(
+                                context: context,
+                                docId: id,
+                                data: data,
+                                saveType: 'general',
+                              ),
+                            ),
+                            ReviewTab(
+                              onSave: (id, data) => _toggleSavePost(
+                                context: context,
+                                docId: id,
+                                data: data,
+                                saveType: 'course',
+                              ),
+                            ),
+                            MaterialTab(
+                              onSave: (id, data) => _toggleSavePost(
+                                context: context,
+                                docId: id,
+                                data: data,
+                                saveType: 'course',
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -1090,8 +1140,10 @@ class HomePageState extends State<HomePage> {
 
         final double cardWidth = (screenWidth * 0.88).clamp(280.0, 360.0);
         final double cardHeight = 245;
-        final double cardLeft = ((screenWidth - cardWidth) / 2)
-            .clamp(12.0, screenWidth - cardWidth - 12);
+        final double cardLeft = ((screenWidth - cardWidth) / 2).clamp(
+          12.0,
+          screenWidth - cardWidth - 12,
+        );
 
         return SizedBox(
           width: screenWidth,
@@ -1155,7 +1207,9 @@ class HomePageState extends State<HomePage> {
                               height: 36,
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: stepData.accentColor.withValues(alpha: 0.15),
+                                color: stepData.accentColor.withValues(
+                                  alpha: 0.15,
+                                ),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
@@ -1175,13 +1229,18 @@ class HomePageState extends State<HomePage> {
                                   fontSize: 16,
                                   fontWeight: FontWeight.w800,
                                   decoration: TextDecoration.none,
-                                  color: isDarkMode ? Colors.white : const Color(0xFF1F2937),
+                                  color: isDarkMode
+                                      ? Colors.white
+                                      : const Color(0xFF1F2937),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: isDarkMode
                                     ? Colors.white.withValues(alpha: 0.08)
@@ -1195,7 +1254,9 @@ class HomePageState extends State<HomePage> {
                                   fontSize: 12,
                                   fontWeight: FontWeight.w700,
                                   decoration: TextDecoration.none,
-                                  color: isDarkMode ? Colors.white70 : const Color(0xFF6B7280),
+                                  color: isDarkMode
+                                      ? Colors.white70
+                                      : const Color(0xFF6B7280),
                                 ),
                               ),
                             ),
@@ -1238,7 +1299,9 @@ class HomePageState extends State<HomePage> {
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                                 decoration: TextDecoration.none,
-                                color: isDarkMode ? Colors.white38 : Colors.black38,
+                                color: isDarkMode
+                                    ? Colors.white38
+                                    : Colors.black38,
                               ),
                             ),
                           ),
@@ -1315,7 +1378,9 @@ class HomePageState extends State<HomePage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final statusBarStyle = (_selectedIndex == 4)
         ? (isDarkMode ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark)
-        : SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent);
+        : SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+          );
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: statusBarStyle,
@@ -1328,9 +1393,7 @@ class HomePageState extends State<HomePage> {
               bottomNavigationBar: _buildBottomNav(),
             ),
             if (_showWalkthrough)
-              Positioned.fill(
-                child: _buildWalkthroughOverlay(),
-              ),
+              Positioned.fill(child: _buildWalkthroughOverlay()),
           ],
         ),
       ),
@@ -1343,25 +1406,31 @@ class HomePageState extends State<HomePage> {
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF6F6F6),
-        border: Border(top: BorderSide(color: isDarkMode ? Colors.white10 : Colors.black.withValues(alpha: 0.1))),
+        border: Border(
+          top: BorderSide(
+            color: isDarkMode
+                ? Colors.white10
+                : Colors.black.withValues(alpha: 0.1),
+          ),
+        ),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 16,
-              offset: const Offset(0, -4)
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
       child: AnimatedBottomNav(
-         currentIndex: _selectedIndex,
-         onTap: _onItemTapped,
-         items: [
-           AnimatedNavItem(icon: 'assets/icons/home.svg',    label: 'Home'),
-           AnimatedNavItem(icon: 'assets/icons/event.svg',   label: 'Sự kiện'),
-           AnimatedNavItem(icon: 'assets/icons/chat.svg',    label: 'Hỏi đáp'),
-           AnimatedNavItem(icon: 'assets/icons/space.svg',   label: 'Góc nhỏ'),
-           AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài khoản'),
-         ],
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+        items: [
+          AnimatedNavItem(icon: 'assets/icons/home.svg', label: 'Home'),
+          AnimatedNavItem(icon: 'assets/icons/event.svg', label: 'Sự kiện'),
+          AnimatedNavItem(icon: 'assets/icons/chat.svg', label: 'Hỏi đáp'),
+          AnimatedNavItem(icon: 'assets/icons/space.svg', label: 'Góc nhỏ'),
+          AnimatedNavItem(icon: 'assets/icons/account.svg', label: 'Tài khoản'),
+        ],
       ),
     );
   }

@@ -31,7 +31,7 @@ class FacultyHelper {
         'công nghệ thông tin',
         'cntt',
         'fit',
-        'khoa công nghệ thông tin'
+        'khoa công nghệ thông tin',
       ],
     ),
     FacultyInfo(
@@ -40,13 +40,7 @@ class FacultyHelper {
       name: 'Khoa Hóa học',
       shortName: 'Khoa Hóa',
       icon: Icons.science_rounded,
-      matchKeywords: [
-        'hóa học',
-        'chem',
-        'chemistry',
-        'khoa hóa học',
-        'hóa'
-      ],
+      matchKeywords: ['hóa học', 'chem', 'chemistry', 'khoa hóa học', 'hóa'],
     ),
     FacultyInfo(
       id: 'physics',
@@ -60,7 +54,7 @@ class FacultyHelper {
         'physics',
         'vật lý – vật lý kỹ thuật',
         'vật lý - vật lý kỹ thuật',
-        'khoa vật lý - vật lý kỹ thuật'
+        'khoa vật lý - vật lý kỹ thuật',
       ],
     ),
   ];

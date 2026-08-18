@@ -14,8 +14,7 @@ import 'services/mod_notification_service.dart';
 import 'services/user_moderation_service.dart';
 import 'services/user_activity_service.dart';
 import 'services/post_moderation_service.dart';
-import 'file_helper_stub.dart'
-    if (dart.library.html) 'file_helper_web.dart';
+import 'file_helper_stub.dart' if (dart.library.html) 'file_helper_web.dart';
 
 class ModDashboard extends StatefulWidget {
   const ModDashboard({super.key});
@@ -48,7 +47,8 @@ class _ModDashboardState extends State<ModDashboard> {
 
   final List<String> _filterLabels = ['Bị báo cáo', 'Tất cả bài viết'];
 
-  bool get _isOfficialNews => _collections[_selectedCollIndex] == 'official_news';
+  bool get _isOfficialNews =>
+      _collections[_selectedCollIndex] == 'official_news';
   bool get _isUsers => _collections[_selectedCollIndex] == 'users';
 
   @override
@@ -66,7 +66,11 @@ class _ModDashboardState extends State<ModDashboard> {
             child: Column(
               children: [
                 const SizedBox(height: 40),
-                const Icon(Icons.shield_outlined, color: Colors.blueAccent, size: 50),
+                const Icon(
+                  Icons.shield_outlined,
+                  color: Colors.blueAccent,
+                  size: 50,
+                ),
                 const SizedBox(height: 10),
                 const Text(
                   "MYUNI MOD",
@@ -83,7 +87,11 @@ class _ModDashboardState extends State<ModDashboard> {
                 _buildMenuItem(0, Icons.forum_outlined, "Diễn đàn"),
                 _buildMenuItem(1, Icons.rate_review_outlined, "Đánh giá"),
                 _buildMenuItem(2, Icons.description_outlined, "Tài liệu"),
-                _buildMenuItem(3, Icons.campaign_outlined, "Thông báo chính thức"),
+                _buildMenuItem(
+                  3,
+                  Icons.campaign_outlined,
+                  "Thông báo chính thức",
+                ),
 
                 const SizedBox(height: 18),
                 _buildSidebarSectionTitle("QUẢN TRỊ"),
@@ -160,20 +168,25 @@ class _ModDashboardState extends State<ModDashboard> {
                                 },
                                 decoration: InputDecoration(
                                   hintText: "Tìm theo tên hoặc email...",
-                                  prefixIcon: const Icon(Icons.search, size: 20),
+                                  prefixIcon: const Icon(
+                                    Icons.search,
+                                    size: 20,
+                                  ),
                                   filled: true,
                                   fillColor: const Color(0xFFF5F7FA),
                                   border: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide.none,
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 12),
                           ],
-                        )
+                        ),
                     ],
                   ),
                 ),
@@ -203,7 +216,9 @@ class _ModDashboardState extends State<ModDashboard> {
         padding: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
           border: isSelected
-              ? const Border(bottom: BorderSide(color: Colors.blueAccent, width: 3))
+              ? const Border(
+                  bottom: BorderSide(color: Colors.blueAccent, width: 3),
+                )
               : null,
         ),
         child: Text(
@@ -256,7 +271,9 @@ class _ModDashboardState extends State<ModDashboard> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blueAccent.withOpacity(0.2) : Colors.transparent,
+          color: isSelected
+              ? Colors.blueAccent.withOpacity(0.2)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -285,18 +302,26 @@ class _ModDashboardState extends State<ModDashboard> {
         key: const ValueKey('users-stream-stable'),
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return _buildErrorState(snapshot.error.toString());
+          if (snapshot.hasError)
+            return _buildErrorState(snapshot.error.toString());
 
-          final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
-          final allDocs = List<QueryDocumentSnapshot>.from(snapshot.data?.docs ?? []);
+          final bool isLoading =
+              snapshot.connectionState == ConnectionState.waiting;
+          final allDocs = List<QueryDocumentSnapshot>.from(
+            snapshot.data?.docs ?? [],
+          );
 
           // Sort in memory by lastUpdated/createdAt descending
           allDocs.sort((a, b) {
             final dataA = a.data() as Map<String, dynamic>;
             final dataB = b.data() as Map<String, dynamic>;
 
-            final Timestamp? tA = dataA['lastUpdated'] as Timestamp? ?? dataA['createdAt'] as Timestamp?;
-            final Timestamp? tB = dataB['lastUpdated'] as Timestamp? ?? dataB['createdAt'] as Timestamp?;
+            final Timestamp? tA =
+                dataA['lastUpdated'] as Timestamp? ??
+                dataA['createdAt'] as Timestamp?;
+            final Timestamp? tB =
+                dataB['lastUpdated'] as Timestamp? ??
+                dataB['createdAt'] as Timestamp?;
             if (tA == null && tB == null) return 0;
             if (tA == null) return 1;
             if (tB == null) return -1;
@@ -308,14 +333,20 @@ class _ModDashboardState extends State<ModDashboard> {
           final docs = keyword.isEmpty
               ? allDocs
               : allDocs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final name = (data['displayName'] ?? '').toString().toLowerCase();
-            final email = (data['email'] ?? '').toString().toLowerCase();
-            return name.contains(keyword) || email.contains(keyword);
-          }).toList();
+                  final data = doc.data() as Map<String, dynamic>;
+                  final name = (data['displayName'] ?? '')
+                      .toString()
+                      .toLowerCase();
+                  final email = (data['email'] ?? '').toString().toLowerCase();
+                  return name.contains(keyword) || email.contains(keyword);
+                }).toList();
 
           if (docs.isEmpty && !isLoading) {
-            return _buildEmptyState(customText: keyword.isEmpty ? "Chưa có người dùng nào!" : "Không tìm thấy người dùng phù hợp!");
+            return _buildEmptyState(
+              customText: keyword.isEmpty
+                  ? "Chưa có người dùng nào!"
+                  : "Không tìm thấy người dùng phù hợp!",
+            );
           }
 
           return Stack(
@@ -331,8 +362,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   return _buildUserCard(uid, data);
                 },
               ),
-              if (isLoading)
-                const Center(child: CircularProgressIndicator()),
+              if (isLoading) const Center(child: CircularProgressIndicator()),
             ],
           );
         },
@@ -348,13 +378,17 @@ class _ModDashboardState extends State<ModDashboard> {
         key: const ValueKey('official-news-stream-stable'),
         stream: query.snapshots(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) return _buildErrorState(snapshot.error.toString());
+          if (snapshot.hasError)
+            return _buildErrorState(snapshot.error.toString());
 
-          final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
+          final bool isLoading =
+              snapshot.connectionState == ConnectionState.waiting;
           final docs = snapshot.data?.docs ?? [];
 
           if (docs.isEmpty && !isLoading) {
-            return _buildEmptyState(customText: "Không có thông báo chính thức nào!");
+            return _buildEmptyState(
+              customText: "Không có thông báo chính thức nào!",
+            );
           }
 
           return Stack(
@@ -376,8 +410,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   );
                 },
               ),
-              if (isLoading)
-                const Center(child: CircularProgressIndicator()),
+              if (isLoading) const Center(child: CircularProgressIndicator()),
             ],
           );
         },
@@ -399,7 +432,8 @@ class _ModDashboardState extends State<ModDashboard> {
           return _buildErrorState(snapshot.error.toString());
         }
 
-        final bool isLoading = snapshot.connectionState == ConnectionState.waiting;
+        final bool isLoading =
+            snapshot.connectionState == ConnectionState.waiting;
         final allDocs = snapshot.data?.docs ?? [];
 
         final List<QueryDocumentSnapshot> docs = _filterStatusIndex == 0
@@ -419,7 +453,9 @@ class _ModDashboardState extends State<ModDashboard> {
         return Stack(
           children: [
             ListView.builder(
-              key: PageStorageKey('posts-list-$_selectedCollIndex-$_filterStatusIndex'),
+              key: PageStorageKey(
+                'posts-list-$_selectedCollIndex-$_filterStatusIndex',
+              ),
               padding: const EdgeInsets.all(32),
               cacheExtent: 2500,
               itemCount: docs.length,
@@ -436,12 +472,14 @@ class _ModDashboardState extends State<ModDashboard> {
                   onRestore: () => _handleRestorePost(docId, data),
                   onDismissReport: () => _handleDismissReport(docId, data),
                   onViewMaterial: () => _viewMaterial(data),
-                  onViewComments: () => _handleViewComments(docId, _collections[_selectedCollIndex]),
+                  onViewComments: () => _handleViewComments(
+                    docId,
+                    _collections[_selectedCollIndex],
+                  ),
                 );
               },
             ),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator()),
+            if (isLoading) const Center(child: CircularProgressIndicator()),
           ],
         );
       },
@@ -453,10 +491,8 @@ class _ModDashboardState extends State<ModDashboard> {
     _isActionInProgress = true;
     showDialog(
       context: context,
-      builder: (ctx) => ModCommentDialog(
-        collection: collection,
-        postId: postId,
-      ),
+      builder: (ctx) =>
+          ModCommentDialog(collection: collection, postId: postId),
     ).then((_) {
       _isActionInProgress = false;
     });
@@ -476,7 +512,10 @@ class _ModDashboardState extends State<ModDashboard> {
     );
   }
 
-  Future<void> _handleApproveVerification(String uid, Map<String, dynamic> data) async {
+  Future<void> _handleApproveVerification(
+    String uid,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
 
@@ -485,7 +524,9 @@ class _ModDashboardState extends State<ModDashboard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Đã duyệt xác thực cho ${data['displayName'] ?? 'tài khoản'}!"),
+            content: Text(
+              "Đã duyệt xác thực cho ${data['displayName'] ?? 'tài khoản'}!",
+            ),
             backgroundColor: Colors.green,
           ),
         );
@@ -504,7 +545,10 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleRejectVerification(String uid, Map<String, dynamic> data) async {
+  Future<void> _handleRejectVerification(
+    String uid,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
 
     final reasonController = TextEditingController();
@@ -514,12 +558,17 @@ class _ModDashboardState extends State<ModDashboard> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: const Text("Từ chối xác thực tài khoản", style: TextStyle(fontWeight: FontWeight.bold)),
+          title: const Text(
+            "Từ chối xác thực tài khoản",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Nhập lý do từ chối xác thực cho ${data['displayName'] ?? 'người dùng'}:"),
+              Text(
+                "Nhập lý do từ chối xác thực cho ${data['displayName'] ?? 'người dùng'}:",
+              ),
               const SizedBox(height: 12),
               TextField(
                 controller: reasonController,
@@ -535,7 +584,11 @@ class _ModDashboardState extends State<ModDashboard> {
                 activeColor: Colors.redAccent,
                 title: const Text(
                   "Xóa luôn tài khoản khỏi hệ thống (Giúp người dùng có thể tạo lại tài khoản mới với email này)",
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.redAccent),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.redAccent,
+                  ),
                 ),
                 value: deleteAfterReject,
                 onChanged: (val) {
@@ -553,7 +606,9 @@ class _ModDashboardState extends State<ModDashboard> {
             ),
             ElevatedButton(
               onPressed: () => Navigator.pop(ctx, true),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+              ),
               child: Text(
                 deleteAfterReject ? "Từ chối & Xóa TK" : "Từ chối",
                 style: const TextStyle(color: Colors.white),
@@ -581,7 +636,9 @@ class _ModDashboardState extends State<ModDashboard> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Đã từ chối xác thực và XÓA TÀI KHOẢN của ${data['displayName'] ?? ''} khỏi hệ thống."),
+              content: Text(
+                "Đã từ chối xác thực và XÓA TÀI KHOẢN của ${data['displayName'] ?? ''} khỏi hệ thống.",
+              ),
               backgroundColor: Colors.red.shade900,
             ),
           );
@@ -595,7 +652,9 @@ class _ModDashboardState extends State<ModDashboard> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Đã từ chối xác thực cho ${data['displayName'] ?? ''}"),
+              content: Text(
+                "Đã từ chối xác thực cho ${data['displayName'] ?? ''}",
+              ),
               backgroundColor: Colors.orange,
             ),
           );
@@ -604,10 +663,7 @@ class _ModDashboardState extends State<ModDashboard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Lỗi: $e"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("Lỗi: $e"), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -615,13 +671,22 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleDeleteUserAccount(String uid, Map<String, dynamic> data) async {
+  Future<void> _handleDeleteUserAccount(
+    String uid,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
 
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Xóa tài khoản người dùng", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.redAccent)),
+        title: const Text(
+          "Xóa tài khoản người dùng",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: Colors.redAccent,
+          ),
+        ),
         content: Text(
           "Bạn có chắc chắn muốn xóa dữ liệu tài khoản ${data['displayName'] ?? ''} (${data['email'] ?? ''}) khỏi hệ thống?\n\nHành động này sẽ giải phóng email để người dùng có thể đăng ký lại tài khoản mới.",
         ),
@@ -632,8 +697,13 @@ class _ModDashboardState extends State<ModDashboard> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade900),
-            child: const Text("Xóa tài khoản", style: TextStyle(color: Colors.white)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade900,
+            ),
+            child: const Text(
+              "Xóa tài khoản",
+              style: TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -652,7 +722,9 @@ class _ModDashboardState extends State<ModDashboard> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Đã xóa tài khoản ${data['displayName'] ?? ''} khỏi hệ thống."),
+            content: Text(
+              "Đã xóa tài khoản ${data['displayName'] ?? ''} khỏi hệ thống.",
+            ),
             backgroundColor: Colors.red.shade900,
           ),
         );
@@ -682,7 +754,13 @@ class _ModDashboardState extends State<ModDashboard> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(fileName, style: const TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold)),
+        title: Text(
+          fileName,
+          style: const TextStyle(
+            fontFamily: 'Nunito',
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -698,9 +776,16 @@ class _ModDashboardState extends State<ModDashboard> {
                   ),
                 )
               else ...[
-                const Icon(Icons.picture_as_pdf, size: 80, color: Colors.redAccent),
+                const Icon(
+                  Icons.picture_as_pdf,
+                  size: 80,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(height: 16),
-                const Text("Đây là tài liệu định dạng PDF/File.", textAlign: TextAlign.center),
+                const Text(
+                  "Đây là tài liệu định dạng PDF/File.",
+                  textAlign: TextAlign.center,
+                ),
               ],
             ],
           ),
@@ -720,7 +805,10 @@ class _ModDashboardState extends State<ModDashboard> {
           ),
           ElevatedButton.icon(
             icon: const Icon(Icons.download, size: 16, color: Colors.white),
-            label: const Text("Tải xuống", style: TextStyle(color: Colors.white)),
+            label: const Text(
+              "Tải xuống",
+              style: TextStyle(color: Colors.white),
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -741,7 +829,10 @@ class _ModDashboardState extends State<ModDashboard> {
     });
   }
 
-  Future<void> _showUserActivity(String uid, Map<String, dynamic> userData) async {
+  Future<void> _showUserActivity(
+    String uid,
+    Map<String, dynamic> userData,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
@@ -796,10 +887,7 @@ class _ModDashboardState extends State<ModDashboard> {
             ),
             TextButton(
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text(
-                "Khóa",
-                style: TextStyle(color: Colors.orange),
-              ),
+              child: const Text("Khóa", style: TextStyle(color: Colors.orange)),
             ),
           ],
         ),
@@ -833,10 +921,7 @@ class _ModDashboardState extends State<ModDashboard> {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
-      await UserModerationService.restoreUser(
-        uid: uid,
-        data: data,
-      );
+      await UserModerationService.restoreUser(uid: uid, data: data);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -850,7 +935,10 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleDeletePost(String docId, Map<String, dynamic> data) async {
+  Future<void> _handleDeletePost(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
@@ -869,7 +957,10 @@ class _ModDashboardState extends State<ModDashboard> {
             ),
             title: const Text(
               "Lý do xóa bài",
-              style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Nunito'),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Nunito',
+              ),
             ),
             content: SizedBox(
               width: 400,
@@ -896,7 +987,9 @@ class _ModDashboardState extends State<ModDashboard> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.grey[700],
                   side: BorderSide(color: Colors.grey[300]!),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: const Text("Hủy"),
               ),
@@ -906,7 +999,9 @@ class _ModDashboardState extends State<ModDashboard> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.redAccent,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   elevation: 0,
                 ),
                 child: const Text("Xác nhận xóa"),
@@ -943,7 +1038,8 @@ class _ModDashboardState extends State<ModDashboard> {
           await _sendNotification(
             userId: reporterId,
             title: "Phản hồi báo cáo",
-            content: "Báo cáo của bạn đã được xử lý. Bài viết vi phạm đã bị xóa.",
+            content:
+                "Báo cáo của bạn đã được xử lý. Bài viết vi phạm đã bị xóa.",
             type: 'info',
             postId: docId,
           );
@@ -969,7 +1065,9 @@ class _ModDashboardState extends State<ModDashboard> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã gỡ bài viết và gửi thông báo cho các bên.")),
+          const SnackBar(
+            content: Text("Đã gỡ bài viết và gửi thông báo cho các bên."),
+          ),
         );
       }
     } catch (e) {
@@ -979,7 +1077,10 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleRestorePost(String docId, Map<String, dynamic> data) async {
+  Future<void> _handleRestorePost(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
@@ -1000,9 +1101,9 @@ class _ModDashboardState extends State<ModDashboard> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã khôi phục bài viết")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Đã khôi phục bài viết")));
       }
     } catch (e) {
       debugPrint("Error restoring post: $e");
@@ -1011,7 +1112,10 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleDismissReport(String docId, Map<String, dynamic> data) async {
+  Future<void> _handleDismissReport(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
@@ -1038,7 +1142,8 @@ class _ModDashboardState extends State<ModDashboard> {
           await _sendNotification(
             userId: reporterId,
             title: "Phản hồi báo cáo",
-            content: "Mod không phát hiện sai phạm đối với bài viết bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
+            content:
+                "Mod không phát hiện sai phạm đối với bài viết bạn đã báo cáo. Nội dung vẫn được giữ nguyên.",
             type: 'info',
             postId: docId,
           );
@@ -1054,7 +1159,8 @@ class _ModDashboardState extends State<ModDashboard> {
         await _sendNotification(
           userId: authorId,
           title: "Báo cáo nội dung",
-          content: "Mod không phát hiện sai phạm đối với bài viết của bạn. Bài viết vẫn giữ nguyên.",
+          content:
+              "Mod không phát hiện sai phạm đối với bài viết của bạn. Bài viết vẫn giữ nguyên.",
           type: 'info',
           postId: docId,
         );
@@ -1062,7 +1168,9 @@ class _ModDashboardState extends State<ModDashboard> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Đã hủy báo cáo và gửi thông báo cho các bên.")),
+          const SnackBar(
+            content: Text("Đã hủy báo cáo và gửi thông báo cho các bên."),
+          ),
         );
       }
     } catch (e) {
@@ -1072,15 +1180,24 @@ class _ModDashboardState extends State<ModDashboard> {
     }
   }
 
-  Future<void> _handleEditOfficialNews(String docId, Map<String, dynamic> data) async {
+  Future<void> _handleEditOfficialNews(
+    String docId,
+    Map<String, dynamic> data,
+  ) async {
     if (_isActionInProgress) return;
     _isActionInProgress = true;
     try {
       final titleController = TextEditingController(text: data['title'] ?? '');
-      final summaryController = TextEditingController(text: data['summary'] ?? '');
-      final departmentController = TextEditingController(text: data['department'] ?? '');
+      final summaryController = TextEditingController(
+        text: data['summary'] ?? '',
+      );
+      final departmentController = TextEditingController(
+        text: data['department'] ?? '',
+      );
       final linkController = TextEditingController(text: data['link'] ?? '');
-      final dateController = TextEditingController(text: data['publishedDateText'] ?? '');
+      final dateController = TextEditingController(
+        text: data['publishedDateText'] ?? '',
+      );
 
       final bool? confirm = await showDialog<bool>(
         context: context,
@@ -1102,17 +1219,23 @@ class _ModDashboardState extends State<ModDashboard> {
                   const SizedBox(height: 12),
                   TextField(
                     controller: departmentController,
-                    decoration: const InputDecoration(labelText: "Phòng ban / đơn vị"),
+                    decoration: const InputDecoration(
+                      labelText: "Phòng ban / đơn vị",
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: dateController,
-                    decoration: const InputDecoration(labelText: "Ngày hiển thị"),
+                    decoration: const InputDecoration(
+                      labelText: "Ngày hiển thị",
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: linkController,
-                    decoration: const InputDecoration(labelText: "Link bài viết"),
+                    decoration: const InputDecoration(
+                      labelText: "Link bài viết",
+                    ),
                   ),
                   const SizedBox(height: 12),
                   TextField(
@@ -1130,7 +1253,10 @@ class _ModDashboardState extends State<ModDashboard> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.grey[700],
                 side: BorderSide(color: Colors.grey[300]!),
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1142,7 +1268,10 @@ class _ModDashboardState extends State<ModDashboard> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 10,
+                ),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1156,13 +1285,16 @@ class _ModDashboardState extends State<ModDashboard> {
 
       if (confirm != true) return;
 
-      await FirebaseFirestore.instance.collection('official_news').doc(docId).update({
-        'title': titleController.text.trim(),
-        'summary': summaryController.text.trim(),
-        'department': departmentController.text.trim(),
-        'link': linkController.text.trim(),
-        'publishedDateText': dateController.text.trim(),
-      });
+      await FirebaseFirestore.instance
+          .collection('official_news')
+          .doc(docId)
+          .update({
+            'title': titleController.text.trim(),
+            'summary': summaryController.text.trim(),
+            'department': departmentController.text.trim(),
+            'link': linkController.text.trim(),
+            'publishedDateText': dateController.text.trim(),
+          });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1187,7 +1319,9 @@ class _ModDashboardState extends State<ModDashboard> {
             "Xóa thông báo?",
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          content: const Text("Bài viết official news sẽ bị xóa khỏi Firebase. Không gửi thông báo cho user."),
+          content: const Text(
+            "Bài viết official news sẽ bị xóa khỏi Firebase. Không gửi thông báo cho user.",
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx, false),
@@ -1203,7 +1337,10 @@ class _ModDashboardState extends State<ModDashboard> {
 
       if (confirm != true) return;
 
-      await FirebaseFirestore.instance.collection('official_news').doc(docId).delete();
+      await FirebaseFirestore.instance
+          .collection('official_news')
+          .doc(docId)
+          .delete();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1320,10 +1457,9 @@ class _ModDashboardState extends State<ModDashboard> {
                     await FirebaseAuth.instance.signOut();
 
                     if (mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/',
-                        (route) => false,
-                      );
+                      Navigator.of(
+                        context,
+                      ).pushNamedAndRemoveUntil('/', (route) => false);
                     }
                   } catch (e) {
                     debugPrint("Error signing out: $e");
@@ -1345,9 +1481,7 @@ class _ModDashboardState extends State<ModDashboard> {
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(
-                    color: Colors.redAccent.withOpacity(0.35),
-                  ),
+                  side: BorderSide(color: Colors.redAccent.withOpacity(0.35)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -1365,9 +1499,7 @@ class _ModDashboardState extends State<ModDashboard> {
     String text = "Không có bài viết cần xử lý!",
     String? customText,
   }) {
-    return ModEmptyState(
-      text: customText ?? text,
-    );
+    return ModEmptyState(text: customText ?? text);
   }
 
   Widget _buildErrorState(String error) {

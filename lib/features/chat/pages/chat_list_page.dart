@@ -51,9 +51,13 @@ class _ChatListPageState extends State<ChatListPage> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid ?? '';
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDark
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       appBar: AppBar(
-        backgroundColor: isDark ? AppColors.surfaceDark : AppColors.surfaceLight,
+        backgroundColor: isDark
+            ? AppColors.surfaceDark
+            : AppColors.surfaceLight,
         elevation: 0.5,
         title: const Text(
           'Đoạn chat',
@@ -65,7 +69,10 @@ class _ChatListPageState extends State<ChatListPage> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_search_rounded, color: AppColors.hcmusTeal),
+            icon: const Icon(
+              Icons.person_search_rounded,
+              color: AppColors.hcmusTeal,
+            ),
             tooltip: 'Tìm sinh viên',
             onPressed: () {
               Navigator.push(
@@ -106,9 +113,7 @@ class _ChatListPageState extends State<ChatListPage> {
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 13,
                   height: 1.2,
-                  color: isDark
-                      ? Colors.white
-                      : const Color(0xFF1D2939),
+                  color: isDark ? Colors.white : const Color(0xFF1D2939),
                 ),
                 decoration: InputDecoration(
                   isDense: true,
@@ -119,16 +124,12 @@ class _ChatListPageState extends State<ChatListPage> {
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 12.5,
                     fontWeight: FontWeight.w400,
-                    color: isDark
-                        ? Colors.white38
-                        : const Color(0xFF98A2B3),
+                    color: isDark ? Colors.white38 : const Color(0xFF98A2B3),
                   ),
                   prefixIcon: Icon(
                     Icons.search_rounded,
                     size: 19,
-                    color: isDark
-                        ? Colors.white54
-                        : const Color(0xFF667085),
+                    color: isDark ? Colors.white54 : const Color(0xFF667085),
                   ),
                   prefixIconConstraints: const BoxConstraints(
                     minWidth: 40,
@@ -136,27 +137,27 @@ class _ChatListPageState extends State<ChatListPage> {
                   ),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
-                    tooltip: 'Xóa tìm kiếm',
-                    splashRadius: 18,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(
-                      minWidth: 40,
-                      minHeight: 40,
-                    ),
-                    onPressed: () {
-                      _searchController.clear();
-                      setState(() {
-                        _searchQuery = '';
-                      });
-                    },
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: 18,
-                      color: isDark
-                          ? Colors.white54
-                          : const Color(0xFF667085),
-                    ),
-                  )
+                          tooltip: 'Xóa tìm kiếm',
+                          splashRadius: 18,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                            minWidth: 40,
+                            minHeight: 40,
+                          ),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {
+                              _searchQuery = '';
+                            });
+                          },
+                          icon: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: isDark
+                                ? Colors.white54
+                                : const Color(0xFF667085),
+                          ),
+                        )
                       : null,
                   suffixIconConstraints: const BoxConstraints(
                     minWidth: 40,
@@ -186,7 +187,9 @@ class _ChatListPageState extends State<ChatListPage> {
                 final rooms = snapshot.data ?? [];
 
                 final filteredRooms = rooms.where((room) {
-                  final otherName = room.getOtherUserName(currentUid).toLowerCase();
+                  final otherName = room
+                      .getOtherUserName(currentUid)
+                      .toLowerCase();
                   final cleanName = _removeVietnameseDiacritics(otherName);
                   final q = _searchQuery.trim().toLowerCase();
                   final cleanQ = _removeVietnameseDiacritics(q);
@@ -217,7 +220,11 @@ class _ChatListPageState extends State<ChatListPage> {
                           const Text(
                             'Bấm vào biểu tượng Nhắn tin ở bài viết hoặc trang cá nhân của sinh viên khác để bắt đầu trao đổi.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(fontSize: 13, color: Colors.grey, height: 1.4),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -228,7 +235,8 @@ class _ChatListPageState extends State<ChatListPage> {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
                   itemCount: filteredRooms.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 4),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 4),
                   itemBuilder: (context, index) {
                     final room = filteredRooms[index];
 
@@ -249,11 +257,9 @@ class _ChatListPageState extends State<ChatListPage> {
                     final bool isUnread = unreadCount > 0;
 
                     final Color itemColor = isUnread
-                        ? (
-                        isDark
-                            ? const Color(0xFF18212B)
-                            : const Color(0xFFF3F8FF)
-                    )
+                        ? (isDark
+                              ? const Color(0xFF18212B)
+                              : const Color(0xFFF3F8FF))
                         : Colors.transparent;
 
                     final Color primaryTextColor = isDark
@@ -294,10 +300,10 @@ class _ChatListPageState extends State<ChatListPage> {
                             borderRadius: BorderRadius.circular(14),
                             border: isUnread
                                 ? Border.all(
-                              color: AppColors.hcmusTeal.withValues(
-                                alpha: isDark ? 0.24 : 0.16,
-                              ),
-                            )
+                                    color: AppColors.hcmusTeal.withValues(
+                                      alpha: isDark ? 0.24 : 0.16,
+                                    ),
+                                  )
                                 : null,
                           ),
                           child: Row(
@@ -314,19 +320,23 @@ class _ChatListPageState extends State<ChatListPage> {
                                     builder: (context, userSnap) {
                                       String resolvedPhoto =
                                           Base64ImageCache.getCachedUserAvatar(
-                                              otherUid) ??
-                                              otherPhoto;
+                                            otherUid,
+                                          ) ??
+                                          otherPhoto;
                                       String resolvedName = otherName;
 
                                       if (userSnap.hasData &&
                                           userSnap.data?.data() != null) {
-                                        final uData = userSnap.data!.data()
-                                        as Map<String, dynamic>;
-                                        resolvedName = uData['displayName'] ??
+                                        final uData =
+                                            userSnap.data!.data()
+                                                as Map<String, dynamic>;
+                                        resolvedName =
+                                            uData['displayName'] ??
                                             uData['name'] ??
                                             uData['fullName'] ??
                                             otherName;
-                                        resolvedPhoto = uData['photoURL'] ??
+                                        resolvedPhoto =
+                                            uData['photoURL'] ??
                                             uData['photoUrl'] ??
                                             uData['avatar'] ??
                                             uData['authorAvatar'] ??
@@ -334,36 +344,34 @@ class _ChatListPageState extends State<ChatListPage> {
                                             uData['userAvatar'] ??
                                             resolvedPhoto;
                                         Base64ImageCache.updateUserAvatar(
-                                            otherUid, resolvedPhoto);
+                                          otherUid,
+                                          resolvedPhoto,
+                                        );
                                       }
 
                                       final avatarProvider =
-                                      Base64ImageCache.getAvatarProvider(
-                                          resolvedPhoto);
+                                          Base64ImageCache.getAvatarProvider(
+                                            resolvedPhoto,
+                                          );
 
                                       return CircleAvatar(
                                         radius: 26,
-                                        backgroundColor:
-                                        AppColors.hcmusTeal.withValues(
-                                          alpha: 0.15,
-                                        ),
+                                        backgroundColor: AppColors.hcmusTeal
+                                            .withValues(alpha: 0.15),
                                         backgroundImage: avatarProvider,
                                         child: avatarProvider == null
                                             ? Text(
-                                          resolvedName
-                                              .trim()
-                                              .isNotEmpty
-                                              ? resolvedName
-                                              .trim()[0]
-                                              .toUpperCase()
-                                              : 'S',
-                                          style: const TextStyle(
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.w700,
-                                            color: AppColors.hcmusTeal,
-                                          ),
-                                        )
+                                                resolvedName.trim().isNotEmpty
+                                                    ? resolvedName
+                                                          .trim()[0]
+                                                          .toUpperCase()
+                                                    : 'S',
+                                                style: const TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: AppColors.hcmusTeal,
+                                                ),
+                                              )
                                             : null,
                                       );
                                     },
@@ -391,12 +399,11 @@ class _ChatListPageState extends State<ChatListPage> {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Row(
                                       crossAxisAlignment:
-                                      CrossAxisAlignment.center,
+                                          CrossAxisAlignment.center,
                                       children: [
                                         Expanded(
                                           child: Text(
@@ -420,7 +427,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                             timeStr,
                                             style: TextStyle(
                                               fontFamily:
-                                              'Encode Sans Expanded',
+                                                  'Encode Sans Expanded',
                                               fontSize: 10.5,
                                               fontWeight: isUnread
                                                   ? FontWeight.w600
@@ -445,7 +452,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                             overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontFamily:
-                                              'Encode Sans Expanded',
+                                                  'Encode Sans Expanded',
                                               fontSize: 12.5,
                                               height: 1.3,
                                               fontWeight: isUnread
@@ -453,8 +460,8 @@ class _ChatListPageState extends State<ChatListPage> {
                                                   : FontWeight.w400,
                                               color: isUnread
                                                   ? primaryTextColor.withValues(
-                                                alpha: 0.82,
-                                              )
+                                                      alpha: 0.82,
+                                                    )
                                                   : secondaryTextColor,
                                             ),
                                           ),

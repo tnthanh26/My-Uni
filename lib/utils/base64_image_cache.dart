@@ -10,9 +10,12 @@ import 'package:http/http.dart' as http;
 class Base64ImageCache {
   static const int _maxCapacity = 500;
 
-  static final LinkedHashMap<String, Uint8List> _cache = LinkedHashMap<String, Uint8List>();
-  static final LinkedHashMap<String, MemoryImage> _providerCache = LinkedHashMap<String, MemoryImage>();
-  static final LinkedHashMap<String, String> _userAvatarMap = LinkedHashMap<String, String>();
+  static final LinkedHashMap<String, Uint8List> _cache =
+      LinkedHashMap<String, Uint8List>();
+  static final LinkedHashMap<String, MemoryImage> _providerCache =
+      LinkedHashMap<String, MemoryImage>();
+  static final LinkedHashMap<String, String> _userAvatarMap =
+      LinkedHashMap<String, String>();
   static final Set<String> _pendingDownloads = <String>{};
 
   static void _putInCache(String key, Uint8List bytes) {
@@ -136,7 +139,9 @@ class Base64ImageCache {
     _pendingDownloads.add(cleanUrl);
 
     try {
-      final response = await http.get(Uri.parse(cleanUrl)).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(Uri.parse(cleanUrl))
+          .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
         _putInCache(cleanUrl, response.bodyBytes);
         return response.bodyBytes;
@@ -152,7 +157,9 @@ class Base64ImageCache {
   /// Preloads a list of network image URLs into memory in background
   static void preloadImages(List<String?> imageUrls) {
     for (final url in imageUrls) {
-      if (url != null && url.trim().isNotEmpty && url.trim().startsWith('http')) {
+      if (url != null &&
+          url.trim().isNotEmpty &&
+          url.trim().startsWith('http')) {
         preloadNetworkImage(url);
       }
     }
@@ -252,12 +259,14 @@ class _SmartImageWidgetState extends State<_SmartImageWidget> {
         height: widget.height,
         width: widget.width,
         fit: widget.fit,
-        errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFFF2F4F7)),
+        errorBuilder: (context, error, stackTrace) =>
+            Container(color: const Color(0xFFF2F4F7)),
       );
     }
 
     // 1. Check if RAM cache has the decoded/downloaded bytes
-    final currentBytes = _cachedBytes ?? Base64ImageCache.getCachedBytes(cleanUrl);
+    final currentBytes =
+        _cachedBytes ?? Base64ImageCache.getCachedBytes(cleanUrl);
     if (currentBytes != null && currentBytes.isNotEmpty) {
       return Image.memory(
         currentBytes,
@@ -300,7 +309,8 @@ class _SmartImageWidgetState extends State<_SmartImageWidget> {
           height: widget.height,
           width: widget.width,
           fit: widget.fit,
-          errorBuilder: (context, error, stackTrace) => Container(color: const Color(0xFFF2F4F7)),
+          errorBuilder: (context, error, stackTrace) =>
+              Container(color: const Color(0xFFF2F4F7)),
         ),
         Image.network(
           cleanUrl,

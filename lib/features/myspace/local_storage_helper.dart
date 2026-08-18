@@ -72,18 +72,22 @@ class LocalStorageHelper {
   static Future<void> saveDeadlines(List<Deadline> deadlines) async {
     final prefs = await SharedPreferences.getInstance();
     final String encodedData = jsonEncode(
-      deadlines.map((d) => {
-        'id': d.id,
-        'title': d.title,
-        'description': d.description,
-        'dueDate': d.dueDate.toIso8601String(),
-        'dueTimeHour': d.dueTime.hour,
-        'dueTimeMinute': d.dueTime.minute,
-        'isCompleted': d.isCompleted,
-        'isMoodleSynced': d.isMoodleSynced,
-        'reminders': d.reminders,
-        'notificationIds': d.notificationIds,
-      }).toList(),
+      deadlines
+          .map(
+            (d) => {
+              'id': d.id,
+              'title': d.title,
+              'description': d.description,
+              'dueDate': d.dueDate.toIso8601String(),
+              'dueTimeHour': d.dueTime.hour,
+              'dueTimeMinute': d.dueTime.minute,
+              'isCompleted': d.isCompleted,
+              'isMoodleSynced': d.isMoodleSynced,
+              'reminders': d.reminders,
+              'notificationIds': d.notificationIds,
+            },
+          )
+          .toList(),
     );
     await prefs.setString(_deadlineKey, encodedData);
   }
@@ -92,16 +96,20 @@ class LocalStorageHelper {
   static Future<void> saveSchedule(List<StudyClass> schedule) async {
     final prefs = await SharedPreferences.getInstance();
     final String encodedData = jsonEncode(
-      schedule.map((c) => {
-        'id': c.id,
-        'name': c.name,
-        'start': c.start,
-        'end': c.end,
-        'room': c.room,
-        'campusId': c.campusId,
-        'weekday': c.weekday,
-        'colorValue': c.color.value,
-      }).toList(),
+      schedule
+          .map(
+            (c) => {
+              'id': c.id,
+              'name': c.name,
+              'start': c.start,
+              'end': c.end,
+              'room': c.room,
+              'campusId': c.campusId,
+              'weekday': c.weekday,
+              'colorValue': c.color.value,
+            },
+          )
+          .toList(),
     );
     await prefs.setString(_scheduleKey, encodedData);
   }
@@ -116,20 +124,28 @@ class LocalStorageHelper {
 
     try {
       final List<dynamic> decoded = jsonDecode(data);
-      return decoded.map((item) => Deadline(
-        id: item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        title: item['title']?.toString() ?? 'Không tên',
-        description: item['description']?.toString() ?? "",
-        dueDate: item['dueDate'] != null ? DateTime.parse(item['dueDate']) : DateTime.now(),
-        dueTime: TimeOfDay(
-          hour: item['dueTimeHour'] ?? 0, 
-          minute: item['dueTimeMinute'] ?? 0
-        ),
-        isCompleted: item['isCompleted'] ?? false,
-        isMoodleSynced: item['isMoodleSynced'] ?? false,
-        reminders: List<String>.from(item['reminders'] ?? []),
-        notificationIds: List<int>.from(item['notificationIds'] ?? []),
-      )).toList();
+      return decoded
+          .map(
+            (item) => Deadline(
+              id:
+                  item['id']?.toString() ??
+                  DateTime.now().millisecondsSinceEpoch.toString(),
+              title: item['title']?.toString() ?? 'Không tên',
+              description: item['description']?.toString() ?? "",
+              dueDate: item['dueDate'] != null
+                  ? DateTime.parse(item['dueDate'])
+                  : DateTime.now(),
+              dueTime: TimeOfDay(
+                hour: item['dueTimeHour'] ?? 0,
+                minute: item['dueTimeMinute'] ?? 0,
+              ),
+              isCompleted: item['isCompleted'] ?? false,
+              isMoodleSynced: item['isMoodleSynced'] ?? false,
+              reminders: List<String>.from(item['reminders'] ?? []),
+              notificationIds: List<int>.from(item['notificationIds'] ?? []),
+            ),
+          )
+          .toList();
     } catch (e) {
       debugPrint("Error parsing deadlines from storage: $e");
       return _defaultDeadlines;
@@ -146,16 +162,22 @@ class LocalStorageHelper {
 
     try {
       final List<dynamic> decoded = jsonDecode(data);
-      return decoded.map((item) => StudyClass(
-        id: item['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
-        name: item['name']?.toString() ?? 'Môn học mới',
-        start: item['start']?.toString() ?? '07:00',
-        end: item['end']?.toString() ?? '09:00',
-        room: item['room']?.toString() ?? 'Phòng học',
-        campusId: item['campusId']?.toString(),
-        weekday: item['weekday'] ?? 2,
-        color: Color(item['colorValue'] ?? 0xFF5893D8),
-      )).toList();
+      return decoded
+          .map(
+            (item) => StudyClass(
+              id:
+                  item['id']?.toString() ??
+                  DateTime.now().millisecondsSinceEpoch.toString(),
+              name: item['name']?.toString() ?? 'Môn học mới',
+              start: item['start']?.toString() ?? '07:00',
+              end: item['end']?.toString() ?? '09:00',
+              room: item['room']?.toString() ?? 'Phòng học',
+              campusId: item['campusId']?.toString(),
+              weekday: item['weekday'] ?? 2,
+              color: Color(item['colorValue'] ?? 0xFF5893D8),
+            ),
+          )
+          .toList();
     } catch (e) {
       debugPrint("Error parsing schedule from storage: $e");
       return [];
@@ -188,7 +210,9 @@ class LocalStorageHelper {
     }
 
     try {
-      final Map<String, dynamic> decoded = Map<String, dynamic>.from(jsonDecode(data));
+      final Map<String, dynamic> decoded = Map<String, dynamic>.from(
+        jsonDecode(data),
+      );
       final config = AutoDeadlineConfig.fromMap(decoded);
       final String savedMoodleUrl = config.moodleUrl.trim();
 

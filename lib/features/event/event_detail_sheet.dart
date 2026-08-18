@@ -10,11 +10,17 @@ import 'create_personal_event_page.dart';
 import 'package:my_uni/features/services/notification_service.dart';
 
 class EventDetailSheet {
-  static void show(BuildContext context, EventModel ev, {VoidCallback? onRefresh}) {
+  static void show(
+    BuildContext context,
+    EventModel ev, {
+    VoidCallback? onRefresh,
+  }) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final now = DateTime.now();
     final bool isPast = ev.dateTime.isBefore(now);
-    final String formattedDate = DateFormat('dd/MM/yyyy • HH:mm').format(ev.dateTime);
+    final String formattedDate = DateFormat(
+      'dd/MM/yyyy • HH:mm',
+    ).format(ev.dateTime);
     final String? endTimeStr = ev.endDateTime != null
         ? DateFormat('HH:mm').format(ev.endDateTime!)
         : null;
@@ -22,10 +28,18 @@ class EventDetailSheet {
         ? '$formattedDate - $endTimeStr'
         : formattedDate;
 
-    final Color sheetColor = isDarkMode ? const Color(0xFF1E1E2C) : Colors.white;
-    final Color primaryTextColor = isDarkMode ? Colors.white : const Color(0xFF1E293B);
-    final Color secondaryTextColor = isDarkMode ? Colors.white60 : const Color(0xFF64748B);
-    final Color borderColor = isDarkMode ? Colors.white.withValues(alpha: 0.1) : const Color(0xFFE2E8F0);
+    final Color sheetColor = isDarkMode
+        ? const Color(0xFF1E1E2C)
+        : Colors.white;
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1E293B);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF64748B);
+    final Color borderColor = isDarkMode
+        ? Colors.white.withValues(alpha: 0.1)
+        : const Color(0xFFE2E8F0);
     const Color primaryBlue = Color(0xFF457EC0);
 
     showModalBottomSheet(
@@ -77,11 +91,18 @@ class EventDetailSheet {
                 children: [
                   // Type Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: ev.isFromFacultyEvent
-                          ? (isDarkMode ? const Color(0xFF3B82F6).withValues(alpha: 0.2) : const Color(0xFFEFF6FF))
-                          : (isDarkMode ? const Color(0xFF8B5CF6).withValues(alpha: 0.2) : const Color(0xFFF5F3FF)),
+                          ? (isDarkMode
+                                ? const Color(0xFF3B82F6).withValues(alpha: 0.2)
+                                : const Color(0xFFEFF6FF))
+                          : (isDarkMode
+                                ? const Color(0xFF8B5CF6).withValues(alpha: 0.2)
+                                : const Color(0xFFF5F3FF)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: ev.isFromFacultyEvent
@@ -90,12 +111,16 @@ class EventDetailSheet {
                       ),
                     ),
                     child: Text(
-                      ev.isFromFacultyEvent ? 'SỰ KIỆN KHOA' : 'SỰ KIỆN CÁ NHÂN',
+                      ev.isFromFacultyEvent
+                          ? 'SỰ KIỆN KHOA'
+                          : 'SỰ KIỆN CÁ NHÂN',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: ev.isFromFacultyEvent ? const Color(0xFF2563EB) : const Color(0xFF7C3AED),
+                        color: ev.isFromFacultyEvent
+                            ? const Color(0xFF2563EB)
+                            : const Color(0xFF7C3AED),
                       ),
                     ),
                   ),
@@ -103,11 +128,18 @@ class EventDetailSheet {
 
                   // Status Badge
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isPast
-                          ? (isDarkMode ? Colors.white10 : const Color(0xFFF1F5F9))
-                          : (isDarkMode ? const Color(0xFF10B981).withValues(alpha: 0.2) : const Color(0xFFECFDF5)),
+                          ? (isDarkMode
+                                ? Colors.white10
+                                : const Color(0xFFF1F5F9))
+                          : (isDarkMode
+                                ? const Color(0xFF10B981).withValues(alpha: 0.2)
+                                : const Color(0xFFECFDF5)),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: isPast
@@ -121,7 +153,9 @@ class EventDetailSheet {
                         fontFamily: 'Nunito',
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
-                        color: isPast ? secondaryTextColor : const Color(0xFF059669),
+                        color: isPast
+                            ? secondaryTextColor
+                            : const Color(0xFF059669),
                       ),
                     ),
                   ),
@@ -129,16 +163,27 @@ class EventDetailSheet {
                   if (ev.isOnline) ...[
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
-                        color: isDarkMode ? const Color(0xFFA855F7).withValues(alpha: 0.2) : const Color(0xFFFAF5FF),
+                        color: isDarkMode
+                            ? const Color(0xFFA855F7).withValues(alpha: 0.2)
+                            : const Color(0xFFFAF5FF),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFFA855F7).withValues(alpha: 0.4)),
+                        border: Border.all(
+                          color: const Color(0xFFA855F7).withValues(alpha: 0.4),
+                        ),
                       ),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.videocam_rounded, size: 12, color: Color(0xFF9333EA)),
+                          Icon(
+                            Icons.videocam_rounded,
+                            size: 12,
+                            color: Color(0xFF9333EA),
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'ONLINE',
@@ -158,10 +203,7 @@ class EventDetailSheet {
 
                   IconButton(
                     onPressed: () => Navigator.pop(ctx),
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: secondaryTextColor,
-                    ),
+                    icon: Icon(Icons.close_rounded, color: secondaryTextColor),
                   ),
                 ],
               ),
@@ -181,7 +223,12 @@ class EventDetailSheet {
               const SizedBox(height: 12),
 
               // Faculty / Organizer tile
-              _buildOrganizerTile(ev, isDarkMode, primaryTextColor, borderColor),
+              _buildOrganizerTile(
+                ev,
+                isDarkMode,
+                primaryTextColor,
+                borderColor,
+              ),
               const SizedBox(height: 16),
 
               // Warning box if original event deleted by BTC
@@ -199,7 +246,11 @@ class EventDetailSheet {
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: Colors.redAccent,
+                            size: 22,
+                          ),
                           SizedBox(width: 10),
                           Expanded(
                             child: Text(
@@ -230,15 +281,24 @@ class EventDetailSheet {
               ),
 
               _buildDetailRow(
-                ev.isOnline ? Icons.videocam_rounded : Icons.location_on_rounded,
+                ev.isOnline
+                    ? Icons.videocam_rounded
+                    : Icons.location_on_rounded,
                 'Vị trí',
-                ev.location.trim().isNotEmpty ? ev.location : (ev.isOnline ? 'Trực tuyến (Online)' : 'Chưa cập nhật'),
+                ev.location.trim().isNotEmpty
+                    ? ev.location
+                    : (ev.isOnline ? 'Trực tuyến (Online)' : 'Chưa cập nhật'),
                 primaryTextColor,
                 secondaryTextColor,
               ),
 
               // CONTACT INFO SECTION (ALWAYS DISPLAYED & DYNAMICALLY FETCHED IF NEEDED)
-              _buildContactDetailRow(ev, isDarkMode, primaryTextColor, secondaryTextColor),
+              _buildContactDetailRow(
+                ev,
+                isDarkMode,
+                primaryTextColor,
+                secondaryTextColor,
+              ),
 
               if (ev.reminder != 'Không' &&
                   ev.reminder != 'Đặt lời nhắc' &&
@@ -268,7 +328,9 @@ class EventDetailSheet {
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: isDarkMode ? Colors.white.withValues(alpha: 0.04) : const Color(0xFFF8FAFC),
+                    color: isDarkMode
+                        ? Colors.white.withValues(alpha: 0.04)
+                        : const Color(0xFFF8FAFC),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: borderColor),
                   ),
@@ -356,7 +418,8 @@ class EventDetailSheet {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => CreatePersonalEventPage(event: ev),
+                            builder: (context) =>
+                                CreatePersonalEventPage(event: ev),
                           ),
                         );
                         if (onRefresh != null) onRefresh();
@@ -380,7 +443,8 @@ class EventDetailSheet {
                         final confirm = await AppActionDialogs.showConfirmDialog(
                           context: context,
                           title: 'Xóa sự kiện?',
-                          message: 'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" không?',
+                          message:
+                              'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" không?',
                           confirmText: 'Xóa',
                         );
                         if (confirm == true) {
@@ -411,17 +475,25 @@ class EventDetailSheet {
   }
 
   static Widget _buildOrganizerTile(
-      EventModel ev, bool isDarkMode, Color primaryText, Color border) {
+    EventModel ev,
+    bool isDarkMode,
+    Color primaryText,
+    Color border,
+  ) {
     // 1. Nếu là sự kiện cá nhân tự tạo không có facultyEventId và facultyName -> Ẩn ô này
-    final bool isPersonalWithoutFaculty = !ev.isFromFacultyEvent &&
+    final bool isPersonalWithoutFaculty =
+        !ev.isFromFacultyEvent &&
         (ev.facultyEventId == null || ev.facultyEventId!.isEmpty) &&
-        (ev.facultyName == null || ev.facultyName!.trim().isEmpty || ev.facultyName!.trim() == 'Sự kiện cá nhân');
+        (ev.facultyName == null ||
+            ev.facultyName!.trim().isEmpty ||
+            ev.facultyName!.trim() == 'Sự kiện cá nhân');
 
     if (isPersonalWithoutFaculty) {
       return const SizedBox.shrink();
     }
 
-    final String? directFaculty = (ev.facultyName != null &&
+    final String? directFaculty =
+        (ev.facultyName != null &&
             ev.facultyName!.trim().isNotEmpty &&
             ev.facultyName!.trim() != 'Khoa HCMUS' &&
             ev.facultyName!.trim() != 'Chưa cập nhật' &&
@@ -431,7 +503,12 @@ class EventDetailSheet {
 
     // 2. Nếu đã có tên Khoa trực tiếp trong memory -> Hiển thị ngay lập tức (0ms delay!)
     if (directFaculty != null) {
-      return _buildOrganizerContainer(directFaculty, isDarkMode, primaryText, border);
+      return _buildOrganizerContainer(
+        directFaculty,
+        isDarkMode,
+        primaryText,
+        border,
+      );
     }
 
     // 3. Nếu là sự kiện Khoa và ev.facultyEventId có sẵn -> Tải tên Khoa từ Firestore
@@ -444,35 +521,60 @@ class EventDetailSheet {
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data?.data() != null) {
             final data = snapshot.data!.data() as Map<String, dynamic>;
-            final fetched = (data['facultyName'] ??
-                    data['department'] ??
-                    data['faculty'] ??
-                    data['organizer'] ??
-                    data['organizerName'])
-                ?.toString()
-                .trim();
-            if (fetched != null && fetched.isNotEmpty && fetched != 'Khoa HCMUS') {
-              return _buildOrganizerContainer(fetched, isDarkMode, primaryText, border);
+            final fetched =
+                (data['facultyName'] ??
+                        data['department'] ??
+                        data['faculty'] ??
+                        data['organizer'] ??
+                        data['organizerName'])
+                    ?.toString()
+                    .trim();
+            if (fetched != null &&
+                fetched.isNotEmpty &&
+                fetched != 'Khoa HCMUS') {
+              return _buildOrganizerContainer(
+                fetched,
+                isDarkMode,
+                primaryText,
+                border,
+              );
             }
           }
-          final String fallback = (ev.facultyName?.trim().isNotEmpty == true &&
+          final String fallback =
+              (ev.facultyName?.trim().isNotEmpty == true &&
                   ev.facultyName!.trim() != 'Sự kiện cá nhân')
               ? ev.facultyName!.trim()
               : 'Ban tổ chức Khoa HCMUS';
-          return _buildOrganizerContainer(fallback, isDarkMode, primaryText, border);
+          return _buildOrganizerContainer(
+            fallback,
+            isDarkMode,
+            primaryText,
+            border,
+          );
         },
       );
     }
 
-    if (ev.facultyName != null && ev.facultyName!.trim().isNotEmpty && ev.facultyName!.trim() != 'Sự kiện cá nhân') {
-      return _buildOrganizerContainer(ev.facultyName!.trim(), isDarkMode, primaryText, border);
+    if (ev.facultyName != null &&
+        ev.facultyName!.trim().isNotEmpty &&
+        ev.facultyName!.trim() != 'Sự kiện cá nhân') {
+      return _buildOrganizerContainer(
+        ev.facultyName!.trim(),
+        isDarkMode,
+        primaryText,
+        border,
+      );
     }
 
     return const SizedBox.shrink();
   }
 
   static Widget _buildOrganizerContainer(
-      String facultyText, bool isDarkMode, Color primaryText, Color border) {
+    String facultyText,
+    bool isDarkMode,
+    Color primaryText,
+    Color border,
+  ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -481,15 +583,13 @@ class EventDetailSheet {
             ? const Color(0xFF3B82F6).withValues(alpha: 0.1)
             : const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.3)),
+        border: Border.all(
+          color: const Color(0xFF3B82F6).withValues(alpha: 0.3),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.school_rounded,
-            size: 20,
-            color: Color(0xFF2563EB),
-          ),
+          const Icon(Icons.school_rounded, size: 20, color: Color(0xFF2563EB)),
           const SizedBox(width: 10),
           Expanded(
             child: RichText(
@@ -502,7 +602,10 @@ class EventDetailSheet {
                 children: [
                   const TextSpan(
                     text: 'Khoa / Đơn vị: ',
-                    style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2563EB)),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF2563EB),
+                    ),
                   ),
                   TextSpan(
                     text: facultyText,
@@ -518,8 +621,13 @@ class EventDetailSheet {
   }
 
   static Widget _buildContactDetailRow(
-      EventModel ev, bool isDarkMode, Color primaryText, Color secondaryText) {
-    final String? directContact = (ev.contact != null && ev.contact!.trim().isNotEmpty)
+    EventModel ev,
+    bool isDarkMode,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    final String? directContact =
+        (ev.contact != null && ev.contact!.trim().isNotEmpty)
         ? ev.contact!.trim()
         : null;
 
@@ -534,7 +642,8 @@ class EventDetailSheet {
       );
     }
 
-    final String? directFaculty = (ev.facultyName != null &&
+    final String? directFaculty =
+        (ev.facultyName != null &&
             ev.facultyName!.trim().isNotEmpty &&
             ev.facultyName!.trim() != 'Khoa HCMUS' &&
             ev.facultyName!.trim() != 'Sự kiện cá nhân')
@@ -551,16 +660,17 @@ class EventDetailSheet {
         builder: (context, snapshot) {
           if (snapshot.hasData && snapshot.data?.data() != null) {
             final data = snapshot.data!.data() as Map<String, dynamic>;
-            final fetchedContact = (data['contact'] ??
-                    data['organizer'] ??
-                    data['organizerName'] ??
-                    data['contactInfo'] ??
-                    data['phone'] ??
-                    data['email'] ??
-                    data['facultyName'] ??
-                    data['department'])
-                ?.toString()
-                .trim();
+            final fetchedContact =
+                (data['contact'] ??
+                        data['organizer'] ??
+                        data['organizerName'] ??
+                        data['contactInfo'] ??
+                        data['phone'] ??
+                        data['email'] ??
+                        data['facultyName'] ??
+                        data['department'])
+                    ?.toString()
+                    .trim();
             if (fetchedContact != null && fetchedContact.isNotEmpty) {
               return _buildDetailRow(
                 Icons.contact_phone_rounded,
@@ -584,7 +694,8 @@ class EventDetailSheet {
       );
     }
 
-    final String displayContact = directFaculty ?? 'Chưa cập nhật thông tin liên hệ';
+    final String displayContact =
+        directFaculty ?? 'Chưa cập nhật thông tin liên hệ';
     return _buildDetailRow(
       Icons.contact_phone_rounded,
       'Liên hệ / BTC',
@@ -686,7 +797,8 @@ class EventDetailSheet {
 
     await ref.delete();
 
-    final String targetInterestedId = (ev.facultyEventId != null && ev.facultyEventId!.isNotEmpty)
+    final String targetInterestedId =
+        (ev.facultyEventId != null && ev.facultyEventId!.isNotEmpty)
         ? ev.facultyEventId!
         : ev.id;
 

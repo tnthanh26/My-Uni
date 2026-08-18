@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ModEmptyState extends StatelessWidget {
-  const ModEmptyState({
-    super.key,
-    this.text = "Không có bài viết cần xử lý!",
-  });
+  const ModEmptyState({super.key, this.text = "Không có bài viết cần xử lý!"});
 
   final String text;
 

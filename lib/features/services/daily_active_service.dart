@@ -25,19 +25,19 @@ class DailyActiveService {
         .collection('users')
         .doc(authUser.uid)
         .set({
-      'uid': authUser.uid,
-      'displayName': data['displayName'] ?? authUser.displayName ?? '',
-      'email': data['email'] ?? authUser.email ?? '',
-      'studentId': data['studentId'] ?? '',
-      'role': data['role'] ?? '',
-      'university': data['university'] ?? '',
-      'cohort': data['cohort'] ?? '',
-      'verificationLevel': data['verificationLevel'] ?? '',
-      'verificationMethod': data['verificationMethod'] ?? '',
-      'status': data['status'] ?? '',
-      'isVerified': data['isVerified'] ?? false,
-      'lastActiveAt': FieldValue.serverTimestamp(),
-      'dateKey': todayKey,
-    }, SetOptions(merge: true));
+          'uid': authUser.uid,
+          'displayName': data['displayName'] ?? authUser.displayName ?? '',
+          'email': data['email'] ?? authUser.email ?? '',
+          'studentId': data['studentId'] ?? '',
+          'role': data['role'] ?? '',
+          'university': data['university'] ?? '',
+          'cohort': data['cohort'] ?? '',
+          'verificationLevel': data['verificationLevel'] ?? '',
+          'verificationMethod': data['verificationMethod'] ?? '',
+          'status': data['status'] ?? '',
+          'isVerified': data['isVerified'] ?? false,
+          'lastActiveAt': FieldValue.serverTimestamp(),
+          'dateKey': todayKey,
+        }, SetOptions(merge: true));
   }
 }

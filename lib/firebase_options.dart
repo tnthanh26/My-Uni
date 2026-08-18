@@ -72,5 +72,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'myuni-fe6d1.firebasestorage.app',
     measurementId: 'G-RFVD3VFE3W',
   );
-
 }

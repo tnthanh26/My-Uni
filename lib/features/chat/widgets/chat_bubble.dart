@@ -32,7 +32,9 @@ class ChatBubble extends StatelessWidget {
     if (base64Data.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Tệp này không chứa dữ liệu hoặc được gửi từ phiên bản cũ."),
+          content: Text(
+            "Tệp này không chứa dữ liệu hoặc được gửi từ phiên bản cũ.",
+          ),
         ),
       );
       return;
@@ -55,7 +57,8 @@ class ChatBubble extends StatelessWidget {
       // Ghép extension vào fileName nếu tên file chưa có đuôi mở rộng
       String safeFileName = fileName.trim();
       final cleanExt = extension.toLowerCase().replaceAll('.', '').trim();
-      if (cleanExt.isNotEmpty && !safeFileName.toLowerCase().endsWith('.$cleanExt')) {
+      if (cleanExt.isNotEmpty &&
+          !safeFileName.toLowerCase().endsWith('.$cleanExt')) {
         safeFileName = '$safeFileName.$cleanExt';
       }
       safeFileName = safeFileName.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
@@ -78,9 +81,9 @@ class ChatBubble extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Lỗi khi mở tệp: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Lỗi khi mở tệp: $e")));
       }
     }
   }
@@ -115,25 +118,38 @@ class ChatBubble extends StatelessWidget {
                 ListTile(
                   dense: true,
                   leading: Icon(Icons.copy_rounded, color: iconColor, size: 20),
-                  title: const Text('Sao chép', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                  title: const Text(
+                    'Sao chép',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
                   onTap: () {
                     Navigator.pop(context);
                     Clipboard.setData(ClipboardData(text: message.text));
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Đã sao chép vào bộ nhớ tạm'), duration: Duration(seconds: 1)),
+                      const SnackBar(
+                        content: Text('Đã sao chép vào bộ nhớ tạm'),
+                        duration: Duration(seconds: 1),
+                      ),
                     );
                   },
                 ),
-
 
               // Recall message
               if (!message.isRecalled && onRecall != null)
                 ListTile(
                   dense: true,
-                  leading: const Icon(Icons.undo_rounded, color: Colors.redAccent, size: 20),
+                  leading: const Icon(
+                    Icons.undo_rounded,
+                    color: Colors.redAccent,
+                    size: 20,
+                  ),
                   title: const Text(
                     'Thu hồi',
-                    style: TextStyle(fontSize: 15, color: Colors.redAccent, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   onTap: () {
                     Navigator.pop(context);
@@ -154,7 +170,9 @@ class ChatBubble extends StatelessWidget {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Thu hồi tin nhắn?'),
-        content: const Text('Tin nhắn này sẽ bị gỡ khỏi cuộc trò chuyện đối với cả 2 người.'),
+        content: const Text(
+          'Tin nhắn này sẽ bị gỡ khỏi cuộc trò chuyện đối với cả 2 người.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -173,19 +191,25 @@ class ChatBubble extends StatelessWidget {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bool isOnlyContact = message.contactShare != null && message.text.isEmpty && !message.isRecalled;
+    final bool isOnlyContact =
+        message.contactShare != null &&
+        message.text.isEmpty &&
+        !message.isRecalled;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2, horizontal: 12),
       child: Column(
-        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Row(
-            mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            mainAxisAlignment: isMe
+                ? MainAxisAlignment.end
+                : MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Flexible(
@@ -201,10 +225,14 @@ class ChatBubble extends StatelessWidget {
                         ? const BoxDecoration(color: Colors.transparent)
                         : BoxDecoration(
                             color: message.isRecalled
-                                ? (isDark ? Colors.white10 : Colors.black.withValues(alpha: 0.05))
+                                ? (isDark
+                                      ? Colors.white10
+                                      : Colors.black.withValues(alpha: 0.05))
                                 : (isMe
-                                    ? AppColors.hcmusTeal
-                                    : (isDark ? const Color(0xFF2C2C2E) : const Color(0xFFF2F4F7))),
+                                      ? AppColors.hcmusTeal
+                                      : (isDark
+                                            ? const Color(0xFF2C2C2E)
+                                            : const Color(0xFFF2F4F7))),
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(18),
                               topRight: const Radius.circular(18),
@@ -215,7 +243,9 @@ class ChatBubble extends StatelessWidget {
                                 ? null
                                 : [
                                     BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.03),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.03,
+                                      ),
                                       blurRadius: 3,
                                       offset: const Offset(0, 1),
                                     ),
@@ -223,10 +253,15 @@ class ChatBubble extends StatelessWidget {
                           ),
                     padding: isOnlyContact
                         ? EdgeInsets.zero
-                        : const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        : const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
                       children: [
                         // Nếu là tin nhắn đã thu hồi
                         if (message.isRecalled) ...[
@@ -244,7 +279,9 @@ class ChatBubble extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontStyle: FontStyle.italic,
-                                  color: isDark ? Colors.white38 : Colors.black38,
+                                  color: isDark
+                                      ? Colors.white38
+                                      : Colors.black38,
                                 ),
                               ),
                             ],
@@ -252,20 +289,34 @@ class ChatBubble extends StatelessWidget {
                         ] else ...[
                           // Thẻ chia sẻ liên hệ nếu có
                           if (message.contactShare != null) ...[
-                            _buildContactShareCard(context, message.contactShare!, isMe, isDark),
-                            if (message.text.isNotEmpty) const SizedBox(height: 6),
+                            _buildContactShareCard(
+                              context,
+                              message.contactShare!,
+                              isMe,
+                              isDark,
+                            ),
+                            if (message.text.isNotEmpty)
+                              const SizedBox(height: 6),
                           ],
 
                           // Thẻ file đính kèm nếu có
                           if (message.fileShare != null) ...[
-                            _buildFileShareCard(context, message.fileShare!, isMe, isDark),
-                            if (message.text.isNotEmpty) const SizedBox(height: 6),
+                            _buildFileShareCard(
+                              context,
+                              message.fileShare!,
+                              isMe,
+                              isDark,
+                            ),
+                            if (message.text.isNotEmpty)
+                              const SizedBox(height: 6),
                           ],
 
                           // Hình ảnh nếu có
-                          if (message.imageUrl != null && message.imageUrl!.isNotEmpty) ...[
+                          if (message.imageUrl != null &&
+                              message.imageUrl!.isNotEmpty) ...[
                             _buildImageContent(message.imageUrl!),
-                            if (message.text.isNotEmpty) const SizedBox(height: 6),
+                            if (message.text.isNotEmpty)
+                              const SizedBox(height: 6),
                           ],
 
                           // Nội dung chữ
@@ -277,11 +328,12 @@ class ChatBubble extends StatelessWidget {
                                 height: 1.35,
                                 color: isMe
                                     ? Colors.white
-                                    : (isDark ? Colors.white.withValues(alpha: 0.9) : Colors.black87),
+                                    : (isDark
+                                          ? Colors.white.withValues(alpha: 0.9)
+                                          : Colors.black87),
                               ),
                             ),
                         ],
-
                       ],
                     ),
                   ),
@@ -312,13 +364,15 @@ class ChatBubble extends StatelessWidget {
   Widget _buildImageContent(String imageSource) {
     if (imageSource.startsWith('data:image') || imageSource.length > 500) {
       final provider = Base64ImageCache.getMemoryImage(imageSource);
-      if (provider == null) return const Icon(Icons.broken_image, color: Colors.white70);
+      if (provider == null)
+        return const Icon(Icons.broken_image, color: Colors.white70);
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image(
           image: provider,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white70),
+          errorBuilder: (context, error, stackTrace) =>
+              const Icon(Icons.broken_image, color: Colors.white70),
         ),
       );
     }
@@ -327,20 +381,21 @@ class ChatBubble extends StatelessWidget {
       child: Image.network(
         imageSource,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, color: Colors.white70),
+        errorBuilder: (context, error, stackTrace) =>
+            const Icon(Icons.broken_image, color: Colors.white70),
       ),
     );
   }
 
   Widget _buildFileShareCard(
-      BuildContext context,
-      Map<String, String> fileData,
-      bool isMe,
-      bool isDark,
-      ) {
+    BuildContext context,
+    Map<String, String> fileData,
+    bool isMe,
+    bool isDark,
+  ) {
     final fileName = fileData['fileName'] ?? 'Tài liệu đính kèm';
     final fileSize = fileData['fileSize'] ?? '';
-    
+
     String rawExt = fileData['extension'] ?? '';
     if (rawExt.contains('.')) {
       rawExt = rawExt.split('.').last;
@@ -350,14 +405,11 @@ class ChatBubble extends StatelessWidget {
     }
     final ext = rawExt.trim().toLowerCase();
 
-    final base64Content =
-        fileData['fileData'] ?? fileData['base64'] ?? '';
+    final base64Content = fileData['fileData'] ?? fileData['base64'] ?? '';
 
     IconData fileIcon = Icons.insert_drive_file_outlined;
     Color iconColor = AppColors.hcmusTeal;
-    String fileTypeLabel = ext.isNotEmpty
-        ? ext.toUpperCase()
-        : 'TỆP';
+    String fileTypeLabel = ext.isNotEmpty ? ext.toUpperCase() : 'TỆP';
 
     if (ext == 'pdf') {
       fileIcon = Icons.picture_as_pdf_outlined;
@@ -375,39 +427,28 @@ class ChatBubble extends StatelessWidget {
 
     final Color cardColor = isMe
         ? Colors.white.withValues(alpha: 0.12)
-        : (isDark
-        ? const Color(0xFF1C1E21)
-        : Colors.white);
+        : (isDark ? const Color(0xFF1C1E21) : Colors.white);
 
     final Color borderColor = isMe
         ? Colors.white.withValues(alpha: 0.18)
         : (isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : const Color(0xFFE4E7EC));
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFE4E7EC));
 
     final Color primaryTextColor = isMe
         ? Colors.white
-        : (isDark
-        ? Colors.white
-        : const Color(0xFF1D2939));
+        : (isDark ? Colors.white : const Color(0xFF1D2939));
 
     final Color secondaryTextColor = isMe
         ? Colors.white70
-        : (isDark
-        ? Colors.white54
-        : const Color(0xFF667085));
+        : (isDark ? Colors.white54 : const Color(0xFF667085));
 
     return Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: () {
-          _handleOpenFile(
-            context,
-            base64Content,
-            fileName,
-            extension: ext,
-          );
+          _handleOpenFile(context, base64Content, fileName, extension: ext);
         },
         borderRadius: BorderRadius.circular(14),
         child: Container(
@@ -415,9 +456,7 @@ class ChatBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: borderColor,
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             children: [
@@ -440,8 +479,7 @@ class ChatBubble extends StatelessWidget {
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       fileName,
@@ -466,27 +504,19 @@ class ChatBubble extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: isMe
-                                  ? Colors.white.withValues(
-                                alpha: 0.10,
-                              )
-                                  : iconColor.withValues(
-                                alpha: 0.08,
-                              ),
-                              borderRadius:
-                              BorderRadius.circular(6),
+                                  ? Colors.white.withValues(alpha: 0.10)
+                                  : iconColor.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
                               fileTypeLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily:
-                                'Encode Sans Expanded',
+                                fontFamily: 'Encode Sans Expanded',
                                 fontSize: 9,
                                 fontWeight: FontWeight.w700,
-                                color: isMe
-                                    ? Colors.white70
-                                    : iconColor,
+                                color: isMe ? Colors.white70 : iconColor,
                               ),
                             ),
                           ),
@@ -506,14 +536,11 @@ class ChatBubble extends StatelessWidget {
                             child: Text(
                               fileSize,
                               maxLines: 1,
-                              overflow:
-                              TextOverflow.ellipsis,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontFamily:
-                                'Encode Sans Expanded',
+                                fontFamily: 'Encode Sans Expanded',
                                 fontSize: 10.5,
-                                color:
-                                secondaryTextColor,
+                                color: secondaryTextColor,
                               ),
                             ),
                           ),
@@ -532,18 +559,14 @@ class ChatBubble extends StatelessWidget {
                   color: isMe
                       ? Colors.white.withValues(alpha: 0.10)
                       : (isDark
-                      ? Colors.white.withValues(
-                    alpha: 0.06,
-                  )
-                      : const Color(0xFFF5F7FA)),
+                            ? Colors.white.withValues(alpha: 0.06)
+                            : const Color(0xFFF5F7FA)),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.download_rounded,
                   size: 18,
-                  color: isMe
-                      ? Colors.white70
-                      : secondaryTextColor,
+                  color: isMe ? Colors.white70 : secondaryTextColor,
                 ),
               ),
             ],
@@ -601,20 +624,23 @@ class ChatBubble extends StatelessWidget {
         break;
     }
 
-    final Color cardBg =
-        isDark ? const Color(0xFF1E293B) : Colors.white;
+    final Color cardBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
-    final Color cardBorder =
-        isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0);
+    final Color cardBorder = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFE2E8F0);
 
-    final Color textColorPrimary =
-        isDark ? Colors.white : const Color(0xFF0F172A);
+    final Color textColorPrimary = isDark
+        ? Colors.white
+        : const Color(0xFF0F172A);
 
-    final Color textColorSecondary =
-        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final Color textColorSecondary = isDark
+        ? const Color(0xFF94A3B8)
+        : const Color(0xFF64748B);
 
-    final Color valueBoxBg =
-        isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC);
+    final Color valueBoxBg = isDark
+        ? const Color(0xFF0F172A)
+        : const Color(0xFFF8FAFC);
 
     Future<void> copyValue() async {
       await Clipboard.setData(ClipboardData(text: value));
@@ -648,10 +674,7 @@ class ChatBubble extends StatelessWidget {
         final uri = Uri.parse(url);
 
         if (await canLaunchUrl(uri)) {
-          await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
           return;
         }
       } catch (_) {}
@@ -665,15 +688,10 @@ class ChatBubble extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: cardBorder,
-          width: 1,
-        ),
+        border: Border.all(color: cardBorder, width: 1),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(
-              alpha: isDark ? 0.18 : 0.05,
-            ),
+            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -689,16 +707,10 @@ class ChatBubble extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: brandColor.withValues(
-                    alpha: isDark ? 0.18 : 0.1,
-                  ),
+                  color: brandColor.withValues(alpha: isDark ? 0.18 : 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  brandIcon,
-                  size: 21,
-                  color: brandColor,
-                ),
+                child: Icon(brandIcon, size: 21, color: brandColor),
               ),
               const SizedBox(width: 11),
               Expanded(
@@ -739,9 +751,7 @@ class ChatBubble extends StatelessWidget {
             decoration: BoxDecoration(
               color: valueBoxBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: cardBorder,
-              ),
+              border: Border.all(color: cardBorder),
             ),
             child: Row(
               children: [
@@ -752,12 +762,7 @@ class ChatBubble extends StatelessWidget {
                       left: Radius.circular(12),
                     ),
                     child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        12,
-                        11,
-                        8,
-                        11,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(12, 11, 8, 11),
                       child: SelectableText(
                         value,
                         maxLines: 2,
@@ -766,19 +771,13 @@ class ChatBubble extends StatelessWidget {
                           fontSize: 11.5,
                           height: 1.35,
                           fontWeight: FontWeight.w500,
-                          color: isUrl
-                              ? brandColor
-                              : textColorPrimary,
+                          color: isUrl ? brandColor : textColorPrimary,
                         ),
                       ),
                     ),
                   ),
                 ),
-                Container(
-                  width: 1,
-                  height: 24,
-                  color: cardBorder,
-                ),
+                Container(width: 1, height: 24, color: cardBorder),
                 Tooltip(
                   message: 'Sao chép',
                   child: InkWell(
@@ -806,10 +805,7 @@ class ChatBubble extends StatelessWidget {
               onTap: openValue,
               borderRadius: BorderRadius.circular(8),
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 2,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 3),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [

@@ -166,8 +166,9 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
         ? Colors.orange.withValues(alpha: 0.35)
         : Colors.green.withValues(alpha: 0.35);
     final Color textColor = isPending ? Colors.orange : Colors.green;
-    final IconData icon =
-        isPending ? Icons.schedule_rounded : Icons.check_circle_rounded;
+    final IconData icon = isPending
+        ? Icons.schedule_rounded
+        : Icons.check_circle_rounded;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
@@ -310,8 +311,9 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                       fontFamily: 'Encode Sans Expanded',
                       fontSize: 13.5,
                       height: 1.45,
-                      color:
-                          isDarkMode ? Colors.white70 : const Color(0xFF374151),
+                      color: isDarkMode
+                          ? Colors.white70
+                          : const Color(0xFF374151),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -471,8 +473,9 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-          isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           "Đánh giá của tôi",
@@ -532,7 +535,9 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                         icon: Icon(
                           Icons.close_rounded,
                           size: 19,
-                          color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                          color: isDarkMode
+                              ? Colors.white54
+                              : const Color(0xFF667085),
                         ),
                       )
                     : null,
@@ -586,11 +591,14 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                   if (cleanQuery.isEmpty) return true;
                   final data = doc.data() as Map<String, dynamic>;
                   final courseName = removeVietnameseDiacritics(
-                      (data['courseName'] ?? data['subject'] ?? '').toString());
+                    (data['courseName'] ?? data['subject'] ?? '').toString(),
+                  );
                   final teacher = removeVietnameseDiacritics(
-                      (data['teacher'] ?? data['lecturer'] ?? '').toString());
+                    (data['teacher'] ?? data['lecturer'] ?? '').toString(),
+                  );
                   final content = removeVietnameseDiacritics(
-                      (data['content'] ?? data['reviewContent'] ?? '').toString());
+                    (data['content'] ?? data['reviewContent'] ?? '').toString(),
+                  );
                   return courseName.contains(cleanQuery) ||
                       teacher.contains(cleanQuery) ||
                       content.contains(cleanQuery);
@@ -615,7 +623,9 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
                               fontFamily: 'Encode Sans Expanded',
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
-                              color: isDarkMode ? Colors.white70 : Colors.black87,
+                              color: isDarkMode
+                                  ? Colors.white70
+                                  : Colors.black87,
                             ),
                           ),
                         ],

@@ -26,19 +26,25 @@ class ChatService {
     final myUid = currentUserId;
     if (myUid == null) throw Exception('Vui lòng đăng nhập để nhắn tin');
     final cleanTargetId = targetUserId.trim();
-    if (cleanTargetId.isEmpty) throw Exception('Thông tin người dùng không hợp lệ');
-    if (myUid == cleanTargetId) throw Exception('Bạn không thể tự nhắn tin cho chính mình');
+    if (cleanTargetId.isEmpty)
+      throw Exception('Thông tin người dùng không hợp lệ');
+    if (myUid == cleanTargetId)
+      throw Exception('Bạn không thể tự nhắn tin cho chính mình');
 
     final roomId = generateRoomId(myUid, cleanTargetId);
     final roomRef = _firestore.collection('chat_rooms').doc(roomId);
 
     String myName = _auth.currentUser?.displayName ?? 'Sinh viên';
     String myPhoto = _auth.currentUser?.photoURL ?? '';
-    String resolvedTargetName = (targetName != null && targetName.trim().isNotEmpty) ? targetName.trim() : 'Sinh viên';
+    String resolvedTargetName =
+        (targetName != null && targetName.trim().isNotEmpty)
+        ? targetName.trim()
+        : 'Sinh viên';
     String resolvedTargetPhoto = targetPhoto ?? '';
 
     // Tối ưu hóa performance: chạy song song (parallel) các truy vấn Firestore thay vì chờ từng call nối tiếp
-    final bool needFetchTarget = targetName == null || targetName.trim().isEmpty;
+    final bool needFetchTarget =
+        targetName == null || targetName.trim().isEmpty;
 
     try {
       final results = await Future.wait([
@@ -55,14 +61,36 @@ class ChatService {
 
       if (myDoc != null && myDoc.exists) {
         final myData = myDoc.data() as Map<String, dynamic>? ?? {};
-        myName = myData['displayName'] ?? myData['name'] ?? myData['username'] ?? myName;
-        myPhoto = myData['photoURL'] ?? myData['photoUrl'] ?? myData['avatar'] ?? myData['authorAvatar'] ?? myData['avatarUrl'] ?? myData['userAvatar'] ?? myPhoto;
+        myName =
+            myData['displayName'] ??
+            myData['name'] ??
+            myData['username'] ??
+            myName;
+        myPhoto =
+            myData['photoURL'] ??
+            myData['photoUrl'] ??
+            myData['avatar'] ??
+            myData['authorAvatar'] ??
+            myData['avatarUrl'] ??
+            myData['userAvatar'] ??
+            myPhoto;
       }
 
       if (targetDoc != null && targetDoc.exists) {
         final targetData = targetDoc.data() as Map<String, dynamic>? ?? {};
-        resolvedTargetName = targetData['displayName'] ?? targetData['name'] ?? targetData['username'] ?? resolvedTargetName;
-        resolvedTargetPhoto = targetData['photoURL'] ?? targetData['photoUrl'] ?? targetData['avatar'] ?? targetData['authorAvatar'] ?? targetData['avatarUrl'] ?? targetData['userAvatar'] ?? resolvedTargetPhoto;
+        resolvedTargetName =
+            targetData['displayName'] ??
+            targetData['name'] ??
+            targetData['username'] ??
+            resolvedTargetName;
+        resolvedTargetPhoto =
+            targetData['photoURL'] ??
+            targetData['photoUrl'] ??
+            targetData['avatar'] ??
+            targetData['authorAvatar'] ??
+            targetData['avatarUrl'] ??
+            targetData['userAvatar'] ??
+            resolvedTargetPhoto;
       }
 
       final participantNames = {
@@ -112,26 +140,36 @@ class ChatService {
         .where('participants', arrayContains: myUid)
         .snapshots()
         .map((snapshot) {
-      final list = snapshot.docs.map((doc) => ChatRoom.fromFirestore(doc)).toList();
-      list.sort((a, b) {
-        final bool aHasMsg = a.lastMessage.isNotEmpty &&
-            a.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
-            a.lastMessageTime != null;
-        final bool bHasMsg = b.lastMessage.isNotEmpty &&
-            b.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
-            b.lastMessageTime != null;
+          final list = snapshot.docs
+              .map((doc) => ChatRoom.fromFirestore(doc))
+              .toList();
+          list.sort((a, b) {
+            final bool aHasMsg =
+                a.lastMessage.isNotEmpty &&
+                a.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
+                a.lastMessageTime != null;
+            final bool bHasMsg =
+                b.lastMessage.isNotEmpty &&
+                b.lastMessage != 'Đã bắt đầu cuộc trò chuyện' &&
+                b.lastMessageTime != null;
 
-        // Các phòng đã có tin nhắn thực sự luôn xếp TRÊN các phòng chưa chat chữ nào
-        if (aHasMsg && !bHasMsg) return -1;
-        if (!aHasMsg && bHasMsg) return 1;
+            // Các phòng đã có tin nhắn thực sự luôn xếp TRÊN các phòng chưa chat chữ nào
+            if (aHasMsg && !bHasMsg) return -1;
+            if (!aHasMsg && bHasMsg) return 1;
 
-        // Sắp xếp theo thời gian tin nhắn mới nhất
-        final timeA = a.lastMessageTime ?? a.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final timeB = b.lastMessageTime ?? b.updatedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return timeB.compareTo(timeA);
-      });
-      return list;
-    });
+            // Sắp xếp theo thời gian tin nhắn mới nhất
+            final timeA =
+                a.lastMessageTime ??
+                a.updatedAt ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            final timeB =
+                b.lastMessageTime ??
+                b.updatedAt ??
+                DateTime.fromMillisecondsSinceEpoch(0);
+            return timeB.compareTo(timeA);
+          });
+          return list;
+        });
   }
 
   /// Stream danh sách tin nhắn trong 1 phòng chat
@@ -143,8 +181,10 @@ class ChatService {
         .orderBy('timestamp', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) => ChatMessage.fromFirestore(doc)).toList();
-    });
+          return snapshot.docs
+              .map((doc) => ChatMessage.fromFirestore(doc))
+              .toList();
+        });
   }
 
   /// Gửi tin nhắn
@@ -159,7 +199,11 @@ class ChatService {
     if (myUid == null) throw Exception('Bạn chưa đăng nhập');
 
     final trimmedText = text.trim();
-    if (trimmedText.isEmpty && imageUrl == null && contactShare == null && fileShare == null) return;
+    if (trimmedText.isEmpty &&
+        imageUrl == null &&
+        contactShare == null &&
+        fileShare == null)
+      return;
 
     final roomRef = _firestore.collection('chat_rooms').doc(roomId);
 
@@ -174,8 +218,13 @@ class ChatService {
       try {
         final roomDoc = await roomRef.get();
         if (roomDoc.exists) {
-          final participants = List<String>.from(roomDoc.data()?['participants'] ?? []);
-          otherUid = participants.firstWhere((id) => id != myUid, orElse: () => '');
+          final participants = List<String>.from(
+            roomDoc.data()?['participants'] ?? [],
+          );
+          otherUid = participants.firstWhere(
+            (id) => id != myUid,
+            orElse: () => '',
+          );
         }
       } catch (e) {
         debugPrint("Error resolving target user ID: $e");
@@ -232,10 +281,7 @@ class ChatService {
           'lastMessageSenderId': myUid,
           'lastMessageTime': Timestamp.fromDate(now),
           'updatedAt': Timestamp.fromDate(now),
-          'unreadCounts': {
-            myUid: 0,
-            if (otherUid.isNotEmpty) otherUid: 1,
-          },
+          'unreadCounts': {myUid: 0, if (otherUid.isNotEmpty) otherUid: 1},
         });
       }
     } catch (e) {
@@ -247,7 +293,8 @@ class ChatService {
       try {
         final senderDoc = await _firestore.collection('users').doc(myUid).get();
         final senderData = senderDoc.data();
-        final senderName = (senderData?['displayName']?.toString().trim().isNotEmpty == true)
+        final senderName =
+            (senderData?['displayName']?.toString().trim().isNotEmpty == true)
             ? senderData!['displayName']
             : 'Một sinh viên';
 
@@ -286,13 +333,13 @@ class ChatService {
       final roomDoc = await roomRef.get();
       if (roomDoc.exists) {
         final data = roomDoc.data() ?? {};
-        
+
         // 1. Cập nhật map lồng nhau để đảm bảo unreadCounts[myUid] luôn là 0
-        final unreadCounts = Map<String, dynamic>.from(data['unreadCounts'] ?? {});
+        final unreadCounts = Map<String, dynamic>.from(
+          data['unreadCounts'] ?? {},
+        );
         unreadCounts[myUid] = 0;
-        await roomRef.update({
-          'unreadCounts': unreadCounts,
-        });
+        await roomRef.update({'unreadCounts': unreadCounts});
 
         // 2. Xóa các key lỗi dính dấu chấm ở root nếu có bằng set(merge: true) để tránh xóa nhầm dữ liệu trong map lồng
         final legacyRootKey = 'unreadCounts.$myUid';
@@ -366,7 +413,11 @@ class ChatService {
 
   /// Thu hồi tin nhắn
   Future<void> recallMessage(String roomId, String messageId) async {
-    final msgRef = _firestore.collection('chat_rooms').doc(roomId).collection('messages').doc(messageId);
+    final msgRef = _firestore
+        .collection('chat_rooms')
+        .doc(roomId)
+        .collection('messages')
+        .doc(messageId);
     await msgRef.update({
       'isRecalled': true,
       'text': 'Tin nhắn đã thu hồi',
@@ -377,30 +428,31 @@ class ChatService {
 
     final roomRef = _firestore.collection('chat_rooms').doc(roomId);
     try {
-      await roomRef.update({
-        'lastMessage': 'Tin nhắn đã thu hồi',
-      });
+      await roomRef.update({'lastMessage': 'Tin nhắn đã thu hồi'});
     } catch (e) {
       debugPrint('Update room lastMessage error: $e');
     }
   }
 
   /// Chỉnh sửa nội dung tin nhắn
-  Future<void> editMessage(String roomId, String messageId, String newText) async {
+  Future<void> editMessage(
+    String roomId,
+    String messageId,
+    String newText,
+  ) async {
     final trimmed = newText.trim();
     if (trimmed.isEmpty) return;
 
-    final msgRef = _firestore.collection('chat_rooms').doc(roomId).collection('messages').doc(messageId);
-    await msgRef.update({
-      'text': trimmed,
-      'isEdited': true,
-    });
+    final msgRef = _firestore
+        .collection('chat_rooms')
+        .doc(roomId)
+        .collection('messages')
+        .doc(messageId);
+    await msgRef.update({'text': trimmed, 'isEdited': true});
 
     final roomRef = _firestore.collection('chat_rooms').doc(roomId);
     try {
-      await roomRef.update({
-        'lastMessage': trimmed,
-      });
+      await roomRef.update({'lastMessage': trimmed});
     } catch (e) {
       debugPrint('Update room lastMessage error: $e');
     }
@@ -413,7 +465,9 @@ class ChatService {
       if (doc.exists) {
         final data = doc.data() ?? {};
         if (data['socialContacts'] is Map) {
-          return (data['socialContacts'] as Map).map((k, v) => MapEntry(k.toString(), v.toString()));
+          return (data['socialContacts'] as Map).map(
+            (k, v) => MapEntry(k.toString(), v.toString()),
+          );
         }
       }
     } catch (e) {
@@ -423,7 +477,10 @@ class ChatService {
   }
 
   /// Lưu danh sách liên hệ mạng xã hội của user
-  Future<void> saveUserSocialContacts(String userId, Map<String, String> contacts) async {
+  Future<void> saveUserSocialContacts(
+    String userId,
+    Map<String, String> contacts,
+  ) async {
     try {
       await _firestore.collection('users').doc(userId).set({
         'socialContacts': contacts,
@@ -434,7 +491,9 @@ class ChatService {
   }
 
   /// Lấy thông tin xác thực sinh viên từ Firestore
-  Future<Map<String, dynamic>?> getStudentVerificationInfo(String userId) async {
+  Future<Map<String, dynamic>?> getStudentVerificationInfo(
+    String userId,
+  ) async {
     try {
       final doc = await _firestore.collection('users').doc(userId).get();
       if (!doc.exists) return null;
@@ -444,9 +503,17 @@ class ChatService {
         'displayName': data['displayName'] ?? data['name'] ?? 'Sinh viên',
         'email': data['email'] ?? '',
         'university': data['university'] ?? 'HCMUS - ĐH Khoa học Tự nhiên',
-        'faculty': data['faculty'] ?? data['department'] ?? 'Chưa cập nhật khoa',
+        'faculty':
+            data['faculty'] ?? data['department'] ?? 'Chưa cập nhật khoa',
         'studentId': data['studentId'] ?? data['mssv'] ?? '',
-        'photoURL': data['photoURL'] ?? data['photoUrl'] ?? data['avatar'] ?? data['authorAvatar'] ?? data['avatarUrl'] ?? data['userAvatar'] ?? '',
+        'photoURL':
+            data['photoURL'] ??
+            data['photoUrl'] ??
+            data['avatar'] ??
+            data['authorAvatar'] ??
+            data['avatarUrl'] ??
+            data['userAvatar'] ??
+            '',
         'zalo': data['zalo'] ?? data['phone'] ?? '',
         'facebook': data['facebook'] ?? '',
         'phone': data['phone'] ?? '',
@@ -457,10 +524,14 @@ class ChatService {
       return null;
     }
   }
+
   static final Map<String, DateTime> _lastCleanupTimes = {};
 
   /// Tự động dọn dẹp các tin nhắn cũ hơn 30 ngày trong phòng chat
-  Future<void> cleanupExpiredMessages(String roomId, {int daysThreshold = 30}) async {
+  Future<void> cleanupExpiredMessages(
+    String roomId, {
+    int daysThreshold = 30,
+  }) async {
     final now = DateTime.now();
     final lastCleanup = _lastCleanupTimes[roomId];
 
@@ -486,10 +557,14 @@ class ChatService {
           batch.delete(doc.reference);
         }
         await batch.commit();
-        debugPrint("ChatService: Auto-deleted ${expiredMessagesQuery.docs.length} messages older than $daysThreshold days in room: $roomId");
+        debugPrint(
+          "ChatService: Auto-deleted ${expiredMessagesQuery.docs.length} messages older than $daysThreshold days in room: $roomId",
+        );
       }
     } catch (e) {
-      debugPrint("ChatService: Error cleaning up expired messages in room $roomId: $e");
+      debugPrint(
+        "ChatService: Error cleaning up expired messages in room $roomId: $e",
+      );
     }
   }
 
@@ -570,7 +645,9 @@ class ChatService {
       await roomRef.delete();
       debugPrint("ChatService: Successfully deleted chat room $roomId");
     } catch (e) {
-      debugPrint("Hard delete room permission restricted, removing participant: $e");
+      debugPrint(
+        "Hard delete room permission restricted, removing participant: $e",
+      );
       try {
         await roomRef.update({
           'participants': FieldValue.arrayRemove([myUid]),

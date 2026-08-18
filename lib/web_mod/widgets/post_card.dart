@@ -62,8 +62,9 @@ class PostCard extends StatelessWidget {
 
   Widget _buildPollPreview(Map<String, dynamic> pollData) {
     final List<dynamic> options = pollData['options'] ?? [];
-    final Map<String, dynamic> votes =
-    Map<String, dynamic>.from(pollData['votes'] ?? {});
+    final Map<String, dynamic> votes = Map<String, dynamic>.from(
+      pollData['votes'] ?? {},
+    );
 
     Map<int, int> optionCounts = {};
     for (var v in votes.values) {
@@ -182,7 +183,7 @@ class PostCard extends StatelessWidget {
             color: Colors.black.withOpacity(0.04),
             blurRadius: 8,
             offset: const Offset(0, 3),
-          )
+          ),
         ],
       ),
       child: Padding(
@@ -227,10 +228,10 @@ class PostCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
-                              data['timestamp']
-                                  ?.toDate()
-                                  .toString()
-                                  .substring(0, 16) ??
+                              data['timestamp']?.toDate().toString().substring(
+                                    0,
+                                    16,
+                                  ) ??
                                   "",
                               style: TextStyle(
                                 color: Colors.grey[500],
@@ -265,7 +266,7 @@ class PostCard extends StatelessWidget {
                           _buildReportBadge(
                             icon: Icons.chat_bubble_outline_rounded,
                             label:
-                            "Có bình luận bị báo cáo: $reportedCommentCount",
+                                "Có bình luận bị báo cáo: $reportedCommentCount",
                             color: const Color(0xFFEA580C),
                             bgColor: const Color(0xFFFFF7ED),
                             borderColor: const Color(0xFFFFEDD5),
@@ -324,8 +325,10 @@ class PostCard extends StatelessWidget {
               const SizedBox(height: 8),
               Container(
                 width: double.infinity,
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey[100],
                   borderRadius: BorderRadius.circular(8),
@@ -386,14 +389,14 @@ class PostCard extends StatelessWidget {
                 children: (data['hashtags'] as List)
                     .map(
                       (t) => Text(
-                    "#$t",
-                    style: const TextStyle(
-                      color: Colors.blueAccent,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                    ),
-                  ),
-                )
+                        "#$t",
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 8),
@@ -506,7 +509,7 @@ class PostCard extends StatelessWidget {
                     ),
                 ],
               ),
-            )
+            ),
           ],
         ),
       ),

@@ -41,7 +41,10 @@ class _AttendanceTableState extends State<AttendanceTable> {
             SizedBox(width: 10),
             Text(
               'Xác nhận xóa',
-              style: TextStyle(fontFamily: 'Nunito', fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ),
@@ -69,10 +72,7 @@ class _AttendanceTableState extends State<AttendanceTable> {
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
               minimumSize: const Size(80, 36),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
@@ -80,10 +80,7 @@ class _AttendanceTableState extends State<AttendanceTable> {
             ),
             child: const Text(
               'Xóa ngay',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -101,9 +98,9 @@ class _AttendanceTableState extends State<AttendanceTable> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Lỗi khi xóa: $e')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Lỗi khi xóa: $e')));
         }
       } finally {
         if (mounted) setState(() => _isDeleting = false);
@@ -273,11 +270,25 @@ class _AttendanceTableState extends State<AttendanceTable> {
 
                     return DataRow(
                       cells: [
-                        DataCell(_textCell(data['displayName'] ?? '', width: 180)),
-                        DataCell(_textCell(data['studentId'] ?? '', width: 100)),
-                        DataCell(_textCell(data['faculty'] ?? 'Chưa cập nhật khoa', width: 180)),
+                        DataCell(
+                          _textCell(data['displayName'] ?? '', width: 180),
+                        ),
+                        DataCell(
+                          _textCell(data['studentId'] ?? '', width: 100),
+                        ),
+                        DataCell(
+                          _textCell(
+                            data['faculty'] ?? 'Chưa cập nhật khoa',
+                            width: 180,
+                          ),
+                        ),
                         DataCell(_textCell(data['cohort'] ?? '', width: 100)),
-                        DataCell(_textCell(_formatTime(data['checkedInAt']), width: 170)),
+                        DataCell(
+                          _textCell(
+                            _formatTime(data['checkedInAt']),
+                            width: 170,
+                          ),
+                        ),
                         DataCell(
                           Align(
                             alignment: Alignment.centerLeft,
@@ -289,10 +300,10 @@ class _AttendanceTableState extends State<AttendanceTable> {
                             onPressed: _isDeleting
                                 ? null
                                 : () => _showDeleteConfirmation(
-                                      context,
-                                      doc.id,
-                                      data['displayName'] ?? 'Sinh viên',
-                                    ),
+                                    context,
+                                    doc.id,
+                                    data['displayName'] ?? 'Sinh viên',
+                                  ),
                             icon: const Icon(
                               Icons.delete_outline_rounded,
                               color: Colors.redAccent,

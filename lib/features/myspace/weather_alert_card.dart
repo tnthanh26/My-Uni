@@ -4,10 +4,7 @@ import 'models/weather_models.dart';
 class WeatherAlertCard extends StatelessWidget {
   final WeatherAlertResult alert;
 
-  const WeatherAlertCard({
-    super.key,
-    required this.alert,
-  });
+  const WeatherAlertCard({super.key, required this.alert});
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +63,7 @@ class WeatherAlertCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          
+
           // Dòng 2: Mô tả nằm dưới và căn giữa
           Center(
             child: Text(

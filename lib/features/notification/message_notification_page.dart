@@ -46,13 +46,14 @@ class MessageNotificationScreen extends StatelessWidget {
   ) async {
     final String senderName =
         group.latestNoti.senderName?.trim().isNotEmpty == true
-            ? group.latestNoti.senderName!
-            : "sinh viên này";
+        ? group.latestNoti.senderName!
+        : "sinh viên này";
 
     final confirm = await AppActionDialogs.showConfirmDialog(
       context: parentContext,
       title: 'Xóa thông báo?',
-      message: 'Bạn có chắc muốn xóa tất cả thông báo tin nhắn từ $senderName không?',
+      message:
+          'Bạn có chắc muốn xóa tất cả thông báo tin nhắn từ $senderName không?',
       confirmText: 'Xóa',
     );
     if (confirm == true) {
@@ -77,13 +78,13 @@ class MessageNotificationScreen extends StatelessWidget {
     String peerUid = group.latestNoti.senderId ?? '';
 
     if (peerUid.isEmpty) {
-      peerUid = roomId.split('_').firstWhere(
-            (id) => id != currentUid,
-        orElse: () => '',
-      );
+      peerUid = roomId
+          .split('_')
+          .firstWhere((id) => id != currentUid, orElse: () => '');
     }
 
-    final String resolvedPhoto = (peerUid.isNotEmpty
+    final String resolvedPhoto =
+        (peerUid.isNotEmpty
             ? Base64ImageCache.getCachedUserAvatar(peerUid)
             : null) ??
         group.latestNoti.senderAvatar ??
@@ -96,8 +97,7 @@ class MessageNotificationScreen extends StatelessWidget {
         builder: (context) => ChatDetailPage(
           roomId: roomId,
           targetUserId: peerUid,
-          targetUserName:
-              group.latestNoti.senderName ?? group.latestNoti.title,
+          targetUserName: group.latestNoti.senderName ?? group.latestNoti.title,
           targetUserPhoto: resolvedPhoto,
         ),
       ),
@@ -120,15 +120,9 @@ class MessageNotificationScreen extends StatelessWidget {
     final String badgeText = unreadCount > 99 ? '99+' : '$unreadCount';
 
     return Container(
-      constraints: const BoxConstraints(
-        minWidth: 20,
-        minHeight: 20,
-      ),
+      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 2,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.hcmusTeal,
         borderRadius: BorderRadius.circular(20),
@@ -152,27 +146,23 @@ class MessageNotificationScreen extends StatelessWidget {
   ) {
     final MyUniNotification noti = group.latestNoti;
 
-    final String timeStr = timeago.format(
-      noti.timestamp,
-      locale: 'vi',
-    );
+    final String timeStr = timeago.format(noti.timestamp, locale: 'vi');
 
     final bool isUnread = group.unreadCount > 0;
 
     final String currentUid = ChatService().currentUserId ?? '';
     String senderUid = noti.senderId ?? '';
     if (senderUid.isEmpty && noti.roomId != null && noti.roomId!.isNotEmpty) {
-      senderUid = noti.roomId!.split('_').firstWhere(
-        (id) => id != currentUid,
-        orElse: () => '',
-      );
+      senderUid = noti.roomId!
+          .split('_')
+          .firstWhere((id) => id != currentUid, orElse: () => '');
     }
 
     final String initialName = noti.senderName?.trim().isNotEmpty == true
         ? noti.senderName!
         : noti.title.trim().isNotEmpty
-            ? noti.title
-            : 'Một sinh viên';
+        ? noti.title
+        : 'Một sinh viên';
 
     final String initialAvatar = noti.senderAvatar ?? '';
 
@@ -180,11 +170,13 @@ class MessageNotificationScreen extends StatelessWidget {
         ? noti.content.trim()
         : 'Đã gửi cho bạn một tin nhắn';
 
-    final Color primaryTextColor =
-        isDarkMode ? Colors.white : const Color(0xFF1D2939);
+    final Color primaryTextColor = isDarkMode
+        ? Colors.white
+        : const Color(0xFF1D2939);
 
-    final Color secondaryTextColor =
-        isDarkMode ? Colors.white60 : const Color(0xFF667085);
+    final Color secondaryTextColor = isDarkMode
+        ? Colors.white60
+        : const Color(0xFF667085);
 
     final Color unreadBackgroundColor = isDarkMode
         ? AppColors.hcmusTeal.withValues(alpha: 0.08)
@@ -202,19 +194,17 @@ class MessageNotificationScreen extends StatelessWidget {
           _showDeleteGroupDialog(context, group);
         },
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 12,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           child: StreamBuilder<DocumentSnapshot>(
             stream: senderUid.isNotEmpty
                 ? FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(senderUid)
-                    .snapshots()
+                      .collection('users')
+                      .doc(senderUid)
+                      .snapshots()
                 : null,
             builder: (context, userSnap) {
-              String resolvedPhoto = (senderUid.isNotEmpty
+              String resolvedPhoto =
+                  (senderUid.isNotEmpty
                       ? Base64ImageCache.getCachedUserAvatar(senderUid)
                       : null) ??
                   initialAvatar;
@@ -222,11 +212,13 @@ class MessageNotificationScreen extends StatelessWidget {
 
               if (userSnap.hasData && userSnap.data?.data() != null) {
                 final uData = userSnap.data!.data() as Map<String, dynamic>;
-                resolvedName = uData['displayName'] ??
+                resolvedName =
+                    uData['displayName'] ??
                     uData['name'] ??
                     uData['fullName'] ??
                     initialName;
-                resolvedPhoto = uData['photoURL'] ??
+                resolvedPhoto =
+                    uData['photoURL'] ??
                     uData['photoUrl'] ??
                     uData['avatar'] ??
                     uData['authorAvatar'] ??
@@ -238,8 +230,9 @@ class MessageNotificationScreen extends StatelessWidget {
                 }
               }
 
-              final avatarProvider =
-                  Base64ImageCache.getAvatarProvider(resolvedPhoto);
+              final avatarProvider = Base64ImageCache.getAvatarProvider(
+                resolvedPhoto,
+              );
 
               return Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
@@ -300,8 +293,9 @@ class MessageNotificationScreen extends StatelessWidget {
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 15,
-                            fontWeight:
-                                isUnread ? FontWeight.w800 : FontWeight.w600,
+                            fontWeight: isUnread
+                                ? FontWeight.w800
+                                : FontWeight.w600,
                             color: primaryTextColor,
                           ),
                         ),
@@ -314,12 +308,11 @@ class MessageNotificationScreen extends StatelessWidget {
                             fontFamily: 'Encode Sans Expanded',
                             fontSize: 12.5,
                             height: 1.35,
-                            fontWeight:
-                                isUnread ? FontWeight.w600 : FontWeight.w400,
+                            fontWeight: isUnread
+                                ? FontWeight.w600
+                                : FontWeight.w400,
                             color: isUnread
-                                ? primaryTextColor.withValues(
-                                    alpha: 0.85,
-                                  )
+                                ? primaryTextColor.withValues(alpha: 0.85)
                                 : secondaryTextColor,
                           ),
                         ),
@@ -335,8 +328,9 @@ class MessageNotificationScreen extends StatelessWidget {
                         timeStr,
                         style: TextStyle(
                           fontSize: 10.5,
-                          fontWeight:
-                              isUnread ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: isUnread
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                           color: isUnread
                               ? AppColors.hcmusTeal
                               : secondaryTextColor,
@@ -376,9 +370,7 @@ class MessageNotificationScreen extends StatelessWidget {
             Icon(
               Icons.error_outline_rounded,
               size: 42,
-              color: isDarkMode
-                  ? Colors.white38
-                  : const Color(0xFF98A2B3),
+              color: isDarkMode ? Colors.white38 : const Color(0xFF98A2B3),
             ),
             const SizedBox(height: 12),
             Text(
@@ -388,9 +380,7 @@ class MessageNotificationScreen extends StatelessWidget {
                 fontFamily: 'Nunito',
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: isDarkMode
-                    ? Colors.white
-                    : const Color(0xFF344054),
+                color: isDarkMode ? Colors.white : const Color(0xFF344054),
               ),
             ),
             const SizedBox(height: 5),
@@ -400,9 +390,7 @@ class MessageNotificationScreen extends StatelessWidget {
               style: TextStyle(
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 12,
-                color: isDarkMode
-                    ? Colors.white54
-                    : const Color(0xFF667085),
+                color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
               ),
             ),
           ],
@@ -414,10 +402,7 @@ class MessageNotificationScreen extends StatelessWidget {
   Widget _buildEmptyState(bool isDarkMode) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 32,
-          vertical: 24,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -444,9 +429,7 @@ class MessageNotificationScreen extends StatelessWidget {
                 fontFamily: 'Nunito',
                 fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: isDarkMode
-                    ? Colors.white
-                    : const Color(0xFF344054),
+                color: isDarkMode ? Colors.white : const Color(0xFF344054),
               ),
             ),
             const SizedBox(height: 6),
@@ -457,9 +440,7 @@ class MessageNotificationScreen extends StatelessWidget {
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 12,
                 height: 1.45,
-                color: isDarkMode
-                    ? Colors.white54
-                    : const Color(0xFF667085),
+                color: isDarkMode ? Colors.white54 : const Color(0xFF667085),
               ),
             ),
           ],
@@ -468,10 +449,7 @@ class MessageNotificationScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUnreadSummary(
-      int totalUnreadGroups,
-      bool isDarkMode,
-      ) {
+  Widget _buildUnreadSummary(int totalUnreadGroups, bool isDarkMode) {
     if (totalUnreadGroups <= 0) {
       return const SizedBox(height: 8);
     }
@@ -496,9 +474,7 @@ class MessageNotificationScreen extends StatelessWidget {
                 fontFamily: 'Encode Sans Expanded',
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isDarkMode
-                    ? Colors.white60
-                    : const Color(0xFF667085),
+                color: isDarkMode ? Colors.white60 : const Color(0xFF667085),
               ),
             ),
           ),
@@ -509,8 +485,7 @@ class MessageNotificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode =
-        Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     final Color backgroundColor = isDarkMode
         ? const Color(0xFF101214)
@@ -558,38 +533,29 @@ class MessageNotificationScreen extends StatelessWidget {
         actions: [
           PopupMenuButton<String>(
             tooltip: "Tùy chọn",
-            color: isDarkMode
-                ? const Color(0xFF222427)
-                : Colors.white,
+            color: isDarkMode ? const Color(0xFF222427) : Colors.white,
             surfaceTintColor: Colors.transparent,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
-            icon: Icon(
-              Icons.more_vert_rounded,
-              color: primaryIconColor,
-            ),
+            icon: Icon(Icons.more_vert_rounded, color: primaryIconColor),
             onSelected: (value) async {
               if (value == 'read_all') {
-                await NotificationService
-                    .markAllMessageNotificationsAsRead();
+                await NotificationService.markAllMessageNotificationsAsRead();
 
                 if (context.mounted) {
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
                       const SnackBar(
-                        content: Text(
-                          "Đã đánh dấu tất cả thông báo là đã đọc",
-                        ),
+                        content: Text("Đã đánh dấu tất cả thông báo là đã đọc"),
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                 }
               }
 
-              if (value == 'delete_all' &&
-                  context.mounted) {
+              if (value == 'delete_all' && context.mounted) {
                 _showDeleteAllDialog(context);
               }
             },
@@ -612,8 +578,7 @@ class MessageNotificationScreen extends StatelessWidget {
                       Text(
                         "Đánh dấu tất cả đã đọc",
                         style: TextStyle(
-                          fontFamily:
-                          'Encode Sans Expanded',
+                          fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
                           color: menuTextColor,
                         ),
@@ -638,8 +603,7 @@ class MessageNotificationScreen extends StatelessWidget {
                       Text(
                         "Xóa tất cả",
                         style: TextStyle(
-                          fontFamily:
-                          'Encode Sans Expanded',
+                          fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
                           color: menuTextColor,
                         ),
@@ -662,8 +626,7 @@ class MessageNotificationScreen extends StatelessWidget {
         ),
       ),
       body: StreamBuilder<List<MyUniNotification>>(
-        stream:
-        NotificationService.getMessageNotifications(),
+        stream: NotificationService.getMessageNotifications(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return _buildErrorState(isDarkMode);
@@ -673,24 +636,18 @@ class MessageNotificationScreen extends StatelessWidget {
             return _buildLoadingState();
           }
 
-          final List<MyUniNotification> rawNotifications =
-          snapshot.data!;
+          final List<MyUniNotification> rawNotifications = snapshot.data!;
 
           if (rawNotifications.isEmpty) {
             return _buildEmptyState(isDarkMode);
           }
 
-          final Map<String, List<MyUniNotification>>
-          groupedMap = {};
+          final Map<String, List<MyUniNotification>> groupedMap = {};
 
           for (final noti in rawNotifications) {
-            final String key =
-                noti.roomId ?? noti.senderId ?? noti.id;
+            final String key = noti.roomId ?? noti.senderId ?? noti.id;
 
-            groupedMap.putIfAbsent(
-              key,
-                  () => <MyUniNotification>[],
-            );
+            groupedMap.putIfAbsent(key, () => <MyUniNotification>[]);
 
             groupedMap[key]!.add(noti);
           }
@@ -698,15 +655,11 @@ class MessageNotificationScreen extends StatelessWidget {
           final List<_GroupedMessageNoti> groupedList = [];
 
           groupedMap.forEach((key, list) {
-            list.sort(
-                  (a, b) =>
-                  b.timestamp.compareTo(a.timestamp),
-            );
+            list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
             final MyUniNotification latest = list.first;
 
-            final int unreadCount =
-                list.where((noti) => !noti.isRead).length;
+            final int unreadCount = list.where((noti) => !noti.isRead).length;
 
             groupedList.add(
               _GroupedMessageNoti(
@@ -718,9 +671,7 @@ class MessageNotificationScreen extends StatelessWidget {
           });
 
           groupedList.sort(
-                (a, b) => b.latestNoti.timestamp.compareTo(
-              a.latestNoti.timestamp,
-            ),
+            (a, b) => b.latestNoti.timestamp.compareTo(a.latestNoti.timestamp),
           );
 
           final int totalUnreadGroups = groupedList
@@ -729,10 +680,7 @@ class MessageNotificationScreen extends StatelessWidget {
 
           return Column(
             children: [
-              _buildUnreadSummary(
-                totalUnreadGroups,
-                isDarkMode,
-              ),
+              _buildUnreadSummary(totalUnreadGroups, isDarkMode),
               Expanded(
                 child: ListView.separated(
                   padding: EdgeInsets.fromLTRB(
@@ -753,14 +701,9 @@ class MessageNotificationScreen extends StatelessWidget {
                     );
                   },
                   itemBuilder: (context, index) {
-                    final _GroupedMessageNoti group =
-                    groupedList[index];
+                    final _GroupedMessageNoti group = groupedList[index];
 
-                    return _buildGroupedMessageItem(
-                      context,
-                      group,
-                      isDarkMode,
-                    );
+                    return _buildGroupedMessageItem(context, group, isDarkMode);
                   },
                 ),
               ),
@@ -778,15 +721,10 @@ class MessageNotificationScreen extends StatelessWidget {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (context) => const ChatListPage(),
-            ),
+            MaterialPageRoute(builder: (context) => const ChatListPage()),
           );
         },
-        child: const Icon(
-          Icons.forum_rounded,
-          size: 23,
-        ),
+        child: const Icon(Icons.forum_rounded, size: 23),
       ),
     );
   }

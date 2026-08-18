@@ -31,9 +31,6 @@ class MySpaceWeatherCoordinator {
       longitude: campus.longitude,
     );
 
-    return alertService.evaluate(
-      schedule: selectedClass,
-      forecasts: forecasts,
-    );
+    return alertService.evaluate(schedule: selectedClass, forecasts: forecasts);
   }
 }

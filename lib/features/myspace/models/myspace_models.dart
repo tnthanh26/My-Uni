@@ -71,7 +71,8 @@ class StudyClass {
       'room': room,
       'campusId': campusId,
       'weekday': weekday, // Đẩy lên Firebase dạng int
-      'colorValue': color.value, // Firebase không hiểu Color, nên ta lưu mã int của màu
+      'colorValue':
+          color.value, // Firebase không hiểu Color, nên ta lưu mã int của màu
       'updatedAt': FieldValue.serverTimestamp(),
     };
   }

@@ -42,13 +42,25 @@ class EventModel {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     final fId = data['facultyEventId']?.toString();
     final String? oUrl = (data['onlineUrl'] ?? data['onlineLink'])?.toString();
-    final bool online = data['isOnline'] == true || (oUrl != null && oUrl.trim().isNotEmpty);
+    final bool online =
+        data['isOnline'] == true || (oUrl != null && oUrl.trim().isNotEmpty);
     DateTime? endDt;
     if (data['endDateTime'] != null && data['endDateTime'] is Timestamp) {
       endDt = (data['endDateTime'] as Timestamp).toDate();
     }
-    final String? fName = (data['facultyName'] ?? data['department'] ?? data['organizer'] ?? data['organizerName'])?.toString();
-    final String? imgUrl = (data['imageUrl'] ?? data['thumbnailUrl'] ?? data['bannerUrl'] ?? data['image'] ?? data['thumbnail'])?.toString();
+    final String? fName =
+        (data['facultyName'] ??
+                data['department'] ??
+                data['organizer'] ??
+                data['organizerName'])
+            ?.toString();
+    final String? imgUrl =
+        (data['imageUrl'] ??
+                data['thumbnailUrl'] ??
+                data['bannerUrl'] ??
+                data['image'] ??
+                data['thumbnail'])
+            ?.toString();
 
     return EventModel(
       id: doc.id,
@@ -60,12 +72,18 @@ class EventModel {
       reminder: data['reminder'] ?? 'Không',
       description: data['description'] ?? '',
       notificationId: data['notificationId'],
-      sourceArticleUrl: (data['sourceArticleUrl'] ?? data['link'] ?? data['registrationUrl'] ?? oUrl)?.toString(),
+      sourceArticleUrl:
+          (data['sourceArticleUrl'] ??
+                  data['link'] ??
+                  data['registrationUrl'] ??
+                  oUrl)
+              ?.toString(),
       onlineUrl: oUrl,
       isOnline: online,
       facultyEventId: fId,
       isFromFacultyEvent: fId != null && fId.trim().isNotEmpty,
-      contact: (data['contact'] ?? data['organizer'] ?? data['organizerName'])?.toString(),
+      contact: (data['contact'] ?? data['organizer'] ?? data['organizerName'])
+          ?.toString(),
       facultyName: fName,
       imageUrl: imgUrl,
     );

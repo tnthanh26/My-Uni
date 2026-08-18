@@ -8,9 +8,9 @@ class UtilitiesPage extends StatelessWidget {
 
   Future<void> _launchURL(BuildContext context, String urlString) async {
     if (urlString.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Liên kết không hợp lệ')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Liên kết không hợp lệ')));
       return;
     }
 
@@ -20,9 +20,9 @@ class UtilitiesPage extends StatelessWidget {
         throw 'Could not launch $url';
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Không thể mở liên kết: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Không thể mở liên kết: $e')));
     }
   }
 
@@ -76,9 +76,7 @@ class UtilitiesPage extends StatelessWidget {
     if (iconName.toLowerCase() == 'department_contacts') {
       Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => const DepartmentContactsPage(),
-        ),
+        MaterialPageRoute(builder: (_) => const DepartmentContactsPage()),
       );
       return;
     }
@@ -99,11 +97,8 @@ class UtilitiesPage extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => _handleUtilityTap(
-          context: context,
-          iconName: iconName,
-          url: url,
-        ),
+        onTap: () =>
+            _handleUtilityTap(context: context, iconName: iconName, url: url),
         borderRadius: BorderRadius.circular(22),
         child: Ink(
           decoration: BoxDecoration(
@@ -115,12 +110,12 @@ class UtilitiesPage extends StatelessWidget {
             boxShadow: isDarkMode
                 ? []
                 : [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
           ),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -162,8 +157,9 @@ class UtilitiesPage extends StatelessWidget {
                     fontFamily: 'Encode Sans Expanded',
                     fontSize: 12,
                     height: 1.4,
-                    color:
-                    isDarkMode ? Colors.white54 : const Color(0xFF667085),
+                    color: isDarkMode
+                        ? Colors.white54
+                        : const Color(0xFF667085),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -250,9 +246,7 @@ class UtilitiesPage extends StatelessWidget {
 
   Widget _buildLoadingState() {
     return const Center(
-      child: CircularProgressIndicator(
-        color: Color(0xFF6797E1),
-      ),
+      child: CircularProgressIndicator(color: Color(0xFF6797E1)),
     );
   }
 
@@ -261,8 +255,9 @@ class UtilitiesPage extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor:
-      isDarkMode ? const Color(0xFF0F1113) : const Color(0xFFF8FAFC),
+      backgroundColor: isDarkMode
+          ? const Color(0xFF0F1113)
+          : const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
           'Tiện ích sinh viên',
@@ -312,7 +307,9 @@ class UtilitiesPage extends StatelessWidget {
                 final screenWidth = MediaQuery.sizeOf(context).width;
                 final bool isTablet = screenWidth >= 600;
                 final double gridWidth = screenWidth > 800 ? 800 : screenWidth;
-                final int crossAxisCount = isTablet ? (gridWidth > 750 ? 4 : 3) : 2;
+                final int crossAxisCount = isTablet
+                    ? (gridWidth > 750 ? 4 : 3)
+                    : 2;
                 final double childAspectRatio = isTablet ? 0.92 : 0.82;
 
                 return Center(

@@ -75,16 +75,19 @@ class _AnimatedBottomNavState extends State<AnimatedBottomNav>
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
 
     // Use provided colors OR fallback to theme-specific defaults
-    final Color effectiveBgColor = widget.backgroundColor ??
+    final Color effectiveBgColor =
+        widget.backgroundColor ??
         (isDarkMode ? const Color(0xFF16161F) : Colors.white);
 
-    final Color effectiveActiveColor = widget.activeColor ?? const Color(0xFF457EC0);
+    final Color effectiveActiveColor =
+        widget.activeColor ?? const Color(0xFF457EC0);
 
-    final Color effectiveInactiveColor = widget.inactiveColor ??
+    final Color effectiveInactiveColor =
+        widget.inactiveColor ??
         (isDarkMode ? Colors.white38 : const Color(0xFF8E8E93));
 
-    final Color effectivePillColor = widget.pillColor ??
-        effectiveActiveColor.withValues(alpha: 0.1);
+    final Color effectivePillColor =
+        widget.pillColor ?? effectiveActiveColor.withValues(alpha: 0.1);
 
     return Container(
       color: effectiveBgColor,
@@ -100,13 +103,18 @@ class _AnimatedBottomNavState extends State<AnimatedBottomNav>
                   duration: const Duration(milliseconds: 400),
                   curve: _spring,
                   alignment: Alignment(
-                    count > 1 ? (widget.currentIndex / (count - 1)) * 2 - 1 : 0.0,
+                    count > 1
+                        ? (widget.currentIndex / (count - 1)) * 2 - 1
+                        : 0.0,
                     0.0,
                   ),
                   child: FractionallySizedBox(
                     widthFactor: 1.0 / count,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6), // Tăng height của pill (vertical: 6 thay vì top/height cố định)
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ), // Tăng height của pill (vertical: 6 thay vì top/height cố định)
                       child: Container(
                         decoration: BoxDecoration(
                           color: effectivePillColor, // Use effective color
@@ -124,8 +132,9 @@ class _AnimatedBottomNavState extends State<AnimatedBottomNav>
                   return _NavItemWidget(
                     item: widget.items[i],
                     isSelected: widget.currentIndex == i,
-                    activeColor: effectiveActiveColor,   // Use effective color
-                    inactiveColor: effectiveInactiveColor, // Use effective color
+                    activeColor: effectiveActiveColor, // Use effective color
+                    inactiveColor:
+                        effectiveInactiveColor, // Use effective color
                     onTap: () => widget.onTap(i),
                   );
                 }),
@@ -164,11 +173,7 @@ class _NavItemWidget extends StatelessWidget {
           duration: const Duration(milliseconds: 350),
           curve: Curves.easeOutCubic,
           // Lift the selected item slightly
-          transform: Matrix4.translationValues(
-            0,
-            isSelected ? -2.0 : 0.0,
-            0,
-          ),
+          transform: Matrix4.translationValues(0, isSelected ? -2.0 : 0.0, 0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -188,8 +193,7 @@ class _NavItemWidget extends StatelessWidget {
                   fontFamily: 'Inter',
                   fontSize: 10,
                   letterSpacing: 0.3,
-                  fontWeight:
-                  isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                   color: isSelected ? activeColor : inactiveColor,
                 ),
                 child: Text(item.label),
@@ -209,12 +213,9 @@ class _SpringCurve extends Curve {
   @override
   double transformInternal(double t) {
     // Exponential decay spring: settles at 1 with a small overshoot
-    const double damping   = 18.0;
+    const double damping = 18.0;
     const double stiffness = 200.0;
     // Simplified spring formula (critically overdamped-ish with bounce)
-    return 1 -
-        (1 - t) *
-            (1 +
-                1.2 * t * (1 - t) * (1 - t));
+    return 1 - (1 - t) * (1 + 1.2 * t * (1 - t) * (1 - t));
   }
 }

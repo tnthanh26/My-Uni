@@ -250,9 +250,7 @@ class ActivityCard extends StatelessWidget {
                           : Icons.lock_open_rounded,
                       size: 16,
                     ),
-                    label: Text(
-                      isActive ? 'Đóng' : 'Mở lại',
-                    ),
+                    label: Text(isActive ? 'Đóng' : 'Mở lại'),
                     style: TextButton.styleFrom(
                       foregroundColor: isActive
                           ? const Color(0xFFB44431)
@@ -298,16 +296,9 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  Widget _statusBadge(
-      String label,
-      Color bgColor,
-      Color textColor,
-      ) {
+  Widget _statusBadge(String label, Color bgColor, Color textColor) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
@@ -325,30 +316,18 @@ class ActivityCard extends StatelessWidget {
     );
   }
 
-  Widget _compactChip(
-      IconData icon,
-      String label,
-      ) {
+  Widget _compactChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 8,
-        vertical: 4,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: const Color(0xFFEAECF0),
-        ),
+        border: Border.all(color: const Color(0xFFEAECF0)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            size: 13,
-            color: const Color(0xFF667085),
-          ),
+          Icon(icon, size: 13, color: const Color(0xFF667085)),
           const SizedBox(width: 6),
           Text(
             label,

@@ -17,10 +17,7 @@ import 'package:my_uni/widgets/app_action_dialogs.dart';
 import 'package:my_uni/utils/base64_image_cache.dart';
 import 'event_detail_sheet.dart';
 
-enum EventTabMode {
-  personal,
-  community,
-}
+enum EventTabMode { personal, community }
 
 class EventPageNotifier {
   static final ValueNotifier<bool> isActive = ValueNotifier<bool>(false);
@@ -29,17 +26,13 @@ class EventPageNotifier {
 class MyEventTab extends StatefulWidget {
   final EventTabMode mode;
 
-  const MyEventTab({
-    super.key,
-    this.mode = EventTabMode.personal,
-  });
+  const MyEventTab({super.key, this.mode = EventTabMode.personal});
 
   @override
   State<MyEventTab> createState() => _MyEventTabState();
 }
 
-class _MyEventTabState extends State<MyEventTab>
-    with TickerProviderStateMixin {
+class _MyEventTabState extends State<MyEventTab> with TickerProviderStateMixin {
   final List<String> _emptyQuotes = [
     "Thanh xuân như 1 tách trà, tham gia sự kiện, đậm đà thanh xuân.",
     "Hôm nay bạn bận... bận không làm gì cả.",
@@ -133,12 +126,12 @@ class _MyEventTabState extends State<MyEventTab>
   List<BoxShadow> _cardShadow(bool isDarkMode) => isDarkMode
       ? []
       : [
-    BoxShadow(
-      color: Colors.black.withOpacity(0.05),
-      blurRadius: 14,
-      offset: const Offset(0, 6),
-    ),
-  ];
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ];
 
   Future<void> _cancelNotificationIdsFromData(Map<String, dynamic> data) async {
     final dynamic oldSingleId = data['notificationId'];
@@ -214,7 +207,8 @@ class _MyEventTabState extends State<MyEventTab>
     await ref.delete();
 
     // Đồng bộ xóa trong collection interested_events để nút "Quan tâm" bên Tab Khám phá tự cập nhật lại
-    final String targetInterestedId = (ev.facultyEventId != null && ev.facultyEventId!.isNotEmpty)
+    final String targetInterestedId =
+        (ev.facultyEventId != null && ev.facultyEventId!.isNotEmpty)
         ? ev.facultyEventId!
         : ev.id;
 
@@ -272,9 +266,7 @@ class _MyEventTabState extends State<MyEventTab>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return const Stream.empty();
 
-    final threeDaysAgo = DateTime.now().subtract(
-      const Duration(days: 3),
-    );
+    final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
 
     return FirebaseFirestore.instance
         .collection('users')
@@ -299,12 +291,13 @@ class _MyEventTabState extends State<MyEventTab>
       baseDay = DateTime(DateTime.now().year, _selectedMonth, 1);
     }
 
-    final firstDayOfWeek =
-    baseDay.subtract(Duration(days: baseDay.weekday % 7));
+    final firstDayOfWeek = baseDay.subtract(
+      Duration(days: baseDay.weekday % 7),
+    );
 
     return List.generate(
       7,
-          (index) => firstDayOfWeek.add(Duration(days: index)),
+      (index) => firstDayOfWeek.add(Duration(days: index)),
     );
   }
 
@@ -349,10 +342,10 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   void _showEventDetailsBottomSheet(
-      BuildContext context,
-      EventModel ev,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    EventModel ev,
+    bool isDarkMode,
+  ) {
     EventDetailSheet.show(
       context,
       ev,
@@ -385,11 +378,11 @@ class _MyEventTabState extends State<MyEventTab>
   }
 
   Widget _buildDetailRow(
-      IconData icon,
-      String label,
-      String value,
-      bool isDarkMode,
-      ) {
+    IconData icon,
+    String label,
+    String value,
+    bool isDarkMode,
+  ) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(14),
@@ -436,7 +429,8 @@ class _MyEventTabState extends State<MyEventTab>
     final confirm = await AppActionDialogs.showConfirmDialog(
       context: context,
       title: 'Xóa sự kiện?',
-      message: 'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" khỏi lịch cá nhân không?',
+      message:
+          'Bạn có chắc chắn muốn xóa sự kiện "${ev.title}" khỏi lịch cá nhân không?',
       confirmText: 'Xóa',
     );
     if (confirm == true) {
@@ -444,9 +438,9 @@ class _MyEventTabState extends State<MyEventTab>
         await _deletePersonalEvent(ev);
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Lỗi xóa sự kiện: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Lỗi xóa sự kiện: $e')));
       }
     }
   }
@@ -518,9 +512,7 @@ class _MyEventTabState extends State<MyEventTab>
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: borderColor,
-                  ),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Row(
                   children: [
@@ -579,9 +571,7 @@ class _MyEventTabState extends State<MyEventTab>
             ),
           ),
         ),
-        Expanded(
-          child: InterestedEventTab(),
-        ),
+        Expanded(child: InterestedEventTab()),
       ],
     );
   }
@@ -601,14 +591,16 @@ class _MyEventTabState extends State<MyEventTab>
                   stream: _getEventsStream(),
                   builder: (context, snapshot) {
                     final List<EventModel> allEvents = snapshot.data ?? [];
-                    final List<EventModel> sortedListEvents =
-                        _sortEvents(allEvents, _listFilter);
+                    final List<EventModel> sortedListEvents = _sortEvents(
+                      allEvents,
+                      _listFilter,
+                    );
 
                     final now = DateTime.now();
-                    final int countList =
-                        allEvents.where((e) => !e.dateTime.isBefore(now)).length;
-                    final String listText =
-                        '$countList sự kiện sắp diễn ra';
+                    final int countList = allEvents
+                        .where((e) => !e.dateTime.isBefore(now))
+                        .length;
+                    final String listText = '$countList sự kiện sắp diễn ra';
 
                     return Column(
                       children: [
@@ -682,17 +674,21 @@ class _MyEventTabState extends State<MyEventTab>
           final double value = _viewTabController!.animation!.value;
           final double x = -1.0 + 2.0 * value;
 
-          final Color listIconColor = Color.lerp(
-            Colors.white,
-            _secondaryTextColor(isDarkMode),
-            value,
-          ) ?? Colors.white;
+          final Color listIconColor =
+              Color.lerp(
+                Colors.white,
+                _secondaryTextColor(isDarkMode),
+                value,
+              ) ??
+              Colors.white;
 
-          final Color calendarIconColor = Color.lerp(
-            _secondaryTextColor(isDarkMode),
-            Colors.white,
-            value,
-          ) ?? Colors.white;
+          final Color calendarIconColor =
+              Color.lerp(
+                _secondaryTextColor(isDarkMode),
+                Colors.white,
+                value,
+              ) ??
+              Colors.white;
 
           return Stack(
             children: [
@@ -744,17 +740,11 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildListView(
-      List<EventModel> events,
-      bool isDarkMode,
-      ) {
+  Widget _buildListView(List<EventModel> events, bool isDarkMode) {
     if (events.isEmpty) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 32,
-            vertical: 40,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
@@ -771,9 +761,7 @@ class _MyEventTabState extends State<MyEventTab>
                 child: Icon(
                   Icons.event_available_outlined,
                   size: 34,
-                  color: figmaSelectionBlue.withValues(
-                    alpha: 0.85,
-                  ),
+                  color: figmaSelectionBlue.withValues(alpha: 0.85),
                 ),
               ),
               const SizedBox(height: 16),
@@ -806,28 +794,20 @@ class _MyEventTabState extends State<MyEventTab>
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
       itemCount: events.length,
       itemBuilder: (context, i) {
-        return _buildLargeEventCard(
-          events[i],
-          isDarkMode,
-          i,
-        );
+        return _buildLargeEventCard(events[i], isDarkMode, i);
       },
     );
   }
 
   Widget _buildCalendarView(List<EventModel> events, bool isDarkMode) {
-    final dayEvents = events
-        .where((e) => DateUtils.isSameDay(e.dateTime, _selectedDay))
-        .toList()
-      ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
+    final dayEvents =
+        events
+            .where((e) => DateUtils.isSameDay(e.dateTime, _selectedDay))
+            .toList()
+          ..sort((a, b) => a.dateTime.compareTo(b.dateTime));
 
     final weekDays = _getDaysInWeek();
 
@@ -857,7 +837,7 @@ class _MyEventTabState extends State<MyEventTab>
                   'T4',
                   'T5',
                   'T6',
-                  'T7'
+                  'T7',
                 ][day.weekday % 7];
 
                 return Expanded(
@@ -876,8 +856,9 @@ class _MyEventTabState extends State<MyEventTab>
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color:
-                        isSelected ? figmaSelectionBlue : Colors.transparent,
+                        color: isSelected
+                            ? figmaSelectionBlue
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: !isSelected && isToday
@@ -895,10 +876,12 @@ class _MyEventTabState extends State<MyEventTab>
                               color: isSelected
                                   ? Colors.white
                                   : (isToday
-                                      ? figmaSelectionBlue
-                                      : _secondaryTextColor(isDarkMode)),
+                                        ? figmaSelectionBlue
+                                        : _secondaryTextColor(isDarkMode)),
                               fontSize: 12,
-                              fontWeight: isToday ? FontWeight.bold : FontWeight.w500,
+                              fontWeight: isToday
+                                  ? FontWeight.bold
+                                  : FontWeight.w500,
                             ),
                           ),
                           const SizedBox(height: 3),
@@ -910,8 +893,8 @@ class _MyEventTabState extends State<MyEventTab>
                               color: isSelected
                                   ? Colors.white
                                   : (isToday
-                                      ? figmaSelectionBlue
-                                      : _primaryTextColor(isDarkMode)),
+                                        ? figmaSelectionBlue
+                                        : _primaryTextColor(isDarkMode)),
                             ),
                           ),
                           if (isToday) ...[
@@ -920,7 +903,9 @@ class _MyEventTabState extends State<MyEventTab>
                               width: 5,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white : figmaSelectionBlue,
+                                color: isSelected
+                                    ? Colors.white
+                                    : figmaSelectionBlue,
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -939,16 +924,23 @@ class _MyEventTabState extends State<MyEventTab>
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF2F6FF),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                color: isDarkMode
+                    ? const Color(0xFF1E1E1E)
+                    : const Color(0xFFF2F6FF),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(36),
+                ),
               ),
               width: double.infinity,
               child: ListView(
                 padding: const EdgeInsets.only(top: 24, bottom: 24),
                 children: [
                   Padding(
-                    padding:
-                    const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                    padding: const EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 12,
+                    ),
                     child: Row(
                       children: [
                         SizedBox(
@@ -990,30 +982,32 @@ class _MyEventTabState extends State<MyEventTab>
                       Column(
                         children: dayEvents.isEmpty
                             ? [
-                          Padding(
-                            padding:
-                            const EdgeInsets.only(top: 110, left: 146),
-                            child: Text(
-                              'Không có sự kiện',
-                              style: TextStyle(
-                                color: _secondaryTextColor(isDarkMode),
-                                fontWeight: FontWeight.w500,
-                                fontSize: 15,
-                              ),
-                            ),
-                          ),
-                        ]
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                    top: 110,
+                                    left: 146,
+                                  ),
+                                  child: Text(
+                                    'Không có sự kiện',
+                                    style: TextStyle(
+                                      color: _secondaryTextColor(isDarkMode),
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ]
                             : dayEvents
-                            .asMap()
-                            .entries
-                            .map(
-                              (entry) => _buildTimelineRow(
-                            isDarkMode,
-                            entry.value,
-                            entry.key,
-                          ),
-                        )
-                            .toList(),
+                                  .asMap()
+                                  .entries
+                                  .map(
+                                    (entry) => _buildTimelineRow(
+                                      isDarkMode,
+                                      entry.value,
+                                      entry.key,
+                                    ),
+                                  )
+                                  .toList(),
                       ),
                     ],
                   ),
@@ -1063,8 +1057,9 @@ class _MyEventTabState extends State<MyEventTab>
       Colors.blueGrey,
     ];
 
-    final Color accentColor =
-    isPastEvent ? Colors.grey : accentColors[index % accentColors.length];
+    final Color accentColor = isPastEvent
+        ? Colors.grey
+        : accentColors[index % accentColors.length];
 
     return Padding(
       padding: const EdgeInsets.only(left: 16, bottom: 24),
@@ -1108,8 +1103,8 @@ class _MyEventTabState extends State<MyEventTab>
                   color: isPastEvent
                       ? Colors.grey.withOpacity(0.18)
                       : (isDarkMode
-                      ? Colors.white.withOpacity(0.05)
-                      : accentColor.withOpacity(0.1)),
+                            ? Colors.white.withOpacity(0.05)
+                            : accentColor.withOpacity(0.1)),
                 ),
                 boxShadow: isPastEvent ? [] : _cardShadow(isDarkMode),
               ),
@@ -1200,7 +1195,9 @@ class _MyEventTabState extends State<MyEventTab>
                                 child: Text(
                                   'Xem chi tiết',
                                   style: TextStyle(
-                                    color: isPastEvent ? Colors.grey : accentColor,
+                                    color: isPastEvent
+                                        ? Colors.grey
+                                        : accentColor,
                                     fontWeight: FontWeight.bold,
                                     fontSize: 12,
                                   ),
@@ -1221,11 +1218,7 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _buildLargeEventCard(
-      EventModel ev,
-      bool isDarkMode,
-      int index,
-      ) {
+  Widget _buildLargeEventCard(EventModel ev, bool isDarkMode, int index) {
     final DateTime now = DateTime.now();
 
     final DateTime? effectiveEndDate = ev.endDateTime;
@@ -1245,9 +1238,7 @@ class _MyEventTabState extends State<MyEventTab>
     } else if (diff.inHours > 0) {
       timeStatus = 'Còn ${diff.inHours} giờ';
     } else {
-      final int minutes = diff.inMinutes <= 0
-          ? 1
-          : diff.inMinutes;
+      final int minutes = diff.inMinutes <= 0 ? 1 : diff.inMinutes;
 
       timeStatus = 'Còn $minutes phút';
     }
@@ -1263,23 +1254,17 @@ class _MyEventTabState extends State<MyEventTab>
 
     final Color eventColor = isPastEvent
         ? const Color(0xFF9AA0A6)
-        : googleCalendarColors[
-    index % googleCalendarColors.length
-    ];
+        : googleCalendarColors[index % googleCalendarColors.length];
 
-    final Color cardColor = isDarkMode
-        ? const Color(0xFF1C1E21)
-        : Colors.white;
+    final Color cardColor = isDarkMode ? const Color(0xFF1C1E21) : Colors.white;
 
     final Color borderColor = isDarkMode
         ? Colors.white.withValues(alpha: 0.08)
         : const Color(0xFFE4E7EC);
 
-    final Color primaryTextColor =
-    _primaryTextColor(isDarkMode);
+    final Color primaryTextColor = _primaryTextColor(isDarkMode);
 
-    final Color secondaryTextColor =
-    _secondaryTextColor(isDarkMode);
+    final Color secondaryTextColor = _secondaryTextColor(isDarkMode);
 
     final Color statusColor = isPastEvent
         ? const Color(0xFF80868B)
@@ -1287,45 +1272,39 @@ class _MyEventTabState extends State<MyEventTab>
         ? const Color(0xFFD97706)
         : eventColor;
 
-    final String locationText =
-    ev.location.trim().isNotEmpty
+    final String locationText = ev.location.trim().isNotEmpty
         ? ev.location.trim()
         : ev.isOnline
         ? 'Trực tuyến'
         : 'Chưa cập nhật địa điểm';
 
-    final String startTime =
-    DateFormat('HH:mm').format(ev.dateTime);
+    final String startTime = DateFormat('HH:mm').format(ev.dateTime);
 
     final String timeText = ev.endDateTime != null
         ? '$startTime – ${DateFormat('HH:mm').format(ev.endDateTime!)}'
         : startTime;
 
-    final String monthText =
-    DateFormat('MMM').format(ev.dateTime).toUpperCase();
+    final String monthText = DateFormat(
+      'MMM',
+    ).format(ev.dateTime).toUpperCase();
 
-    final String dayText =
-    DateFormat('dd').format(ev.dateTime);
+    final String dayText = DateFormat('dd').format(ev.dateTime);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: borderColor,
-        ),
+        border: Border.all(color: borderColor),
         boxShadow: isDarkMode
             ? const []
             : [
-          BoxShadow(
-            color: Colors.black.withValues(
-              alpha: 0.025,
-            ),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.025),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -1333,34 +1312,20 @@ class _MyEventTabState extends State<MyEventTab>
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () {
-            _showEventDetailsBottomSheet(
-              context,
-              ev,
-              isDarkMode,
-            );
+            _showEventDetailsBottomSheet(context, ev, isDarkMode);
           },
           borderRadius: BorderRadius.circular(16),
           child: IntrinsicHeight(
             child: Row(
-              crossAxisAlignment:
-              CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 5,
-                  color: eventColor,
-                ),
+                Container(width: 5, color: eventColor),
 
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      14,
-                      13,
-                      10,
-                      13,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(14, 13, 10, 13),
                     child: Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
                           width: 52,
@@ -1368,16 +1333,12 @@ class _MyEventTabState extends State<MyEventTab>
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             color: eventColor.withValues(
-                              alpha: isDarkMode
-                                  ? 0.15
-                                  : 0.09,
+                              alpha: isDarkMode ? 0.15 : 0.09,
                             ),
-                            borderRadius:
-                            BorderRadius.circular(13),
+                            borderRadius: BorderRadius.circular(13),
                           ),
                           child: Column(
-                            mainAxisAlignment:
-                            MainAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
                                 monthText,
@@ -1408,25 +1369,21 @@ class _MyEventTabState extends State<MyEventTab>
 
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Expanded(
                                     child: Text(
                                       ev.title,
                                       maxLines: 2,
-                                      overflow:
-                                      TextOverflow.ellipsis,
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontFamily: 'Nunito',
                                         fontSize: 16,
                                         height: 1.25,
-                                        fontWeight:
-                                        FontWeight.w700,
+                                        fontWeight: FontWeight.w700,
                                         color: primaryTextColor,
                                       ),
                                     ),
@@ -1436,10 +1393,7 @@ class _MyEventTabState extends State<MyEventTab>
 
                                   Transform.translate(
                                     offset: const Offset(0, -12),
-                                    child: _buildMoreMenu(
-                                      ev,
-                                      isDarkMode,
-                                    ),
+                                    child: _buildMoreMenu(ev, isDarkMode),
                                   ),
                                 ],
                               ),
@@ -1447,11 +1401,9 @@ class _MyEventTabState extends State<MyEventTab>
                               const SizedBox(height: 9),
 
                               _buildEventMetaRow(
-                                icon:
-                                Icons.access_time_rounded,
+                                icon: Icons.access_time_rounded,
                                 text: timeText,
-                                textColor:
-                                secondaryTextColor,
+                                textColor: secondaryTextColor,
                               ),
 
                               const SizedBox(height: 6),
@@ -1459,41 +1411,32 @@ class _MyEventTabState extends State<MyEventTab>
                               _buildEventMetaRow(
                                 icon: ev.isOnline
                                     ? Icons.videocam_outlined
-                                    : Icons
-                                    .location_on_outlined,
+                                    : Icons.location_on_outlined,
                                 text: locationText,
-                                textColor:
-                                secondaryTextColor,
+                                textColor: secondaryTextColor,
                               ),
 
                               const SizedBox(height: 12),
 
                               Container(
-                                padding:
-                                const EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 9,
                                   vertical: 5,
                                 ),
                                 decoration: BoxDecoration(
                                   color: statusColor.withValues(
-                                    alpha: isDarkMode
-                                        ? 0.16
-                                        : 0.10,
+                                    alpha: isDarkMode ? 0.16 : 0.10,
                                   ),
-                                  borderRadius:
-                                  BorderRadius.circular(9),
+                                  borderRadius: BorderRadius.circular(9),
                                 ),
                                 child: Text(
                                   timeStatus,
                                   maxLines: 1,
-                                  overflow:
-                                  TextOverflow.ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    fontFamily:
-                                    'Encode Sans Expanded',
+                                    fontFamily: 'Encode Sans Expanded',
                                     fontSize: 10.5,
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                     color: statusColor,
                                   ),
                                 ),
@@ -1521,11 +1464,7 @@ class _MyEventTabState extends State<MyEventTab>
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Icon(
-          icon,
-          size: 15,
-          color: textColor,
-        ),
+        Icon(icon, size: 15, color: textColor),
         const SizedBox(width: 6),
         Expanded(
           child: Text(
@@ -1547,10 +1486,7 @@ class _MyEventTabState extends State<MyEventTab>
 
   Widget _buildMoreMenu(EventModel ev, bool isDarkMode) {
     return IconButton(
-      icon: Icon(
-        Icons.more_vert,
-        color: _secondaryTextColor(isDarkMode),
-      ),
+      icon: Icon(Icons.more_vert, color: _secondaryTextColor(isDarkMode)),
       onPressed: () {
         AppActionDialogs.showActionBottomSheet(
           context: context,
@@ -1670,7 +1606,9 @@ class _MyEventTabState extends State<MyEventTab>
     final bool isCalendarActive = _viewTabController?.index == 1;
 
     return Tooltip(
-      message: isCalendarActive ? 'Xem dạng Danh sách' : 'Xem dạng Lịch chia theo giờ',
+      message: isCalendarActive
+          ? 'Xem dạng Danh sách'
+          : 'Xem dạng Lịch chia theo giờ',
       child: GestureDetector(
         onTap: () {
           setState(() {
@@ -1714,7 +1652,8 @@ class _MyEventTabState extends State<MyEventTab>
 
     final List<DateTime> dateStrip = List.generate(
       21,
-      (index) => today.subtract(const Duration(days: 3)).add(Duration(days: index)),
+      (index) =>
+          today.subtract(const Duration(days: 3)).add(Duration(days: index)),
     );
 
     return Column(
@@ -1728,10 +1667,12 @@ class _MyEventTabState extends State<MyEventTab>
             itemCount: dateStrip.length,
             itemBuilder: (context, index) {
               final date = dateStrip[index];
-              final bool isSelected = date.year == currentSelected.year &&
+              final bool isSelected =
+                  date.year == currentSelected.year &&
                   date.month == currentSelected.month &&
                   date.day == currentSelected.day;
-              final bool isTodayDate = date.year == today.year &&
+              final bool isTodayDate =
+                  date.year == today.year &&
                   date.month == today.month &&
                   date.day == today.day;
 
@@ -1747,7 +1688,10 @@ class _MyEventTabState extends State<MyEventTab>
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
                   width: 50,
-                  margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: isSelected
                         ? figmaSelectionBlue
@@ -1757,8 +1701,8 @@ class _MyEventTabState extends State<MyEventTab>
                       color: isSelected
                           ? figmaSelectionBlue
                           : (isTodayDate
-                              ? figmaSelectionBlue.withValues(alpha: 0.6)
-                              : _borderColor(isDarkMode)),
+                                ? figmaSelectionBlue.withValues(alpha: 0.6)
+                                : _borderColor(isDarkMode)),
                       width: isTodayDate && !isSelected ? 1.5 : 1.0,
                     ),
                     boxShadow: isSelected
@@ -1767,7 +1711,7 @@ class _MyEventTabState extends State<MyEventTab>
                               color: figmaSelectionBlue.withValues(alpha: 0.25),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
-                            )
+                            ),
                           ]
                         : const [],
                   ),
@@ -1851,7 +1795,9 @@ class _MyEventTabState extends State<MyEventTab>
                           if (hourEvents.isEmpty)
                             const SizedBox(height: 16)
                           else
-                            ...hourEvents.map((ev) => _buildHourlyEventCard(ev, isDarkMode)),
+                            ...hourEvents.map(
+                              (ev) => _buildHourlyEventCard(ev, isDarkMode),
+                            ),
                         ],
                       ),
                     ),
@@ -1875,9 +1821,7 @@ class _MyEventTabState extends State<MyEventTab>
       decoration: BoxDecoration(
         color: isDarkMode ? const Color(0xFF1C1E21) : Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: primaryBlue.withValues(alpha: 0.35),
-        ),
+        border: Border.all(color: primaryBlue.withValues(alpha: 0.35)),
         boxShadow: isDarkMode
             ? const []
             : [
@@ -1885,7 +1829,7 @@ class _MyEventTabState extends State<MyEventTab>
                   color: Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
-                )
+                ),
               ],
       ),
       child: InkWell(
@@ -1897,7 +1841,10 @@ class _MyEventTabState extends State<MyEventTab>
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: primaryBlue.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
@@ -1905,7 +1852,11 @@ class _MyEventTabState extends State<MyEventTab>
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.access_time_rounded, size: 12, color: primaryBlue),
+                      const Icon(
+                        Icons.access_time_rounded,
+                        size: 12,
+                        color: primaryBlue,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         timeStr,
@@ -1922,7 +1873,10 @@ class _MyEventTabState extends State<MyEventTab>
                 if (ev.isFromFacultyEvent) ...[
                   const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(8),
@@ -1957,7 +1911,9 @@ class _MyEventTabState extends State<MyEventTab>
               Row(
                 children: [
                   Icon(
-                    ev.isOnline ? Icons.videocam_outlined : Icons.location_on_outlined,
+                    ev.isOnline
+                        ? Icons.videocam_outlined
+                        : Icons.location_on_outlined,
                     size: 14,
                     color: _secondaryTextColor(isDarkMode),
                   ),
@@ -1990,9 +1946,7 @@ class _MyEventTabState extends State<MyEventTab>
       tooltip: 'Sắp xếp & Lọc',
       color: _surfaceColor(isDarkMode),
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       onSelected: (v) => setState(() => _listFilter = v),
       itemBuilder: (ctx) => [
         PopupMenuItem<String>(
@@ -2003,7 +1957,9 @@ class _MyEventTabState extends State<MyEventTab>
               Icon(
                 Icons.arrow_upward_rounded,
                 size: 15,
-                color: _listFilter == 'Gần nhất' ? figmaSelectionBlue : _secondaryTextColor(isDarkMode),
+                color: _listFilter == 'Gần nhất'
+                    ? figmaSelectionBlue
+                    : _secondaryTextColor(isDarkMode),
               ),
               const SizedBox(width: 8),
               Text(
@@ -2011,7 +1967,9 @@ class _MyEventTabState extends State<MyEventTab>
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 12,
-                  fontWeight: _listFilter == 'Gần nhất' ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: _listFilter == 'Gần nhất'
+                      ? FontWeight.bold
+                      : FontWeight.w500,
                   color: _primaryTextColor(isDarkMode),
                 ),
               ),
@@ -2026,7 +1984,9 @@ class _MyEventTabState extends State<MyEventTab>
               Icon(
                 Icons.arrow_downward_rounded,
                 size: 15,
-                color: _listFilter == 'Xa nhất' ? figmaSelectionBlue : _secondaryTextColor(isDarkMode),
+                color: _listFilter == 'Xa nhất'
+                    ? figmaSelectionBlue
+                    : _secondaryTextColor(isDarkMode),
               ),
               const SizedBox(width: 8),
               Text(
@@ -2034,7 +1994,9 @@ class _MyEventTabState extends State<MyEventTab>
                 style: TextStyle(
                   fontFamily: 'Encode Sans Expanded',
                   fontSize: 12,
-                  fontWeight: _listFilter == 'Xa nhất' ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: _listFilter == 'Xa nhất'
+                      ? FontWeight.bold
+                      : FontWeight.w500,
                   color: _primaryTextColor(isDarkMode),
                 ),
               ),
@@ -2058,21 +2020,14 @@ class _MyEventTabState extends State<MyEventTab>
     );
   }
 
-  Widget _filterChip(
-      bool isDarkMode,
-      String label,
-      ) {
+  Widget _filterChip(bool isDarkMode, String label) {
     return Container(
       height: 38,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
         color: _surfaceColor(isDarkMode),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _borderColor(isDarkMode),
-        ),
+        border: Border.all(color: _borderColor(isDarkMode)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

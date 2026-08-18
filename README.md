@@ -1,13 +1,15 @@
 # MyUni - Hyperlocal Campus Platform
 
-> **MyUni** is a multifunctional mobile application and Web administration platform designed for Vietnamese university students. It combines academic productivity tools, campus community interaction, and an AI-powered student assistant.
+> **MyUni** is a multifunctional mobile application and Web administration platform designed for VNUHCM - University of Science (HCMUS) students. It combines academic productivity tools, campus community interaction, and an AI-powered student assistant.
+> 
+> 📲 **Download on Google Play:** [https://play.google.com/store/apps/details?id=com.archondev.myuni](https://play.google.com/store/apps/details?id=com.archondev.myuni)
 
 ---
 
 ## Key Features
 
 ### 1. Authentication & Identity Management
-* Institutional email verification (`@vnu.edu.vn`) ensuring a trusted academic environment.
+* Institutional email verification (`@student.hcmus.edu.vn`) ensuring a trusted academic environment.
 * Role-based access control (Student, Collaborator, Moderator).
 
 ### 2. Community Module

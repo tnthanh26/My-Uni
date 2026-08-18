@@ -93,14 +93,16 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Đã bỏ quan tâm sự kiện & xóa khỏi lịch cá nhân')),
+        const SnackBar(
+          content: Text('Đã bỏ quan tâm sự kiện & xóa khỏi lịch cá nhân'),
+        ),
       );
     } catch (_) {
       if (!context.mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Lỗi khi xóa sự kiện')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Lỗi khi xóa sự kiện')));
     }
   }
 
@@ -122,7 +124,8 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
       final parsed = DateTime.tryParse(data['startDateTime']);
       if (parsed != null) return parsed;
     }
-    if (data['registrationDeadlineAt'] != null && data['registrationDeadlineAt'] is Timestamp) {
+    if (data['registrationDeadlineAt'] != null &&
+        data['registrationDeadlineAt'] is Timestamp) {
       return (data['registrationDeadlineAt'] as Timestamp).toDate();
     }
     return null;
@@ -143,8 +146,9 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
   Color _secondaryTextColor(bool isDarkMode) =>
       isDarkMode ? Colors.white70 : const Color(0xFF6B7280);
 
-  Color _borderColor(bool isDarkMode) =>
-      isDarkMode ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE5E7EB);
+  Color _borderColor(bool isDarkMode) => isDarkMode
+      ? Colors.white.withValues(alpha: 0.08)
+      : const Color(0xFFE5E7EB);
 
   List<BoxShadow> _cardShadow(bool isDarkMode) => isDarkMode
       ? []
@@ -213,23 +217,23 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                     ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                      tooltip: 'Xóa tìm kiếm',
-                      splashRadius: 18,
-                      onPressed: () {
-                        _searchController.clear();
+                            tooltip: 'Xóa tìm kiếm',
+                            splashRadius: 18,
+                            onPressed: () {
+                              _searchController.clear();
 
-                        setState(() {
-                          _searchQuery = '';
-                        });
-                      },
-                      icon: Icon(
-                        Icons.close_rounded,
-                        size: 19,
-                        color: isDarkMode
-                            ? Colors.white54
-                            : const Color(0xFF667085),
-                      ),
-                    )
+                              setState(() {
+                                _searchQuery = '';
+                              });
+                            },
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: 19,
+                              color: isDarkMode
+                                  ? Colors.white54
+                                  : const Color(0xFF667085),
+                            ),
+                          )
                         : null,
                     filled: true,
                     fillColor: isDarkMode
@@ -289,14 +293,18 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
 
                     final allDocs = snapshot.data!.docs;
 
-                    final urlsToPreload = allDocs.map((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-                      return data['thumbnailUrl'] ??
-                          (data['imageUrls'] != null &&
-                                  (data['imageUrls'] as List).isNotEmpty
-                              ? data['imageUrls'][0]
-                              : null);
-                    }).map((e) => e?.toString()).whereType<String>().toList();
+                    final urlsToPreload = allDocs
+                        .map((doc) {
+                          final data = doc.data() as Map<String, dynamic>;
+                          return data['thumbnailUrl'] ??
+                              (data['imageUrls'] != null &&
+                                      (data['imageUrls'] as List).isNotEmpty
+                                  ? data['imageUrls'][0]
+                                  : null);
+                        })
+                        .map((e) => e?.toString())
+                        .whereType<String>()
+                        .toList();
                     Base64ImageCache.preloadImages(urlsToPreload);
 
                     if (allDocs.isEmpty) {
@@ -348,29 +356,49 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
 
                     // Filter search query & expiration (> 3 days past)
                     final cleanQuery = removeVietnameseDiacritics(_searchQuery);
-                    final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
+                    final threeDaysAgo = DateTime.now().subtract(
+                      const Duration(days: 3),
+                    );
 
                     final filteredDocs = allDocs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
 
                       // 0. Lọc sự kiện đã diễn ra quá 3 ngày
-                      final DateTime? eventDateTime = _extractEventDateTime(data);
-                      if (eventDateTime != null && eventDateTime.isBefore(threeDaysAgo)) {
+                      final DateTime? eventDateTime = _extractEventDateTime(
+                        data,
+                      );
+                      if (eventDateTime != null &&
+                          eventDateTime.isBefore(threeDaysAgo)) {
                         return false;
                       }
 
                       if (cleanQuery.isEmpty) return true;
 
                       final title = removeVietnameseDiacritics(
-                          (data['eventName'] ?? data['title'] ?? data['eventTitle'] ?? data['name'] ?? '').toString());
+                        (data['eventName'] ??
+                                data['title'] ??
+                                data['eventTitle'] ??
+                                data['name'] ??
+                                '')
+                            .toString(),
+                      );
                       final desc = removeVietnameseDiacritics(
-                          (data['description'] ?? data['content'] ?? '').toString());
+                        (data['description'] ?? data['content'] ?? '')
+                            .toString(),
+                      );
                       final locName = removeVietnameseDiacritics(
-                          (data['locationName'] ?? '').toString());
+                        (data['locationName'] ?? '').toString(),
+                      );
                       final locAddr = removeVietnameseDiacritics(
-                          (data['locationAddress'] ?? '').toString());
+                        (data['locationAddress'] ?? '').toString(),
+                      );
                       final department = removeVietnameseDiacritics(
-                          (data['facultyName'] ?? data['department'] ?? data['organizer'] ?? '').toString());
+                        (data['facultyName'] ??
+                                data['department'] ??
+                                data['organizer'] ??
+                                '')
+                            .toString(),
+                      );
 
                       return title.contains(cleanQuery) ||
                           desc.contains(cleanQuery) ||
@@ -438,17 +466,26 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     );
   }
 
-  Future<String> _fetchContactFallback(Map<String, dynamic> data, String docId) async {
-    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '').toString().trim();
-    final String rawOrganizer = (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
+  Future<String> _fetchContactFallback(
+    Map<String, dynamic> data,
+    String docId,
+  ) async {
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '')
+        .toString()
+        .trim();
+    final String rawOrganizer =
+        (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
     if (rawContact.isNotEmpty) {
-      return rawContact.toLowerCase().startsWith('liên hệ') ? rawContact : 'Liên hệ: $rawContact';
+      return rawContact.toLowerCase().startsWith('liên hệ')
+          ? rawContact
+          : 'Liên hệ: $rawContact';
     }
     if (rawOrganizer.isNotEmpty) {
       return 'Liên hệ: $rawOrganizer';
     }
 
-    final String targetDocId = (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
+    final String targetDocId =
+        (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
     if (targetDocId.isNotEmpty) {
       try {
         final facDoc = await FirebaseFirestore.instance
@@ -457,10 +494,18 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
             .get();
         if (facDoc.exists && facDoc.data() != null) {
           final fData = facDoc.data()!;
-          final String fContact = (fData['contact'] ?? fData['contactInfo'] ?? '').toString().trim();
-          final String fOrganizer = (fData['organizer'] ?? fData['organizerName'] ?? '').toString().trim();
+          final String fContact =
+              (fData['contact'] ?? fData['contactInfo'] ?? '')
+                  .toString()
+                  .trim();
+          final String fOrganizer =
+              (fData['organizer'] ?? fData['organizerName'] ?? '')
+                  .toString()
+                  .trim();
           if (fContact.isNotEmpty) {
-            return fContact.toLowerCase().startsWith('liên hệ') ? fContact : 'Liên hệ: $fContact';
+            return fContact.toLowerCase().startsWith('liên hệ')
+                ? fContact
+                : 'Liên hệ: $fContact';
           }
           if (fOrganizer.isNotEmpty) {
             return 'Liên hệ: $fOrganizer';
@@ -471,9 +516,14 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     return '';
   }
 
-  Future<bool> _checkEventExists(Map<String, dynamic> data, String docId) async {
-    final String targetDocId = (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
-    final String collectionPath = (data['collectionPath'] ?? 'faculty_events').toString();
+  Future<bool> _checkEventExists(
+    Map<String, dynamic> data,
+    String docId,
+  ) async {
+    final String targetDocId =
+        (data['facultyEventId'] ?? data['docId'] ?? docId).toString();
+    final String collectionPath = (data['collectionPath'] ?? 'faculty_events')
+        .toString();
     if (targetDocId.isEmpty) return true;
 
     try {
@@ -488,151 +538,105 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
   }
 
   Widget _buildEventCard(
-      BuildContext context,
-      String docId,
-      Map<String, dynamic> data,
-      bool isDarkMode,
-      ) {
+    BuildContext context,
+    String docId,
+    Map<String, dynamic> data,
+    bool isDarkMode,
+  ) {
     final String title =
-    (data['eventName'] ??
-        data['title'] ??
-        'Sự kiện sinh viên')
-        .toString();
+        (data['eventName'] ?? data['title'] ?? 'Sự kiện sinh viên').toString();
 
-    final String date =
-    (data['eventDateText'] ??
-        data['date'] ??
-        '')
+    final String date = (data['eventDateText'] ?? data['date'] ?? '')
         .toString();
 
     final String department =
-    (data['locationName'] ??
-        data['facultyName'] ??
-        data['department'] ??
-        'Cơ sở HCMUS')
-        .toString();
+        (data['locationName'] ??
+                data['facultyName'] ??
+                data['department'] ??
+                'Cơ sở HCMUS')
+            .toString();
 
-    final String onlineUrl =
-    (data['onlineUrl'] ??
-        data['onlineLink'] ??
-        '')
+    final String onlineUrl = (data['onlineUrl'] ?? data['onlineLink'] ?? '')
         .toString()
         .trim();
 
-    final bool isOnline =
-        data['isOnline'] == true ||
-            onlineUrl.isNotEmpty;
+    final bool isOnline = data['isOnline'] == true || onlineUrl.isNotEmpty;
 
     final String link =
-    (data['sourceArticleUrl'] ??
-        data['registrationUrl'] ??
-        data['link'] ??
-        onlineUrl)
-        .toString();
+        (data['sourceArticleUrl'] ??
+                data['registrationUrl'] ??
+                data['link'] ??
+                onlineUrl)
+            .toString();
 
-    final String rawContact =
-    (data['contact'] ??
-        data['contactInfo'] ??
-        '')
+    final String rawContact = (data['contact'] ?? data['contactInfo'] ?? '')
         .toString()
         .trim();
 
     final String rawOrganizer =
-    (data['organizer'] ??
-        data['organizerName'] ??
-        '')
-        .toString()
-        .trim();
+        (data['organizer'] ?? data['organizerName'] ?? '').toString().trim();
 
-    String displayContact = rawContact.isNotEmpty
-        ? rawContact
-        : rawOrganizer;
+    String displayContact = rawContact.isNotEmpty ? rawContact : rawOrganizer;
 
     if (displayContact.isNotEmpty &&
-        !displayContact
-            .toLowerCase()
-            .startsWith('liên hệ')) {
+        !displayContact.toLowerCase().startsWith('liên hệ')) {
       displayContact = 'Liên hệ: $displayContact';
     }
 
-    final String effectiveLink =
-    onlineUrl.isNotEmpty
-        ? onlineUrl
-        : link;
+    final String effectiveLink = onlineUrl.isNotEmpty ? onlineUrl : link;
 
     final String? thumbnailUrl =
         data['thumbnailUrl'] ??
-            (
-                data['imageUrls'] != null &&
-                    (data['imageUrls'] as List).isNotEmpty
-                    ? data['imageUrls'][0]
-                    : null
-            );
+        (data['imageUrls'] != null && (data['imageUrls'] as List).isNotEmpty
+            ? data['imageUrls'][0]
+            : null);
 
-    final Color cardColor =
-    _surfaceColor(isDarkMode);
+    final Color cardColor = _surfaceColor(isDarkMode);
 
-    final Color borderColor =
-    _borderColor(isDarkMode);
+    final Color borderColor = _borderColor(isDarkMode);
 
-    final Color primaryTextColor =
-    _primaryTextColor(isDarkMode);
+    final Color primaryTextColor = _primaryTextColor(isDarkMode);
 
-    final Color secondaryTextColor =
-    _secondaryTextColor(isDarkMode);
+    final Color secondaryTextColor = _secondaryTextColor(isDarkMode);
 
     return FutureBuilder<bool>(
-      future: _checkEventExists(
-        data,
-        docId,
-      ),
+      future: _checkEventExists(data, docId),
       builder: (context, eventSnapshot) {
         final bool isDeleted =
-            eventSnapshot.hasData &&
-                eventSnapshot.data == false;
+            eventSnapshot.hasData && eventSnapshot.data == false;
 
         return Container(
-          margin: const EdgeInsets.only(
-            bottom: 14,
-          ),
+          margin: const EdgeInsets.only(bottom: 14),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius:
-            BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: isDeleted
-                  ? Colors.redAccent.withValues(
-                alpha: 0.32,
-              )
+                  ? Colors.redAccent.withValues(alpha: 0.32)
                   : borderColor,
             ),
             boxShadow: isDarkMode
                 ? const []
                 : [
-              BoxShadow(
-                color: Colors.black.withValues(
-                  alpha: 0.035,
-                ),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.035),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
           ),
           child: ClipRRect(
-            borderRadius:
-            BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(18),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: !isDeleted &&
-                    effectiveLink.isNotEmpty
+                onTap: !isDeleted && effectiveLink.isNotEmpty
                     ? () {
-                  _launchURL(effectiveLink);
-                }
+                        _launchURL(effectiveLink);
+                      }
                     : null,
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Stack(
                       children: [
@@ -646,16 +650,12 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              gradient:
-                              LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topCenter,
-                                end:
-                                Alignment.bottomCenter,
+                                end: Alignment.bottomCenter,
                                 colors: [
                                   Colors.transparent,
-                                  Colors.black.withValues(
-                                    alpha: 0.34,
-                                  ),
+                                  Colors.black.withValues(alpha: 0.34),
                                 ],
                               ),
                             ),
@@ -667,33 +667,22 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                             top: 11,
                             left: 11,
                             child: Container(
-                              padding:
-                              const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 9,
                                 vertical: 5,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.black.withValues(
-                                  alpha: 0.48,
-                                ),
-                                borderRadius:
-                                BorderRadius.circular(
-                                  10,
-                                ),
+                                color: Colors.black.withValues(alpha: 0.48),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.white
-                                      .withValues(
-                                    alpha: 0.20,
-                                  ),
+                                  color: Colors.white.withValues(alpha: 0.20),
                                 ),
                               ),
                               child: const Row(
-                                mainAxisSize:
-                                MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons
-                                        .videocam_outlined,
+                                    Icons.videocam_outlined,
                                     size: 13,
                                     color: Colors.white,
                                   ),
@@ -701,12 +690,10 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                                   Text(
                                     'Online',
                                     style: TextStyle(
-                                      fontFamily:
-                                      'Encode Sans Expanded',
+                                      fontFamily: 'Encode Sans Expanded',
                                       color: Colors.white,
                                       fontSize: 10,
-                                      fontWeight:
-                                      FontWeight.w600,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ],
@@ -733,7 +720,9 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                                     color: Colors.black.withValues(alpha: 0.42),
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: Colors.white.withValues(alpha: 0.18),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.18,
+                                      ),
                                     ),
                                   ),
                                   child: const Icon(
@@ -750,26 +739,17 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                     ),
 
                     Padding(
-                      padding:
-                      const EdgeInsets.fromLTRB(
-                        16,
-                        15,
-                        16,
-                        15,
-                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             title,
                             maxLines: 2,
-                            overflow:
-                            TextOverflow.ellipsis,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontFamily: 'Nunito',
-                              fontWeight:
-                              FontWeight.w700,
+                              fontWeight: FontWeight.w700,
                               fontSize: 16.5,
                               height: 1.3,
                               color: primaryTextColor,
@@ -780,44 +760,30 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                             const SizedBox(height: 10),
                             Container(
                               width: double.infinity,
-                              padding:
-                              const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 11,
                                 vertical: 9,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.redAccent
-                                    .withValues(
-                                  alpha: isDarkMode
-                                      ? 0.14
-                                      : 0.08,
+                                color: Colors.redAccent.withValues(
+                                  alpha: isDarkMode ? 0.14 : 0.08,
                                 ),
-                                borderRadius:
-                                BorderRadius.circular(
-                                  10,
-                                ),
+                                borderRadius: BorderRadius.circular(10),
                                 border: Border.all(
-                                  color: Colors.redAccent
-                                      .withValues(
+                                  color: Colors.redAccent.withValues(
                                     alpha: 0.30,
                                   ),
                                 ),
                               ),
                               child: const Row(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding:
-                                    EdgeInsets.only(
-                                      top: 1,
-                                    ),
+                                    padding: EdgeInsets.only(top: 1),
                                     child: Icon(
-                                      Icons
-                                          .warning_amber_rounded,
+                                      Icons.warning_amber_rounded,
                                       size: 17,
-                                      color:
-                                      Colors.redAccent,
+                                      color: Colors.redAccent,
                                     ),
                                   ),
                                   SizedBox(width: 7),
@@ -825,14 +791,11 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                                     child: Text(
                                       'Sự kiện này đã bị hủy hoặc không còn tồn tại trên hệ thống.',
                                       style: TextStyle(
-                                        fontFamily:
-                                        'Encode Sans Expanded',
+                                        fontFamily: 'Encode Sans Expanded',
                                         fontSize: 11.5,
                                         height: 1.4,
-                                        fontWeight:
-                                        FontWeight.w600,
-                                        color:
-                                        Colors.redAccent,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.redAccent,
                                       ),
                                     ),
                                   ),
@@ -844,86 +807,58 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                           const SizedBox(height: 13),
 
                           _buildInterestedEventInfoRow(
-                            icon:
-                            Icons.access_time_rounded,
+                            icon: Icons.access_time_rounded,
                             text: date.isEmpty
                                 ? 'Chưa cập nhật thời gian'
                                 : date,
                             iconColor: primaryBlue,
-                            textColor:
-                            primaryTextColor,
-                            fontWeight:
-                            FontWeight.w600,
+                            textColor: primaryTextColor,
+                            fontWeight: FontWeight.w600,
                           ),
 
                           const SizedBox(height: 9),
 
                           _buildInterestedEventInfoRow(
                             icon: isOnline
-                                ? Icons
-                                .videocam_outlined
-                                : Icons
-                                .location_on_outlined,
+                                ? Icons.videocam_outlined
+                                : Icons.location_on_outlined,
                             text: department.isNotEmpty
                                 ? department
-                                : (
-                                isOnline
-                                    ? 'Trực tuyến'
-                                    : 'Chưa cập nhật địa điểm'
-                            ),
+                                : (isOnline
+                                      ? 'Trực tuyến'
+                                      : 'Chưa cập nhật địa điểm'),
                             iconColor: primaryBlue,
-                            textColor:
-                            secondaryTextColor,
+                            textColor: secondaryTextColor,
                           ),
 
                           FutureBuilder<String>(
-                            future:
-                            _fetchContactFallback(
-                              data,
-                              docId,
-                            ),
-                            builder:
-                                (context, snapshot) {
+                            future: _fetchContactFallback(data, docId),
+                            builder: (context, snapshot) {
                               final String contactInfo =
-                                  snapshot.data ??
-                                      displayContact;
+                                  snapshot.data ?? displayContact;
 
-                              if (contactInfo
-                                  .trim()
-                                  .isEmpty) {
-                                return const SizedBox
-                                    .shrink();
+                              if (contactInfo.trim().isEmpty) {
+                                return const SizedBox.shrink();
                               }
 
                               return Padding(
-                                padding:
-                                const EdgeInsets.only(
-                                  top: 9,
-                                ),
-                                child:
-                                _buildInterestedEventInfoRow(
-                                  icon: Icons
-                                      .contact_phone_outlined,
+                                padding: const EdgeInsets.only(top: 9),
+                                child: _buildInterestedEventInfoRow(
+                                  icon: Icons.contact_phone_outlined,
                                   text: contactInfo,
-                                  iconColor:
-                                  primaryBlue,
-                                  textColor:
-                                  secondaryTextColor,
+                                  iconColor: primaryBlue,
+                                  textColor: secondaryTextColor,
                                 ),
                               );
                             },
                           ),
 
                           if (!isDeleted &&
-                              (
-                                  onlineUrl.isNotEmpty ||
-                                      link.isNotEmpty
-                              )) ...[
+                              (onlineUrl.isNotEmpty || link.isNotEmpty)) ...[
                             const SizedBox(height: 15),
 
                             _buildInterestedEventActions(
-                              isDarkMode:
-                              isDarkMode,
+                              isDarkMode: isDarkMode,
                               onlineUrl: onlineUrl,
                               link: link,
                             ),
@@ -949,18 +884,11 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
     FontWeight fontWeight = FontWeight.w400,
   }) {
     return Row(
-      crossAxisAlignment:
-      CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.only(
-            top: 1,
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: iconColor,
-          ),
+          padding: const EdgeInsets.only(top: 1),
+          child: Icon(icon, size: 16, color: iconColor),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -969,8 +897,7 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontFamily:
-              'Encode Sans Expanded',
+              fontFamily: 'Encode Sans Expanded',
               fontSize: 12.5,
               height: 1.4,
               fontWeight: fontWeight,
@@ -981,23 +908,19 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
       ],
     );
   }
+
   Widget _buildInterestedEventActions({
     required bool isDarkMode,
     required String onlineUrl,
     required String link,
   }) {
-    final bool hasOnlineLink =
-        onlineUrl.isNotEmpty;
+    final bool hasOnlineLink = onlineUrl.isNotEmpty;
 
-    final bool hasSourceLink =
-        link.isNotEmpty &&
-            link != onlineUrl;
+    final bool hasSourceLink = link.isNotEmpty && link != onlineUrl;
 
-    final Color secondaryTextColor =
-    _secondaryTextColor(isDarkMode);
+    final Color secondaryTextColor = _secondaryTextColor(isDarkMode);
 
-    final Color borderColor =
-    _borderColor(isDarkMode);
+    final Color borderColor = _borderColor(isDarkMode);
 
     if (hasOnlineLink) {
       return Row(
@@ -1007,15 +930,11 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
               onPressed: () {
                 _launchURL(onlineUrl);
               },
-              icon: const Icon(
-                Icons.videocam_outlined,
-                size: 17,
-              ),
+              icon: const Icon(Icons.videocam_outlined, size: 17),
               label: const Text(
                 'Tham gia trực tuyến',
                 style: TextStyle(
-                  fontFamily:
-                  'Encode Sans Expanded',
+                  fontFamily: 'Encode Sans Expanded',
                   fontSize: 12.5,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1024,13 +943,9 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                 backgroundColor: primaryBlue,
                 foregroundColor: Colors.white,
                 elevation: 0,
-                minimumSize: const Size(
-                  double.infinity,
-                  42,
-                ),
+                minimumSize: const Size(double.infinity, 42),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                  BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
@@ -1042,11 +957,9 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
             PopupMenuButton<String>(
               tooltip: 'Thêm tùy chọn',
               color: _surfaceColor(isDarkMode),
-              surfaceTintColor:
-              Colors.transparent,
+              surfaceTintColor: Colors.transparent,
               shape: RoundedRectangleBorder(
-                borderRadius:
-                BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(14),
               ),
               onSelected: (value) {
                 if (value == 'open_source') {
@@ -1068,12 +981,9 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                       Text(
                         'Xem bài gốc',
                         style: TextStyle(
-                          fontFamily:
-                          'Encode Sans Expanded',
+                          fontFamily: 'Encode Sans Expanded',
                           fontSize: 12,
-                          color: _primaryTextColor(
-                            isDarkMode,
-                          ),
+                          color: _primaryTextColor(isDarkMode),
                         ),
                       ),
                     ],
@@ -1086,15 +996,10 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
                   color: isDarkMode
-                      ? Colors.white.withValues(
-                    alpha: 0.06,
-                  )
+                      ? Colors.white.withValues(alpha: 0.06)
                       : const Color(0xFFF5F7FA),
-                  borderRadius:
-                  BorderRadius.circular(12),
-                  border: Border.all(
-                    color: borderColor,
-                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: borderColor),
                 ),
                 child: Icon(
                   Icons.more_horiz_rounded,
@@ -1116,27 +1021,20 @@ class _InterestedEventTabState extends State<InterestedEventTab> {
           onPressed: () {
             _launchURL(link);
           },
-          icon: const Icon(
-            Icons.open_in_new_rounded,
-            size: 17,
-          ),
+          icon: const Icon(Icons.open_in_new_rounded, size: 17),
           label: const Text(
             'Xem chi tiết sự kiện',
             style: TextStyle(
-              fontFamily:
-              'Encode Sans Expanded',
+              fontFamily: 'Encode Sans Expanded',
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
             ),
           ),
           style: OutlinedButton.styleFrom(
             foregroundColor: primaryBlue,
-            side: const BorderSide(
-              color: primaryBlue,
-            ),
+            side: const BorderSide(color: primaryBlue),
             shape: RoundedRectangleBorder(
-              borderRadius:
-              BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
         ),

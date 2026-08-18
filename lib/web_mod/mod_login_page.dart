@@ -8,17 +8,15 @@ class ModLoginPage extends StatelessWidget {
   Future<void> _handleGoogleSignIn(BuildContext context) async {
     try {
       GoogleAuthProvider googleProvider = GoogleAuthProvider();
-      googleProvider.setCustomParameters({
-        'prompt': 'select_account',
-      });
+      googleProvider.setCustomParameters({'prompt': 'select_account'});
 
       // 1. Thực hiện đăng nhập
-      UserCredential userCredential = await FirebaseAuth.instance.signInWithPopup(googleProvider);
+      UserCredential userCredential = await FirebaseAuth.instance
+          .signInWithPopup(googleProvider);
 
       final User? user = userCredential.user;
 
       if (user != null) {
-
         final String? email = user.email;
 
         const allowedAdmins = [
@@ -26,9 +24,7 @@ class ModLoginPage extends StatelessWidget {
           'huynhhuuhau01@gmail.com',
         ];
 
-        const allowedCollaborators = [
-          'trannhatthanha2@gmail.com',
-        ];
+        const allowedCollaborators = ['trannhatthanha2@gmail.com'];
 
         if (allowedAdmins.contains(email)) {
           if (context.mounted) {
@@ -42,7 +38,9 @@ class ModLoginPage extends StatelessWidget {
           await FirebaseAuth.instance.signOut();
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text("Tài khoản không có quyền truy cập!")),
+              const SnackBar(
+                content: Text("Tài khoản không có quyền truy cập!"),
+              ),
             );
           }
         }
@@ -68,23 +66,34 @@ class ModLoginPage extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               // Sử dụng đúng Icon từ hình ảnh
-              const Icon(Icons.shield_outlined, size: 80, color: Colors.blueAccent),
+              const Icon(
+                Icons.shield_outlined,
+                size: 80,
+                color: Colors.blueAccent,
+              ),
               const SizedBox(height: 20),
-              const Text("MYUNI MANAGEMENT PORTAL",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const Text(
+                "MYUNI MANAGEMENT PORTAL",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
               const SizedBox(height: 10),
-              const Text("Vui lòng đăng nhập để tiếp tục",
-                  style: TextStyle(color: Colors.grey)),
+              const Text(
+                "Vui lòng đăng nhập để tiếp tục",
+                style: TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 40),
               OutlinedButton.icon(
                 onPressed: () => _handleGoogleSignIn(context),
                 icon: Image.network(
-                    'https://cdn-teams-slug.flaticon.com/google.jpg',
-                    width: 18
+                  'https://cdn-teams-slug.flaticon.com/google.jpg',
+                  width: 18,
                 ),
                 label: const Text("Đăng nhập bằng Google"),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 30,
+                    vertical: 15,
+                  ),
                   foregroundColor: Colors.black,
                   side: const BorderSide(color: Colors.grey),
                   shape: RoundedRectangleBorder(

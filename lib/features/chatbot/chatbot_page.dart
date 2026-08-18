@@ -20,10 +20,11 @@ class ChatMessage {
   final DateTime timestamp;
 
   ChatMessage({required this.text, required this.isUser, DateTime? timestamp})
-      : timestamp = timestamp ?? DateTime.now();
+    : timestamp = timestamp ?? DateTime.now();
 }
 
-class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin {
+class _ChatbotPageState extends State<ChatbotPage>
+    with TickerProviderStateMixin {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -35,7 +36,8 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
 
   final List<ChatMessage> _messages = [
     ChatMessage(
-      text: "Chào bạn, mình là **Ú Em** 👋\nMình biết rất nhiều về trường Đại học Khoa học Tự nhiên, hãy hỏi mình nếu có thắc mắc gì nhé!",
+      text:
+          "Chào bạn, mình là **Ú Em** 👋\nMình biết rất nhiều về trường Đại học Khoa học Tự nhiên, hãy hỏi mình nếu có thắc mắc gì nhé!",
       isUser: false,
     ),
   ];
@@ -81,18 +83,24 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       final user = FirebaseAuth.instance.currentUser;
       final idToken = await user?.getIdToken();
 
-      final url = Uri.parse('https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/chatWithUEm');
+      final url = Uri.parse(
+        'https://asia-southeast1-myuni-fe6d1.cloudfunctions.net/chatWithUEm',
+      );
 
-      final response = await http.post(
-        url,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          if (idToken != null) "Authorization": "Bearer $idToken",
-        },
-        body: utf8.encode(jsonEncode({
-          "data": {"query": userText}
-        })),
-      ).timeout(const Duration(seconds: 60));
+      final response = await http
+          .post(
+            url,
+            headers: {
+              "Content-Type": "application/json; charset=utf-8",
+              if (idToken != null) "Authorization": "Bearer $idToken",
+            },
+            body: utf8.encode(
+              jsonEncode({
+                "data": {"query": userText},
+              }),
+            ),
+          )
+          .timeout(const Duration(seconds: 60));
 
       if (!mounted) return;
 
@@ -100,13 +108,16 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
 
       if (response.statusCode == 200) {
         final result = data['result'];
-        String botAnswer = result != null ? result['answer'] : "Không nhận được câu trả lời từ Ú Em.";
+        String botAnswer = result != null
+            ? result['answer']
+            : "Không nhận được câu trả lời từ Ú Em.";
         setState(() {
           _isTyping = false;
           _messages.add(ChatMessage(text: botAnswer, isUser: false));
         });
       } else {
-        String errorMessage = "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏";
+        String errorMessage =
+            "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏";
         if (data is Map && data['error'] != null) {
           final error = data['error'];
           if (error['message'] != null) {
@@ -122,10 +133,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       if (!mounted) return;
       setState(() {
         _isTyping = false;
-        _messages.add(ChatMessage(
-          text: "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏",
-          isUser: false,
-        ));
+        _messages.add(
+          ChatMessage(
+            text:
+                "Ú Em đang bận hoặc server đang khởi động. Bạn đợi xíu rồi thử lại nhé! 🙏",
+            isUser: false,
+          ),
+        );
       });
     }
     _scrollToBottom();
@@ -149,16 +163,16 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
-      backgroundColor: isDarkMode ? AppColors.backgroundDark : AppColors.backgroundLight,
+      backgroundColor: isDarkMode
+          ? AppColors.backgroundDark
+          : AppColors.backgroundLight,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 600.0),
           child: Column(
             children: [
               _buildHeader(isDarkMode),
-              Expanded(
-                child: _buildChatArea(isDarkMode),
-              ),
+              Expanded(child: _buildChatArea(isDarkMode)),
             ],
           ),
         ),
@@ -258,7 +272,6 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     );
   }
 
-
   void _showReportDialog(BuildContext context) {
     final TextEditingController detailController = TextEditingController();
     String selectedCategory = 'Sai kiến thức';
@@ -266,7 +279,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       'Sai kiến thức',
       'Không phản hồi',
       'Nội dung không phù hợp',
-      'Lỗi khác'
+      'Lỗi khác',
     ];
 
     showDialog(
@@ -274,16 +287,26 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+            final bool isDarkMode =
+                Theme.of(context).brightness == Brightness.dark;
             final Color textColor = isDarkMode ? Colors.white : Colors.black87;
-            final Color labelColor = isDarkMode ? Colors.white70 : Colors.black54;
+            final Color labelColor = isDarkMode
+                ? Colors.white70
+                : Colors.black54;
 
             return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-              backgroundColor: isDarkMode ? const Color(0xFF1C1C1E) : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              backgroundColor: isDarkMode
+                  ? const Color(0xFF1C1C1E)
+                  : Colors.white,
               title: Row(
                 children: [
-                  const Icon(Icons.feedback_rounded, color: AppColors.hcmusBlue),
+                  const Icon(
+                    Icons.feedback_rounded,
+                    color: AppColors.hcmusBlue,
+                  ),
                   const SizedBox(width: 10),
                   Text(
                     'Báo cáo lỗi chatbot',
@@ -313,13 +336,17 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDarkMode ? Colors.white24 : Colors.black26),
+                        border: Border.all(
+                          color: isDarkMode ? Colors.white24 : Colors.black26,
+                        ),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<String>(
                           value: selectedCategory,
                           isExpanded: true,
-                          dropdownColor: isDarkMode ? const Color(0xFF2C2C2E) : Colors.white,
+                          dropdownColor: isDarkMode
+                              ? const Color(0xFF2C2C2E)
+                              : Colors.white,
                           style: TextStyle(color: textColor, fontSize: 14),
                           items: categories.map((String value) {
                             return DropdownMenuItem<String>(
@@ -352,18 +379,27 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                       maxLines: 4,
                       style: TextStyle(color: textColor, fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Vui lòng mô tả chi tiết nội dung lỗi hoặc câu hỏi bị lỗi...',
-                        hintStyle: const TextStyle(color: Colors.grey, fontSize: 13),
+                        hintText:
+                            'Vui lòng mô tả chi tiết nội dung lỗi hoặc câu hỏi bị lỗi...',
+                        hintStyle: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 13,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: isDarkMode ? Colors.white24 : Colors.black26),
+                          borderSide: BorderSide(
+                            color: isDarkMode ? Colors.white24 : Colors.black26,
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: AppColors.hcmusBlue, width: 2),
+                          borderSide: const BorderSide(
+                            color: AppColors.hcmusBlue,
+                            width: 2,
+                          ),
                         ),
                         contentPadding: const EdgeInsets.all(12),
                       ),
@@ -383,8 +419,9 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                             Navigator.pop(context);
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor:
-                            isDarkMode ? Colors.white70 : Colors.black54,
+                            foregroundColor: isDarkMode
+                                ? Colors.white70
+                                : Colors.black54,
                             side: BorderSide(
                               color: isDarkMode
                                   ? Colors.white24
@@ -421,8 +458,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                             padding: EdgeInsets.zero,
                           ),
                           onPressed: () async {
-                            final String details =
-                            detailController.text.trim();
+                            final String details = detailController.text.trim();
 
                             if (details.isEmpty) {
                               ScaffoldMessenger.of(context)
@@ -441,28 +477,22 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                             FocusScope.of(context).unfocus();
                             Navigator.pop(context);
 
-                            final user =
-                                FirebaseAuth.instance.currentUser;
-                            final String userEmail =
-                                user?.email ?? 'N/A';
-                            final String userId =
-                                user?.uid ?? 'N/A';
+                            final user = FirebaseAuth.instance.currentUser;
+                            final String userEmail = user?.email ?? 'N/A';
+                            final String userId = user?.uid ?? 'N/A';
 
                             try {
                               await FirebaseFirestore.instance
                                   .collection('chatbot_reports')
                                   .add({
-                                'category': selectedCategory,
-                                'details': details,
-                                'userEmail': userEmail,
-                                'userId': userId,
-                                'timestamp':
-                                FieldValue.serverTimestamp(),
-                              });
+                                    'category': selectedCategory,
+                                    'details': details,
+                                    'userEmail': userEmail,
+                                    'userId': userId,
+                                    'timestamp': FieldValue.serverTimestamp(),
+                                  });
                             } catch (e) {
-                              debugPrint(
-                                'Lỗi lưu report vào Firestore: $e',
-                              );
+                              debugPrint('Lỗi lưu report vào Firestore: $e');
                             }
 
                             await _sendToDiscordWebhook(
@@ -503,7 +533,8 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     showDialog(
       context: context,
       builder: (dialogContext) {
-        final isDarkMode = Theme.of(dialogContext).brightness == Brightness.dark;
+        final isDarkMode =
+            Theme.of(dialogContext).brightness == Brightness.dark;
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -590,7 +621,8 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     // WEBHOOK CONFIGURATION:
     // Bạn hãy tạo một webhook trên Discord (Server Settings -> Integrations -> Webhooks)
     // Và dán URL webhook thực tế của bạn vào đây thay thế chuỗi bên dưới.
-    const String discordWebhookUrl = 'https://discord.com/api/webhooks/1521577476734849177/sBXm5Ve4FwXICLP6GGh4MApvwuloBoWT7fWioKhE-Z8xWepfGwQJUciYEZqt3NnzMCY7';
+    const String discordWebhookUrl =
+        'https://discord.com/api/webhooks/1521577476734849177/sBXm5Ve4FwXICLP6GGh4MApvwuloBoWT7fWioKhE-Z8xWepfGwQJUciYEZqt3NnzMCY7';
 
     if (discordWebhookUrl == 'YOUR_DISCORD_WEBHOOK_URL_HERE') {
       debugPrint('Discord Webhook chưa được cấu hình. Bỏ qua gửi tin nhắn.');
@@ -609,28 +641,18 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
               "title": "🚨 BÁO CÁO LỖI CHATBOT MỚI",
               "color": 16730112, // Hex: #FF6868
               "fields": [
-                {
-                  "name": "📌 Loại lỗi",
-                  "value": category,
-                  "inline": true
-                },
+                {"name": "📌 Loại lỗi", "value": category, "inline": true},
                 {
                   "name": "👤 Người gửi",
                   "value": "$userEmail\n(UID: $userId)",
-                  "inline": true
+                  "inline": true,
                 },
-                {
-                  "name": "📝 Chi tiết lỗi",
-                  "value": details,
-                  "inline": false
-                }
+                {"name": "📝 Chi tiết lỗi", "value": details, "inline": false},
               ],
-              "footer": {
-                "text": "My-Uni Academic Companion App"
-              },
-              "timestamp": DateTime.now().toUtc().toIso8601String()
-            }
-          ]
+              "footer": {"text": "My-Uni Academic Companion App"},
+              "timestamp": DateTime.now().toUtc().toIso8601String(),
+            },
+          ],
         }),
       );
       if (response.statusCode == 204) {
@@ -648,7 +670,9 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: isDarkMode ? AppColors.backgroundDark : AppColors.backgroundLight,
+        color: isDarkMode
+            ? AppColors.backgroundDark
+            : AppColors.backgroundLight,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -709,11 +733,17 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              backgroundColor: isDarkMode ? Colors.white.withOpacity(0.05) : Colors.white,
+              backgroundColor: isDarkMode
+                  ? Colors.white.withOpacity(0.05)
+                  : Colors.white,
               side: BorderSide(
-                color: isDarkMode ? Colors.white10 : Colors.black.withOpacity(0.05),
+                color: isDarkMode
+                    ? Colors.white10
+                    : Colors.black.withOpacity(0.05),
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
               onPressed: () => _handleSendMessage(_suggestedQuestions[index]),
             ),
           );
@@ -750,9 +780,13 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                 return Row(
                   children: List.generate(3, (i) {
                     final double offset =
-                    ((_typingController.value * 3 - i) % 1.0).clamp(0.0, 1.0);
-                    final double bounce =
-                    offset < 0.5 ? offset * 2 : (1 - offset) * 2;
+                        ((_typingController.value * 3 - i) % 1.0).clamp(
+                          0.0,
+                          1.0,
+                        );
+                    final double bounce = offset < 0.5
+                        ? offset * 2
+                        : (1 - offset) * 2;
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 2.5),
                       child: Transform.translate(
@@ -785,10 +819,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: primaryColor,
-        border: Border.all(
-          color: primaryColor.withOpacity(0.3),
-          width: 1.5,
-        ),
+        border: Border.all(color: primaryColor.withOpacity(0.3), width: 1.5),
       ),
       child: Padding(
         padding: const EdgeInsets.all(4.0),
@@ -831,13 +862,18 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                   if (href != null) {
                     final uri = Uri.tryParse(href);
                     if (uri != null) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(
+                        uri,
+                        mode: LaunchMode.externalApplication,
+                      );
                     }
                   }
                 },
                 styleSheet: MarkdownStyleSheet(
                   p: TextStyle(
-                    color: isDarkMode ? Colors.white.withOpacity(0.9) : const Color(0xFF1A1F35),
+                    color: isDarkMode
+                        ? Colors.white.withOpacity(0.9)
+                        : const Color(0xFF1A1F35),
                     fontSize: 14,
                     height: 1.5,
                   ),
@@ -907,16 +943,16 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
   Widget _buildInputSection(bool isDarkMode) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        16, 8, 16,
+        16,
+        8,
+        16,
         MediaQuery.of(context).padding.bottom + 12,
       ),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(
-          color: isDarkMode
-              ? AppColors.surfaceDark
-              : Colors.white,
+          color: isDarkMode ? AppColors.surfaceDark : Colors.white,
           borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
@@ -951,7 +987,10 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
                     fontSize: 14,
                   ),
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 12,
+                  ),
                   isDense: true,
                 ),
                 onSubmitted: (_) => _handleSendMessage(),
@@ -987,7 +1026,7 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
             ),
           ],
         ),
-      )
+      ),
     );
   }
 
@@ -1022,4 +1061,3 @@ class _ChatbotPageState extends State<ChatbotPage> with TickerProviderStateMixin
     return cleaned;
   }
 }
-

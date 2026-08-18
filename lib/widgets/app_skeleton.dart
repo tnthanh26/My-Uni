@@ -16,17 +16,16 @@ class AppShimmer extends StatefulWidget {
   State<AppShimmer> createState() => _AppShimmerState();
 }
 
-class _AppShimmerState extends State<AppShimmer> with SingleTickerProviderStateMixin {
+class _AppShimmerState extends State<AppShimmer>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: widget.duration,
-    )..repeat();
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..repeat();
 
     _animation = Tween<double>(begin: -2.0, end: 2.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
@@ -43,8 +42,12 @@ class _AppShimmerState extends State<AppShimmer> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final baseColor = isDark ? const Color(0xFF1E293B) : const Color(0xFFE2E8F0);
-    final highlightColor = isDark ? const Color(0xFF334155) : const Color(0xFFF8FAFC);
+    final baseColor = isDark
+        ? const Color(0xFF1E293B)
+        : const Color(0xFFE2E8F0);
+    final highlightColor = isDark
+        ? const Color(0xFF334155)
+        : const Color(0xFFF8FAFC);
 
     return AnimatedBuilder(
       animation: _animation,
@@ -55,11 +58,7 @@ class _AppShimmerState extends State<AppShimmer> with SingleTickerProviderStateM
             return LinearGradient(
               begin: Alignment(_animation.value - 1.0, -0.3),
               end: Alignment(_animation.value + 1.0, 0.3),
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
+              colors: [baseColor, highlightColor, baseColor],
               stops: const [0.0, 0.5, 1.0],
             ).createShader(bounds);
           },
@@ -87,14 +86,11 @@ class SkeletonBox extends StatelessWidget {
     this.margin,
   });
 
-  const SkeletonBox.circle({
-    super.key,
-    required double size,
-    this.margin,
-  })  : width = size,
-        height = size,
-        borderRadius = 0,
-        shape = BoxShape.circle;
+  const SkeletonBox.circle({super.key, required double size, this.margin})
+    : width = size,
+      height = size,
+      borderRadius = 0,
+      shape = BoxShape.circle;
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +104,9 @@ class SkeletonBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         shape: shape,
-        borderRadius: shape == BoxShape.rectangle ? BorderRadius.circular(borderRadius) : null,
+        borderRadius: shape == BoxShape.rectangle
+            ? BorderRadius.circular(borderRadius)
+            : null,
       ),
     );
   }
