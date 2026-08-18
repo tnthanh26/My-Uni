@@ -306,20 +306,16 @@ class _ForumTabState extends State<ForumTab> {
               (id, _) => !currentPostIds.contains(id),
             );
 
-            // 2. Tự động reload feed nếu chính USER ĐÓ vừa đăng bài mới
-            bool hasSelfNewPost = false;
+            // 2. Tự động nạp bài viết mới vào feed (khi vừa vào app hoặc khi có bài mới)
+            bool hasNewPosts = false;
             for (var doc in posts) {
-              final data = doc.data() as Map<String, dynamic>;
-              final authorId = data['authorId']?.toString();
               if (!_cachedPostsMap.containsKey(doc.id)) {
-                if (currentUserId != null && authorId == currentUserId) {
-                  hasSelfNewPost = true;
-                  break;
-                }
+                hasNewPosts = true;
+                break;
               }
             }
 
-            if (hasSelfNewPost) {
+            if (hasNewPosts) {
               final List<QueryDocumentSnapshot> sorted = List.from(posts);
               sorted.sort((a, b) {
                 final aScore = calculateTrendingScore(

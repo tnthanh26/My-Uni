@@ -215,7 +215,48 @@ class _StudentIdentitySheetState extends State<StudentIdentitySheet> {
                         onPressed: _isLoading
                             ? null
                             : () async {
-                                // Giữ nguyên toàn bộ logic hiện tại
+                                setState(() {
+                                  _isLoading = true;
+                                });
+                                try {
+                                  final ChatService chatService = ChatService();
+                                  final String roomId = await chatService
+                                      .getOrCreateChatRoom(
+                                        targetUid,
+                                        targetName: name,
+                                        targetPhoto: photoURL,
+                                      );
+
+                                  if (!mounted) return;
+                                  setState(() {
+                                    _isLoading = false;
+                                  });
+
+                                  Navigator.pop(context);
+
+                                  if (roomId.isNotEmpty) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => ChatDetailPage(
+                                          roomId: roomId,
+                                          targetUserId: targetUid,
+                                          targetUserName: name,
+                                          targetUserPhoto: photoURL,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  debugPrint(
+                                    'Không thể tạo phòng chat từ StudentIdentitySheet: $e',
+                                  );
+                                  if (mounted) {
+                                    setState(() {
+                                      _isLoading = false;
+                                    });
+                                  }
+                                }
                               },
                         child: _isLoading
                             ? const SizedBox(
