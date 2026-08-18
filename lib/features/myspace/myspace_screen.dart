@@ -301,12 +301,10 @@ class _MySpaceScreenState extends State<MySpaceScreen>
 
     if (mounted) {
       setState(() {
-        if (localDeadlines.isNotEmpty) mockDeadlines = localDeadlines;
-        if (localSchedule.isNotEmpty) mockSchedule = localSchedule;
+        mockDeadlines = localDeadlines;
+        mockSchedule = localSchedule;
         _autoDeadlineConfig = localAutoConfig;
-        if (localDeadlines.isNotEmpty || localSchedule.isNotEmpty) {
-          _isLoadingData = false;
-        }
+        _isLoadingData = false;
       });
     }
 

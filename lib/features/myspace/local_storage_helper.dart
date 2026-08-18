@@ -119,7 +119,7 @@ class LocalStorageHelper {
     final String? data = prefs.getString(_deadlineKey);
 
     if (data == null || data == '[]') {
-      return _defaultDeadlines;
+      return [];
     }
 
     try {
@@ -148,7 +148,7 @@ class LocalStorageHelper {
           .toList();
     } catch (e) {
       debugPrint("Error parsing deadlines from storage: $e");
-      return _defaultDeadlines;
+      return [];
     }
   }
 
