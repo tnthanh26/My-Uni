@@ -488,6 +488,13 @@ class _MySpaceScreenState extends State<MySpaceScreen>
         _deadlineShowAll = forceShowAll;
       }
     });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _dayPageController.hasClients) {
+        final targetPage = _getPageIndexFromDate(_focusedDate);
+        _dayPageController.jumpToPage(targetPage);
+      }
+    });
   }
 
   void _backToDashboard() {
